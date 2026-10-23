@@ -63,11 +63,19 @@ table { border-collapse: collapse; width: 100%; font-size: 13px; } td, th { padd
 .combatmenu { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 5px; }
 .who { color: var(--gold); font-weight: bold; margin-bottom: 6px; }
 .bigmap { width: min(80vmin, 640px); aspect-ratio: 1; image-rendering: pixelated; }
+#cmenu { display: none; min-height: 0; overflow-y: auto; background: #0e0920; border-left: 1px solid var(--line); padding: 6px; }
+#cmenu .panel { max-width: none; width: auto; margin: 0; padding: 8px; border-radius: 10px; box-sizing: border-box; }
+#cmenu .who { font-size: 12px; margin-bottom: 6px; color: var(--gold); }
+#cmenu .combatmenu { grid-template-columns: 1fr 1fr; }
+#cmenu .combatmenu button { font-size: 12px; padding: 6px; text-align: left; min-height: 36px; }
+body.incombat #controls { display: none; }
+body.incombat #cmenu { display: block; }
+body.incombat #bottom { grid-template-columns: 1fr 420px; }
 @media (max-width: 760px), (max-height: 520px) and (orientation: landscape) {
   body { font-size: 13px; }
   #app { grid-template-columns: 1fr; grid-template-rows: 42vh auto 1fr auto; }
   #view { grid-row: 1; border-right: none; }
-  #side { grid-column: 1; grid-row: 2; flex-direction: row; padding: 4px; overflow: visible; }
+  #side { grid-column: 1; grid-row: 2; flex-direction: row; padding: 4px; overflow: hidden; position: relative; z-index: 1; }
   #minimap { width: 92px; height: 92px; flex: none; }
   #party { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; flex: 1; }
   .card { padding: 3px 5px; } .card .sub { display: none; } .card .slots { font-size: 10px; } .card .nm { font-size: 12px; }
@@ -79,4 +87,21 @@ table { border-collapse: collapse; width: 100%; font-size: 13px; } td, th { padd
   #modal.combat { position: fixed; inset: auto 0 0 0; }
   #modal.combat .panel { width: 100%; border-radius: 12px 12px 0 0; max-height: 40vh; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
   #modal { position: fixed; }
+  body.incombat #bottom { grid-template-columns: 1fr; grid-template-rows: minmax(64px, 1fr) auto; }
+  body.incombat #cmenu { border-left: none; border-top: 1px solid var(--line); max-height: 36vh; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+  #cmenu .combatmenu button { min-height: 40px; }
+}
+/* phone landscape: 3D view left, party + log + combat menu right */
+@media (max-height: 520px) and (orientation: landscape) {
+  #app { grid-template-columns: 52% 48%; grid-template-rows: auto 1fr; }
+  #view { grid-column: 1; grid-row: 1 / span 2; border-bottom: none; border-right: 1px solid var(--line); }
+  #side { grid-column: 2; grid-row: 1; overflow: hidden; }
+  #bottom { min-height: 0; overflow: hidden; }
+  #side #minimap { display: none; }
+  #party .card .sub { display: none; }
+  #bottom { grid-column: 2; grid-row: 2; }
+  #controls { grid-template-columns: repeat(6, 1fr); }
+  #controls button { min-height: 34px; }
+  body.incombat #cmenu { max-height: 52vh; }
+  #cmenu .combatmenu button { min-height: 32px; padding: 4px 6px; }
 }

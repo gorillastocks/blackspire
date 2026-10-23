@@ -7,5 +7,6 @@ export default defineConfig({
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     { name: 'iphone', use: { ...devices['iPhone 14 Pro'], browserName: 'chromium', launchOptions: { args: gl } } },
+    { name: 'iphone-landscape', use: { ...devices['iPhone 14 Pro landscape'], browserName: 'chromium', launchOptions: { args: gl } } },
   ],
 });

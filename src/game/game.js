@@ -35,6 +35,12 @@ export const isSolid = (ch) => ch === '#' || ch === 'S' || ch === 'L';
 export function markExplored(s) {
   const e = new Set(s.explored[s.level]);
   for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) e.add(`${s.x + dx},${s.y + dy}`);
+  // line of sight: reveal the corridor ahead (and its walls) until a solid tile, like the 3D view shows
+  const [fx, fy] = [[0, -1], [1, 0], [0, 1], [-1, 0]][s.dir];
+  for (let i = 1, x = s.x + fx, y = s.y + fy; i <= 6; i++, x += fx, y += fy) {
+    e.add(`${x},${y}`); e.add(`${x + fy},${y + fx}`); e.add(`${x - fy},${y - fx}`);
+    if (x < 0 || y < 0 || isSolid(tile(s, x, y))) break;
+  }
   s.explored[s.level] = [...e];
 }
 
@@ -53,7 +59,7 @@ export function randomEncounter(s) { return encounterGroups(getLevel(s.level).de
 const bestBy = (s, f) => s.party.filter((c) => !isDown(c)).reduce((b, c) => (f(c) > f(b) ? c : b), s.party.find((c) => !isDown(c)) || s.party[0]);
 const guidance = (s) => s.party.some((c) => c.cls === 'cleric' && !isDown(c));
 
-export function turn(s, d) { s.dir = (s.dir + d + 4) % 4; return []; }
+export function turn(s, d) { s.dir = (s.dir + d + 4) % 4; markExplored(s); return []; }
 
 /** Try to move. rel: 0 forward, 2 back, 1 strafe right, 3 strafe left. Returns events. */
 export function move(s, rel = 0) {

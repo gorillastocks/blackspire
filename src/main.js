@@ -1,5 +1,4 @@
 import './style.css';
-import { Renderer, preloadAll } from './render/scene.js';
 import * as G from './game/game.js';
 import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js';
 import { Combat } from './rules/combat.js';
@@ -77,17 +76,23 @@ const MAPCOL = { '#': null, '.': '#2a2448', D: '#c08040', d: '#6b4a2a', L: '#ff3
 function drawMinimap(cv, big = false) {
   const g = cv.getContext('2d'); g.fillStyle = '#05030b'; g.fillRect(0, 0, cv.width, cv.height);
   if (!S || S.mode !== 'dungeon') { g.fillStyle = '#3b2d6b'; g.font = '14px monospace'; g.fillText('Town', 10, 20); return; }
-  const cs = cv.width / W; const ex = new Set(S.explored[S.level]);
+  // small minimap: 13x13 window centred on the party; big map: whole level
+  const span = big ? W : 13; const cs = cv.width / span;
+  const ox = big ? 0 : S.x - (span >> 1), oy = big ? 0 : S.y - (span >> 1);
+  const ex = new Set(S.explored[S.level]);
   const theme = '#' + getLevel(S.level).def.color.toString(16).padStart(6, '0');
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (!ex.has(`${x},${y}`)) continue; const ch = G.tile(S, x, y);
-    if (ch === '#' || ch === 'S') { g.fillStyle = theme + '55'; g.fillRect(x * cs, y * cs, cs, cs); continue; }
+  for (let sy = 0; sy < span; sy++) for (let sx = 0; sx < span; sx++) {
+    const x = ox + sx, y = oy + sy; const X = sx * cs, Y = sy * cs;
+    if (x < 0 || y < 0 || x >= W || y >= H) continue;
+    if (!ex.has(`${x},${y}`)) { g.strokeStyle = '#1a1430'; g.lineWidth = 1; g.strokeRect(X + 0.5, Y + 0.5, cs - 1, cs - 1); continue; }
+    const ch = G.tile(S, x, y);
+    if (ch === '#' || ch === 'S') { g.fillStyle = theme + '66'; g.fillRect(X, Y, cs, cs); continue; }
     let col = MAPCOL[ch] || '#2a2448'; if (ch === 'B' && S.bossDead[S.level]) col = '#2a2448';
-    g.fillStyle = col; g.fillRect(x * cs + 0.5, y * cs + 0.5, cs - 1, cs - 1);
+    g.fillStyle = col; g.fillRect(X + 0.5, Y + 0.5, cs - 1, cs - 1);
   }
-  const px = (S.x + 0.5) * cs, py = (S.y + 0.5) * cs; const [dx, dy] = DIRS[S.dir];
+  const px = (S.x - ox + 0.5) * cs, py = (S.y - oy + 0.5) * cs; const [dx, dy] = DIRS[S.dir];
   g.fillStyle = '#6dffa8'; g.beginPath(); g.moveTo(px + dx * cs * 0.5, py + dy * cs * 0.5); g.lineTo(px - dy * cs * 0.4 - dx * cs * 0.3, py + dx * cs * 0.4 - dy * cs * 0.3); g.lineTo(px + dy * cs * 0.4 - dx * cs * 0.3, py - dx * cs * 0.4 - dy * cs * 0.3); g.fill();
-  if (big) { g.fillStyle = '#e9e4ff'; g.font = `${Math.max(10, cs * 0.6)}px monospace`; }
+  if (!big) { g.fillStyle = '#9a8fd0'; g.font = '11px monospace'; g.fillText(`${S.x},${S.y}`, 4, cv.height - 5); }
 }
 
 /* ---------- Controls ---------- */
@@ -200,7 +205,7 @@ function showCreate() {
 
 /* ---------- Town ---------- */
 function showTown(sub = null) {
-  S.mode = 'town'; combat = null; setControls(null); R.setMode('combat'); R.clearMonsters(); refresh();
+  S.mode = 'town'; combat = null; endCombatUI(); setControls(null); R.setMode('combat'); R.clearMonsters(); refresh();
   const back = btn('← Back to Town Square', () => showTown());
   const P = (content) => openModal([h('h2', {}, 'Grokhaven'), content, sub ? h('div', { style: 'margin-top:10px' }, back) : null], { closable: false, cls: 'transparent' });
   if (!sub) {
@@ -341,6 +346,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, fast ? ms / 3 : ms));
 async function startCombat(info) {
   if (combat) return;
   closeModal(); busy = true;
+  document.body.classList.add('incombat'); $('#cmenu').innerHTML = '<div class="who dim">Combat begins…</div>';
   const theme = getLevel(S.level).def.color;
   combatInfo = info;
   combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss });
@@ -402,10 +408,16 @@ function renderTargets() {
 }
 function chooseFrom(title, options) {
   return new Promise((resolve) => {
-    const p = openModal([h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => resolve(o), { disabled: o.disabled, class: o.primary ? 'primary' : '' })))], { closable: false, cls: 'combat' });
-    void p; modal._resolve = resolve; modal._options = options;
+    // combat menu docks into the bottom panel (in place of movement controls) so it never covers the log
+    const cm = $('#cmenu'); if (modal.classList.contains('combat')) closeModal();
+    document.body.classList.add('incombat');
+    const done = (o) => { modal._options = null; cm.innerHTML = ''; cm.append(h('div', { class: 'who dim' }, '…')); resolve(o); };
+    cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: o.primary ? 'primary' : '' })))));
+    cm.scrollTop = 0; requestAnimationFrame(() => { const l = $('#log'); l.scrollTop = l.scrollHeight; });
+    modal._resolve = done; modal._options = options;
   });
 }
+function endCombatUI() { document.body.classList.remove('incombat'); $('#cmenu').innerHTML = ''; modal._options = null; }
 function combatKey(e) {
   const n = parseInt(e.key, 10); if (!modal._options) return;
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
@@ -477,7 +489,7 @@ async function endCombat() {
   const st = combat.state; const info = combatInfo;
   if (st === 'won') { sfx('victory'); say(banter(S.party, 'victory', {}, 0.8)); }
   const ev = G.afterCombat(S, combat, info);
-  combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal();
+  combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI();
   if (st === 'lost') { handle(ev); return; }
   R.setMode('dungeon');
   if (info.boss) await rebuild();
@@ -491,16 +503,19 @@ function autosave() { if (!S) return; try { localStorage.setItem(G.SAVE_KEY, G.s
 async function loadGame() {
   const raw = localStorage.getItem(G.SAVE_KEY); if (!raw) { log('No saved game.', 'bad'); return; }
   try { S = G.deserialize(raw); } catch { log('Save is corrupted.', 'bad'); return; }
-  combat = null; closeModal(); log('Game loaded.', 'sys');
+  combat = null; endCombatUI(); closeModal(); log('Game loaded.', 'sys');
   if (S.mode === 'dungeon') await startDungeon(); else showTown();
 }
 
 /* ---------- Boot ---------- */
 async function boot() {
+  log('Loading the 3D engine…', 'dim');
+  const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
   R = new Renderer($('#view'));
   window.__gw = { get state() { return S; }, get combat() { return combat; }, R, G, startCombat };
   log('Loading monsters…', 'dim');
-  await preloadAll();
+  await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
+  preloadAll(); // everything else streams in the background (and loads on demand)
   log('GrokWizard ready. Press New Game!', 'sys');
   showTitle();
 }

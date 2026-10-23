@@ -20,13 +20,22 @@ test('smoke: title → create → town → dungeon → combat → sheet, no cons
   await page.evaluate(() => { const m = document.querySelector('#modal'); if (m && !m.classList.contains('hidden') && !window.__gw.combat) { m.className = 'hidden'; m.innerHTML = ''; } });
   await page.waitForTimeout(1500); await shot('04-dungeon');
   // force an encounter with colorful monsters
-  await page.evaluate(() => { if (!window.__gw.combat) window.__gw.startCombat({ groups: [{ key: 'giantToad', count: 1 }, { key: 'giantWasp', count: 1 }, { key: 'giantWolfSpider', count: 1 }] }); });
+  await page.evaluate(() => { if (!window.__gw.combat) window.__gw.startCombat({ groups: [{ key: 'giantWasp', count: 2 }, { key: 'giantWolfSpider', count: 1 }] }); });
   await page.waitForSelector('.combatmenu', { timeout: 60000 });
   await page.waitForTimeout(1500); await shot('05-combat');
+  // the wasp model must actually be in the arena with a sane size
+  const wasp = await page.evaluate(() => { const vs = [...window.__gw.R.monsterObjs.values()]; return { n: vs.length, scale: Math.min(...vs.map((v) => v.o.scale.x)), y: vs.map((v) => v.o.position.y) }; });
+  expect(wasp.n === 3 && Number.isFinite(wasp.scale) && wasp.scale > 0.01 && wasp.y.every(Number.isFinite), JSON.stringify(wasp)).toBeTruthy();
+  // the combat menu must not cover the combat log
+  const lb = await page.locator('#log').boundingBox(); const mb = await page.locator('#cmenu').boundingBox();
+  expect(lb && mb).toBeTruthy();
+  const overlap = !(mb.x >= lb.x + lb.width - 1 || mb.x + mb.width <= lb.x + 1 || mb.y >= lb.y + lb.height - 1 || mb.y + mb.height <= lb.y + 1);
+  expect(overlap, `menu ${JSON.stringify(mb)} log ${JSON.stringify(lb)}`).toBe(false);
+  expect(lb.height).toBeGreaterThan(40);
   // pick first action (attack/shoot) for the hero, then auto-battle
-  await page.click('.combatmenu button:has-text("Fast")');
-  await page.waitForSelector('.combatmenu', { timeout: 60000 }).catch(() => {});
-  const auto = page.locator('.combatmenu button:has-text("Auto-battle")'); if (await auto.count()) await auto.first().click();
+  await page.click('#cmenu .combatmenu button:has-text("Fast")');
+  await page.waitForSelector('#cmenu .combatmenu', { timeout: 60000 }).catch(() => {});
+  const auto = page.locator('#cmenu .combatmenu button:has-text("Auto-battle")'); if (await auto.count()) await auto.first().click();
   await page.waitForFunction(() => !window.__gw.combat, null, { timeout: 120000 });
   await page.waitForTimeout(1000); await shot('06-after-combat');
   await page.evaluate(() => { const m = document.querySelector('#modal'); m.className = 'hidden'; });

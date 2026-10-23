@@ -1,22 +1,24 @@
 // Three.js renderer: neon-wireframe-era dungeon in modern PBR 3D, plus a combat arena with animated glTF monsters.
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, TorusGeometry, Vector2, Vector3, WebGLRenderer } from 'three';
+const THREE = { ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, TorusGeometry, Vector2, Vector3, WebGLRenderer };
+// three.js addons are lazy-loaded (separate chunks) so the first paint only needs three core.
+let SkeletonUtils = null;
+let loaderP = null;
+function getLoader() {
+  if (!loaderP) loaderP = Promise.all([import('three/examples/jsm/loaders/GLTFLoader.js'), import('three/examples/jsm/utils/SkeletonUtils.js'), import('three/examples/jsm/libs/meshopt_decoder.module.js')])
+    .then(([{ GLTFLoader }, SU, { MeshoptDecoder }]) => { SkeletonUtils = SU; const l = new GLTFLoader(); l.setMeshoptDecoder(MeshoptDecoder); return l; });
+  return loaderP;
+}
 import { W, H, DIRS } from '../dungeon/levels.js';
 import { MONSTERS } from '../rules/data.js';
 
 const CELL = 2, WALL_H = 2.6;
-const loader = new GLTFLoader();
 const gltfCache = {};
 export function loadModel(name) {
-  if (!gltfCache[name]) gltfCache[name] = new Promise((res) => loader.load(`models/${name}.glb`, res, undefined, (e) => { console.warn('model load failed', name, e?.message); res(null); }));
+  if (!gltfCache[name]) gltfCache[name] = getLoader().then((loader) => new Promise((res) => loader.load(`models/${name}.glb`, res, undefined, (e) => { console.warn('model load failed', name, e?.message); res(null); })));
   return gltfCache[name];
 }
+export function preloadSome(keys) { return Promise.all(keys.map((k) => loadModel(MONSTERS[k]?.model || k))); }
 export function preloadAll() { const names = new Set([...Object.values(MONSTERS).map((m) => m.model), 'Chest', 'Torch_wall']); return Promise.all([...names].map(loadModel)); }
 
 function canvasTex(w, h, draw, repeat = 1) {
@@ -44,9 +46,8 @@ export class Renderer {
     r.outputColorSpace = THREE.SRGBColorSpace; r.shadowMap.enabled = false;
     container.appendChild(r.domElement);
     this.clock = new THREE.Clock(); this.mixers = [];
-    const pm = new THREE.PMREMGenerator(r); this.envTex = pm.fromScene(new RoomEnvironment(), 0.04).texture;
     // Dungeon scene
-    this.scene = new THREE.Scene(); this.scene.environment = this.envTex; this.scene.environmentIntensity = 0.25;
+    this.scene = new THREE.Scene(); this.scene.environmentIntensity = 0.25;
     this.camera = new THREE.PerspectiveCamera(72, 1, 0.05, 60);
     this.scene.add(this.camera);
     this.torch = new THREE.PointLight(0xffb36b, 30, 14, 1.6); this.torch.position.set(0.25, 0.2, 0.1); this.camera.add(this.torch);
@@ -57,24 +58,33 @@ export class Renderer {
     this.ceilMat = new THREE.MeshStandardMaterial({ map: stoneTex(), roughness: 0.95, color: 0x5a5470 });
     this.dust = this.makeDust(); this.scene.add(this.dust);
     // Arena scene for combat
-    this.arena = new THREE.Scene(); this.arena.environment = this.envTex; this.arena.environmentIntensity = 0.6;
+    this.arena = new THREE.Scene(); this.arena.environmentIntensity = 0.6;
     this.arenaCam = new THREE.PerspectiveCamera(50, 1, 0.1, 100); this.arenaCam.position.set(0, 2.1, 5.2); this.arenaCam.lookAt(0, 1.3, -2);
     this.buildArena();
     // Post-processing
-    this.composer = new EffectComposer(r);
-    this.renderPass = new RenderPass(this.scene, this.camera); this.composer.addPass(this.renderPass);
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.65, 0.45, 0.85); this.composer.addPass(this.bloom);
-    this.composer.addPass(new OutputPass());
+    this.composer = null; this.ready = this.initPost();
     this.mode = 'dungeon'; this.monsterObjs = new Map(); this.fx = [];
     this.camPos = new THREE.Vector3(); this.camYaw = 0; this.targetPos = new THREE.Vector3(); this.targetYaw = 0;
     window.addEventListener('resize', () => this.resize()); this.resize();
     const loop = () => { this.raf = requestAnimationFrame(loop); this.update(); }; loop();
   }
+  async initPost() {
+    const [{ EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }, { RoomEnvironment }] = await Promise.all([
+      import('three/examples/jsm/postprocessing/EffectComposer.js'), import('three/examples/jsm/postprocessing/RenderPass.js'),
+      import('three/examples/jsm/postprocessing/UnrealBloomPass.js'), import('three/examples/jsm/postprocessing/OutputPass.js'),
+      import('three/examples/jsm/environments/RoomEnvironment.js')]);
+    const r = this.renderer; const pm = new THREE.PMREMGenerator(r); this.envTex = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose();
+    this.scene.environment = this.envTex; this.arena.environment = this.envTex;
+    const c = new EffectComposer(r);
+    this.renderPass = new RenderPass(this.scene, this.camera); c.addPass(this.renderPass);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.65, 0.45, 0.85); c.addPass(this.bloom);
+    c.addPass(new OutputPass()); this.composer = c; this.setMode(this.mode); this.resize();
+  }
   resize() {
     const w = this.container.clientWidth || 1, h = this.container.clientHeight || 1;
-    this.renderer.setSize(w, h, false); this.composer.setSize(w, h);
+    this.renderer.setSize(w, h, false); this.composer?.setSize(w, h);
     for (const c of [this.camera, this.arenaCam]) { c.aspect = w / h; c.updateProjectionMatrix(); }
-    this.arenaCam.fov = w / h < 0.9 ? 68 : 50; this.arenaCam.updateProjectionMatrix();
+    this.arenaCam.fov = Math.min(72, Math.max(50, 50 * 1.45 / (w / h))); // keep the whole monster line in frame on narrow views this.arenaCam.updateProjectionMatrix();
   }
   makeDust() {
     const g = new THREE.BufferGeometry(); const n = 400; const p = new Float32Array(n * 3);
@@ -214,14 +224,19 @@ export class Renderer {
       const o = SkeletonUtils.clone(g.scene);
       const mats = [];
       o.traverse((ch) => { if (ch.isMesh) { ch.material = ch.material.clone(); ch.frustumCulled = false; if (T.tint) ch.material.color.lerp(new THREE.Color(T.tint), 0.55); ch.material.roughness = Math.min(ch.material.roughness ?? 0.6, 0.55); ch.material.metalness = Math.max(ch.material.metalness ?? 0, 0.08); ch.material.envMapIntensity = 1; ch.material.emissive = ch.material.color.clone().multiplyScalar(0.08); mats.push(ch.material); } });
-      const fit = () => { o.updateMatrixWorld(true); o.traverse((ch) => { if (ch.isSkinnedMesh) { ch.skeleton.update(); ch.computeBoundingBox(); } }); };
-      fit(); const box = new THREE.Box3().setFromObject(o); const size = box.getSize(new THREE.Vector3());
+      const measure = () => { // robust box: skips NaN verts (some skinned GLBs have zero-weight verts)
+        o.updateMatrixWorld(true); const bb = new THREE.Box3(); const v = new THREE.Vector3();
+        o.traverse((ch) => { if (!ch.isMesh) return; if (ch.isSkinnedMesh) ch.skeleton.update(); const pos = ch.geometry.attributes.position; const step = Math.max(1, Math.floor(pos.count / 2000));
+          for (let k = 0; k < pos.count; k += step) { if (ch.isSkinnedMesh) ch.getVertexPosition(k, v); else v.fromBufferAttribute(pos, k); v.applyMatrix4(ch.matrixWorld); if (Number.isFinite(v.x + v.y + v.z)) bb.expandByPoint(v); }
+          ch.boundingBox = null; ch.boundingSphere = null; });
+        return bb; };
+      const box = measure(); const size = box.getSize(new THREE.Vector3());
       const target = T.size * crowd * (n === 1 ? 0.95 : 0.85);
       const sc = target / Math.max(size.y, size.x * 0.6, size.z * 0.5); o.scale.setScalar(sc);
       const holder = new THREE.Group(); holder.add(o);
       const x = n === 1 ? 0 : -width / 2 + (width * i) / (n - 1); const z = -2 - (i % 2) * 0.8 - (T.boss ? 1 : 0);
       holder.position.set(x, T.flying ? 0.9 : 0, z);
-      fit(); const box2 = new THREE.Box3().setFromObject(o); o.position.y -= box2.min.y; // feet on ground
+      const box2 = measure(); o.position.y -= box2.min.y; // feet on ground
       holder.lookAt(this.arenaCam.position.x * 0.3, holder.position.y, this.arenaCam.position.z);
       this.monsterGroup.add(holder);
       const mixer = new THREE.AnimationMixer(o); this.mixers.push(mixer);
@@ -252,7 +267,7 @@ export class Renderer {
     const p = v.holder.position.clone(); p.y += v.height * 0.9; p.project(this.arenaCam);
     return { x: (p.x * 0.5 + 0.5) * 100, y: (-p.y * 0.5 + 0.5) * 100 };
   }
-  setMode(mode) { this.mode = mode; this.renderPass.scene = mode === 'combat' ? this.arena : this.scene; this.renderPass.camera = mode === 'combat' ? this.arenaCam : this.camera; this.bloom.strength = mode === 'combat' ? 0.7 : 0.85; }
+  setMode(mode) { this.mode = mode; if (!this.composer) return; this.renderPass.scene = mode === 'combat' ? this.arena : this.scene; this.renderPass.camera = mode === 'combat' ? this.arenaCam : this.camera; this.bloom.strength = mode === 'combat' ? 0.7 : 0.85; }
 
   update() {
     const dt = Math.min(0.05, this.clock.getDelta()); const t = this.clock.elapsedTime;
@@ -281,6 +296,6 @@ export class Renderer {
       for (const f of this.fx) { f.t += dt; f.m.scale.setScalar(1 + f.t * 8); f.m.material.opacity = Math.max(0, 1 - f.t * 2); f.l.intensity = Math.max(0, 40 * (1 - f.t * 2)); }
       this.fx = this.fx.filter((f) => { if (f.t > 0.6) { this.arena.remove(f.m, f.l); return false; } return true; });
     }
-    this.composer.render(dt);
+    if (this.composer) this.composer.render(dt); else this.renderer.render(this.mode === 'combat' ? this.arena : this.scene, this.mode === 'combat' ? this.arenaCam : this.camera);
   }
 }
