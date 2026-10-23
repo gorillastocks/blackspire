@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#0b0716" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="GrokWizard — a Wizardry-style first-person dungeon crawler built on the D&D 5e SRD." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>GrokWizard</title>
+</head>
+<body>
+  <div id="app">
+    <div id="view"><div id="floaters"></div><div id="hud"></div><div id="banter"></div><div id="targets"></div><div id="flash"></div></div>
+    <aside id="side"><canvas id="minimap" width="210" height="210"></canvas><div id="party"></div></aside>
+    <section id="bottom"><div id="log"></div><div id="controls"></div></section>
+    <div id="modal" class="hidden"></div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
