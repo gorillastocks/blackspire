@@ -1,7 +1,7 @@
 // Core game state & exploration logic (DOM-free, so it can be unit tested and simulated).
 import { getLevel, DIRS, W, H, tileOrdinal, LEVEL_DEFS } from '../dungeon/levels.js';
 import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor } from '../rules/character.js';
-import { ITEMS, WEAPONS, ARMOR, CLASSES } from '../rules/data.js';
+import { ITEMS, WEAPONS, ARMOR, CLASSES, XP_LEVELS } from '../rules/data.js';
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './companions.js';
 
@@ -17,12 +17,63 @@ export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base =
   party.sort((a, b) => order[a.cls] - order[b.cls]);
   if (!party.slice(0, 2).includes(hero) && hero.cls !== 'wizard') { /* hero rogue goes 3rd; ok */ }
   return {
-    version: 1, party, gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
+    version: 1, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
     mode: 'town', level: 0, x: 1, y: 1, dir: 1, mods: [{}, {}, {}], explored: [[], [], []], maxDepth: 0,
     bossDead: [false, false, false], victory: false, steps: 0, sinceEncounter: 0, keys: [], playTime: 0,
   };
 }
-export function heroOf(s) { return s.party.find((c) => !c.companion); }
+export const isHero = (c) => !c.companion && !c.recruit;
+export function heroOf(s) { return s.party.find(isHero) || s.party[0]; }
+
+/* ---------- Recruiting / roster ---------- */
+export const MAX_PARTY = 4;
+export function partyLevel(s) {
+  const a = [...s.party, ...(s.roster || [])].filter((c) => !c.dead);
+  return Math.max(1, a.length ? Math.round(a.reduce((t, c) => t + c.level, 0) / a.length) : 1);
+}
+function raiseTo(c, L) {
+  while (c.level < L) { c.xp = Math.max(c.xp, XP_LEVELS[c.level]); if (!levelUp(c).length) break; }
+  c.xp = Math.max(c.xp, XP_LEVELS[c.level - 1] || 0); longRest(c); c.hp = c.maxHp;
+}
+function place(s, c) {
+  s.roster ||= [];
+  if (s.party.length < MAX_PARTY) { s.party.push(c); return `${c.name} joins the party!`; }
+  s.roster.push(c); return `The party is full — ${c.name} waits in the roster at the Tavern.`;
+}
+export function availableCompanions(s) {
+  const used = new Set([...s.party, ...(s.roster || [])].map((c) => c.companion).filter(Boolean));
+  return Object.keys(COMPANIONS).filter((k) => !used.has(k));
+}
+export function recruitCompanion(s, key) {
+  const C = COMPANIONS[key]; if (!C || !availableCompanions(s).includes(key)) return [{ log: 'They are not available.', cls: 'dim' }];
+  const c = createCharacter({ name: C.short, race: C.race, cls: C.cls, base: C.base, companion: key, skills: C.skills });
+  raiseTo(c, partyLevel(s));
+  const out = [{ log: place(s, c), cls: 'good' }];
+  if (C.lines.recruit) out.push({ banter: { who: C.short, color: C.color, text: pick(C.lines.recruit) } });
+  return out;
+}
+export function createRecruit(s, { name, race, cls, base }) {
+  const c = createCharacter({ name: (name || 'Recruit').trim().slice(0, 18) || 'Recruit', race, cls, base: base || assignByPriority(cls) });
+  c.recruit = true; c.ai = true; raiseTo(c, partyLevel(s));
+  return [{ log: place(s, c), cls: 'good' }];
+}
+export function dismiss(s, c) {
+  if (isHero(c)) return [{ log: 'You cannot dismiss yourself.', cls: 'dim' }];
+  const i = s.party.indexOf(c); if (i < 0) return [];
+  s.party.splice(i, 1); (s.roster ||= []).push(c);
+  return [{ log: `${c.name} ${c.dead ? 'is carried to' : 'heads to'} the Tavern roster.`, cls: 'sys' }];
+}
+export function rejoin(s, c) {
+  const i = (s.roster || []).indexOf(c); if (i < 0) return [];
+  if (s.party.length >= MAX_PARTY) return [{ log: 'The party is full (4). Dismiss someone first.', cls: 'bad' }];
+  s.roster.splice(i, 1); s.party.push(c); return [{ log: `${c.name} rejoins the party.`, cls: 'good' }];
+}
+/** Characters who just became able to level up (one-time notice). */
+export function newlyReady(s) {
+  const out = [];
+  for (const c of s.party) { const r = canLevelUp(c); if (r && !c.readyNotified) { c.readyNotified = true; out.push(c); } else if (!r) c.readyNotified = false; }
+  return out;
+}
 
 /* ---------- Tiles ---------- */
 export function tile(s, x, y, lvl = s.level) {
@@ -320,6 +371,7 @@ export function deserialize(str) {
   const s = JSON.parse(str); if (!s || !Array.isArray(s.party) || !s.party.length) throw new Error('bad save');
   // normalise older / odd saves so they always land somewhere playable (never inside a town sub-screen or a stale combat)
   if (s.mode !== 'dungeon') s.mode = 'town';
+  s.roster = Array.isArray(s.roster) ? s.roster : [];
   s.mods ||= [{}, {}, {}]; s.explored ||= [[], [], []]; s.bossDead ||= [false, false, false];
   s.level = Math.min(2, Math.max(0, s.level | 0)); s.maxDepth = Math.max(s.maxDepth | 0, s.level);
   if (s.mode === 'dungeon' && !(Number.isInteger(s.x) && Number.isInteger(s.y))) s.mode = 'town';

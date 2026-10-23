@@ -4,7 +4,7 @@ import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js
 import { Combat } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
 import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive } from './rules/character.js';
-import { COMPANIONS, banter } from './game/companions.js';
+import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx } from './sfx.js';
 
 const $ = (s) => document.querySelector(s);
@@ -48,7 +48,7 @@ function flashRed() { const f = $('#flash'); f.style.opacity = 1; setTimeout(() 
 
 /* ---------- Party panel ---------- */
 function portrait(c) {
-  const col = c.companion ? COMPANIONS[c.companion].color : '#6dffa8';
+  const col = c.companion ? COMPANIONS[c.companion].color : c.recruit ? '#ffd0a0' : '#6dffa8';
   return h('span', { class: 'portrait', style: `background:${col}` }, c.name[0]);
 }
 function renderParty() {
@@ -60,16 +60,21 @@ function renderParty() {
     const conds = Object.keys(c.conditions).filter((k) => !['mageArmor', 'aid'].includes(k));
     const card = h('div', { class: `card ${cur === c ? 'active' : ''} ${c.dead ? 'dead' : c.hp <= 0 ? 'down' : ''}`, id: 'card-' + c.id, onclick: () => showSheet(c) },
       h('div', { class: 'nm' }, h('span', {}, `${i < 2 ? '⚔' : '🏹'} ${c.name}`),
-        c.companion ? h('button', { class: `aitog small ${c.ai ? 'on' : ''}`, title: 'Toggle AI / player control', onclick: (e) => { e.stopPropagation(); c.ai = !c.ai; log(`${c.name} is now ${c.ai ? 'AI-controlled' : 'player-controlled'}.`, 'sys'); refresh(); if (combat) combatLoop(); } }, c.ai ? 'AI' : 'YOU') : h('span', { class: 'tag' }, 'YOU')),
+        !G.isHero(c) ? h('button', { class: `aitog small ${c.ai ? 'on' : ''}`, title: 'Toggle AI / player control', onclick: (e) => { e.stopPropagation(); c.ai = !c.ai; log(`${c.name} is now ${c.ai ? 'AI-controlled' : 'player-controlled'}.`, 'sys'); refresh(); if (combat) combatLoop(); } }, c.ai ? 'AI' : 'YOU') : h('span', { class: 'tag' }, 'YOU')),
       h('div', { class: 'sub' }, `L${c.level} ${RACES[c.race].name} ${CLASSES[c.cls].name} · AC ${armorClass(c)}`),
       h('div', { class: `bar hp ${pct < 30 ? 'low' : ''}` }, h('i', { style: `width:${pct}%` })),
       h('div', { class: 'row', style: 'justify-content:space-between;font-size:11px' }, h('span', {}, c.dead ? 'DEAD' : c.hp <= 0 ? `DOWN ${c.deathSaves.s}✓${c.deathSaves.f}✗` : `HP ${c.hp}/${c.maxHp}`),
         c.slots.length ? h('span', { class: 'slots' }, 'Slots ' + c.slots.map((n, l) => `${l + 1}:${n}`).join(' ')) : null),
-      conds.length ? h('div', { class: 'conds' }, conds.join(', ')) : null);
+      conds.length ? h('div', { class: 'conds' }, conds.join(', ')) : null,
+      canLevelUp(c) ? h('div', { class: 'lvlready', title: 'Ready to level up! Visit the Training Grounds' }, '⬆ Ready to level up!', h('span', { class: 'lvlwhere' }, ' Visit the Training Grounds')) : null);
     el.append(card);
   });
 }
-function refresh() { renderParty(); drawMinimap($('#minimap')); renderHud(); }
+function checkReady() {
+  if (!S) return;
+  for (const c of G.newlyReady(S)) { log(`⬆ ${c.name} is ready to level up! Visit the Training Grounds in town.`, 'crit'); say({ who: c.name, color: '#ffd34d', text: 'Ready to level up! Visit the Training Grounds.' }); }
+}
+function refresh() { checkReady(); renderParty(); drawMinimap($('#minimap')); renderHud(); }
 function renderHud() {
   const el = $('#hud'); if (!S) { el.innerHTML = ''; return; }
   if (S.mode === 'dungeon') el.innerHTML = `<span>${getLevel(S.level).def.name}</span><span>⌖ ${S.x},${S.y} · ${DIR_NAMES[S.dir]} · ${S.gold} gp</span>`;
@@ -179,13 +184,14 @@ function showCredits() {
   <p>3D monster, chest and torch models by <b>Quaternius</b> (quaternius.com), CC0 1.0 — via the Easy Enemy, Animated Dinosaur, Ultimate Animated Animal, Platformer Game Kit, Cyberpunk Game Kit and Modular Dungeon packs.</p>
   <p>Built with three.js (MIT) and Vite (MIT). Game code MIT.</p>` })]);
 }
-function showCreate() {
-  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = 'Ser Grokalot', method = 'array';
+function showCreate(asRecruit = false) {
+  const recruit = asRecruit === true;
+  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Grokalot', method = 'array';
   const draw = () => {
     const p = openModal([], { closable: true });
     const R_ = RACES[race], C = CLASSES[cls];
     const final = {}; for (const a of ABILITIES) final[a] = base[a] + (R_.bonus[a] || 0);
-    p.append(h('h2', {}, 'Create Your Adventurer'),
+    p.append(h('h2', {}, recruit ? 'Create a New Recruit' : 'Create Your Adventurer'), recruit ? h('p', { class: 'hint' }, `Recruits join at level ${G.partyLevel(S)} (near your party). If the party is full they wait in the Tavern roster.`) : null,
       h('div', { class: 'cols' },
         h('div', {}, h('h3', {}, 'Name'), h('input', { id: 'cname', value: name, maxlength: 18, oninput: (e) => { name = e.target.value; } }),
           h('h3', {}, 'Race'), h('select', { id: 'crace', onchange: (e) => { race = e.target.value; draw(); } }, Object.entries(RACES).map(([k, r]) => h('option', { value: k, selected: k === race }, r.name))),
@@ -198,9 +204,9 @@ function showCreate() {
             btn('Standard Array', () => { method = 'array'; base = assignByPriority(cls, STANDARD_ARRAY); draw(); }),
             btn('🎲 Roll 4d6 (drop lowest)', () => { method = 'roll'; base = assignByPriority(cls, ABILITIES.map(() => roll4d6())); sfx('dice'); draw(); }, { id: 'btn-roll' })),
           h('p', { class: 'hint' }, 'Scores are placed into your class\'s key abilities automatically.'),
-          h('h3', {}, 'Your Companions'),
-          ...Object.values(COMPANIONS).map((c) => h('p', { class: 'hint' }, h('b', { style: `color:${c.color}` }, c.name + ' — '), c.blurb)))),
-      h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, btn('Begin Adventure ▶', () => {
+          recruit ? null : h('h3', {}, 'Your Companions'),
+          ...(recruit ? [] : COMPANION_KEYS.map((k) => COMPANIONS[k])).map((c) => h('p', { class: 'hint' }, h('b', { style: `color:${c.color}` }, c.name + ' — '), c.blurb)))),
+      h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, recruit ? btn('Recruit ▶', () => { handle(G.createRecruit(S, { name, race, cls, base })); autosave(); showTown(townSub); }, { class: 'primary', id: 'btn-recruit-create' }) : btn('Begin Adventure ▶', () => {
         S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base });
         log(`Welcome to Grokhaven, ${name}. Three oddballs have agreed to join you…`, 'sys');
         for (const c of S.party.filter((c) => c.companion)) say({ who: COMPANIONS[c.companion].short, color: COMPANIONS[c.companion].color, text: COMPANIONS[c.companion].lines.combatStart[0] });
@@ -233,9 +239,16 @@ function showTown(sub = null) {
   if (sub === 'tavern') {
     P([h('h3', {}, 'The Boar & Spoon — your party'), partyOrderList(() => showTown('tavern')),
       h('h3', {}, 'Chatter at the bar'), ...S.party.filter((c) => c.companion).map((c) => h('p', {}, h('b', { style: `color:${COMPANIONS[c.companion].color}` }, c.name + ': '), COMPANIONS[c.companion].blurb)),
-      btn('🗣 Listen in', () => log(G.campDialogue(S), 'lore'))]);
+      btn('🗣 Listen in', () => log(G.campDialogue(S), 'lore')),
+      h('h3', {}, `Roster — waiting at the bar (party ${S.party.length}/4)`),
+      S.roster.length ? h('div', { class: 'menu', id: 'roster' }, S.roster.map((c) => h('div', { class: 'row' }, portrait(c), h('span', { style: 'flex:1' }, `${c.name} — L${c.level} ${CLASSES[c.cls].name}${c.dead ? ' (DEAD — raise at the Temple)' : ''}`),
+        btn('Join party', () => { handle(G.rejoin(S, c)); autosave(); showTown('tavern'); }, { class: 'small', disabled: S.party.length >= 4 })))) : h('p', { class: 'hint' }, 'Nobody is waiting. Dismissed members stay here, so you can bring them back (or raise them at the Temple) later.'),
+      h('h3', {}, `Adventurers for hire (join at level ${G.partyLevel(S)})`),
+      h('div', { class: 'menu', id: 'hire' }, G.availableCompanions(S).map((k) => { const C = COMPANIONS[k]; return h('div', { class: 'hirecard' }, h('p', {}, h('b', { style: `color:${C.color}` }, `${C.name} — ${RACES[C.race].name} ${CLASSES[C.cls].name}: `), C.blurb),
+        btn(`Recruit ${C.short}${S.party.length >= 4 ? ' (to roster)' : ''}`, () => { handle(G.recruitCompanion(S, k)); autosave(); showTown('tavern'); }, { class: 'small', 'data-recruit': k })); })),
+      btn('✍ Create a new recruit (full creator)', () => showCreate(true), { id: 'btn-new-recruit' })]);
   } else if (sub === 'temple') {
-    P([h('h3', {}, 'Temple of Cant — "Healing by donation (mandatory)"'), h('div', { class: 'menu' }, S.party.map((c) => { const cost = G.templeCost(c); return btn(`${c.name}: ${c.dead ? 'Raise Dead' : c.conditions.poisoned ? 'Cure poison' : c.hp < c.maxHp ? 'Heal wounds' : 'Healthy'} ${cost ? `(${cost} gp)` : ''}`, () => { handle(G.templeHeal(S, c)); showTown('temple'); }, { disabled: !cost }); }))]);
+    P([h('h3', {}, 'Temple of Cant — "Healing by donation (mandatory)"'), h('div', { class: 'menu' }, [...S.party, ...S.roster].map((c) => { const cost = G.templeCost(c); return btn(`${c.name}: ${c.dead ? 'Raise Dead' : c.conditions.poisoned ? 'Cure poison' : c.hp < c.maxHp ? 'Heal wounds' : 'Healthy'} ${cost ? `(${cost} gp)` : ''}`, () => { handle(G.templeHeal(S, c)); showTown('temple'); }, { disabled: !cost }); }))]);
   } else if (sub === 'shop') {
     const p = P([]); const body = h('div');
     body.append(h('h3', {}, `Fizzbang's Trading Post — you have ${S.gold} gp`), h('div', { class: 'cols' },
@@ -245,7 +258,8 @@ function showTown(sub = null) {
   } else if (sub === 'train') {
     P([h('h3', {}, 'Training Grounds'), h('div', { class: 'menu' }, S.party.map((c) => h('div', { class: 'row' },
       btn(canLevelUp(c) ? `⬆ Train ${c.name} to level ${c.level + 1}` : `${c.name} — L${c.level} (${c.xp}/${xpForNext(c) === Infinity ? 'max' : xpForNext(c)} XP)`, () => { handle(G.train(S, c)); showTown('train'); }, { disabled: !canLevelUp(c) }),
-      btn('Sheet', () => showSheet(c), { class: 'small' }))))]);
+      btn('Sheet', () => showSheet(c), { class: 'small' })))),
+      btn('✍ Create a new recruit', () => showCreate(true), { id: 'btn-train-recruit' })]);
   } else if (sub === 'edge') {
     P([h('h3', {}, 'Edge of Town'), h('p', { class: 'hint' }, 'The maze entrance yawns before you. The dwarven mine lift can take you to any level you have already reached.'),
       h('div', { class: 'menu' }, btn('Descend the stairs to B1', () => enter(0), { class: 'primary', id: 'btn-enter' }),
@@ -261,8 +275,9 @@ async function rebuild() { if (!S || S.mode !== 'dungeon') return; await R.build
 function partyOrderList(redraw) {
   return h('div', { class: 'menu' }, S.party.map((c, i) => h('div', { class: 'row' }, portrait(c), h('span', { style: 'flex:1' }, `${i + 1}. ${c.name} (${CLASSES[c.cls].name}) ${i < 2 ? '— front row' : '— back row'}`),
     btn('▲', () => { if (i > 0) { [S.party[i - 1], S.party[i]] = [S.party[i], S.party[i - 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === 0 }),
-    btn('▼', () => { if (i < 3) { [S.party[i + 1], S.party[i]] = [S.party[i], S.party[i + 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === 3 }),
-    c.companion ? btn(c.ai ? 'AI' : 'YOU', () => { c.ai = !c.ai; redraw(); refresh(); }, { class: 'small aitog ' + (c.ai ? 'on' : '') }) : null)));
+    btn('▼', () => { if (i < S.party.length - 1) { [S.party[i + 1], S.party[i]] = [S.party[i], S.party[i + 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === S.party.length - 1 }),
+    !G.isHero(c) ? btn(c.ai ? 'AI' : 'YOU', () => { c.ai = !c.ai; redraw(); refresh(); }, { class: 'small aitog ' + (c.ai ? 'on' : '') }) : null,
+    !G.isHero(c) ? btn('Dismiss', () => { handle(G.dismiss(S, c)); autosave(); redraw(); }, { class: 'small dismiss', title: 'Send to the Tavern roster' }) : null)));
 }
 
 /* ---------- Prompts in the dungeon ---------- */
@@ -328,7 +343,8 @@ function showSheet(c) {
   openModal([
     h('div', { class: 'tabs' }, S.party.map((p) => btn(p.name, () => showSheet(p), { class: p === c ? 'on small' : 'small' }))),
     h('h2', {}, `${c.name} — Level ${c.level} ${Rr.name} ${C.name} (${C.sub})`),
-    c.companion ? h('p', { class: 'hint' }, COMPANIONS[c.companion].blurb) : null,
+    canLevelUp(c) ? h('p', { class: 'lvlready sheetready' }, `⬆ Ready to level up to ${c.level + 1}! Visit the Training Grounds in town.`) : null,
+    c.companion ? h('p', { class: 'hint' }, COMPANIONS[c.companion].blurb) : c.recruit ? h('p', { class: 'hint' }, 'A recruit you created at the Training Grounds.') : null,
     h('div', { class: 'abil' }, ABILITIES.map((a) => h('div', { title: ABILITY_NAMES[a] }, h('small', {}, a.toUpperCase()), h('b', {}, c.scores[a]), h('small', {}, fmtMod(mod(c.scores[a])))))),
     h('div', { class: 'cols', style: 'margin-top:10px' },
       h('div', {}, h('table', {}, h('tbody', {},
