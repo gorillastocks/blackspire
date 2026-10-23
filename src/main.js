@@ -22,7 +22,12 @@ let combat = null; let combatInfo = null; let busy = false; let autoBattle = fal
 const modal = $('#modal');
 
 /* ---------- Log & banter ---------- */
-function log(t, cls = '') { const el = $('#log'); el.append(h('div', { class: cls }, t)); while (el.children.length > 200) el.firstChild.remove(); el.scrollTop = el.scrollHeight; }
+function log(t, cls = '') {
+  const el = $('#log'); el.append(h('div', { class: cls }, t)); while (el.children.length > 200) el.firstChild.remove(); el.scrollTop = el.scrollHeight;
+  // while a dialog is open the log is underneath it, so also echo the message inside the dialog itself
+  const out = !modal.classList.contains('hidden') && modal.querySelector('.dlgout');
+  if (out) { out.hidden = false; out.append(h('div', { class: cls }, t)); while (out.children.length > 8) out.firstChild.remove(); out.scrollTop = out.scrollHeight; out.scrollIntoView({ block: "nearest" }); }
+}
 function say(b) {
   if (!b) return; const el = h('div', { class: 'bubble' }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
   $('#banter').append(el); log(`${b.who}: "${b.text}"`, 'lore'); setTimeout(() => el.remove(), 4200);
@@ -136,7 +141,7 @@ $('#view').addEventListener('touchend', (e) => {
 /* ---------- Modal helpers ---------- */
 function openModal(content, { closable = true, cls = '' } = {}) {
   modal.className = cls; modal.innerHTML = ''; modal.dataset.closable = closable ? '1' : '';
-  const p = h('div', { class: 'panel' }, content); modal.append(p);
+  const p = h('div', { class: 'panel' }, content, h('div', { class: 'dlgout', 'aria-live': 'polite', hidden: true })); modal.append(p);
   if (closable) p.prepend(h('div', { class: 'navbar closebar' }, btn('✕ Close', dismissModal, { class: 'small closebtn', 'aria-label': 'Close' })));
   return p;
 }
@@ -516,7 +521,7 @@ async function boot() {
   log('Loading the 3D engine…', 'dim');
   const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
   R = new Renderer($('#view'));
-  window.__gw = { get state() { return S; }, get combat() { return combat; }, R, G, startCombat };
+  window.__gw = { get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
