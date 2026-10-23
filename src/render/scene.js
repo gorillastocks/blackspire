@@ -15,7 +15,12 @@ import { MONSTERS } from '../rules/data.js';
 const CELL = 2, WALL_H = 2.6;
 const gltfCache = {};
 export function loadModel(name) {
-  if (!gltfCache[name]) gltfCache[name] = getLoader().then((loader) => new Promise((res) => loader.load(`models/${name}.glb`, res, undefined, (e) => { console.warn('model load failed', name, e?.message); res(null); })));
+  // retry with backoff: GitHub Pages' CDN occasionally answers 503 right after a deploy
+  const attempt = (loader, n) => new Promise((res) => loader.load(`models/${name}.glb`, res, undefined, (e) => {
+    if (n < 3) setTimeout(() => attempt(loader, n + 1).then(res), 600 * 2 ** n);
+    else { console.warn('model load failed', name, e?.message); res(null); }
+  }));
+  if (!gltfCache[name]) gltfCache[name] = getLoader().then((loader) => attempt(loader, 0));
   return gltfCache[name];
 }
 export function preloadSome(keys) { return Promise.all(keys.map((k) => loadModel(MONSTERS[k]?.model || k))); }
