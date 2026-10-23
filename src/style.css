@@ -105,3 +105,19 @@ body.incombat #bottom { grid-template-columns: 1fr 420px; }
   body.incombat #cmenu { max-height: 52vh; }
   #cmenu .combatmenu button { min-height: 32px; padding: 4px 6px; }
 }
+
+/* sticky nav so Back / Close is always reachable, even on short phone screens */
+.panel > .navbar { position: sticky; top: -14px; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; background: var(--panel); margin: -14px -16px 8px; padding: 10px 16px 8px; border-bottom: 1px solid var(--line); }
+.panel > .navbar h2 { margin: 0; }
+.panel > .closebar { justify-content: flex-end; border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+.backbtn { white-space: nowrap; }
+@media (max-width: 760px), (max-height: 520px) and (orientation: landscape) {
+  .panel > .navbar { top: -10px; margin: -10px -10px 8px; padding: 8px 10px; }
+  .backbtn, .closebtn { min-height: 40px; }
+  #modal { inset: 0; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing: border-box; }
+  #modal .panel { max-height: 100%; box-sizing: border-box; }
+}
+.backbtn, .closebtn { min-height: 32px; }
+/* town screens float over the scene; let taps reach the party sidebar (sheets, AI toggles) around the panel */
+#modal.transparent { pointer-events: none; }
+#modal.transparent .panel { pointer-events: auto; }

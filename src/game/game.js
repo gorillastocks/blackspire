@@ -316,7 +316,15 @@ export function usePotion(s, idx, c) {
 
 /* ---------- Save / Load ---------- */
 export function serialize(s) { return JSON.stringify(s); }
-export function deserialize(str) { const s = JSON.parse(str); if (!s || !s.party) throw new Error('bad save'); return s; }
+export function deserialize(str) {
+  const s = JSON.parse(str); if (!s || !Array.isArray(s.party) || !s.party.length) throw new Error('bad save');
+  // normalise older / odd saves so they always land somewhere playable (never inside a town sub-screen or a stale combat)
+  if (s.mode !== 'dungeon') s.mode = 'town';
+  s.mods ||= [{}, {}, {}]; s.explored ||= [[], [], []]; s.bossDead ||= [false, false, false];
+  s.level = Math.min(2, Math.max(0, s.level | 0)); s.maxDepth = Math.max(s.maxDepth | 0, s.level);
+  if (s.mode === 'dungeon' && !(Number.isInteger(s.x) && Number.isInteger(s.y))) s.mode = 'town';
+  return s;
+}
 export function campDialogue(s) {
   const alive = s.party.filter((c) => c.companion && !c.dead);
   if (!alive.length) return 'The camp is quiet. Too quiet.';

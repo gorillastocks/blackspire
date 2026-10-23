@@ -115,7 +115,7 @@ function doSearch() {
 window.addEventListener('keydown', (e) => {
   if (!S) return;
   if (combat) return combatKey(e);
-  if (!modal.classList.contains('hidden')) { if (e.key === 'Escape' && modal.dataset.closable) closeModal(); return; }
+  if (!modal.classList.contains('hidden')) { if (e.key === 'Escape') { if (modal.dataset.closable) dismissModal(); else if (S.mode === 'town' && townSub) showTown(); } return; }
   if (S.mode !== 'dungeon' || busy) return;
   const k = e.key.toLowerCase();
   const map = { arrowup: () => G.move(S, 0), w: () => G.move(S, 0), arrowdown: () => G.move(S, 2), s: () => G.move(S, 2), arrowleft: () => G.turn(S, -1), a: () => G.turn(S, -1), arrowright: () => G.turn(S, 1), d: () => G.turn(S, 1), q: () => G.move(S, 3), e: () => G.move(S, 1) };
@@ -137,10 +137,12 @@ $('#view').addEventListener('touchend', (e) => {
 function openModal(content, { closable = true, cls = '' } = {}) {
   modal.className = cls; modal.innerHTML = ''; modal.dataset.closable = closable ? '1' : '';
   const p = h('div', { class: 'panel' }, content); modal.append(p);
-  if (closable) p.prepend(h('div', { style: 'float:right' }, btn('✕', closeModal, { class: 'small', 'aria-label': 'Close' })));
+  if (closable) p.prepend(h('div', { class: 'navbar closebar' }, btn('✕ Close', dismissModal, { class: 'small closebtn', 'aria-label': 'Close' })));
   return p;
 }
 function closeModal() { modal.className = 'hidden'; modal.innerHTML = ''; }
+// Closing a dialog (✕ / Esc) must never strand the player: in town, fall back to the town screen they came from.
+function dismissModal() { closeModal(); if (!S) showTitle(); else if (S.mode === 'town' && !combat) showTown(townSub); }
 
 /* ---------- Title & creation ---------- */
 async function showTitle() {
@@ -204,10 +206,12 @@ function showCreate() {
 }
 
 /* ---------- Town ---------- */
+let townSub = null;
 function showTown(sub = null) {
+  townSub = sub;
   S.mode = 'town'; combat = null; endCombatUI(); setControls(null); R.setMode('combat'); R.clearMonsters(); refresh();
-  const back = btn('← Back to Town Square', () => showTown());
-  const P = (content) => openModal([h('h2', {}, 'Grokhaven'), content, sub ? h('div', { style: 'margin-top:10px' }, back) : null], { closable: false, cls: 'transparent' });
+  const back = (where) => btn('← Back to Town Square', () => showTown(), { class: 'backbtn', 'data-back': where });
+  const P = (content) => openModal([h('div', { class: 'navbar' }, h('h2', {}, sub ? `Grokhaven · ${{ tavern: 'Tavern', temple: 'Temple', shop: 'Trading Post', train: 'Training Grounds', edge: 'Edge of Town' }[sub]}` : 'Grokhaven'), sub ? back('top') : null), content, sub ? h('div', { style: 'margin-top:10px' }, back('bottom')) : null], { closable: false, cls: 'transparent' });
   if (!sub) {
     P(h('div', { class: 'menu grid' },
       btn('🍺 The Boar & Spoon Tavern', () => showTown('tavern'), { id: 'btn-tavern' }),
