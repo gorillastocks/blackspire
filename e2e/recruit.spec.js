@@ -69,7 +69,7 @@ test('level-up ready badge on card + sheet, one-time notice, also after combat',
   await openLocation(page, 'Edge of Town'); await page.click('#btn-enter');
   await expect.poll(() => st(page, () => window.__gw.state.mode)).toBe('dungeon');
   const badge = page.locator('#party .lvlready');
-  await expect(badge).toHaveCount(1); await expect(badge.first()).toContainText('Ready to level up! Visit the Training Grounds');
+  await expect(badge).toHaveCount(1); await expect(badge.first()).toContainText('Ready to level up! Make camp or visit the Training Grounds');
   await expectReachable(page, badge.first(), 'level-up badge');
   await auditText(page, '#party .lvlready', P.startsWith('iphone') ? 14 : 12);
   await page.screenshot({ path: `screenshots/levelup-${P}-badge.png` });
@@ -85,5 +85,51 @@ test('level-up ready badge on card + sheet, one-time notice, also after combat',
   const sb = page.locator('#modal .sheetready'); await expect(sb).toBeVisible(); await expectReachable(page, sb, 'sheet badge');
   await auditText(page, '#modal .sheetready', P.startsWith('iphone') ? 16 : 13);
   await page.screenshot({ path: `screenshots/levelup-${P}-sheet.png` });
+  expect(errors, errors.join('\n')).toEqual([]);
+});
+
+test('level up at camp in the dungeon (same logic as Training Grounds), camp buttons click-through', async ({ page }, info) => {
+  const errors = trackErrors(page); const P = info.project.name; const minPx = P.startsWith('iphone') ? 16 : 13;
+  await newGame(page);
+  await openLocation(page, 'Edge of Town'); await page.click('#btn-enter');
+  await expect.poll(() => st(page, () => window.__gw.state.mode)).toBe('dungeon');
+  const wiz = await st(page, () => { const s = window.__gw.state; const w = s.party.find((c) => c.cls === 'wizard'); w.xp = 900; s.party[0].xp = 300; return { id: w.id, hp: w.maxHp, slots: w.maxSlots.length }; });
+  const openCamp = async () => { await page.locator('#controls button', { hasText: 'Camp' }).click(); await expect(page.locator('#modal h2').first()).toContainText('Camp'); };
+  await openCamp();
+  const lv = page.locator('#modal button.levelup'); await expect(lv).toHaveCount(2);
+  await expectReachable(page, lv.first(), 'camp Level Up');
+  await page.locator('#camp-levelup').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `screenshots/camp-levelup-${P}.png` });
+  await auditText(page, '#modal .panel', minPx);
+  // wizard: one level per click (900 XP = enough for 2 → 3)
+  const wb = page.locator(`#modal button[data-levelup="${wiz.id}"]`);
+  await expect(wb).toContainText('to level 2'); await wb.click();
+  let w = await st(page, () => window.__gw.state.party.find((c) => c.cls === 'wizard'));
+  expect(w.level).toBe(2); expect(w.maxHp).toBeGreaterThan(wiz.hp);
+  await expect(page.locator('#modal .dlgout')).toContainText('reaches level 2');
+  await expect(wb).toContainText('to level 3'); await wb.click();
+  w = await st(page, () => window.__gw.state.party.find((c) => c.cls === 'wizard'));
+  expect(w.level).toBe(3); expect(w.maxSlots.length).toBeGreaterThan(wiz.slots);
+  await page.locator('#modal button.levelup').first().click();
+  await expect(page.locator('#modal button.levelup')).toHaveCount(0);
+  await expect(page.locator('#modal .panel')).toContainText('Nobody has enough XP');
+  expect(await st(page, () => window.__gw.state.party[0].level)).toBe(2);
+  await expect(page.locator('#party .lvlready')).toHaveCount(0);
+  await page.screenshot({ path: `screenshots/camp-levelup-${P}-done.png` });
+  // click-through: every camp button leaves a working Close
+  const SKIP = /Load|Rest|✕/; // rests can roll a wandering-monster fight
+  const labels = await page.locator('#modal button:visible').evaluateAll((bs) => bs.map((b) => (b.disabled ? null : b.textContent.trim())));
+  let clicked = 0;
+  for (const label of labels) {
+    if (!label || SKIP.test(label)) continue;
+    if (!(await page.locator('#modal h2', { hasText: 'Camp' }).count())) { if (await st(page, () => !!window.__gw.combat)) break; await openCamp(); }
+    const b = page.locator('#modal button:visible', { hasText: label }).first();
+    if (!(await b.count()) || (await b.isDisabled())) continue;
+    await b.click(); clicked++;
+    if (await st(page, () => !!window.__gw.combat)) break;
+    const close = page.locator('#modal .closebtn:visible');
+    if (await close.count()) { await expectReachable(page, close.first(), `Close after camp "${label}"`); }
+  }
+  expect(clicked).toBeGreaterThan(5);
   expect(errors, errors.join('\n')).toEqual([]);
 });

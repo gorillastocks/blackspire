@@ -155,3 +155,4 @@ body.incombat #log { min-height: 0; }
 .panel .abil small { font-size: 13px; }
 @media (max-width: 700px), (max-height: 520px) and (orientation: landscape) { .panel .abil small { font-size: 16px; } }
 @media (max-width: 700px), (max-height: 520px) and (orientation: landscape) { .lvlready .lvlwhere { display: none; } .lvlready { padding: 2px 6px; } }
+.panel button.levelup { border-color: #ffd34d; }

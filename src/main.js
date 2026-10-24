@@ -66,13 +66,13 @@ function renderParty() {
       h('div', { class: 'row', style: 'justify-content:space-between;font-size:11px' }, h('span', {}, c.dead ? 'DEAD' : c.hp <= 0 ? `DOWN ${c.deathSaves.s}✓${c.deathSaves.f}✗` : `HP ${c.hp}/${c.maxHp}`),
         c.slots.length ? h('span', { class: 'slots' }, 'Slots ' + c.slots.map((n, l) => `${l + 1}:${n}`).join(' ')) : null),
       conds.length ? h('div', { class: 'conds' }, conds.join(', ')) : null,
-      canLevelUp(c) ? h('div', { class: 'lvlready', title: 'Ready to level up! Visit the Training Grounds' }, '⬆ Ready to level up!', h('span', { class: 'lvlwhere' }, ' Visit the Training Grounds')) : null);
+      canLevelUp(c) ? h('div', { class: 'lvlready', title: 'Ready to level up! Make camp or visit the Training Grounds' }, '⬆ Ready to level up!', h('span', { class: 'lvlwhere' }, ' Make camp or visit the Training Grounds')) : null);
     el.append(card);
   });
 }
 function checkReady() {
   if (!S) return;
-  for (const c of G.newlyReady(S)) { log(`⬆ ${c.name} is ready to level up! Visit the Training Grounds in town.`, 'crit'); say({ who: c.name, color: '#ffd34d', text: 'Ready to level up! Visit the Training Grounds.' }); }
+  for (const c of G.newlyReady(S)) { log(`⬆ ${c.name} is ready to level up! Make camp or visit the Training Grounds.`, 'crit'); say({ who: c.name, color: '#ffd34d', text: 'Ready to level up! Make camp or visit the Training Grounds.' }); }
 }
 function refresh() { checkReady(); renderParty(); drawMinimap($('#minimap')); renderHud(); }
 function renderHud() {
@@ -177,7 +177,7 @@ function showHelp() {
   <tr><th>Camp</th><td>C — short/long rest, party talk, reorder, save/load</td></tr>
   <tr><th>Map / Sheet / Items</th><td>M / I / B</td></tr>
   <tr><th>Combat</th><td>Number keys pick menu entries; click monster tags to target. Front two party slots fight in melee; back row uses ranged weapons and spells.</td></tr></table>
-  <p>Companions can be AI- or player-controlled — tap the <b>AI/YOU</b> toggle on their card. Level up at the Training Grounds in town.</p>` })]);
+  <p>Companions can be AI- or player-controlled — tap the <b>AI/YOU</b> toggle on their card. Level up at the Training Grounds in town, or with Level Up in the Camp menu.</p>` })]);
 }
 function showCredits() {
   openModal([h('h2', {}, 'Credits'), h('div', { html: `<p>Rules content from the <b>System Reference Document 5.1</b> by Wizards of the Coast LLC, licensed under <a style="color:#22e6ff" href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">CC-BY-4.0</a>. GrokWizard is unofficial Fan Content and is not affiliated with Wizards of the Coast.</p>
@@ -312,6 +312,10 @@ function showCamp() {
     btn('✨ Cast Mage Armor on wizard', () => { const w = S.party.find((c) => c.cls === 'wizard' && !c.equip.armor && !c.dead && c.slots[0] > 0); if (!w) { log('No wizard with a free slot needs Mage Armor.', 'dim'); return; } w.slots[0]--; w.conditions.mageArmor = true; log(`${w.name} casts Mage Armor (AC ${armorClass(w)}).`, 'spell'); refresh(); }),
     btn('💊 Cleric: Lesser Restoration on poisoned', () => { const c = S.party.find((c) => c.cls === 'cleric' && !isDown(c) && c.slots[1] > 0); const t = S.party.find((x) => x.conditions.poisoned); if (!c || !t) { log('Nobody to cure, or no 2nd-level slot.', 'dim'); return; } c.slots[1]--; delete t.conditions.poisoned; log(`${c.name} cures ${t.name}.`, 'good'); refresh(); }),
     btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }), btn('📂 Load', () => loadGame())),
+  h('h3', { id: 'camp-levelup' }, '⬆ Level Up'),
+  (() => { const ready = S.party.filter((c) => canLevelUp(c)); return ready.length
+    ? h('div', { class: 'menu' }, ready.map((c) => btn(`⬆ Level up ${c.name} to level ${c.level + 1}`, () => { const ev = G.train(S, c); showCamp(); handle(ev); autosave(); }, { class: 'levelup', 'data-levelup': c.id })))
+    : h('p', { class: 'hint' }, 'Nobody has enough XP to level up yet.'); })(),
   h('h3', {}, 'Marching order'), partyOrderList(showCamp)]);
   void p;
 }
@@ -343,7 +347,7 @@ function showSheet(c) {
   openModal([
     h('div', { class: 'tabs' }, S.party.map((p) => btn(p.name, () => showSheet(p), { class: p === c ? 'on small' : 'small' }))),
     h('h2', {}, `${c.name} — Level ${c.level} ${Rr.name} ${C.name} (${C.sub})`),
-    canLevelUp(c) ? h('p', { class: 'lvlready sheetready' }, `⬆ Ready to level up to ${c.level + 1}! Visit the Training Grounds in town.`) : null,
+    canLevelUp(c) ? h('p', { class: 'lvlready sheetready' }, `⬆ Ready to level up to ${c.level + 1}! Make camp (Camp → Level Up) or visit the Training Grounds.`) : null,
     c.companion ? h('p', { class: 'hint' }, COMPANIONS[c.companion].blurb) : c.recruit ? h('p', { class: 'hint' }, 'A recruit you created at the Training Grounds.') : null,
     h('div', { class: 'abil' }, ABILITIES.map((a) => h('div', { title: ABILITY_NAMES[a] }, h('small', {}, a.toUpperCase()), h('b', {}, c.scores[a]), h('small', {}, fmtMod(mod(c.scores[a])))))),
     h('div', { class: 'cols', style: 'margin-top:10px' },
