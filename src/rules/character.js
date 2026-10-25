@@ -45,11 +45,22 @@ export function skillMod(c, s) {
   return m;
 }
 export function passive(c, s) { return 10 + skillMod(c, s); }
+/** Pieces of the Dawn Regalia worn by one character. */
+export function setCount(c) {
+  const e = c.equip || {}; let n = 0;
+  if (e.weapon?.key && ITEMS[e.weapon.key]?.set) n++;
+  if (e.armor?.key && ITEMS[e.armor.key]?.set) n++;
+  if (e.shield === 'sunshardAegis') n++;
+  if (e.helm && ITEMS[e.helm]?.set) n++;
+  if (e.cloak && ITEMS[e.cloak]?.set) n++;
+  return n;
+}
 export function saveMod(c, a) {
   let m = abilityMod(c, a);
   if (CLASSES[c.cls].saves.includes(a)) m += prof(c);
   if (c.equip.ring) m += ITEMS[c.equip.ring].saves || 0;
   if (c.equip.cloak) m += ITEMS[c.equip.cloak].saves || 0;
+  if (setCount(c) >= 5) m += 1;
   return m;
 }
 export function isProficientWeapon(c, wkey) {
@@ -71,8 +82,10 @@ export function armorClass(c) {
     if (c.cls === 'barbarian') ac = Math.max(ac, 10 + dex + abilityMod(c, 'con'));
     if (c.cls === 'monk' && !c.equip.shield) ac = Math.max(ac, 10 + dex + abilityMod(c, 'wis'));
   }
-  if (c.equip.shield && CLASSES[c.cls].armor.includes('shield')) ac += 2;
+  if (c.equip.shield && CLASSES[c.cls].armor.includes('shield')) ac += 2 + (c.equip.shield === 'sunshardAegis' ? 1 : 0);
   if (c.equip.ring) ac += ITEMS[c.equip.ring].ac; if (c.equip.cloak) ac += ITEMS[c.equip.cloak].ac;
+  if (c.equip.helm) ac += ITEMS[c.equip.helm]?.ac || 0;
+  const sc = setCount(c); if (sc >= 5) ac += 2; else if (sc >= 3) ac += 1;
   if (c.conditions.shieldOfFaith) ac += 2;
   if (c.conditions.shieldSpell) ac += 5;
   return ac;
@@ -92,7 +105,7 @@ export function weaponStats(c, slot = 'weapon') {
   if (W.props.includes('versatile') && !c.equip.shield) dmg = { longsword: '1d10', battleaxe: '1d10', warhammer: '1d10', quarterstaff: '1d8', spear: '1d8' }[w.base] || dmg;
   if (monkWpn) { const md = martialDie(c); if (+md.slice(2) > +dmg.split('d')[1]) dmg = md; }
   const bonus = m + (isProficientWeapon(c, w.base) ? prof(c) : 0) + (w.magic || 0) + (ranged && c.cls === 'ranger' && c.level >= 2 ? 2 : 0);
-  return { name: (w.magic ? `${W.name} +${w.magic}` : W.name), bonus, dmg, dmgBonus: m + (w.magic || 0), type: W.type, ranged, finesse };
+  return { name: (w.key && ITEMS[w.key]?.set ? ITEMS[w.key].name : w.magic ? `${W.name} +${w.magic}` : W.name), bonus, dmg, dmgBonus: m + (w.magic || 0), type: W.type, ranged, finesse };
 }
 export function spellMod(c) { const a = CLASSES[c.cls].caster; return a ? abilityMod(c, a) : 0; }
 export function spellDC(c) { return 8 + prof(c) + spellMod(c); }

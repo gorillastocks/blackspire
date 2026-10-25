@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { trackErrors, newGame, expectReachable, auditText } from './helpers.js';
+import { trackErrors, newGame, expectReachable, auditText, skipPrologue } from './helpers.js';
 
 const isPhone = (p) => /iphone/.test(p.name);
 const minPx = (ti) => (isPhone(ti.project) ? 16 : 13);
@@ -8,13 +8,13 @@ const hold = async (page, loc) => { await loc.scrollIntoViewIfNeeded(); const b 
 test('first-run tutorial shows once and can be skipped', async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto('./'); await page.waitForSelector('#btn-new', { timeout: 90000 });
-  await page.click('#btn-new'); await page.click('#btn-begin');
+  await page.click('#btn-new'); await page.click('#btn-begin'); await skipPrologue(page);
   const tip = page.locator('#tip'); await expect(tip).toBeVisible(); await expect(tip).toContainText('1 / 5');
   await expectReachable(page, page.locator('#tip-next'), 'tip Next'); await page.click('#tip-next'); await expect(tip).toContainText('2 / 5');
   await auditText(page, '#tip', 13);
   await page.click('#tip-skip'); await expect(tip).toBeHidden();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('blackspire.settings')).tutorialDone)).toBe(true);
-  await page.reload(); await page.waitForSelector('#btn-new', { timeout: 90000 }); await page.click('#btn-new'); await page.click('#btn-begin');
+  await page.reload(); await page.waitForSelector('#btn-new', { timeout: 90000 }); await page.click('#btn-new'); await page.click('#btn-begin'); await skipPrologue(page);
   await page.waitForTimeout(400); await expect(tip).toBeHidden();
   expect(errors).toEqual([]);
 });

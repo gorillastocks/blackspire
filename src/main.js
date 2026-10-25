@@ -26,6 +26,52 @@ let combat = null; let combatInfo = null; let busy = false; let autoBattle = fal
 const speed = () => BATTLE_SPEEDS[loadSettings().battleSpeed] || BATTLE_SPEEDS.normal;
 function setSpeed(k) { const st = loadSettings(); st.battleSpeed = k; saveSettings(st); }
 const modal = $('#modal');
+const Story = G.Story;
+
+/* ---------- Story dialogue (portraits, line-by-line, choices) ---------- */
+function showDialogue(scene) {
+  return new Promise((resolve) => {
+    const lines = scene.lines || []; let i = 0;
+    const draw = () => {
+      const ln = lines[Math.min(i, lines.length - 1)] || { who: 'narrator', text: '' }; const sp = Story.speaker(ln.who); const last = i >= lines.length - 1;
+      openModal([h('div', { class: 'dialogue' },
+        scene.title ? h('h2', {}, scene.title) : null,
+        h('div', { class: 'dlgrow' }, h('span', { class: 'dlgportrait', style: `border-color:${sp.color}` }, sp.icon || (sp.name || '?')[0]),
+          h('div', { class: 'dlgtext' }, sp.name ? h('b', { style: `color:${sp.color}` }, sp.name) : null, h('p', { class: ln.who === 'narrator' ? 'lore' : '' }, ln.text))),
+        h('div', { class: 'hint' }, `${Math.min(i + 1, lines.length)} / ${lines.length}`),
+        h('div', { class: 'menu' }, last
+          ? (scene.choices?.length ? scene.choices : [{ id: 'ok', label: 'Continue ▶' }]).map((c) => btn(c.label, () => { closeModal(); resolve(c.id); }, { class: 'primary', 'data-choice': c.id, id: 'dlg-next' }))
+          : [btn('Next ▶', () => { i++; draw(); }, { class: 'primary', id: 'dlg-next' }), btn('Skip ⏭', () => { i = lines.length - 1; draw(); }, { class: 'small', id: 'dlg-skip' })]))], { closable: false });
+    };
+    draw();
+  });
+}
+let prologueFight = false;
+async function runPrologue() {
+  const sc = Story.prologueScenes(S);
+  if (await showDialogue(sc.feast) === 'skip') { await afterPrologueFight(); return; }
+  prologueFight = true; S.mode = 'town';
+  startCombat({ groups: Story.PROLOGUE_FIGHT, town: true });
+}
+async function afterPrologueFight() {
+  prologueFight = false;
+  const choice = await showDialogue(Story.prologueScenes(S).abduction);
+  handle(Story.finishPrologue(S, choice)); autosave(); showTown(); startTutorial();
+}
+function showJournal(back) {
+  const qs = Story.questList(S);
+  openModal([h('h2', {}, '📖 Journal'),
+    h('p', { class: 'hint' }, `Moon ${Math.min(5, (S.moon | 0) + 1)} of 5 · Seals broken: ${Story.sealsBroken(S)}/5${Story.empowered(S) ? ' · ⚠ Malthrax is EMPOWERED' : ''}`),
+    h('h3', {}, 'Quests'), h('div', { class: 'menu' }, qs.map((q) => h('p', {}, h('b', {}, `${q.status === 'done' ? '✔' : q.status === 'ready' ? '❗' : '•'} ${q.title || q.id}`), q.progress ? ` (${q.progress})` : '', q.desc ? h('br') : null, q.desc ? h('span', { class: 'hint' }, q.desc) : null))),
+    h('h3', {}, `Elowen's notes (${(S.notes || []).length}/10)`), ...(S.notes || []).map((n) => h('p', { class: 'lore' }, typeof n === 'string' ? n : Story.NOTES[n - 1] || '')),
+    h('h3', {}, 'Entries'), ...(S.journal || []).slice().reverse().map((j) => h('p', { class: 'hint' }, j)),
+    btn('Close', () => (back ? back() : closeModal()), { id: 'btn-journal-close' })], { closable: true });
+}
+function showTownFolk() {
+  openModal([h('h2', {}, 'Emberhollow Folk'), h('div', { class: 'menu' }, Story.TOWNFOLK.map((k) => { const sp = Story.speaker(k);
+    return btn(`${sp.icon} ${sp.name} — ${Story.townfolkStatus(S, k)}`, async () => { const r = Story.talkTo(S, k); await showDialogue({ lines: r.scene.lines }); handle(r.out); autosave(); showTownFolk(); }, { 'data-npc': k }); })),
+    btn('← Back', () => showTown(), { class: 'backbtn' })], { closable: false, cls: 'transparent' });
+}
 
 /* ---------- Log & banter ---------- */
 function log(t, cls = '') {
@@ -46,7 +92,7 @@ function handle(events) {
     if (e.reveal || e.sfx === 'door' || e.sfx === 'chest') rebuild();
     if (e.toTown) { autosave(); showTown(); return; }
     if (e.combat) { startCombat(e.combat); return; }
-    if (e.prompt) prompt(e.prompt);
+    if (e.prompt) prompt(e.prompt, e);
   }
   refresh();
 }
@@ -88,7 +134,7 @@ function renderHud() {
 }
 
 /* ---------- Minimap ---------- */
-const MAPCOL = { '#': null, '.': '#2a2448', D: '#c08040', d: '#6b4a2a', L: '#ff3050', '<': '#80a0ff', '>': '#40ffd0', C: '#ffc040', o: '#665522', T: '#2a2448', t: '#ff3030', K: '#ffd040', E: '#2a2448', B: '#ff2040', M: '#b060ff', F: '#30a0ff', f: '#203040', A: '#ffd040', S: null };
+const MAPCOL = { Q: '#ffd77a', '#': null, '.': '#2a2448', D: '#c08040', d: '#6b4a2a', L: '#ff3050', '<': '#80a0ff', '>': '#40ffd0', C: '#ffc040', o: '#665522', T: '#2a2448', t: '#ff3030', K: '#ffd040', E: '#2a2448', B: '#ff2040', M: '#b060ff', F: '#30a0ff', f: '#203040', A: '#ffd040', S: null };
 function drawMinimap(cv, big = false) {
   const g = cv.getContext('2d'); g.fillStyle = '#05030b'; g.fillRect(0, 0, cv.width, cv.height);
   if (!S || S.mode !== 'dungeon') { g.fillStyle = '#3b2d6b'; g.font = '14px monospace'; g.fillText('Town', 10, 20); return; }
@@ -133,6 +179,7 @@ window.addEventListener('keydown', (e) => {
   if (!S) return;
   if (e.key === 'Escape' && !combat && modal.classList.contains('hidden')) { e.preventDefault(); openMenu(); return; }
   if (combat) return combatKey(e);
+  if (e.key.toLowerCase() === 'j' && modal.classList.contains('hidden') && S.mode === 'dungeon' && !busy) { e.preventDefault(); showJournal(); return; }
   if (!modal.classList.contains('hidden')) { if (e.key === 'Escape') { if (modal.dataset.closable) dismissModal(); else if (S.mode === 'town' && townSub) showTown(); } return; }
   if (S.mode !== 'dungeon' || busy) return;
   const k = e.key.toLowerCase();
@@ -227,7 +274,7 @@ function showCreate(asRecruit = false) {
         S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base }); S.difficulty = diff;
         log(`Welcome to Emberhollow, ${name}. Three oddballs have agreed to join you…`, 'sys');
         for (const c of S.party.filter((c) => c.companion)) say({ who: COMPANIONS[c.companion].short, color: COMPANIONS[c.companion].color, text: COMPANIONS[c.companion].lines.combatStart[0] });
-        showTown(); startTutorial();
+        runPrologue();
       }, { class: 'primary', id: 'btn-begin' })));
   };
   draw();
@@ -244,10 +291,12 @@ function showTown(sub = null) {
   if (!sub) {
     P(h('div', { class: 'menu grid' },
       btn('🍺 The Boar & Spoon Tavern', () => showTown('tavern'), { id: 'btn-tavern' }),
-      btn('🛏 Inn (long rest, 10 gp)', () => { handle(G.innRest(S)); say(banter(S.party, 'rest', {}, 1)); }),
+      btn(S.flags?.freeInn ? '🛏 Inn (long rest, free)' : '🛏 Inn (long rest, 10 gp)', () => { handle(G.innRest(S)); say(banter(S.party, 'rest', {}, 1)); }),
       btn('⛪ Temple of Cant', () => showTown('temple')),
       btn('⚒ Fizzbang\'s Trading Post', () => showTown('shop'), { id: 'btn-shop' }),
       btn('🎯 Training Grounds', () => showTown('train'), { id: 'btn-train' }),
+      btn('🗣 Town Folk (quests)', () => showTownFolk(), { id: 'btn-folk' }),
+      btn('📖 Journal', () => showJournal(() => showTown()), { id: 'btn-journal' }),
       btn('🕳 Edge of Town — Enter the Maze', () => showTown('edge'), { id: 'btn-edge', class: 'primary' }),
       btn('💾 Save Game', () => { autosave(); log('Game saved.', 'sys'); }),
       btn('📂 Load Game', () => loadGame()),
@@ -283,7 +332,7 @@ function showTown(sub = null) {
   } else if (sub === 'edge') {
     P([h('h3', {}, 'Edge of Town'), h('p', { class: 'hint' }, 'The maze entrance yawns before you. The dwarven mine lift can take you to any level you have already reached.'),
       h('div', { class: 'menu' }, btn('Descend the stairs to B1', () => enter(0), { class: 'primary', id: 'btn-enter' }),
-        ...[1, 2].filter((l) => l <= S.maxDepth).map((l) => btn(`Mine lift to ${LEVEL_DEFS[l].name}`, () => enter(l))))]);
+        ...LEVEL_DEFS.map((_, l) => l).filter((l) => l > 0 && l <= S.maxDepth).map((l) => btn(`Mine lift to ${LEVEL_DEFS[l].name}`, () => enter(l))))]);
   }
 }
 function enter(l) { closeModal(); handle(G.enterDungeon(S, l)); startDungeon(); say(banter(S.party, 'stairs', {}, 1)); autosave(); }
@@ -301,7 +350,14 @@ function partyOrderList(redraw) {
 }
 
 /* ---------- Prompts in the dungeon ---------- */
-function prompt(kind) {
+function prompt(kind, e = {}) {
+  if (kind === 'poi') {
+    openModal([h('h2', {}, e.title), h('p', { class: 'lore' }, e.text), h('div', { class: 'menu' }, e.choices.map((c) => btn(c.label, () => {
+      closeModal(); const ev = Story.choosePoi(S, e.poi, c.id, (sk, dc) => G.partyCheck(S, sk, dc));
+      if (ev.consumed) G.setTile(S, S.x, S.y, '.'); handle(ev); rebuild();
+    })))], { closable: false });
+    return;
+  }
   if (kind === 'chest') {
     openModal([h('h2', {}, 'A Treasure Chest'), h('p', { class: 'hint' }, 'It might be trapped. A rogue is best at inspecting and disarming.'),
       h('div', { class: 'menu' }, btn('🔎 Inspect (Investigation)', () => handle(G.inspectChest(S))), btn('🗝 Disarm (Thieves\' Tools)', () => handle(G.disarmChest(S))),
@@ -314,9 +370,10 @@ function prompt(kind) {
     openModal([h('h2', {}, 'A Locked Door'), h('div', { class: 'menu' }, btn('🗝 Pick the lock', () => { closeModal(); handle(G.pickLock(S)); }), btn('💪 Force it (Athletics, noisy)', () => { closeModal(); handle(G.pickLock(S, true)); }), btn('Leave', closeModal))]);
   } else if (kind === 'altar') {
     if (!S.victory) { log('The amulet is sealed while the Tyrant lives.', 'dim'); return; }
+    if (!S.flags.ending) { S.flags.ending = true; autosave(); showDialogue(Story.endingScene(S)).then(() => prompt('altar')); return; }
     sfx('victory');
-    openModal([h('h1', {}, 'VICTORY!'), h('p', {}, `You lift the Dawnstone Amulet from its pedestal. It whispers the answer to everything, then asks if you've tried turning it off and on again.`),
-      h('p', { class: 'lore' }, 'Brambur: "I\'m so sorry, Mr. Rex." · Fizzwick: "Fizzwick will be writing a book. You are in a footnote." · Pip: "Does the amulet come with a spoon? …It IS a spoon? IT\'S A SPOON!"'),
+    openModal([h('h1', {}, 'VICTORY!'), h('p', {}, 'The Blackspire is dark. Princess Elowen is home, and Emberhollow is free. Arise, Knight of the Dawn.'),
+      h('p', { class: 'lore' }, 'Somewhere far below, a sixth seal stirs. And Malthrax\'s staff was never found…'),
       h('p', { class: 'hint' }, `Steps taken: ${S.steps} · Spoons: ${S.spoons} · Party levels: ${S.party.map((c) => c.level).join('/')}`),
       h('div', { class: 'menu' }, btn('Return to town as heroes', () => { S.mode = 'town'; closeModal(); showTown(); }), btn('Keep exploring', closeModal))]);
   }
@@ -419,7 +476,7 @@ async function startCombat(info) {
   document.body.classList.add('incombat'); $('#cmenu').innerHTML = '<div class="who dim">Combat begins…</div>';
   const theme = getLevel(S.level).def.color;
   combatInfo = info;
-  combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss, difficulty: S.difficulty || 'normal' });
+  combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss && !info.town, difficulty: S.difficulty || 'normal', story: info.town ? {} : G.combatOpts(S, info) });
   R.setMode('combat'); sfx('encounter');
   await R.showMonsters(combat.monsters, theme);
   const names = {}; for (const m of combat.monsters) names[m.name] = (names[m.name] || 0) + 1;
@@ -577,11 +634,12 @@ async function endCombat() {
   if (st === 'won') { victoryUntil = Date.now() + 9000; playMusic('victory', true, () => { victoryUntil = 0; syncAudio(); }); say(banter(S.party, 'victory', {}, 0.8)); }
   const ev = G.afterCombat(S, combat, info);
   combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI(); hideCaption();
+  if (info.town) { handle(ev.filter((e) => !e.toTown)); if (st === 'lost') for (const c of S.party) if (!c.dead) c.hp = Math.max(1, c.hp); await afterPrologueFight(); return; }
   if (st === 'lost') { handle(ev); return; }
   R.setMode('dungeon');
   if (info.boss) await rebuild();
   handle(ev);
-  if (S.victory && info.boss) log('Gorvax the Tyrant falls! The Dawnstone Amulet awaits on its altar beyond.', 'crit');
+  if (S.victory && info.boss) log('Gorvax the Tyrant falls! The Blackspire\'s lights go dark. The altar beyond awaits.', 'crit');
   autosave();
 }
 
@@ -713,7 +771,7 @@ function syncAudio() {
   const amb = !S ? null : S.mode === 'dungeon' ? 'dungeon' : 'town';
   ambience(amb);
   if (victoryUntil > Date.now()) return;
-  const track = !S ? 'title' : combat ? (combatInfo?.boss ? 'boss' : 'combat') : S.mode === 'dungeon' ? `dungeon${Math.min(2, S.level | 0)}` : 'town';
+  const track = !S ? 'title' : combat ? (combatInfo?.boss ? 'boss' : 'combat') : S.mode === 'dungeon' ? (getLevel(S.level).def.music || 'dungeon0') : 'town';
   playMusic(track);
 }
 applyAudioSettings();

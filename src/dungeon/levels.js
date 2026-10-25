@@ -1,7 +1,8 @@
 // Seeded, hand-tuned dungeon levels. Tiles:
 // '#' wall, '.' floor, '<' up stairs, '>' down stairs, 'D' door, 'L' locked door, 'S' secret door, 'T' trap,
-// 'C' chest, 'K' key, 'E' fixed encounter, 'B' boss, 'M' message, 'F' healing fountain, 'A' altar (final goal)
+// 'C' chest, 'K' key, 'E' fixed encounter, 'B' boss, 'M' message, 'F' healing fountain, 'A' altar (final goal), 'Q' story point of interest
 import { seeded } from '../rules/dice.js';
+import { LEVEL_POIS } from '../game/story.js';
 
 export const W = 21, H = 21;
 export const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
@@ -9,30 +10,49 @@ export const DIR_NAMES = ['North', 'East', 'South', 'West'];
 
 export const LEVEL_DEFS = [
   {
-    name: 'B1: The Rat-Warrens', seed: 1981, color: 0x22e6ff, fog: 0x050a14, trapDC: 12, secretDC: 12, lockDC: 13, trapDmg: '1d6', trapKind: 'pit', key: 'key1', rooms: 2, loops: 6, secrets: 2,
-    table: [[{ key: 'giantRat', count: [2, 4] }], [{ key: 'giantPoisonousSnake', count: [1, 2] }], [{ key: 'giantFrog', count: [1, 2] }], [{ key: 'wolf', count: [2, 2] }], [{ key: 'giantRat', count: [1, 2] }, { key: 'giantWolfSpider', count: [1, 1] }], [{ key: 'giantWolfSpider', count: [1, 2] }]],
+    name: 'B1: The Rat-Warrens', seed: 1981, music: 'dungeon0', color: 0x22e6ff, fog: 0x050a14, trapDC: 12, secretDC: 12, lockDC: 13, trapDmg: '1d6', trapKind: 'pit', key: 'key1', rooms: 2, loops: 6, secrets: 2,
+    table: [[{ key: 'giantRat', count: [2, 4] }], [{ key: 'giantPoisonousSnake', count: [1, 2] }], [{ key: 'giantFrog', count: [1, 2] }], [{ key: 'wolf', count: [2, 2] }], [{ key: 'giantRat', count: [1, 2] }, { key: 'giantWolfSpider', count: [1, 1] }], [{ key: 'giantWolfSpider', count: [1, 2] }], [{ key: 'cultist', count: [2, 3] }]],
     fixed: [[{ key: 'wolf', count: [3, 3] }], [{ key: 'giantFrog', count: [2, 2] }, { key: 'giantRat', count: [2, 2] }]],
-    boss: [{ key: 'giantSpider', count: [1, 1] }, { key: 'giantWolfSpider', count: [2, 2] }], bossName: 'The Broodmother',
-    messages: ['Scratched into the wall: "THE SPIDER QUEEN HOARDS THE KEY TO THE DEEP. FIND THE RUSTY KEY."', 'A faded mural shows a lizard as big as a cathedral. Someone has drawn a mustache on it.', 'A note: "Pip was here. Took spoon. Not sorry."'],
+    boss: [{ key: 'giantSpider', count: [1, 1] }, { key: 'skarn', count: [1, 1] }], bossName: 'Skarn and the Broodmother',
+    messages: ['Scratched into the wall: "SKARN RIDES THE SPIDER QUEEN. THE RUSTY KEY OPENS HER DEN."', 'A faded mural shows a lizard as big as a cathedral. Someone has drawn a mustache on it.', 'A note: "Pip was here. Took spoon. Not sorry."'],
     loot: { gold: [10, 60], items: ['potionHealing', 'potionHealing', 'antitoxin', 'spoon', 'shortsword1', 'studded1'] },
   },
   {
-    name: 'B2: The Drowned Grotto', seed: 4242, color: 0xff3df0, fog: 0x0c0414, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '2d10', trapKind: 'darts', key: 'key2', rooms: 3, loops: 8, secrets: 2, fountain: true,
-    table: [[{ key: 'giantWasp', count: [2, 3] }], [{ key: 'giantCrab', count: [2, 4] }], [{ key: 'giantToad', count: [1, 2] }], [{ key: 'direWolf', count: [1, 2] }], [{ key: 'flyingSword', count: [2, 3] }], [{ key: 'giantCrab', count: [2, 2] }, { key: 'giantWasp', count: [1, 2] }]],
+    name: 'B2: The Drowned Grotto', seed: 4242, music: 'dungeon1', color: 0xff3df0, fog: 0x0c0414, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '2d10', trapKind: 'darts', key: 'key2', rooms: 3, loops: 8, secrets: 2, fountain: true,
+    table: [[{ key: 'giantWasp', count: [2, 3] }], [{ key: 'giantCrab', count: [2, 4] }], [{ key: 'giantToad', count: [1, 2] }], [{ key: 'direWolf', count: [1, 2] }], [{ key: 'flyingSword', count: [2, 3] }], [{ key: 'giantCrab', count: [2, 2] }, { key: 'giantWasp', count: [1, 2] }], [{ key: 'cultist', count: [3, 4] }]],
     fixed: [[{ key: 'direWolf', count: [2, 2] }, { key: 'wolf', count: [2, 2] }], [{ key: 'giantToad', count: [2, 2] }], [{ key: 'flyingSword', count: [4, 4] }]],
     boss: [{ key: 'ankylosaurus', count: [1, 1] }, { key: 'giantWasp', count: [2, 2] }], bossName: 'Old Clubtail',
     messages: ['Dripping water spells nothing in particular. Brambur apologizes to it anyway.', 'An inscription: "BEYOND THE CORAL DOOR SLEEPS OLD CLUBTAIL. BRING SNACKS."', 'A cracked mirror. Professor Fizzwick spends some time admiring it.'],
     loot: { gold: [40, 160], items: ['potionHealing', 'potionGreater', 'goldSpoon', 'longsword1', 'mace1', 'quarterstaff1', 'chainMail1', 'rapier1'] },
   },
   {
-    name: 'B3: The Thunder-Lizard Vault', seed: 777, color: 0xffb020, fog: 0x140804, trapDC: 15, secretDC: 15, lockDC: 16, trapDmg: '3d10', trapKind: 'darts', key: 'key3', rooms: 3, loops: 10, secrets: 3, fountain: true, final: true,
-    table: [[{ key: 'animatedArmor', count: [1, 2] }], [{ key: 'flyingSword', count: [3, 5] }], [{ key: 'allosaurus', count: [1, 1] }], [{ key: 'direWolf', count: [2, 3] }], [{ key: 'giantWasp', count: [3, 4] }], [{ key: 'animatedArmor', count: [1, 1] }, { key: 'flyingSword', count: [2, 2] }]],
-    fixed: [[{ key: 'triceratops', count: [1, 1] }], [{ key: 'allosaurus', count: [2, 2] }], [{ key: 'animatedArmor', count: [3, 3] }]],
-    boss: [{ key: 'tyrannosaurus', count: [1, 1] }], bossName: 'Gorvax the Tyrant',
-    messages: ['Carved in gold: "HE WHO TAKES THE DAWNSTONE AMULET SHALL KNOW EVERYTHING. ALSO SOME THINGS."', 'Enormous footprints. Fizzwick measures one. "Fizzwick estimates: large."', 'A shrine to a forgotten god of cutlery. Pip weeps openly.'],
-    loot: { gold: [100, 300], items: ['potionGreater', 'potionGreater', 'runcibleSpoon', 'greatsword1', 'plate1', 'ringProtection', 'cloakProtection', 'longbow1'] },
+    name: 'B3: The Glimmerdeep', seed: 3131, color: 0x40ffd0, fog: 0x021410, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '3d8', trapKind: 'pit', key: 'key3', rooms: 3, loops: 9, secrets: 2, fountain: true, music: 'dungeon2',
+    table: [[{ key: 'violetFungus', count: [2, 2] }, { key: 'shrieker', count: [1, 1] }], [{ key: 'ochreJelly', count: [1, 2] }], [{ key: 'darkmantle', count: [2, 3] }], [{ key: 'giantCentipede', count: [3, 5] }], [{ key: 'gelatinousCube', count: [1, 1] }], [{ key: 'darkmantle', count: [1, 2] }, { key: 'giantCentipede', count: [2, 2] }]],
+    fixed: [[{ key: 'gelatinousCube', count: [1, 1] }, { key: 'ochreJelly', count: [1, 1] }], [{ key: 'violetFungus', count: [3, 3] }, { key: 'shrieker', count: [2, 2] }], [{ key: 'darkmantle', count: [4, 4] }]],
+    boss: [{ key: 'glasshide', count: [1, 1] }, { key: 'darkmantle', count: [2, 2] }], bossName: 'Glasshide the Basilisk',
+    messages: ['The crystals here show your reflection a half-second late. Fizzwick waves at his. It waves back early.', 'Scratched in a crystal: "DO NOT LOOK THE LIZARD IN THE EYE. USE A MIRROR. — a statue, probably"', 'A circle of mushrooms. Grumsh steps in it and refuses to say what he saw.'],
+    loot: { gold: [80, 220], items: ['potionGreater', 'potionStoneFlesh', 'goldSpoon', 'greatsword1', 'chainMail1', 'longbow1', 'rapier1', 'cloakProtection'] },
+  },
+  {
+    name: 'B4: The Ashforge', seed: 5150, color: 0xff5020, fog: 0x160400, trapDC: 15, secretDC: 15, lockDC: 16, trapDmg: '3d10', trapKind: 'darts', key: 'key4', rooms: 3, loops: 10, secrets: 2, fountain: true, music: 'dungeon3',
+    table: [[{ key: 'magmin', count: [3, 4] }], [{ key: 'hellHound', count: [1, 2] }], [{ key: 'gargoyle', count: [2, 2] }], [{ key: 'animatedArmor', count: [2, 3] }], [{ key: 'minotaurSkeleton', count: [1, 1] }, { key: 'magmin', count: [2, 2] }], [{ key: 'cultFanatic', count: [2, 2] }, { key: 'cultist', count: [2, 2] }]],
+    fixed: [[{ key: 'hellHound', count: [2, 2] }], [{ key: 'minotaurSkeleton', count: [2, 2] }], [{ key: 'cultFanatic', count: [3, 3] }]],
+    boss: [{ key: 'brakk', count: [1, 1] }, { key: 'cindermaw', count: [1, 1] }], bossName: 'Forgemaster Brakk and Cindermaw',
+    messages: ['An anvil, still warm, with a smith\'s name scratched on it: "VARR".', 'A forge-mural: dwarves, a chimera, and a very small Brakk hiding behind it.', 'A sign: "BRAKK\'S FORGE. NO REFUNDS. NO DWARVES. NO CHIMERA-PETTING."'],
+    loot: { gold: [120, 300], items: ['potionGreater', 'potionGreater', 'plate1', 'greatsword1', 'ringProtection', 'longsword1', 'studded1'] },
+  },
+  {
+    name: 'B5: The Thunder-Lizard Vault', seed: 777, color: 0xb040ff, fog: 0x0c0414, trapDC: 16, secretDC: 15, lockDC: 17, trapDmg: '4d10', trapKind: 'darts', key: 'key5', rooms: 3, loops: 10, secrets: 3, fountain: true, final: true, music: 'dungeon4',
+    table: [[{ key: 'animatedArmor', count: [2, 3] }], [{ key: 'allosaurus', count: [1, 2] }], [{ key: 'triceratops', count: [1, 1] }], [{ key: 'hellHound', count: [2, 2] }], [{ key: 'cultFanatic', count: [2, 3] }], [{ key: 'minotaurSkeleton', count: [1, 2] }, { key: 'animatedArmor', count: [1, 1] }]],
+    fixed: [[{ key: 'triceratops', count: [1, 1] }, { key: 'allosaurus', count: [1, 1] }], [{ key: 'allosaurus', count: [3, 3] }], [{ key: 'animatedArmor', count: [4, 4] }]],
+    boss: [{ key: 'malthrax', count: [1, 1] }, { key: 'animatedArmor', count: [2, 2] }], bossName: 'Malthrax, the Dread Sovereign of Blackspire',
+    phase2: [{ key: 'tyrannosaurus', count: [1, 1] }],
+    messages: ['Carved in gold: "HE WHO TAKES THE DAWNSTONE AMULET SHALL HOLD THE FIVE SEALS."', 'Enormous footprints. Fizzwick measures one. "Fizzwick estimates: large."', 'A shrine to a forgotten god of cutlery. Pip weeps openly.'],
+    loot: { gold: [150, 400], items: ['potionGreater', 'potionGreater', 'runcibleSpoon', 'greatsword1', 'plate1', 'ringProtection', 'cloakProtection', 'longbow1'] },
   },
 ];
+// Deeper floors: the party is level 5–9 by now, so every wandering group brings one more monster.
+for (const d of LEVEL_DEFS.slice(2)) for (const enc of d.table) enc[0].count = enc[0].count.map((n) => n + 1);
 
 function carve(rng) {
   const g = Array.from({ length: H }, () => Array(W).fill('#'));
@@ -133,6 +153,16 @@ export function generateLevel(idx) {
   for (let i = 0; i < 5 && ti < sh.length; i++, ti++) { const [x, y] = sh[ti]; g[y][x] = 'T'; }
   for (let i = 0; i < def.messages.length && ti < sh.length; i++, ti++) { const [x, y] = sh[ti]; g[y][x] = 'M'; }
   if (def.fountain && !g.some((r) => r.includes('F')) && ti < sh.length) { const [x, y] = sh[ti++]; g[y][x] = 'F'; }
+  // Story points of interest ('Q'), placed last so earlier layout stays identical for old saves
+  const nPoi = (LEVEL_POIS[idx] || []).length;
+  if (nPoi) {
+    const near = (x, y) => Math.abs(x - 1) + Math.abs(y - 1) < 3;
+    const cands = [...sh.slice(ti).filter(([x, y]) => g[y][x] === '.')];
+    const extra = [];
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) if (g[y][x] === '.' && !chainSet.has(`${x},${y}`) && !near(x, y) && !cands.some(([a, b]) => a === x && b === y)) extra.push([x, y]);
+    const pool = [...cands, ...extra.sort(() => rng() - 0.5)];
+    for (let i = 0; i < nPoi && i < pool.length; i++) { const [x, y] = pool[i]; g[y][x] = 'Q'; }
+  }
   // Assign indices for messages/fixed encounters (in scan order)
   const tiles = g.map((r) => r.join(''));
   return { idx, def, tiles, start: [1, 1, 1] };

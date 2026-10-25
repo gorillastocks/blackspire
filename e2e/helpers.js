@@ -24,7 +24,7 @@ export const townSquare = (page) => page.locator('#btn-tavern');
 export async function newGame(page) {
   await page.goto('./');
   await page.waitForSelector('#btn-new', { timeout: 90000 });
-  await page.click('#btn-new'); await page.click('#btn-begin');
+  await page.click('#btn-new'); await page.click('#btn-begin'); await skipPrologue(page);
   await expect(townSquare(page)).toBeVisible();
   const skip = page.locator('#tip-skip'); if (await skip.isVisible()) await skip.click();
   await page.evaluate(() => { window.__gw.state.gold = 5000; });
@@ -80,4 +80,10 @@ export async function auditText(page, selector, minPx) {
     return out;
   }, { selector, minPx });
   expect(problems, problems.join('\n')).toEqual([]);
+}
+
+/** Fast-forward the Harvest Feast prologue (skips the tutorial fight). */
+export async function skipPrologue(page) {
+  await page.click('#dlg-skip'); await page.click('[data-choice="skip"]');
+  await page.click('#dlg-skip'); await page.click('[data-choice="vow"]');
 }

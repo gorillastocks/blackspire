@@ -40,6 +40,8 @@ export const TRACKS = {
   dungeon0:{ bpm: 70, root: 45, scale: [0, 2, 3, 5, 7, 8, 10], bars: [0, 0, 5, 4], lead: [null, 4, null, 3, null, 2, null, null], lw: 'sine', pad: 'triangle', drums: 0, padVol: 0.06 },
   dungeon1:{ bpm: 64, root: 43, scale: [0, 1, 3, 5, 7, 8, 10], bars: [0, 1, 0, 6], lead: [null, null, 7, 8, null, 7, null, 4], lw: 'sine', pad: 'sawtooth', drums: 0, padVol: 0.045 },
   dungeon2:{ bpm: 58, root: 40, scale: [0, 1, 3, 4, 6, 8, 10], bars: [0, 1, 4, 1], lead: [7, null, null, 8, null, null, 4, null], lw: 'triangle', pad: 'sawtooth', drums: 0, padVol: 0.05 },
+  dungeon3:{ bpm: 70, root: 45, scale: [0, 2, 3, 6, 7, 8, 11], bars: [0, 4, 3, 1], lead: [null, 9, null, 7, 8, null, 4, null], lw: 'sine', pad: 'triangle', drums: 0, padVol: 0.05 },
+  dungeon4:{ bpm: 84, root: 38, scale: [0, 1, 4, 5, 7, 8, 10], bars: [0, 1, 5, 4], lead: [7, 8, null, 7, 4, null, 2, 1], lw: 'square', pad: 'sawtooth', drums: 1, padVol: 0.06 },
   combat:  { bpm: 148, root: 45, scale: [0, 2, 3, 5, 7, 8, 10], bars: [0, 0, 5, 6, 0, 0, 3, 4], lead: [7, 7, 9, 7, 10, 9, 7, 4], lw: 'square', pad: 'sawtooth', drums: 2, padVol: 0.03, bassEighths: true },
   boss:    { bpm: 160, root: 40, scale: [0, 1, 3, 5, 6, 8, 10], bars: [0, 1, 0, 4, 0, 1, 5, 4], lead: [7, 8, 7, 4, 7, 8, 11, 10], lw: 'sawtooth', pad: 'sawtooth', drums: 3, padVol: 0.035, bassEighths: true },
   victory: { bpm: 132, root: 60, scale: [0, 2, 4, 5, 7, 9, 11], bars: [0, 3, 4, 0], lead: [0, 2, 4, 7, 4, 7, 9, 11], lw: 'square', pad: 'triangle', drums: 1, padVol: 0.04, once: true },

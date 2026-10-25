@@ -4,7 +4,7 @@ import { roll, d20, die, pick, rand } from './dice.js';
 import { narrateAttack, line as narr } from './narrate.js';
 import {
   mod, abilityMod, saveMod, armorClass, weaponStats, spellDC, spellAttack, spellMod, sneakDice, cantripDice, attacksPerAction,
-  critRange, prof, isDown, canAct, heal, hasTrait, skillMod, knownSpells, rageDamage, inspirationDie, unarmedStats,
+  critRange, prof, isDown, canAct, heal, hasTrait, skillMod, knownSpells, rageDamage, inspirationDie, unarmedStats, setCount,
 } from './character.js';
 const BPS = ['bludgeoning', 'piercing', 'slashing'];
 
@@ -29,18 +29,19 @@ const monsterSave = (m, ab) => mod(m.T.stats[ab]);
 export class Combat {
   /** Change difficulty mid-fight: affects damage from now on (monster HP was set when the fight began). */
   setDifficulty(k) { this.diff = DIFFICULTY[k] || DIFFICULTY.normal; }
-  constructor(party, groups, { inventory = [], canFlee = true, boss = false, difficulty = 'normal' } = {}) {
-    this.party = party; this.inventory = inventory; this.canFlee = canFlee; this.boss = boss;
+  constructor(party, groups, { inventory = [], canFlee = true, boss = false, difficulty = 'normal', story = null } = {}) {
+    this.party = party; this.inventory = inventory; this.canFlee = canFlee; this.boss = boss; this.story = story || {};
     this.diff = DIFFICULTY[difficulty] || DIFFICULTY.normal;
     this.monsters = [];
-    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp)); this.monsters.push(m); }
+    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1))); this.monsters.push(m); }
     this.log = []; this.events = []; this.round = 0; this.state = 'running'; this.turnIdx = -1; this.xp = 0; this.gold = 0;
     for (const c of party) { c.reaction = true; for (const k of ['dodging', 'hidden', 'raging', 'reckless', 'invisible', 'sacredWeapon']) delete c.conditions[k]; c.side = 'party'; if (c.tempHp == null) c.tempHp = 0; }
     // Initiative: d20 + Dex
-    const all = [...party.filter((c) => !c.dead), ...this.monsters].map((who) => ({ who, init: d20() + (who.side === 'party' ? abilityMod(who, 'dex') : monsterSave(who, 'dex')) + rand() * 0.01 }));
+    const all = [...party.filter((c) => !c.dead), ...this.monsters].map((who) => ({ who, init: d20() + (who.side === 'party' ? abilityMod(who, 'dex') + (this.story.initBonus || 0) : monsterSave(who, 'dex')) + rand() * 0.01 }));
     all.sort((a, b) => b.init - a.init);
     this.order = all.map((a) => a.who);
     this.say(`Initiative: ${all.map((a) => `${a.who.name} ${Math.floor(a.init)}`).join(', ')}`);
+    this.storyStart();
     this.nextTurn();
   }
   say(t, cls = '') { this.log.push({ t, cls }); }
@@ -48,7 +49,7 @@ export class Combat {
   /** Big centered action caption for the UI (flavor text + short mechanical result). */
   caption(text, sub = '', tone = '') { this.emit({ type: 'caption', text, sub, tone }); }
   drain() { const l = this.log, e = this.events; this.log = []; this.events = []; return { log: l, events: e }; }
-  livingMonsters() { return this.monsters.filter((m) => m.hp > 0); }
+  livingMonsters() { return this.monsters.filter((m) => m.hp > 0 && !m.ally); }
   awakeMonsters() { return this.livingMonsters().filter((m) => !m.conditions.unconscious); }
   conscious() { return this.party.filter((c) => !isDown(c)); }
   frontRow() { return this.party.filter((c) => !isDown(c)).slice(0, 2); }
@@ -84,7 +85,7 @@ export class Combat {
     if (this.checkEnd()) return;
     for (let guard = 0; guard < 100; guard++) {
       this.turnIdx++;
-      if (this.turnIdx >= this.order.length) { this.turnIdx = 0; this.round++; this.say(`— Round ${this.round + 1} —`, 'dim'); }
+      if (this.turnIdx >= this.order.length) { this.turnIdx = 0; this.round++; this.say(`— Round ${this.round + 1} —`, 'dim'); this.storyRound(); if (this.checkEnd()) return; }
       const c = this.current();
       if (!c) continue;
       if (c.side === 'monster' && c.hp <= 0) continue;
@@ -156,7 +157,7 @@ export class Combat {
     }
     // Party member
     const R = target.race;
-    const resist = (R === 'hillDwarf' && type === 'poison') || ((R === 'dragonborn' || R === 'tiefling') && type === 'fire');
+    const resist = (R === 'hillDwarf' && type === 'poison') || ((R === 'dragonborn' || R === 'tiefling') && type === 'fire') || (type === 'fire' && target.equip?.cloak && ITEMS[target.equip.cloak]?.resist === 'fire');
     if (resist || (target.conditions.raging && BPS.includes(type))) amt = Math.floor(amt / 2);
     if (target.dead) return 0;
     if (target.tempHp > 0 && target.hp > 0) { const ab = Math.min(target.tempHp, amt); target.tempHp -= ab; amt -= ab; if (ab) this.say(`${target.name}'s temporary HP absorbs ${ab}.`, 'dim'); if (amt <= 0) return 0; }
@@ -289,6 +290,8 @@ export class Combat {
       if (c.res.breath) acts.push({ id: 'breath', label: 'Breath Weapon (fire)' });
       if (this.inventory.some((k) => ITEMS[k]?.kind === 'potion')) acts.push({ id: 'item', label: 'Use Item…' });
       if (c.conditions.restrained) acts.push({ id: 'escape', label: 'Break Free (Athletics)' });
+      if (this.story.staff && !this.staffBroken && this.monsters.some((m) => m.key === 'malthrax' && m.hp > 0)) acts.push({ id: 'strikeStaff', label: `⚡ Strike Malthrax's Staff (AC ${this.story.staff.ac})` });
+      if (this.story.collar && !this.collarBroken && front && this.monsters.some((m) => m.key === 'cindermaw' && m.hp > 0)) acts.push({ id: 'breakCollar', label: '⛓ Break Cindermaw\'s Collar (Athletics DC 15)' });
       acts.push({ id: 'dodge', label: 'Dodge' });
       if (this.canFlee && !this.boss) acts.push({ id: 'flee', label: 'Run Away!' });
     }
@@ -364,6 +367,8 @@ export class Combat {
       }
       case 'sacredWeapon': { t.action = 0; c.res.sacredWeapon = 0; const b = Math.max(1, abilityMod(c, 'cha')); c.conditions.sacredWeapon = { bonus: b }; this.say(`${c.name}'s weapon blazes with holy light (+${b} to hit).`, 'spell'); this.caption(`${c.name} raises their blade, and it bursts into sacred radiance!`, `Sacred Weapon: +${b} to attack rolls`, 'spell'); break; }
       case 'dodge': t.action = 0; c.conditions.dodging = true; this.say(`${c.name} takes the Dodge action.`); this.caption(`${c.name} raises their guard, ready to dodge.`, 'Dodge: attacks against have disadvantage', ''); break;
+      case 'strikeStaff': t.action = 0; this.strikeStaff(c); break;
+      case 'breakCollar': t.action = 0; this.breakCollar(c); break;
       case 'escape': {
         t.action = 0; const r = d20() + Math.max(skillMod(c, 'athletics'), skillMod(c, 'acrobatics'));
         if (r >= (c.conditions.restrained?.dc || 12)) { delete c.conditions.restrained; this.say(`${c.name} breaks free! (${r})`); } else this.say(`${c.name} struggles in vain. (${r})`);
@@ -424,6 +429,7 @@ export class Combat {
       if (c.cls === 'paladin' && !ranged && c.level >= 2 && (smite || (c.ai && this.wantsSmite(c, tg, crit)))) {
         const l = this.lowestSlot(c, 1); if (l) { c.slots[l - 1]--; const n = Math.min(5, 1 + l + (tg.T && ['undead', 'fiend'].includes(tg.T.type) ? 1 : 0)); parts.push(`${n}d8`); labels.push('Divine Smite'); this.emit({ type: 'spell', who: c, spell: 'smite' }); }
       }
+      if (setCount(c) >= 5) { parts.push('1d6'); labels.push('Dawn Regalia'); }
       if (!parts.length) return null;
       const dice = {}; for (const p of parts) { const [n, f] = p.split('d'); dice[f] = (dice[f] || 0) + +n; }
       return { dmg: Object.entries(dice).map(([f, n]) => `${n}d${f}`).join('+'), label: labels.join(' +') };
@@ -540,9 +546,82 @@ export class Combat {
     if (c.side === 'monster') this.monsterTurn(c); else { this.aiTurn(c); this.aiBonusAfter(c); }
     if (this.state === 'running' && this.current() === c && !this.turn.done) this.endTurn();
   }
+  monsterSpecial(m) {
+    const S = m.T.special; const dcAdd = this.story.empowered && m.T.boss ? 1 : 0;
+    if (S.kind === 'gaze') {
+      const tg = pick(this.conscious());
+      const mirror = this.party.find((p) => !isDown(p) && p.equip?.shield === 'sunshardAegis');
+      if (mirror) {
+        const d = roll('4d6'); this.say(`${m.name} fixes its petrifying gaze — but ${mirror.name} raises the Sunshard Aegis! The gaze reflects back: ${d} damage and ${m.name} stiffens into stone!`, 'good');
+        this.caption(`${mirror.name} turns the Sunshard Aegis like a mirror!`, `${m.name} is caught in its own gaze`, 'good'); this.damage(m, d, 'force', mirror);
+        if (m.hp > 0) m.conditions.paralyzed = { dc: 13 }; return;
+      }
+      this.emit({ type: 'monsterAttack', who: m, tgt: tg });
+      if (this.save(tg, S.save, S.dc + dcAdd)) { this.say(`${tg.name} averts their eyes from ${m.name}'s gaze.`, 'dim'); this.caption(`${m.name}'s eyes flash — ${tg.name} looks away in time!`, 'Saved', 'miss'); }
+      else { tg.conditions.restrained = { dc: 14, src: m.id, stone: true }; this.say(`${tg.name} begins turning to stone (restrained)! A Potion of Stone-to-Flesh or Athletics DC 14 breaks it.`, 'bad'); this.caption(`${m.name}'s gaze turns ${tg.name}'s legs to stone!`, 'Petrifying', 'bad'); this.emit({ type: 'cond', who: tg, cond: 'restrained' }); }
+      return;
+    }
+    if (S.kind === 'blast') {
+      if (m.key === 'malthrax' && this.story.counter && !this.countered) {
+        const fz = this.party.find((p) => p.companion === 'fizzwick' && !isDown(p));
+        if (fz) { this.countered = true; this.say(`${fz.name}: "COUNTERSPELL! Page forty-two!" Malthrax's ${S.name} fizzles out.`, 'good'); this.caption(`${fz.name} counterspells Malthrax!`, `${S.name} fizzles`, 'good'); return; }
+      }
+      const targets = S.single ? [pick(this.conscious())] : this.conscious();
+      this.say(`${m.name} ${S.text || 'uses ' + S.name}${S.single ? ' ' + targets[0].name : ''}!`, 'bad'); this.caption(`${m.name} ${S.text || 'uses ' + S.name}${S.single ? ' ' + targets[0].name : ''}!`, S.name, 'bad');
+      this.emit({ type: 'monsterAttack', who: m, tgt: targets[0] });
+      for (const tg of targets) {
+        if (!tg || isDown(tg)) continue; const ok = this.save(tg, S.save, S.dc + dcAdd); let d = roll(S.dmg); if (ok) d = S.half ? Math.floor(d / 2) : 0;
+        if (d > 0) { this.say(`${tg.name} ${ok ? 'partly resists' : 'takes the full blast'}: ${d} ${S.type}.`, ok ? '' : 'bad'); this.damage(tg, d, S.type, m); }
+        else this.say(`${tg.name} shrugs it off.`, 'dim');
+        if (!ok && S.cond && tg.hp > 0) tg.conditions[S.cond] = S.cond === 'poisoned' ? { rounds: 2 } : true;
+        if (this.checkEnd()) return;
+      }
+    }
+  }
+  /** Story set-pieces at the start of a fight. */
+  storyStart() {
+    const st = this.story; if (!st) return;
+    const live = () => this.party.filter((p) => !isDown(p));
+    if (st.bless) { for (const p of live()) p.conditions.blessed = true; this.say(st.bless + ' (the party is Blessed)', 'spell'); }
+    if (st.warhorn) { for (const p of live()) p.conditions.blessed = true; const g = this.monsters[0]; if (g) g.conditions.frightened = { dc: 15 }; this.say('You sound the Warden\'s Warhorn! Emberhollow\'s bells answer from far above. The party is Blessed and Gorvax recoils, frightened.', 'crit'); this.caption('You sound the Warden\'s Warhorn!', 'Party Blessed · Gorvax frightened', 'good'); }
+    if (st.crystals) { const g = this.monsters[0]; if (g) { const d = roll(`${st.crystals * 2}d10`); this.say(`The dawn-light from ${st.crystals} shattered crystal pylon${st.crystals > 1 ? 's' : ''} erupts from the floor, searing Gorvax for ${d} radiant!`, 'good'); this.damage(g, d, 'radiant', null); } }
+    if (st.smiths) { const g = this.monsters[0]; if (g) { g.conditions.restrained = { dc: 18 }; this.say('Dobbin\'s smiths burst in and throw forge-chains over Gorvax — the Tyrant is restrained!', 'good'); } }
+    if (st.staff) { this.staffHits = 0; this.say(`Malthrax's staff crackles — it anchors Elowen's chains. Strike the staff (AC ${st.staff.ac}) to free her!`, 'sys'); }
+    if (st.collar) this.say('Cindermaw strains against a spiked iron collar. Brakk holds the chain. A strong hand could break it.', 'sys');
+    if (st.elowen) { this.guest = true; this.say('Princess Elowen stands with you, hands glowing with dawn-light.', 'good'); }
+  }
+  storyRound() {
+    if (this.guest) { const p = this.party.filter((x) => !x.dead).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]; if (p && p.hp < p.maxHp) { const h = heal(p, roll('2d8+4')); this.say(`Elowen calls down the dawn on ${p.name}: +${h} HP.`, 'good'); this.emit({ type: 'heal', who: p, amt: h }); } }
+    if (this.story.guards) { const m = this.pickEnemy(); if (m) { const d = roll('1d8+2'); this.say(`A town guard from Rowan's patrol stabs ${m.name} for ${d}.`, 'good'); this.damage(m, d, 'piercing', null); } }
+  }
+  strikeStaff(c) {
+    const st = this.story.staff; const w = c.equip.weapon && this.inFront(c) ? weaponStats(c, 'weapon') : c.equip.ranged ? weaponStats(c, 'ranged') : null;
+    const bonus = w ? w.bonus : spellAttack(c); const r = d20() + bonus;
+    this.emit({ type: 'attack', who: c, tgt: this.monsters.find((m) => m.key === 'malthrax') });
+    if (r >= st.ac) { this.staffHits = (this.staffHits || 0) + 1; this.say(`${c.name} strikes the Sovereign's staff! (${r} vs AC ${st.ac}) ${this.staffHits}/${st.hitsNeeded}`, 'good'); }
+    else { this.say(`${c.name} swings at the staff and misses. (${r} vs AC ${st.ac})`, 'dim'); this.caption(`${c.name} lunges for the staff — Malthrax jerks it away!`, 'Miss', 'miss'); return; }
+    if (this.staffHits >= st.hitsNeeded) {
+      this.staffBroken = true; this.guest = true; const mx = this.monsters.find((m) => m.key === 'malthrax'); if (mx) { mx.ac -= 3; mx.conditions.prone = true; }
+      this.say('CRACK! The staff shatters. Elowen\'s chains fall away — "About time!" She joins you as a healer. Malthrax staggers (AC −3).', 'crit');
+      this.caption(`${c.name} shatters the Sovereign's staff!`, 'Elowen is free!', 'crit');
+    } else this.caption(`${c.name} strikes the staff — it cracks!`, `${this.staffHits}/${st.hitsNeeded}`, 'good');
+  }
+  breakCollar(c) {
+    const cm = this.monsters.find((m) => m.key === 'cindermaw' && m.hp > 0); if (!cm) return;
+    const r = d20() + Math.max(skillMod(c, 'athletics'), skillMod(c, 'sleightOfHand'));
+    if (r >= 15) { cm.ally = true; this.collarBroken = true; this.say(`${c.name} wrenches Cindermaw's collar apart! (${r}) The chimera roars — and turns on Brakk.`, 'crit'); this.caption(`${c.name} breaks Cindermaw's collar!`, 'The chimera turns on Brakk', 'crit'); }
+    else { this.say(`${c.name} heaves at the collar but it holds. (${r} vs 15)`, 'dim'); this.caption(`${c.name} grabs for the collar — it holds!`, `${r} vs DC 15`, 'miss'); }
+  }
   monsterTurn(m) {
     const T = m.T; this.turn.action = 0;
+    if (m.ally) { // a freed monster turns on its old master
+      const foe = this.livingMonsters().sort((a, b) => (b.T.lieutenant ? 1 : 0) - (a.T.lieutenant ? 1 : 0))[0]; if (!foe) return;
+      for (const A of T.attacks.slice(0, 2)) { if (foe.hp <= 0) break; const d = roll(A.dmg); this.say(`${m.name} savages ${foe.name} with its ${A.name.toLowerCase()} for ${d}!`, 'good'); this.damage(foe, d, A.type, m); }
+      this.caption(`${m.name} turns on ${foe.name}!`, 'Freed from the collar', 'good'); this.checkEnd(); return;
+    }
+    if (T.shriek) { const tg = pick(this.conscious()); if (tg) { tg.conditions.mocked = true; this.say(`${m.name} SHRIEKS! ${tg.name} is rattled (disadvantage on the next attack).`, 'bad'); this.caption(`${m.name} lets out a piercing shriek!`, `${tg.name} rattled`, 'bad'); } return; }
     const targets = this.conscious(); if (!targets.length) return;
+    if (T.special && T.special.kind && m.specialReady && rand() < 0.6 && !(m.key === 'malthrax' && this.staffBroken && rand() < 0.5)) { m.specialReady = false; this.monsterSpecial(m); return; }
     const front = this.frontRow();
     const choose = () => { const live = this.conscious(); const f = this.frontRow(); const pool = T.flying || !f.length || rand() < 0.15 ? live : f; return pick(pool); };
     if (T.special && m.specialReady && rand() < 0.6) {
@@ -575,6 +654,9 @@ export class Combat {
     this.lastAi = { who: c.id, style };
     const go = (id, o) => { if (this.state === 'running' && this.current() === c) this.act(c, id, o); };
     const cast = (k, o = {}) => go('cast', { spell: k, ...o });
+    if (c.conditions.restrained?.stone && this.inventory.includes('potionStoneFlesh')) return go('item', { item: 'potionStoneFlesh', target: c });
+    if (t.action && this.story.staff && !this.staffBroken && this.monsters.some((m) => m.key === 'malthrax' && m.hp > 0) && rand() < (this.inFront(c) ? 0.6 : 0.35)) return go('strikeStaff');
+    if (t.action && this.story.collar && !this.collarBroken && this.inFront(c) && this.monsters.some((m) => m.key === 'cindermaw' && m.hp > 0) && rand() < 0.5) return go('breakCollar');
     // Bonus actions first
     if (c.cls === 'fighter' && c.res.secondWind && c.hp < c.maxHp * 0.45) go('secondWind');
     if (c.cls === 'barbarian' && c.res.rage > 0 && !c.conditions.raging && t.bonus && (hard || c.res.rage > 2) && this.inFront(c)) go('rage');

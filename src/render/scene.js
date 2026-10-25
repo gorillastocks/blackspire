@@ -177,6 +177,9 @@ export class Renderer {
         const key = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.04, 8, 16), glow(0xffd040, 3)); add(key, 1.0); this.animated.push({ obj: key, spin: 2, bob: true });
       } else if (ch === 'M') {
         const rune = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.3, 5), glow(0xb060ff, 2.5)); rune.rotation.x = -Math.PI / 2; add(rune, 0.03); this.animated.push({ obj: rune, spin: 0.6 });
+      } else if (ch === 'Q') {
+        const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16), glow(0xffd77a, 3.5)); add(orb, 1.1); this.animated.push({ obj: orb, spin: 1.2, bob: true });
+        const l = new THREE.PointLight(0xffd77a, 3, 4, 2); add(l, 1.1);
       } else if (ch === 't') {
         const xg = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.12), glow(0xff3030, 1.5)); xg.rotation.set(-Math.PI / 2, 0, Math.PI / 4); add(xg, 0.02);
         const xg2 = xg.clone(); xg2.rotation.z = -Math.PI / 4; add(xg2, 0.02);
@@ -246,7 +249,7 @@ export class Renderer {
       this.monsterGroup.add(holder);
       const mixer = new THREE.AnimationMixer(o); this.mixers.push(mixer);
       const find = (re) => g.animations.find((a) => re.test(a.name));
-      const clips = { idle: find(/Idle$|Idle(?!_2)|Flying|Swim/i) || g.animations[0], attack: find(/Attack|Bite_Front|Bite/i), death: find(/Death|Dead/i), hit: find(/Hit|Jump/i) };
+      const clips = { idle: find(/Idle$|Idle(?!_2)|Flying|Swim/i) || g.animations[0], attack: find(/Attack|Bite_Front|Bite|Punch|Headbutt/i), death: find(/Death|Dead/i), hit: find(/Hit|Jump/i) };
       if (clips.idle) { const a = mixer.clipAction(clips.idle); a.time = Math.random() * 2; a.play(); }
       this.monsterObjs.set(m.id, { holder, o, mixer, clips, mats, dead: false, height: target });
     }));

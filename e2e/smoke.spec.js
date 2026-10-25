@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipPrologue } from './helpers.js';
 
 test('smoke: title → create → town → dungeon → combat → sheet, no console errors', async ({ page }, info) => {
   const errors = [];
@@ -10,7 +11,7 @@ test('smoke: title → create → town → dungeon → combat → sheet, no cons
   await page.waitForTimeout(2500); await shot('01-title');
   await page.click('#btn-new'); await page.click('#btn-roll'); await page.fill('#cname', 'Aldric');
   await page.selectOption('#crace', 'halfOrc'); await page.waitForTimeout(300); await shot('02-create');
-  await page.click('#btn-begin');
+  await page.click('#btn-begin'); await skipPrologue(page);
   await page.click('#btn-tavern'); await page.waitForTimeout(800); await shot('03-tavern-party');
   await page.click('text=Back to Town Square');
   await page.click('#btn-edge'); await page.click('#btn-enter');

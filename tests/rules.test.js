@@ -72,6 +72,6 @@ describe('combat', () => {
     const p = party(); const cb = new Combat(p, [{ key: 'giantRat', count: 2 }]); const w = p[3]; cb.turn = { action: 1, bonus: 1 };
     cb.castSpell(w, 'sleep', {}); expect(cb.monsters.some((m) => m.conditions.unconscious)).toBe(true); expect(w.slots[0]).toBe(1);
   });
-  it('every SRD monster has a valid stat block', () => { for (const [k, m] of Object.entries(MONSTERS)) { const x = makeMonster(k); expect(x.hp).toBeGreaterThan(0); expect(m.attacks.length).toBeGreaterThan(0); expect(m.model).toBeTruthy(); } });
+  it('every SRD monster has a valid stat block', () => { for (const [k, m] of Object.entries(MONSTERS)) { const x = makeMonster(k); expect(x.hp).toBeGreaterThan(0); expect(m.attacks.length > 0 || m.shriek).toBeTruthy(); expect(m.model).toBeTruthy(); } });
   it('every spell has a name, level and class', () => { for (const s of Object.values(SPELLS)) { expect(s.name).toBeTruthy(); expect(s.level).toBeGreaterThanOrEqual(0); expect(s.cls.length).toBeGreaterThan(0); } });
 });
