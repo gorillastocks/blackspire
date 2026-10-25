@@ -267,3 +267,10 @@ body.titlescreen #modal .panel { background: #0b0612c8; border-color: #ff7a3d55;
 .dlgportrait{flex:none;width:64px;height:64px;border-radius:50%;border:3px solid #c9b27a;display:flex;align-items:center;justify-content:center;font-size:36px;background:#1a1530}
 .dlgtext{flex:1;font-size:1.05em;line-height:1.45}
 .dlgtext p{margin:4px 0 0}
+label.switch{display:flex;align-items:center;gap:8px;cursor:pointer;margin:8px 0}
+label.switch input{position:absolute;opacity:0;width:1px;height:1px}
+label.switch .slider{width:42px;height:24px;border-radius:12px;background:#3b2d6b;position:relative;transition:background .2s;flex:none}
+label.switch .slider::after{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#e8dcc0;transition:left .2s}
+label.switch input:checked+.slider{background:#c0602a}
+label.switch input:checked+.slider::after{left:21px}
+label.switch input:focus-visible+.slider{outline:2px solid #ffd77a}

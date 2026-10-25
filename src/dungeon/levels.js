@@ -76,9 +76,9 @@ export function bfs(g, sx, sy, passable = (c) => c !== '#') {
   return dist;
 }
 
-export function generateLevel(idx) {
+function buildLevel(idx, seed) {
   const def = LEVEL_DEFS[idx];
-  const rng = seeded(def.seed);
+  const rng = seeded(seed);
   const R = (n) => Math.floor(rng() * n);
   const g = carve(rng);
   const start = [1, 1];
@@ -165,11 +165,47 @@ export function generateLevel(idx) {
   }
   // Assign indices for messages/fixed encounters (in scan order)
   const tiles = g.map((r) => r.join(''));
-  return { idx, def, tiles, start: [1, 1, 1] };
+  return { idx, def, tiles, start: [1, 1, 1], seed };
 }
 
-let cache = [];
-export function getLevel(i) { return cache[i] || (cache[i] = generateLevel(i)); }
+/** Connectivity validator: every required feature exists and is reachable in the right order. Returns a list of problems. */
+export function validateLevel(L) {
+  const bad = []; const t = L.tiles; const idx = L.idx; const def = LEVEL_DEFS[idx];
+  const find = (ch) => { const o = []; t.forEach((r, y) => [...r].forEach((c, x) => { if (c === ch) o.push([x, y]); })); return o; };
+  const one = (ch, what) => { const f = find(ch); if (f.length !== 1) bad.push(`${what}: ${f.length}`); return f[0]; };
+  const st = one('<', 'up stairs'); const key = one('K', 'key'); const boss = one('B', 'boss'); const exit = one(def.final ? 'A' : '>', def.final ? 'altar' : 'down stairs');
+  if (!st || !key || !boss || !exit) return bad;
+  const d1 = bfs(t, st[0], st[1], (c) => c !== '#' && c !== 'L' && c !== 'B');
+  if (d1[key[1]][key[0]] <= 0) bad.push('key unreachable before the locked door');
+  const d2 = bfs(t, st[0], st[1], (c) => c !== '#');
+  if (d2[boss[1]][boss[0]] <= 0) bad.push('boss unreachable');
+  if (d2[exit[1]][exit[0]] <= d2[boss[1]][boss[0]]) bad.push('exit not beyond the boss');
+  const d3 = bfs(t, st[0], st[1], (c) => c !== '#' && c !== 'B'); if (d3[exit[1]][exit[0]] !== -1) bad.push('exit bypasses the boss');
+  for (const ch of ['C', 'E', 'M', 'F', 'Q', 'T', 'D', 'S']) for (const [x, y] of find(ch)) if (d2[y][x] <= 0) bad.push(`${ch} at ${x},${y} unreachable`);
+  if (find('Q').length !== (LEVEL_POIS[idx] || []).length) bad.push(`story POIs ${find('Q').length}/${(LEVEL_POIS[idx] || []).length}`);
+  if (def.fountain && !find('F').length) bad.push('no fountain');
+  if (find('C').length < 2) bad.push('fewer than 2 chests');
+  if (find('M').length < 1) bad.push('no messages');
+  return bad;
+}
+/** Build a level from a seed; if the layout fails validation, deterministically re-roll (seed + n). */
+export function generateLevel(idx, seed = LEVEL_DEFS[idx].seed) {
+  for (let n = 0; n < 200; n++) {
+    let L = null; try { L = buildLevel(idx, seed + n * 7919); } catch { L = null; }
+    if (L && !validateLevel(L).length) return L;
+  }
+  throw new Error(`could not build a valid level ${idx} from seed ${seed}`);
+}
+let activeSeeds = null; const cache = new Map();
+/** Use per-game random seeds (array, one per floor) or null for the fixed classic layouts. */
+export function setDungeonSeeds(seeds) { activeSeeds = Array.isArray(seeds) && seeds.length ? seeds : null; }
+export const dungeonSeeds = () => activeSeeds;
+export function getLevel(i) {
+  const seed = activeSeeds?.[i] ?? LEVEL_DEFS[i].seed; const k = `${i}:${seed}`;
+  if (!cache.has(k)) cache.set(k, generateLevel(i, seed));
+  return cache.get(k);
+}
+export function randomSeeds() { return LEVEL_DEFS.map(() => 1 + Math.floor(Math.random() * 2 ** 30)); }
 /** Index of a special tile among tiles of the same kind (row-major), used for messages / fixed encounters. */
 export function tileOrdinal(level, x, y) {
   const ch = level.tiles[y][x]; let n = 0;

@@ -21,6 +21,6 @@ export function slotInfo(key) {
   try {
     const s = JSON.parse(raw); const hero = s.party.find((c) => !c.companion && !c.recruit) || s.party[0];
     const where = s.mode === 'dungeon' ? `B${(s.level | 0) + 1}` : 'Town';
-    return { t: s.savedAt || 0, text: `${hero.name} · L${hero.level} · ${where} · ${s.gold} gp${s.savedAt ? ' · ' + new Date(s.savedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}` };
+    return { t: s.savedAt || 0, text: `${hero.name} · L${hero.level} · ${where} · ${s.gold} gp · ${s.randomDungeons ? '🎲 Random dungeons' : 'Classic dungeons'}${s.savedAt ? ' · ' + new Date(s.savedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}` };
   } catch { return { t: 0, text: 'Unreadable save' }; }
 }

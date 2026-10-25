@@ -14,10 +14,10 @@ import { COMPANION_KEYS } from '../game/companions.js';
 
 const groupsOf = (gs) => gs.map((g) => ({ key: g.key, count: g.count[0] }));
 
-export function playthrough({ seed = 1, difficulty = 'normal', heroCls = 'fighter', maxLossesPerLevel = 8 } = {}) {
+export function playthrough({ seed = 1, difficulty = 'normal', heroCls = 'fighter', maxLossesPerLevel = 8, randomDungeons = false } = {}) {
   setRng(seeded(seed));
-  const s = G.newGame({ name: 'Tester', cls: heroCls, race: 'human' }); s.difficulty = difficulty;
-  const R = { seed, difficulty, heroCls, fights: 0, wins: 0, losses: 0, floors: [], bosses: {}, problems: [], steps: 0 };
+  const s = G.newGame({ name: 'Tester', cls: heroCls, race: 'human', seeds: randomDungeons ? LEVEL_DEFS.map((_, i) => seed * 7717 + i * 131 + 1) : null }); s.difficulty = difficulty;
+  const R = { seed, difficulty, heroCls, randomDungeons, fights: 0, wins: 0, losses: 0, floors: [], bosses: {}, problems: [], steps: 0 };
   Story.finishPrologue(s, 'vow');
   for (const k of COMPANION_KEYS) G.recruitCompanion(s, k); // the extra companions wait on the roster (their quests still count)
   for (const k of G.availableCompanions(s)) G.recruitCompanion(s, k);

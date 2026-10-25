@@ -3,12 +3,12 @@ import { playthrough } from '../src/sim/playthrough.js';
 
 // Full campaign, real rules: walks every tile path, every POI, every lieutenant and boss, the town quest turn-ins and the finale.
 const CLASSES = ['fighter', 'cleric', 'paladin', 'wizard', 'rogue', 'barbarian', 'ranger', 'bard'];
-for (const difficulty of ['story', 'normal', 'hard']) {
-  describe(`full playthrough — ${difficulty}`, () => {
+for (const randomDungeons of [false, true]) for (const difficulty of ['story', 'normal', 'hard']) {
+  describe(`full playthrough — ${difficulty}${randomDungeons ? ' — random dungeons' : ''}`, () => {
     it('beats all five floors, completes every quest, rescues Elowen and reaches the ending', () => {
-      const runs = CLASSES.map((heroCls, i) => playthrough({ seed: 500 + i, difficulty, heroCls }));
+      const runs = CLASSES.map((heroCls, i) => playthrough({ seed: 500 + i + (randomDungeons ? 1000 : 0), difficulty, heroCls, randomDungeons }));
       const wins = runs.filter((r) => r.victory);
-      console.log(`${difficulty}: ${wins.length}/${runs.length} campaigns won; wipes ${runs.map((r) => r.losses).join(',')}; final levels ${runs.map((r) => r.finalLevels.split('/')[0]).join(',')}`);
+      console.log(`${difficulty}${randomDungeons ? ' (random)' : ''}: ${wins.length}/${runs.length} campaigns won; wipes ${runs.map((r) => r.losses).join(',')}; final levels ${runs.map((r) => r.finalLevels.split('/')[0]).join(',')}`);
       for (const r of runs) expect(r.problems, `${r.heroCls}: ${r.problems}`).toEqual([]);
       expect(wins.length).toBeGreaterThanOrEqual(difficulty === 'hard' ? 6 : 8);
       for (const r of wins) {

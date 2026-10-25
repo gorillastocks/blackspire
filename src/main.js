@@ -247,7 +247,7 @@ function showCredits() {
 }
 function showCreate(asRecruit = false) {
   const recruit = asRecruit === true;
-  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Aldric', method = 'array', diff = 'normal';
+  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Aldric', method = 'array', diff = 'normal', randomDun = false;
   const draw = () => {
     const p = openModal([], { closable: true });
     const R_ = RACES[race], C = CLASSES[cls];
@@ -268,10 +268,12 @@ function showCreate(asRecruit = false) {
           recruit ? null : h('h3', {}, 'Difficulty'),
           recruit ? null : h('select', { id: 'cdiff', onchange: (e) => { diff = e.target.value; } }, Object.keys(DIFFICULTY).map((k) => h('option', { value: k, selected: k === diff }, DIFF_LABEL[k]))),
           recruit ? null : h('p', { class: 'hint' }, 'Changes monster HP and damage. You can change it any time in ☰ Menu → Settings.'),
+          recruit ? null : h('label', { class: 'switch row', for: 'crandom' }, h('input', { type: 'checkbox', id: 'crandom', role: 'switch', checked: randomDun, onchange: (e) => { randomDun = e.target.checked; } }), h('span', { class: 'slider' }), h('b', {}, ' 🎲 Random dungeons')),
+          recruit ? null : h('p', { class: 'hint' }, 'Off: the classic hand-tuned layouts. On: every floor is freshly generated for this game (saved with it), always with reachable stairs, keys, bosses and quest spots.'),
           recruit ? null : h('h3', {}, 'Your Companions'),
           ...(recruit ? [] : COMPANION_KEYS.map((k) => COMPANIONS[k])).map((c) => h('p', { class: 'hint' }, h('b', { style: `color:${c.color}` }, c.name + ' — '), c.blurb)))),
       h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, recruit ? btn('Recruit ▶', () => { handle(G.createRecruit(S, { name, race, cls, base })); autosave(); showTown(townSub); }, { class: 'primary', id: 'btn-recruit-create' }) : btn('Begin Adventure ▶', () => {
-        S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base }); S.difficulty = diff;
+        S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base, randomDungeons: randomDun }); S.difficulty = diff;
         log(`Welcome to Emberhollow, ${name}. Three oddballs have agreed to join you…`, 'sys');
         for (const c of S.party.filter((c) => c.companion)) say({ who: COMPANIONS[c.companion].short, color: COMPANIONS[c.companion].color, text: COMPANIONS[c.companion].lines.combatStart[0] });
         runPrologue();

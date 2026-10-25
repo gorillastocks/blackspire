@@ -1,5 +1,5 @@
 // Core game state & exploration logic (DOM-free, so it can be unit tested and simulated).
-import { getLevel, DIRS, W, H, tileOrdinal, LEVEL_DEFS } from '../dungeon/levels.js';
+import { getLevel, DIRS, W, H, tileOrdinal, LEVEL_DEFS, setDungeonSeeds, randomSeeds } from '../dungeon/levels.js';
 import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor, skillMod } from '../rules/character.js';
 import { ITEMS, WEAPONS, ARMOR, CLASSES, XP_LEVELS } from '../rules/data.js';
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
@@ -10,7 +10,8 @@ export const NLEVELS = LEVEL_DEFS.length;
 
 export const SAVE_KEY = 'blackspire.save.v1';
 
-export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base = null } = {}) {
+export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base = null, randomDungeons = false, seeds = null } = {}) {
+  const dseeds = seeds || (randomDungeons ? randomSeeds() : null); setDungeonSeeds(dseeds);
   const hero = createCharacter({ name, race, cls, base: base || assignByPriority(cls) });
   hero.ai = false;
   const comps = COMPANION_KEYS.map((k) => { const C = COMPANIONS[k]; return createCharacter({ name: C.short, race: C.race, cls: C.cls, base: C.base, companion: k, skills: C.skills }); });
@@ -23,6 +24,7 @@ export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base =
     version: 2, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
     mode: 'town', level: 0, x: 1, y: 1, dir: 1, mods: LEVEL_DEFS.map(() => ({})), explored: LEVEL_DEFS.map(() => []), maxDepth: 0,
     bossDead: LEVEL_DEFS.map(() => false), victory: false, steps: 0, sinceEncounter: 0, keys: [], playTime: 0,
+    seeds: dseeds, randomDungeons: !!dseeds,
     flags: {}, journal: [], notes: [], moon: 0, rests: 0, quests: { main: 'active' }, pois: {},
   };
 }
@@ -408,6 +410,7 @@ export function deserialize(str) {
   if (s.mode !== 'dungeon') s.mode = 'town';
   s.roster = Array.isArray(s.roster) ? s.roster : [];
   const N = LEVEL_DEFS.length;
+  if (!Array.isArray(s.seeds) || s.seeds.length !== N) { s.seeds = null; s.randomDungeons = false; } setDungeonSeeds(s.seeds); // old saves: fixed classic layouts
   s.mods ||= []; s.explored ||= []; s.bossDead ||= [];
   if ((s.version | 0) < 2) { // GrokWizard (3 floors) -> BLACKSPIRE (5 floors): old B3 vault became B5; the new B3 starts fresh
     s.mods[2] = {}; s.explored[2] = []; s.bossDead[2] = false; s.victory = false; if (s.level === 2 && s.mode === 'dungeon') { s.mode = 'town'; } s.maxDepth = Math.min(s.maxDepth | 0, 2);
