@@ -142,15 +142,15 @@ export function enterTile(s) {
   const ch = tile(s, s.x, s.y); const L = getLevel(s.level); const def = L.def; const out = [];
   const passivePerc = Math.max(...s.party.filter((c) => !isDown(c)).map((c) => passive(c, 'perception')));
   // Passive notice of adjacent secret doors
-  for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'S' && passivePerc >= def.secretDC + 3) { setTile(s, s.x + dx, s.y + dy, 'D'); out.push({ log: 'Your keen eyes notice a hidden door!', cls: 'good', banter: banter(s.party, 'secret', {}, 0.9), reveal: true }); }
+  for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'S' && passivePerc >= def.secretDC + 3) { setTile(s, s.x + dx, s.y + dy, 'D'); out.push({ log: 'Your keen eyes notice a hidden door!', cls: 'good', card: true, banter: banter(s.party, 'secret', {}, 0.9), reveal: true }); }
   switch (ch) {
     case 'T': {
-      if (passivePerc >= def.trapDC) { setTile(s, s.x, s.y, 't'); out.push({ log: `You spot a hidden ${def.trapKind === 'pit' ? 'pit' : 'dart trap'} (passive Perception ${passivePerc}) and step around it.`, cls: 'good' }); break; }
+      if (passivePerc >= def.trapDC) { setTile(s, s.x, s.y, 't'); out.push({ log: `You spot a hidden ${def.trapKind === 'pit' ? 'pit' : 'dart trap'} (passive Perception ${passivePerc}) and step around it.`, card: true, cls: 'good' }); break; }
       setTile(s, s.x, s.y, 't');
       if (def.trapKind === 'pit') {
         const v = s.party.find((c) => !isDown(c)); const dc = 15;
         const sv = d20() + abilityMod(v, 'dex'); if (sv >= dc) out.push({ log: `A pit opens! ${v.name} leaps aside (Dex ${sv}).` });
-        else { const d = roll(def.trapDmg); v.hp = Math.max(1, v.hp - d); out.push({ log: `A pit opens! ${v.name} falls in for ${d} damage.`, cls: 'bad', banter: banter(s.party, 'trap', {}, 0.9), shake: true }); }
+        else { const d = roll(def.trapDmg); v.hp = Math.max(1, v.hp - d); out.push({ log: `A pit opens! ${v.name} falls in for ${d} damage.`, cls: 'bad', card: true, banter: banter(s.party, 'trap', {}, 0.9), shake: true }); }
       } else {
         for (const c of s.party.filter((c) => !isDown(c))) {
           const hit = d20() + 8 >= (c.equip ? 10 : 10) + (c.equip.armor ? 4 : 2) + abilityMod(c, 'dex');
@@ -176,7 +176,7 @@ export function enterTile(s) {
       if (ev.some((e) => e.prompt)) return out;
       break;
     }
-    case 'M': out.push({ log: def.messages[tileOrdinal(L, s.x, s.y) % def.messages.length], cls: 'lore' }); break;
+    case 'M': out.push({ log: def.messages[tileOrdinal(L, s.x, s.y) % def.messages.length], cls: 'lore', card: true }); break;
     case 'F': {
       out.push({ log: 'A glowing fountain. You drink: the party is healed and refreshed.', cls: 'good' });
       for (const c of s.party) if (!c.dead) { c.hp = c.maxHp; delete c.conditions.poisoned; }
@@ -246,7 +246,7 @@ export function search(s) {
   for (const [dx, dy] of DIRS) {
     const x = s.x + dx, y = s.y + dy;
     if (tile(s, x, y) === 'S' && r.total >= def.secretDC) { setTile(s, x, y, 'D'); found = true; }
-    if (tile(s, x, y) === 'T' && r.total >= def.trapDC) { setTile(s, x, y, 't'); out.push({ log: `${who.name} finds a hidden trap and disarms it.`, cls: 'good' }); }
+    if (tile(s, x, y) === 'T' && r.total >= def.trapDC) { setTile(s, x, y, 't'); out.push({ log: `${who.name} finds a hidden trap and disarms it.`, cls: 'good', card: true }); }
   }
   out.unshift({ log: `${who.name} searches (Perception ${r.total})… ${found ? 'a secret door!' : 'nothing obvious.'}`, cls: found ? 'good' : 'dim', reveal: found });
   if (found) out.push({ banter: banter(s.party, 'secret', {}, 0.9) });

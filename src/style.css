@@ -290,3 +290,8 @@ body.capcover #btn-menu { top: calc(6px + env(safe-area-inset-top)); bottom: aut
   /* while a tap-to-continue caption is up nothing in the menu can be tapped, so it steps aside and the view grows */
   body.incombat.capup #cmenu, body.incombat.capup #log { display: none; }
 }
+/* exploration message cards (clues, notes, wall writings) reuse the caption look, centred over the view */
+#caption.msg { overflow-y: auto; }
+#caption.msg.lore .captxt { color: #ffe2b8; font-style: italic; }
+#caption.msg { background: #0b0716f5; }
+body.msgup #banter { visibility: hidden; } /* bubbles wait (they're in the log) while a message card is read */

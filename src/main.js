@@ -102,7 +102,7 @@ function placeBanter() {
 }
 function handle(events) {
   for (const e of events || []) {
-    if (e.log) log(e.log, e.cls); if (e.banter) say(e.banter); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
+    if (e.log) { log(e.log, e.cls); if (!combat && S?.mode === 'dungeon' && (e.card || e.cls === 'lore')) queueMessage(e.log, e.cls); } if (e.banter) say(e.banter); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
     if (e.sfx) sfx(e.sfx);
     if (e.reveal || e.sfx === 'door' || e.sfx === 'chest') rebuild();
     if (e.toTown) { autosave(); showTown(); return; }
@@ -176,7 +176,7 @@ function drawMinimap(cv, big = false) {
 function setControls(kind) {
   const el = $('#controls'); el.innerHTML = '';
   if (kind === 'dungeon') {
-    const b = (l, f, cls = '', title = '') => el.append(h('button', { class: cls, title, onclick: () => { if (!busy && !combat && modal.classList.contains('hidden')) f(); } }, l));
+    const b = (l, f, cls = '', title = '') => el.append(h('button', { class: cls, title, onclick: () => { if (!busy && !combat && !msgRunning && modal.classList.contains('hidden')) f(); } }, l));
     b('↶', () => act(() => G.turn(S, -1)), '', 'Turn left (A)'); b('▲', () => act(() => G.move(S, 0)), '', 'Forward (W)'); b('↷', () => act(() => G.turn(S, 1)), '', 'Turn right (D)');
     b('◀', () => act(() => G.move(S, 3)), '', 'Strafe left (Q)'); b('▼', () => act(() => G.move(S, 2)), '', 'Back (S)'); b('▶', () => act(() => G.move(S, 1)), '', 'Strafe right (E)');
     b('🔍 Search', doSearch, 'act', 'Search (F)'); b('⛺ Camp', showCamp, 'act', 'Camp (C)'); b('🗺 Map', showMap, 'act', 'Map (M)');
@@ -196,7 +196,7 @@ window.addEventListener('keydown', (e) => {
   if (combat) return combatKey(e);
   if (e.key.toLowerCase() === 'j' && modal.classList.contains('hidden') && S.mode === 'dungeon' && !busy) { e.preventDefault(); showJournal(); return; }
   if (!modal.classList.contains('hidden')) { if (e.key === 'Escape') { if (modal.dataset.closable) dismissModal(); else if (S.mode === 'town' && townSub) showTown(); } return; }
-  if (S.mode !== 'dungeon' || busy) return;
+  if (S.mode !== 'dungeon' || busy || msgRunning) return;
   const k = e.key.toLowerCase();
   const map = { arrowup: () => G.move(S, 0), w: () => G.move(S, 0), arrowdown: () => G.move(S, 2), s: () => G.move(S, 2), arrowleft: () => G.turn(S, -1), a: () => G.turn(S, -1), arrowright: () => G.turn(S, 1), d: () => G.turn(S, 1), q: () => G.move(S, 3), e: () => G.move(S, 1) };
   if (map[k]) { e.preventDefault(); act(map[k]); return; }
@@ -207,7 +207,7 @@ window.addEventListener('keydown', (e) => {
 let touch0 = null;
 $('#view').addEventListener('touchstart', (e) => { touch0 = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
 $('#view').addEventListener('touchend', (e) => {
-  if (!touch0 || !S || S.mode !== 'dungeon' || combat || busy || !modal.classList.contains('hidden')) return;
+  if (!touch0 || !S || S.mode !== 'dungeon' || combat || busy || msgRunning || !modal.classList.contains('hidden')) return;
   const dx = e.changedTouches[0].clientX - touch0[0], dy = e.changedTouches[0].clientY - touch0[1]; touch0 = null;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
   if (Math.abs(dx) > Math.abs(dy)) act(() => G.turn(S, dx < 0 ? 1 : -1)); else act(() => G.move(S, dy < 0 ? 0 : 2));
@@ -480,9 +480,10 @@ function showCaption(e, tapHint = false) {
 /** Put the caption in the band below the monsters and above anything covering the bottom of the view
  *  (combat menu, docked panels), shrinking the font a little only if a long caption would not otherwise fit. */
 function placeCaption(el = $('#caption')) {
-  const view = $('#view').getBoundingClientRect(); if (!view.height) return;
+  const view = $('#view').getBoundingClientRect(); if (!view.height) return; const msg = el.classList.contains('msg');
   let top = view.top + view.height * 0.62, bottom = view.bottom - 6;
-  const r = combat && R.monsterRect ? R.monsterRect() : null; if (r) top = view.top + (Math.max(0, r.bottom) / 100) * view.height;
+  const r = !msg && combat && R.monsterRect ? R.monsterRect() : null; if (r) top = view.top + (Math.max(0, r.bottom) / 100) * view.height;
+  if (msg) top = Math.max(view.top + 8, $('#hud').getBoundingClientRect().bottom + 4);
   for (const sel of ['#cmenu', '#modal.combat .panel', '#log', '#controls']) {
     const m = document.querySelector(sel); if (!m || !m.offsetParent) continue; const b = m.getBoundingClientRect();
     if (b.height && b.width && b.top < bottom && b.bottom > top && b.left < view.right && b.right > view.left) bottom = Math.min(bottom, b.top - 6);
@@ -491,7 +492,8 @@ function placeCaption(el = $('#caption')) {
   el.style.top = `${top - view.top}px`; el.style.maxHeight = `${avail}px`;
   const tx = el.querySelector('.captxt'), sub = el.querySelector('.capsub'); if (tx) tx.style.fontSize = ''; if (sub) sub.style.fontSize = '';
   let fs = tx ? parseFloat(getComputedStyle(tx).fontSize) : 20;
-  while (el.scrollHeight > el.clientHeight + 1 && fs > (el._refit ? 15 : 16)) { fs -= 1; if (tx) tx.style.fontSize = `${fs}px`; if (sub) sub.style.fontSize = `${Math.max(14, fs - 3)}px`; }
+  while (el.scrollHeight > el.clientHeight + 1 && fs > (el._refit || msg ? 15 : 16)) { fs -= 1; if (tx) tx.style.fontSize = `${fs}px`; if (sub) sub.style.fontSize = `${Math.max(14, fs - 3)}px`; }
+  if (msg) { const free = bottom - top - el.offsetHeight; if (free > 0) el.style.top = `${top + free / 2 - view.top}px`; return; } // message card: centred in the free space
   // still too tall for the band: ask the 3D view to reserve more room (camera pulls back / shifts up) and place again
   if (el.scrollHeight > el.clientHeight + 1 && R.fitArena && !el._refit) { R.captionReservePx = Math.max(R.captionReservePx || 0, el.scrollHeight + (el.offsetHeight - el.clientHeight) + 18); R.fitArena(); el._refit = true; placeCaption(el); el._refit = false; return; }
   // the floating ☰ Menu button (docked bottom-left on landscape phones) hops to the top-left corner while a caption it would cover is up
@@ -514,7 +516,7 @@ function captionDown(now = false) {
 }
 const tapCatch = h('div', { id: 'tapcatch', class: 'hidden', 'aria-label': 'Tap to continue' }); document.body.append(tapCatch);
 let tapPending = null; // resolver of the caption currently waiting for a tap (pause mode)
-function tapToContinue() {
+function tapToContinue(alive = () => combat && speed().hold === 0) {
   return new Promise((resolve) => {
     tapCatch.className = ''; let done = false; const t0 = performance.now();
     const fin = (ev) => {
@@ -531,9 +533,26 @@ function tapToContinue() {
     // any tap anywhere advances (also taps landing on the Menu button, a tip or a bubble), and Enter / Space
     tapCatch.addEventListener('pointerdown', fin); window.addEventListener('pointerdown', fin, true); window.addEventListener('keydown', fin, true);
     // never get stuck: the fight ended/was abandoned, the speed left Pause, or the caption we wait on is gone
-    const iv = setInterval(() => { if (!combat || speed().hold !== 0 || !$('#caption').classList.contains('show')) fin(); }, 250);
+    const iv = setInterval(() => { if (!alive() || !$('#caption').classList.contains('show')) fin(); }, 250);
   });
 }
+/* ---------- Exploration message cards: clues, notes, wall writings, discoveries ---------- */
+const msgQueue = []; let msgRunning = null;
+function queueMessage(text, cls = 'lore') { msgQueue.push({ text, cls }); if (!msgRunning) msgRunning = pumpMessages(); return msgRunning; }
+async function pumpMessages() {
+  document.body.classList.add('msgup');
+  try {
+    while (msgQueue.length) {
+      const m = msgQueue.shift(); const el = $('#caption'); clearTimeout(capTimer);
+      el.className = `show msg ${m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = '';
+      el.append(h('div', { class: 'captxt' }, m.text), h('div', { class: 'captap' }, '▶ Tap to continue'));
+      placeCaption(el); requestAnimationFrame(() => placeCaption(el));
+      await tapToContinue(() => true);
+    }
+  } finally { msgRunning = null; document.body.classList.remove('msgup'); }
+}
+/** Resolves once every queued message card has been read (combat waits for them). */
+const messagesDone = () => msgRunning || Promise.resolve();
 /** Combat watchdog: whatever happens, the caption layer can never leave combat stalled. */
 setInterval(() => {
   if (tapPending) return; const cap = $('#caption');
@@ -542,7 +561,7 @@ setInterval(() => {
   if (!tapCatch.classList.contains('hidden')) tapCatch.className = 'hidden'; // catcher left over without a waiter
 }, 1000);
 async function startCombat(info) {
-  if (combat) return;
+  if (combat) return; await messagesDone(); if (combat) return;
   closeModal(); busy = true;
   document.body.classList.add('incombat'); $('#cmenu').innerHTML = '<div class="who dim">Combat begins…</div>';
   const theme = getLevel(S.level).def.color;
@@ -733,7 +752,7 @@ async function boot() {
   window.__gw = {
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
-    showTactics, openMenu, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
