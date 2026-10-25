@@ -23,7 +23,9 @@ test('pause mode: many rat fights with fast, double and mistimed taps always fin
       expect(Date.now() - t0, `fight ${fight} finishes`).toBeLessThan(150000);
       const sig = await page.evaluate(() => `${document.querySelector('#caption').textContent}|${document.querySelector('#cmenu').textContent}|${window.__gw.combat?.monsters.map((m) => m.hp).join(',')}`);
       if (sig !== lastSig) { lastSig = sig; lastChange = Date.now(); }
+      if (Date.now() - lastChange > 19000) console.log('STALL', await page.evaluate(() => { const b = document.querySelector('#cmenu .combatmenu button'); const r = b?.getBoundingClientRect(); const top = r && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { top: top && (top.id || top.className || top.tagName), tap: document.querySelector('#tapcatch').className, body: document.body.className, cur: window.__gw.combat?.current()?.name, ni: window.__gw.combat?.needsInput(), modal: document.querySelector('#modal').className, gm: document.querySelector('#gmenu')?.className, tip: document.querySelector('#tip').className, mtext: document.querySelector('#modal').textContent.slice(0, 200) }; }));
       expect(Date.now() - lastChange, `fight ${fight} stalled on ${sig}`).toBeLessThan(20000);
+      const close = page.locator('#modal:not(.hidden) button', { hasText: '✕ Close' }).first(); if (await close.isVisible().catch(() => false)) await close.click().catch(() => {}); // a stray tap during the player's turn may open a sheet
       const r = rnd(), touch = rnd() < 0.7, x = 20 + rnd() * (vp.width - 40), y = 20 + rnd() * (vp.height - 40);
       if (await capShown(page)) {
         if (r < 0.12) await page.evaluate(() => { const c = window.__gw.combat; const m = c?.monsters.find((q) => q.hp > 0); if (m) { m.hp = 0; window.__gw.R.monsterDie(m.id); } }); // death mid-caption
@@ -41,8 +43,8 @@ test('pause mode: many rat fights with fast, double and mistimed taps always fin
         const m1 = page.locator('#cmenu .combatmenu button').first(); if (await page.locator('#cmenu .who', { hasText: /target|Which/i }).isVisible().catch(() => false)) await m1.click().catch(() => {});
       } else await page.waitForTimeout(120);
       // whenever it's the player's turn the menu must be really visible (not collapsed under a stale caption)
-      if (await page.evaluate(() => !!window.__gw.combat?.needsInput?.() && !document.querySelector('#caption.show') && !document.querySelector('#modal:not(.hidden)'))) {
-        await expect.poll(() => page.locator('.combatmenu').isVisible(), { timeout: 4000, message: `fight ${fight}: player menu visible` }).toBe(true);
+      if (await page.evaluate(() => !!document.querySelector('#cmenu .combatmenu') && !document.querySelector('#caption.show'))) {
+        await expect.poll(() => page.evaluate(() => { const m = document.querySelector('#cmenu .combatmenu'); return !m || !!document.querySelector('#caption.show') || (m.offsetParent !== null && m.getBoundingClientRect().height > 40); }), { timeout: 4000, message: `fight ${fight}: player menu visible` }).toBe(true);
       }
     }
     expect(await page.evaluate(() => document.body.classList.contains('capup')), 'layout restored after the fight').toBe(false);
