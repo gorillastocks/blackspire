@@ -40,7 +40,7 @@ export function playthrough({ seed = 1, difficulty = 'normal', heroCls = 'fighte
     const cb = new Combat(s.party, info.groups, { inventory: s.inventory, boss: !!info.boss, canFlee: false, difficulty, story: G.combatOpts(s, info) });
     cb.runAuto(); R.fights++;
     if (info.boss || info.lieutenant) { const k = `B${s.level + 1}:${info.phase2 ? 'phase2' : info.lieutenant ? info.poi : 'boss'}`; R.bosses[k] ||= { tries: 0, won: false }; R.bosses[k].tries++; if (cb.state === 'won') R.bosses[k].won = true; }
-    if (cb.state === 'won') R.wins++; else R.losses++;
+    if (cb.state === 'won') R.wins++; else { R.losses++; const why = info.boss ? (info.phase2 ? 'phase2' : 'boss') : info.poi ? info.poi : info.fixed ? 'fixed(' + info.groups.map((g) => g.key + 'x' + g.count).join('+') + ')' : 'random(' + info.groups.map((g) => g.key + 'x' + g.count).join('+') + ')'; (R.lossBy ||= {})[`B${s.level + 1}:${why}`] = (R.lossBy[`B${s.level + 1}:${why}`] || 0) + 1; }
     const ev = G.afterCombat(s, cb, info);
     if (cb.state === 'lost') { lost = true; return; }
     handle(ev);

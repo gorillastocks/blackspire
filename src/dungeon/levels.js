@@ -11,23 +11,23 @@ export const DIR_NAMES = ['North', 'East', 'South', 'West'];
 export const LEVEL_DEFS = [
   {
     name: 'B1: The Rat-Warrens', seed: 1981, music: 'dungeon0', color: 0x22e6ff, fog: 0x050a14, trapDC: 12, secretDC: 12, lockDC: 13, trapDmg: '1d6', trapKind: 'pit', key: 'key1', rooms: 2, loops: 6, secrets: 2,
-    table: [[{ key: 'giantRat', count: [2, 4] }], [{ key: 'giantPoisonousSnake', count: [1, 2] }], [{ key: 'giantFrog', count: [1, 2] }], [{ key: 'wolf', count: [2, 2] }], [{ key: 'giantRat', count: [1, 2] }, { key: 'giantWolfSpider', count: [1, 1] }], [{ key: 'giantWolfSpider', count: [1, 2] }], [{ key: 'cultist', count: [2, 3] }]],
-    fixed: [[{ key: 'wolf', count: [3, 3] }], [{ key: 'giantFrog', count: [2, 2] }, { key: 'giantRat', count: [2, 2] }]],
+    table: [[{ key: 'giantRat', count: [2, 3] }], [{ key: 'giantPoisonousSnake', count: [1, 2] }], [{ key: 'giantFrog', count: [1, 2] }], [{ key: 'wolf', count: [2, 2] }], [{ key: 'giantRat', count: [1, 1] }, { key: 'giantWolfSpider', count: [1, 1] }], [{ key: 'giantWolfSpider', count: [1, 1] }], [{ key: 'cultist', count: [2, 3] }]],
+    fixed: [[{ key: 'wolf', count: [2, 2] }], [{ key: 'giantFrog', count: [2, 2] }, { key: 'giantRat', count: [2, 2] }]],
     boss: [{ key: 'giantSpider', count: [1, 1] }, { key: 'skarn', count: [1, 1] }], bossName: 'Skarn and the Broodmother',
     messages: ['Scratched into the wall: "SKARN RIDES THE SPIDER QUEEN. THE RUSTY KEY OPENS HER DEN."', 'A faded mural shows a lizard as big as a cathedral. Someone has drawn a mustache on it.', 'A note: "Pip was here. Took spoon. Not sorry."'],
     loot: { gold: [10, 60], items: ['potionHealing', 'potionHealing', 'antitoxin', 'spoon', 'shortsword1', 'studded1'] },
   },
   {
     name: 'B2: The Drowned Grotto', seed: 4242, music: 'dungeon1', color: 0xff3df0, fog: 0x0c0414, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '2d10', trapKind: 'darts', key: 'key2', rooms: 3, loops: 8, secrets: 2, fountain: true,
-    table: [[{ key: 'giantWasp', count: [2, 3] }], [{ key: 'giantCrab', count: [2, 4] }], [{ key: 'giantToad', count: [1, 2] }], [{ key: 'direWolf', count: [1, 2] }], [{ key: 'flyingSword', count: [2, 3] }], [{ key: 'giantCrab', count: [2, 2] }, { key: 'giantWasp', count: [1, 2] }], [{ key: 'cultist', count: [3, 4] }]],
-    fixed: [[{ key: 'direWolf', count: [2, 2] }, { key: 'wolf', count: [2, 2] }], [{ key: 'giantToad', count: [2, 2] }], [{ key: 'flyingSword', count: [4, 4] }]],
-    boss: [{ key: 'ankylosaurus', count: [1, 1] }, { key: 'giantWasp', count: [2, 2] }], bossName: 'Old Clubtail',
+    table: [[{ key: 'giantWasp', count: [2, 3] }], [{ key: 'giantCrab', count: [2, 4] }], [{ key: 'giantToad', count: [1, 2] }], [{ key: 'direWolf', count: [1, 1] }], [{ key: 'flyingSword', count: [2, 3] }], [{ key: 'giantCrab', count: [2, 2] }, { key: 'giantWasp', count: [1, 2] }], [{ key: 'cultist', count: [3, 4] }]],
+    fixed: [[{ key: 'direWolf', count: [1, 1] }, { key: 'wolf', count: [2, 2] }], [{ key: 'giantToad', count: [2, 2] }], [{ key: 'flyingSword', count: [3, 3] }]],
+    boss: [{ key: 'ankylosaurus', count: [1, 1] }, { key: 'giantWasp', count: [1, 1] }], bossName: 'Old Clubtail',
     messages: ['Dripping water spells nothing in particular. Brambur apologizes to it anyway.', 'An inscription: "BEYOND THE CORAL DOOR SLEEPS OLD CLUBTAIL. BRING SNACKS."', 'A cracked mirror. Professor Fizzwick spends some time admiring it.'],
     loot: { gold: [40, 160], items: ['potionHealing', 'potionGreater', 'goldSpoon', 'longsword1', 'mace1', 'quarterstaff1', 'chainMail1', 'rapier1'] },
   },
   {
     name: 'B3: The Glimmerdeep', seed: 3131, color: 0x40ffd0, fog: 0x021410, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '3d8', trapKind: 'pit', key: 'key3', rooms: 3, loops: 9, secrets: 2, fountain: true, music: 'dungeon2',
-    table: [[{ key: 'violetFungus', count: [2, 2] }, { key: 'shrieker', count: [1, 1] }], [{ key: 'ochreJelly', count: [1, 2] }], [{ key: 'darkmantle', count: [2, 3] }], [{ key: 'giantCentipede', count: [3, 5] }], [{ key: 'gelatinousCube', count: [1, 1] }], [{ key: 'darkmantle', count: [1, 2] }, { key: 'giantCentipede', count: [2, 2] }]],
+    table: [[{ key: 'violetFungus', count: [2, 2] }, { key: 'shrieker', count: [1, 1] }], [{ key: 'ochreJelly', count: [1, 1] }], [{ key: 'darkmantle', count: [2, 3] }], [{ key: 'giantCentipede', count: [2, 4] }], [{ key: 'gelatinousCube', count: [0, 0] }], [{ key: 'darkmantle', count: [1, 2] }, { key: 'giantCentipede', count: [2, 2] }]],
     fixed: [[{ key: 'gelatinousCube', count: [1, 1] }, { key: 'ochreJelly', count: [1, 1] }], [{ key: 'violetFungus', count: [3, 3] }, { key: 'shrieker', count: [2, 2] }], [{ key: 'darkmantle', count: [4, 4] }]],
     boss: [{ key: 'glasshide', count: [1, 1] }, { key: 'darkmantle', count: [2, 2] }], bossName: 'Glasshide the Basilisk',
     messages: ['The crystals here show your reflection a half-second late. Fizzwick waves at his. It waves back early.', 'Scratched in a crystal: "DO NOT LOOK THE LIZARD IN THE EYE. USE A MIRROR. — a statue, probably"', 'A circle of mushrooms. Grumsh steps in it and refuses to say what he saw.'],
@@ -35,7 +35,7 @@ export const LEVEL_DEFS = [
   },
   {
     name: 'B4: The Ashforge', seed: 5150, color: 0xff5020, fog: 0x160400, trapDC: 15, secretDC: 15, lockDC: 16, trapDmg: '3d10', trapKind: 'darts', key: 'key4', rooms: 3, loops: 10, secrets: 2, fountain: true, music: 'dungeon3',
-    table: [[{ key: 'magmin', count: [3, 4] }], [{ key: 'hellHound', count: [1, 2] }], [{ key: 'gargoyle', count: [2, 2] }], [{ key: 'animatedArmor', count: [2, 3] }], [{ key: 'minotaurSkeleton', count: [1, 1] }, { key: 'magmin', count: [2, 2] }], [{ key: 'cultFanatic', count: [2, 2] }, { key: 'cultist', count: [2, 2] }]],
+    table: [[{ key: 'magmin', count: [2, 3] }], [{ key: 'hellHound', count: [0, 0] }, { key: 'magmin', count: [2, 2] }], [{ key: 'gargoyle', count: [2, 2] }], [{ key: 'animatedArmor', count: [2, 2] }], [{ key: 'minotaurSkeleton', count: [1, 1] }, { key: 'magmin', count: [2, 2] }], [{ key: 'cultFanatic', count: [2, 2] }, { key: 'cultist', count: [2, 2] }]],
     fixed: [[{ key: 'hellHound', count: [2, 2] }], [{ key: 'minotaurSkeleton', count: [2, 2] }], [{ key: 'cultFanatic', count: [3, 3] }]],
     boss: [{ key: 'brakk', count: [1, 1] }, { key: 'cindermaw', count: [1, 1] }], bossName: 'Forgemaster Brakk and Cindermaw',
     messages: ['An anvil, still warm, with a smith\'s name scratched on it: "VARR".', 'A forge-mural: dwarves, a chimera, and a very small Brakk hiding behind it.', 'A sign: "BRAKK\'S FORGE. NO REFUNDS. NO DWARVES. NO CHIMERA-PETTING."'],

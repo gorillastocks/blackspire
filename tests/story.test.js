@@ -69,3 +69,20 @@ describe('finale', () => {
     expect(m.mods.length).toBe(5); expect(m.bossDead).toEqual([true, true, false, false, false]); expect(m.victory).toBe(false); expect(m.flags.prologue).toBe(true);
   });
 });
+
+describe('B3/B4 XP pass', () => {
+  it('guarded quest spots fight first, then pay out per-member XP', () => {
+    for (const id of ['pylon2', 'smith2']) {
+      const s = fresh(); const ev = Story.visitPoi(s, id);
+      expect(ev.some((e) => e.combat?.poi === id)).toBe(true); expect(s.pois[id]).toBeFalsy();
+      const xp0 = s.party[0].xp; const out = Story.onCombatWon(s, { poi: id, fixed: true }, id === 'pylon2' ? 2 : 3);
+      expect(s.pois[id]).toBe(true); expect(s.party[0].xp - xp0).toBe(250); expect(out.some((e) => /\+250 XP/.test(e.log || ''))).toBe(true);
+      expect(Story.visitPoi(s, id)).toEqual([]); // used up
+    }
+  });
+  it('unguarded pylons and smiths give XP on visit; other spots do not', () => {
+    const s = fresh(); const x = s.party[0].xp;
+    Story.visitPoi(s, 'pylon1'); Story.visitPoi(s, 'smith1'); expect(s.party[0].xp - x).toBe(500);
+    Story.visitPoi(s, 'tablet1'); expect(s.party[0].xp - x).toBe(500);
+  });
+});

@@ -132,8 +132,17 @@ export function onLongRest(s) {
 
 /* ---------- Visiting a point of interest ---------- */
 export function poiAt(levelIdx, ordinal) { const list = LEVEL_POIS[levelIdx] || []; return list[ordinal % Math.max(1, list.length)]; }
+// Guarded quest spots: a fixed fight that must be won before the spot can be used (B3/B4 XP pass).
+export const POI_GUARDS = {
+  pylon2: { log: 'The pylon is wrapped in a quivering ochre jelly, and darkmantles drop from the crystals above!', groups: [{ key: 'ochreJelly', count: 1 }, { key: 'darkmantle', count: 2 }] },
+  smith2: { log: 'The captive smith\'s chain is held by a cult fanatic and a hell hound. "Kill the heroes!"', groups: [{ key: 'cultFanatic', count: 1 }, { key: 'hellHound', count: 1 }] },
+};
+// Quest-spot XP, awarded to every living party member.
+export const POI_XP = { pylon: 250, smith: 250 };
+function poiXp(s, kind, out) { const n = POI_XP[kind]; if (!n) return; for (const c of s.party || []) if (!c.dead) c.xp += n; out.push({ log: `+${n} XP each.`, cls: 'good' }); }
 export function visitPoi(s, id) {
   initStory(s); const out = []; if (!id || s.pois[id]) return out;
+  if (POI_GUARDS[id] && !s.flags['guarded_' + id]) { out.push({ log: POI_GUARDS[id].log, cls: 'bad', combat: { groups: POI_GUARDS[id].groups, fixed: true, poi: id, guard: true } }); return out; }
   const done = () => { s.pois[id] = true; out.consumed = true; };
   const m = /^(note|guard|pip|verse|tale|tablet|page|glowcap|smith|pylon)(\d+)$/.exec(id); const kind = m ? m[1] : id; const n = m ? +m[2] : 0;
   switch (kind) {
@@ -170,6 +179,7 @@ export function visitPoi(s, id) {
     case 'sporegrave': out.push({ log: 'The cavern floor heaves. Mother Sporegrave unfurls, shriekers wailing around her!', cls: 'bad', combat: { groups: [{ key: 'motherSporegrave', count: 1 }, { key: 'shrieker', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
     default: break;
   }
+  if (out.consumed) poiXp(s, kind, out);
   return out;
 }
 /** Resolve a choice prompt from a POI. */
@@ -189,6 +199,7 @@ export function choosePoi(s, id, choice, checkFn) {
 const BOSS_REWARD = ['dawnfang', 'sunshardAegis', 'dawncrestHelm', 'emberwardCloak', 'crownGuardPlate'];
 export function onCombatWon(s, info, level) {
   initStory(s); const out = [];
+  if (info?.poi && POI_GUARDS[info.poi]) { s.flags['guarded_' + info.poi] = true; out.push(...visitPoi(s, info.poi)); return out; } // guards beaten: use the spot
   if (info?.poi) s.pois[info.poi] = true; // fight-POIs are only used up once you win
   if (info?.poi === 'vey') { out.push({ log: 'Sister Vey sinks beneath the water, her hymn ending in bubbles.', cls: 'good' }); give(s, 'potionGreater', out); }
   if (info?.poi === 'sporegrave') { out.push({ log: 'Mother Sporegrave collapses into a heap of harmless puffballs.', cls: 'good' }); give(s, 'potionStoneFlesh', out); }
