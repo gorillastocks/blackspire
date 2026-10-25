@@ -60,12 +60,11 @@ async function afterPrologueFight() {
 }
 function showJournal(back) {
   const qs = Story.questList(S);
-  openModal([h('h2', {}, '📖 Journal'),
+  openModal([h('div', { class: 'navbar' }, h('h2', {}, '📖 Journal'), btn('Close', () => (back ? back() : closeModal()), { id: 'btn-journal-close' })),
     h('p', { class: 'hint' }, `Moon ${Math.min(5, (S.moon | 0) + 1)} of 5 · Seals broken: ${Story.sealsBroken(S)}/5${Story.empowered(S) ? ' · ⚠ Malthrax is EMPOWERED' : ''}`),
     h('h3', {}, 'Quests'), h('div', { class: 'menu' }, qs.map((q) => h('p', {}, h('b', {}, `${q.status === 'done' ? '✔' : q.status === 'ready' ? '❗' : '•'} ${q.title || q.id}`), q.progress ? ` (${q.progress})` : '', q.desc ? h('br') : null, q.desc ? h('span', { class: 'hint' }, q.desc) : null))),
     h('h3', {}, `Elowen's notes (${(S.notes || []).length}/10)`), ...(S.notes || []).map((n) => h('p', { class: 'lore' }, typeof n === 'string' ? n : Story.NOTES[n - 1] || '')),
-    h('h3', {}, 'Entries'), ...(S.journal || []).slice().reverse().map((j) => h('p', { class: 'hint' }, j)),
-    btn('Close', () => (back ? back() : closeModal()), { id: 'btn-journal-close' })], { closable: true });
+    h('h3', {}, 'Entries'), ...(S.journal || []).slice().reverse().map((j) => h('p', { class: 'hint' }, j))], { closable: true });
 }
 function showTownFolk() {
   openModal([h('h2', {}, 'Emberhollow Folk'), h('div', { class: 'menu' }, Story.TOWNFOLK.map((k) => { const sp = Story.speaker(k);

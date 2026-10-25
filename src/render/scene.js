@@ -235,7 +235,7 @@ export class Renderer {
         o.updateMatrixWorld(true); const bb = new THREE.Box3(); const v = new THREE.Vector3();
         o.traverse((ch) => { if (!ch.isMesh) return; if (ch.isSkinnedMesh) ch.skeleton.update(); const pos = ch.geometry.attributes.position; const step = Math.max(1, Math.floor(pos.count / 2000));
           for (let k = 0; k < pos.count; k += step) { if (ch.isSkinnedMesh) ch.getVertexPosition(k, v); else v.fromBufferAttribute(pos, k); v.applyMatrix4(ch.matrixWorld); if (Number.isFinite(v.x + v.y + v.z)) bb.expandByPoint(v); }
-          ch.boundingBox = null; ch.boundingSphere = null; });
+          if (ch.isSkinnedMesh) { ch.boundingBox = null; ch.boundingSphere = null; } });
         return bb; };
       const box = measure(); const size = box.getSize(new THREE.Vector3());
       const target = T.size * crowd * (n === 1 ? 0.95 : 0.85);
