@@ -26,6 +26,7 @@ export async function newGame(page) {
   await page.waitForSelector('#btn-new', { timeout: 90000 });
   await page.click('#btn-new'); await page.click('#btn-begin');
   await expect(townSquare(page)).toBeVisible();
+  const skip = page.locator('#tip-skip'); if (await skip.isVisible()) await skip.click();
   await page.evaluate(() => { window.__gw.state.gold = 5000; });
 }
 

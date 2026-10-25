@@ -1,14 +1,14 @@
-// Tiny procedural sound effects via WebAudio (no audio assets needed).
-let ctx = null; let muted = false;
-export function setMuted(m) { muted = m; }
+// Tiny procedural sound effects via WebAudio (no audio assets needed), routed through the SFX volume bus.
+import { ac, out, isMuted } from './audio.js';
+export { setMuted } from './audio.js';
 function tone(freq, dur, type = 'square', vol = 0.06, slide = 0) {
-  if (muted) return;
+  if (isMuted()) return;
   try {
-    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = ac(); if (!ctx) return;
     const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = freq;
     if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), ctx.currentTime + dur);
     g.gain.value = vol; g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
-    o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + dur);
+    o.connect(g).connect(out('sfx')); o.start(); o.stop(ctx.currentTime + dur);
   } catch { /* audio unavailable */ }
 }
 const S = {

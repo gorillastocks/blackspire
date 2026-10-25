@@ -122,7 +122,7 @@ test('level up at camp in the dungeon (same logic as Training Grounds), camp but
   let clicked = 0;
   for (const label of labels) {
     if (!label || SKIP.test(label)) continue;
-    if (!(await page.locator('#modal h2', { hasText: 'Camp' }).count())) { if (await st(page, () => !!window.__gw.combat)) break; await openCamp(); }
+    if (!(await page.locator('#modal h2', { hasText: 'Camp' }).count())) { if (await st(page, () => !!window.__gw.combat)) break; const cl = page.locator('#modal .closebtn:visible'); if (await cl.count()) await cl.first().click(); await openCamp(); }
     const b = page.locator('#modal button:visible', { hasText: label }).first();
     if (!(await b.count()) || (await b.isDisabled())) continue;
     await b.click(); clicked++;

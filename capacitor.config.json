@@ -1,0 +1,7 @@
+{
+  "appId": "com.gorillastocks.blackspire",
+  "appName": "Blackspire",
+  "webDir": "dist",
+  "ios": { "contentInset": "never", "backgroundColor": "#0b0716", "scheme": "Blackspire" },
+  "plugins": { "Preferences": { "group": "BlackspireSaves" } }
+}

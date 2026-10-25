@@ -7,6 +7,16 @@ import {
 } from './character.js';
 
 let mid = 1;
+export const DIFFICULTY = { story: { hp: 0.7, dmg: 0.6, label: 'Story' }, normal: { hp: 1, dmg: 1, label: 'Normal' }, hard: { hp: 1.35, dmg: 1.3, label: 'Hard' } };
+export const TACTIC_STYLES = {
+  aggressive: { name: '⚔ Aggressive', desc: 'Always hits hardest: spends big spells freely and only heals in an emergency.' },
+  balanced: { name: '⚖ Balanced', desc: 'Attacks, saves strong spells for tough fights, heals allies below the threshold.' },
+  defensive: { name: '🛡 Defensive', desc: 'Protects itself: drinks potions or dodges when hurt, saves big spells for bosses.' },
+  support: { name: '✚ Support / Healer', desc: 'Keeps the party alive first: heals and hands out potions before attacking.' },
+};
+export const AOE_SPELLS = ['fireball', 'lightningBolt', 'burningHands', 'thunderwave', 'sleep', 'spiritGuardians', 'massHealingWord', 'web'];
+export const defaultTactics = () => ({ style: 'balanced', spells: true, potions: true, aoe: true, healAt: 40 });
+export const tacticsOf = (c) => ({ ...defaultTactics(), ...(c.tactics || {}) });
 export function makeMonster(key, idx = 0) {
   const T = MONSTERS[key];
   const hp = Math.max(1, roll(T.hp));
@@ -15,10 +25,13 @@ export function makeMonster(key, idx = 0) {
 const monsterSave = (m, ab) => mod(m.T.stats[ab]);
 
 export class Combat {
-  constructor(party, groups, { inventory = [], canFlee = true, boss = false } = {}) {
+  /** Change difficulty mid-fight: affects damage from now on (monster HP was set when the fight began). */
+  setDifficulty(k) { this.diff = DIFFICULTY[k] || DIFFICULTY.normal; }
+  constructor(party, groups, { inventory = [], canFlee = true, boss = false, difficulty = 'normal' } = {}) {
     this.party = party; this.inventory = inventory; this.canFlee = canFlee; this.boss = boss;
+    this.diff = DIFFICULTY[difficulty] || DIFFICULTY.normal;
     this.monsters = [];
-    for (const g of groups) for (let i = 0; i < g.count; i++) this.monsters.push(makeMonster(g.key, this.monsters.length));
+    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp)); this.monsters.push(m); }
     this.log = []; this.events = []; this.round = 0; this.state = 'running'; this.turnIdx = -1; this.xp = 0; this.gold = 0;
     for (const c of party) { c.reaction = true; delete c.conditions.dodging; delete c.conditions.hidden; c.side = 'party'; }
     // Initiative: d20 + Dex
@@ -122,6 +135,7 @@ export class Combat {
 
   /* ---------- Damage & concentration ---------- */
   damage(target, amt, type, src, { crit = false, attack = false } = {}) {
+    if (src && src.side === 'monster' && target.side === 'party' && this.diff && this.diff.dmg !== 1 && amt > 0) amt = Math.max(1, Math.round(amt * this.diff.dmg));
     if (target.side === 'monster') {
       if (target.T.immune?.includes(type)) { this.say(`${target.name} is immune to ${type}!`, 'dim'); return 0; }
       if (target.hp <= 0) return 0;
@@ -213,7 +227,7 @@ export class Combat {
     let hit = nat !== 1 && (crit || total >= ac);
     const advTxt = adv && !dis ? ' (adv)' : dis && !adv ? ' (dis)' : '';
     // Shield reaction
-    if (hit && !crit && tgt.side === 'party' && tgt.reaction && knownSpells(tgt).includes('shield') && tgt.slots[0] > 0 && total < ac + 5 && tgt.hp > 0) {
+    if (hit && !crit && tgt.side === 'party' && tgt.reaction && knownSpells(tgt).includes('shield') && tgt.slots[0] > 0 && (!tgt.ai || tacticsOf(tgt).spells) && total < ac + 5 && tgt.hp > 0) {
       tgt.slots[0]--; tgt.reaction = false; tgt.conditions.shieldSpell = true; hit = false;
       this.say(`${tgt.name} casts Shield! (+5 AC) The ${label} glances off.`, 'spell'); this.emit({ type: 'spell', who: tgt, spell: 'shield' });
     }
@@ -451,11 +465,15 @@ export class Combat {
   }
   aiTurn(c) {
     const t = this.turn; const enemies = this.awakeMonsters(); const all = this.livingMonsters();
-    const hard = this.boss || all.reduce((s, m) => s + m.hp, 0) > 30 + c.level * 8;
+    const T = tacticsOf(c); const thr = Math.min(95, Math.max(5, T.healAt)) / 100;
+    const style = T.style;
+    let hard = this.boss || all.reduce((s, m) => s + m.hp, 0) > 30 + c.level * 8;
+    if (style === 'aggressive') hard = true; else if (style === 'defensive') hard = this.boss;
     const downed = this.party.filter((p) => p.hp <= 0 && !p.dead);
-    const hurt = this.party.filter((p) => !isDown(p) && p.hp < p.maxHp * 0.4);
-    const potion = this.inventory.find((k) => ITEMS[k]?.kind === 'potion');
-    const can = (k) => this.castable(c).some((x) => x.k === k);
+    const hurt = this.party.filter((p) => !isDown(p) && p.hp < p.maxHp * thr);
+    const potion = T.potions ? this.inventory.find((k) => ITEMS[k]?.kind === 'potion') : null;
+    const can = (k) => (T.spells || SPELLS[k].level === 0) && (T.aoe || !AOE_SPELLS.includes(k)) && this.castable(c).some((x) => x.k === k);
+    this.lastAi = { who: c.id, style };
     const go = (id, o) => { if (this.state === 'running' && this.current() === c) this.act(c, id, o); };
     const cast = (k, o = {}) => go('cast', { spell: k, ...o });
     // Bonus actions first
@@ -463,11 +481,15 @@ export class Combat {
     if (c.cls === 'cleric') {
       if (downed.length && can('healingWord')) cast('healingWord', { target: downed[0] });
       else if (hurt.length >= 3 && can('massHealingWord')) cast('massHealingWord');
-      else if (hurt.length && can('healingWord') && rand() < 0.6) cast('healingWord', { target: hurt[0] });
+      else if (hurt.length && can('healingWord') && (style === 'support' || (style !== 'aggressive' && rand() < 0.6))) cast('healingWord', { target: hurt[0] });
     }
     if (c.cls === 'rogue' && c.level >= 2 && t.bonus) go('hide');
     if (this.state !== 'running' || this.current() !== c) return;
     // Main action
+    // Defensive: badly hurt and nobody else to save them → drink a potion or dodge
+    if (style === 'defensive' && c.hp < c.maxHp * Math.max(thr, 0.35)) { if (potion) return go('item', { item: potion, target: c }); if (!this.boss) return go('dodge'); }
+    // Support: patch up allies first (potions on others if there is no healing spell)
+    if (style === 'support' && potion && t.action) { const ally = this.party.filter((p) => !p.dead && p.hp < p.maxHp * thr).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]; if (ally && !(c.cls === 'cleric' && (can('cureWounds') || can('healingWord')))) return go('item', { item: potion, target: ally }); }
     if (c.cls === 'fighter' && c.res.actionSurge && hard) { if (this.inFront(c)) go('attack', { target: this.pickEnemy() }); else go('shoot', { target: this.pickEnemy() }); if (this.current() === c && this.state === 'running') go('actionSurge'); }
     if (this.state !== 'running' || this.current() !== c || !t.action) return;
     const front = this.inFront(c);
@@ -476,7 +498,7 @@ export class Combat {
       const dead = this.party.find((p) => p.dead);
       if (dead && can('revivify')) return cast('revivify', { target: dead });
       if (stillDown.length && can('cureWounds')) return cast('cureWounds', { target: stillDown[0] });
-      const veryHurt = this.party.filter((p) => !isDown(p) && p.hp < p.maxHp * 0.35);
+      const veryHurt = style === 'aggressive' ? [] : this.party.filter((p) => !isDown(p) && p.hp < p.maxHp * (style === 'support' ? thr : Math.min(thr, 0.35 * thr / 0.4)));
       if (veryHurt.length >= 2 && c.res.channelDivinity) return go('preserveLife');
       if (veryHurt.length && can('cureWounds')) return cast('cureWounds', { target: veryHurt[0] });
       if (!c.concentration && hard && enemies.length >= 2 && can('spiritGuardians') && front) return cast('spiritGuardians');
@@ -492,10 +514,11 @@ export class Combat {
       if (enemies.length >= 3 && can('burningHands') && hard) return cast('burningHands');
       if (hard && can('magicMissile') && c.slots[0] > 1) return cast('magicMissile', { target: this.pickEnemy() });
     }
-    if (potion && c.hp < c.maxHp * 0.25 && !this.party.some((p) => p.cls === 'cleric' && canAct(p) && p !== c)) return go('item', { item: potion, target: c });
+    if (potion && c.hp < c.maxHp * thr * 0.62 && !this.party.some((p) => p.cls === 'cleric' && canAct(p) && p !== c)) return go('item', { item: potion, target: c });
     if (c.conditions.restrained && rand() < 0.5) return go('escape');
     if (front && c.equip.weapon && c.cls !== 'wizard') return go('attack', { target: this.pickEnemy() });
     if (c.cls === 'wizard') return cast(can('fireBolt') ? 'fireBolt' : 'rayOfFrost', { target: this.pickEnemy() });
+    if (style === 'defensive' && !front && !c.equip.ranged && c.cls !== 'cleric') return go('dodge');
     if (c.cls === 'cleric' && !front) return cast('sacredFlame', { target: this.pickEnemy() });
     if (c.equip.ranged) return go('shoot', { target: this.pickEnemy() });
     if (c.equip.weapon) return go(front ? 'attack' : 'dodge', { target: this.pickEnemy() });

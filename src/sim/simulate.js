@@ -5,7 +5,7 @@ import { LEVEL_DEFS } from '../dungeon/levels.js';
 import { longRest, shortRest, canLevelUp, levelUp } from '../rules/character.js';
 import { setRng, seeded } from '../rules/dice.js';
 
-export function simulateRun(seed, { heroCls = 'fighter', encountersPerLevel = [16, 18, 16], restEvery = 4 } = {}) {
+export function simulateRun(seed, { heroCls = 'fighter', encountersPerLevel = [16, 18, 16], restEvery = 4, difficulty = 'normal' } = {}) {
   setRng(seeded(seed));
   const s = newGame({ name: 'Sim', cls: heroCls, race: 'human' });
   s.party.forEach((c) => { c.ai = true; });
@@ -14,7 +14,7 @@ export function simulateRun(seed, { heroCls = 'fighter', encountersPerLevel = [1
   for (let L = 0; L < LEVEL_DEFS.length; L++) {
     s.level = L; s.mode = 'dungeon';
     for (let i = 0; i < encountersPerLevel[L]; i++) {
-      const cb = new Combat(s.party, randomEncounter(s), { inventory: s.inventory });
+      const cb = new Combat(s.party, randomEncounter(s), { inventory: s.inventory, difficulty });
       cb.runAuto(); stats.fights++; stats.rounds += cb.round + 1;
       if (cb.state === 'won') stats.wins++; else stats.losses++;
       afterCombat(s, cb, {});
@@ -27,7 +27,7 @@ export function simulateRun(seed, { heroCls = 'fighter', encountersPerLevel = [1
     for (let a = 0; a < 4 && !beat; a++) {
       stats.bossAttempts[L]++;
       const def = LEVEL_DEFS[L];
-      const cb = new Combat(s.party, def.boss.map((g) => ({ key: g.key, count: g.count[0] })), { inventory: s.inventory, boss: true, canFlee: false });
+      const cb = new Combat(s.party, def.boss.map((g) => ({ key: g.key, count: g.count[0] })), { inventory: s.inventory, boss: true, canFlee: false, difficulty });
       cb.runAuto(); stats.rounds += cb.round + 1;
       beat = cb.state === 'won';
       afterCombat(s, cb, { boss: true }); town();

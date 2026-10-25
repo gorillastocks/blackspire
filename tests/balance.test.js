@@ -14,3 +14,18 @@ describe('all-AI balance simulation', () => {
     expect(fightWin).toBeLessThan(1.0); // but not trivially so
   });
 });
+
+describe('balance by difficulty', () => {
+  const stats = (difficulty) => {
+    const runs = []; for (let i = 1; i <= 30; i++) runs.push(simulateRun(2000 + i, { heroCls: ['fighter', 'cleric', 'rogue', 'wizard'][i % 4], difficulty }));
+    return { wins: runs.filter((r) => r.result === 'victory').length, fightWin: runs.reduce((a, r) => a + r.wins, 0) / runs.reduce((a, r) => a + r.fights, 0) };
+  };
+  it('Story ≥ Normal ≥ Hard, and every difficulty is beatable', () => {
+    const r = Object.fromEntries(['story', 'normal', 'hard'].map((d) => [d, stats(d)]));
+    for (const [d, v] of Object.entries(r)) console.log(`${d}: victories ${v.wins}/30, random-fight win rate ${(v.fightWin * 100).toFixed(1)}%`);
+    expect(r.story.wins).toBeGreaterThanOrEqual(r.normal.wins);
+    expect(r.normal.fightWin).toBeGreaterThanOrEqual(r.hard.fightWin);
+    expect(r.story.wins).toBeGreaterThanOrEqual(27);
+    expect(r.hard.wins).toBeGreaterThanOrEqual(5);
+  });
+});

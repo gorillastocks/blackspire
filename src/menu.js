@@ -1,14 +1,16 @@
+import { readSave } from './storage.js';
 // In-game main menu (☰ Menu / Esc): Resume, Save to slot, Load, Settings, Save & Quit, Quit without saving.
 // It is its own overlay (#gmenu) above everything, so Resume returns to exactly what was on screen.
 export const SLOT_KEYS = ['grokwizard.save.slot1', 'grokwizard.save.slot2', 'grokwizard.save.slot3'];
 export const SETTINGS_KEY = 'grokwizard.settings';
 
-export function loadSettings() { try { return { sound: true, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }; } catch { return { sound: true }; } }
+const DEFAULTS = { sound: true, music: 0.6, sfx: 0.8, amb: 0.6, tutorialDone: false };
+export function loadSettings() { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }; } catch { return { ...DEFAULTS }; } }
 export function saveSettings(s) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* ignore */ } }
 
 /** Summary of a stored save (or null). */
 export function slotInfo(key) {
-  const raw = localStorage.getItem(key); if (!raw) return null;
+  const got = readSave(key, { repair: false }); if (!got) return null; const raw = got.raw;
   try {
     const s = JSON.parse(raw); const hero = s.party.find((c) => !c.companion && !c.recruit) || s.party[0];
     const where = s.mode === 'dungeon' ? `B${(s.level | 0) + 1}` : 'Town';

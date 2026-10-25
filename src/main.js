@@ -2,16 +2,19 @@ import './style.css';
 import * as G from './game/game.js';
 import { SLOT_KEYS, slotInfo, loadSettings, saveSettings } from './menu.js';
 import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js';
-import { Combat } from './rules/combat.js';
+import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
 import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive } from './rules/character.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted } from './sfx.js';
+import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience } from './audio.js';
+import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 
 const $ = (s) => document.querySelector(s);
+const INFO = new WeakMap(); // element → () => [title, ...lines] for press-and-hold info popups
 const h = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs || {})) { if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (k === 'class') e.className = v; else if (k === 'html') e.innerHTML = v; else if (v !== false && v != null) e.setAttribute(k, v); }
+  for (const [k, v] of Object.entries(attrs || {})) { if (k === 'info') { if (v) { INFO.set(e, v); e.classList.add('has-info'); } } else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (k === 'class') e.className = v; else if (k === 'html') e.innerHTML = v; else if (v !== false && v != null) e.setAttribute(k, v); }
   for (const k of kids.flat(Infinity)) if (k != null && k !== false) e.append(k.nodeType ? k : document.createTextNode(String(k)));
   return e;
 };
@@ -59,7 +62,7 @@ function renderParty() {
   S.party.forEach((c, i) => {
     const pct = Math.max(0, c.hp) / c.maxHp * 100;
     const conds = Object.keys(c.conditions).filter((k) => !['mageArmor', 'aid'].includes(k));
-    const card = h('div', { class: `card ${cur === c ? 'active' : ''} ${c.dead ? 'dead' : c.hp <= 0 ? 'down' : ''}`, id: 'card-' + c.id, onclick: () => showSheet(c) },
+    const card = h('div', { class: `card ${cur === c ? 'active' : ''} ${c.dead ? 'dead' : c.hp <= 0 ? 'down' : ''}`, id: 'card-' + c.id, onclick: () => showSheet(c), info: () => memberInfo(c) },
       h('div', { class: 'nm' }, h('span', {}, `${i < 2 ? '⚔' : '🏹'} ${c.name}`),
         !G.isHero(c) ? h('button', { class: `aitog small ${c.ai ? 'on' : ''}`, title: 'Toggle AI / player control', onclick: (e) => { e.stopPropagation(); c.ai = !c.ai; log(`${c.name} is now ${c.ai ? 'AI-controlled' : 'player-controlled'}.`, 'sys'); refresh(); if (combat) combatLoop(); } }, c.ai ? 'AI' : 'YOU') : h('span', { class: 'tag' }, 'YOU')),
       h('div', { class: 'sub' }, `L${c.level} ${RACES[c.race].name} ${CLASSES[c.cls].name} · AC ${armorClass(c)}`),
@@ -75,7 +78,7 @@ function checkReady() {
   if (!S) return;
   for (const c of G.newlyReady(S)) { log(`⬆ ${c.name} is ready to level up! Make camp or visit the Training Grounds.`, 'crit'); say({ who: c.name, color: '#ffd34d', text: 'Ready to level up! Make camp or visit the Training Grounds.' }); }
 }
-function refresh() { checkReady(); renderParty(); drawMinimap($('#minimap')); renderHud(); }
+function refresh() { checkReady(); renderParty(); drawMinimap($('#minimap')); renderHud(); syncAudio(); }
 function renderHud() {
   const el = $('#hud'); if (!S) { el.innerHTML = ''; return; }
   if (S.mode === 'dungeon') el.innerHTML = `<span>${getLevel(S.level).def.name}</span><span>⌖ ${S.x},${S.y} · ${DIR_NAMES[S.dir]} · ${S.gold} gp</span>`;
@@ -159,9 +162,9 @@ function dismissModal() { closeModal(); if (!S) showTitle(); else if (S.mode ===
 
 /* ---------- Title & creation ---------- */
 async function showTitle() {
-  S = null; closeMenu(); updateMenuBtn(); setControls(null); R.setMode('combat'); refresh();
+  S = null; townVisited = false; closeMenu(); updateMenuBtn(); setControls(null); R.setMode('combat'); refresh();
   R.showMonsters([{ id: 't1', key: 'tyrannosaurus' }, { id: 't2', key: 'giantSpider' }, { id: 't3', key: 'giantWasp' }], 0xff3df0);
-  const has = [G.SAVE_KEY, ...SLOT_KEYS].some((k) => localStorage.getItem(k));
+  const has = [G.SAVE_KEY, ...SLOT_KEYS].some((k) => slotInfo(k));
   openModal([
     h('h1', {}, 'GROKWIZARD'),
     h('p', { class: 'hint' }, 'Proving Grounds of the Thunder-Lizard · a first-person dungeon crawl in the spirit of 1981, built on the D&D 5e SRD'),
@@ -169,6 +172,8 @@ async function showTitle() {
       btn('▶ New Game', showCreate, { class: 'primary', id: 'btn-new' }),
       has ? btn('⟲ Continue', () => continueLatest(), { id: 'btn-continue' }) : null,
       has ? btn('📂 Load Game', () => openMenu('load'), { id: 'btn-title-load' }) : null,
+      btn('⇅ Import Save', () => openMenu('backup'), { id: 'btn-title-import' }),
+      btn('⚙ Settings', () => openMenu('settings'), { id: 'btn-title-settings' }),
       btn('? How to Play', showHelp),
       btn('© Credits & License', showCredits)),
   ], { closable: false, cls: 'transparent' });
@@ -186,11 +191,12 @@ function showHelp() {
 function showCredits() {
   openModal([h('h2', {}, 'Credits'), h('div', { html: `<p>Rules content from the <b>System Reference Document 5.1</b> by Wizards of the Coast LLC, licensed under <a style="color:#22e6ff" href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">CC-BY-4.0</a>. GrokWizard is unofficial Fan Content and is not affiliated with Wizards of the Coast.</p>
   <p>3D monster, chest and torch models by <b>Quaternius</b> (quaternius.com), CC0 1.0 — via the Easy Enemy, Animated Dinosaur, Ultimate Animated Animal, Platformer Game Kit, Cyberpunk Game Kit and Modular Dungeon packs.</p>
-  <p>Built with three.js (MIT) and Vite (MIT). Game code MIT.</p>` })]);
+  <p>Music, ambience and sound effects are original, generated live in your browser with WebAudio — no third-party audio.</p>
+  <p>Built with three.js (MIT), Vite (MIT) and Capacitor (MIT). Game code MIT.</p>` })]);
 }
 function showCreate(asRecruit = false) {
   const recruit = asRecruit === true;
-  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Grokalot', method = 'array';
+  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Grokalot', method = 'array', diff = 'normal';
   const draw = () => {
     const p = openModal([], { closable: true });
     const R_ = RACES[race], C = CLASSES[cls];
@@ -208,23 +214,27 @@ function showCreate(asRecruit = false) {
             btn('Standard Array', () => { method = 'array'; base = assignByPriority(cls, STANDARD_ARRAY); draw(); }),
             btn('🎲 Roll 4d6 (drop lowest)', () => { method = 'roll'; base = assignByPriority(cls, ABILITIES.map(() => roll4d6())); sfx('dice'); draw(); }, { id: 'btn-roll' })),
           h('p', { class: 'hint' }, 'Scores are placed into your class\'s key abilities automatically.'),
+          recruit ? null : h('h3', {}, 'Difficulty'),
+          recruit ? null : h('select', { id: 'cdiff', onchange: (e) => { diff = e.target.value; } }, Object.keys(DIFFICULTY).map((k) => h('option', { value: k, selected: k === diff }, DIFF_LABEL[k]))),
+          recruit ? null : h('p', { class: 'hint' }, 'Changes monster HP and damage. You can change it any time in ☰ Menu → Settings.'),
           recruit ? null : h('h3', {}, 'Your Companions'),
           ...(recruit ? [] : COMPANION_KEYS.map((k) => COMPANIONS[k])).map((c) => h('p', { class: 'hint' }, h('b', { style: `color:${c.color}` }, c.name + ' — '), c.blurb)))),
       h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, recruit ? btn('Recruit ▶', () => { handle(G.createRecruit(S, { name, race, cls, base })); autosave(); showTown(townSub); }, { class: 'primary', id: 'btn-recruit-create' }) : btn('Begin Adventure ▶', () => {
-        S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base });
+        S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base }); S.difficulty = diff;
         log(`Welcome to Grokhaven, ${name}. Three oddballs have agreed to join you…`, 'sys');
         for (const c of S.party.filter((c) => c.companion)) say({ who: COMPANIONS[c.companion].short, color: COMPANIONS[c.companion].color, text: COMPANIONS[c.companion].lines.combatStart[0] });
-        showTown();
+        showTown(); startTutorial();
       }, { class: 'primary', id: 'btn-begin' })));
   };
   draw();
 }
 
 /* ---------- Town ---------- */
-let townSub = null;
+let townSub = null; let townVisited = false;
 function showTown(sub = null) {
-  townSub = sub;
+  townSub = sub; const arriving = S.mode !== 'town' || !townVisited; townVisited = true;
   S.mode = 'town'; combat = null; endCombatUI(); setControls(null); R.setMode('combat'); R.clearMonsters(); refresh();
+  if (arriving) autosave(); // autosave on every town entry
   const back = (where) => btn('← Back to Town Square', () => showTown(), { class: 'backbtn', 'data-back': where });
   const P = (content) => openModal([h('div', { class: 'navbar' }, h('h2', {}, sub ? `Grokhaven · ${{ tavern: 'Tavern', temple: 'Temple', shop: 'Trading Post', train: 'Training Grounds', edge: 'Edge of Town' }[sub]}` : 'Grokhaven'), sub ? back('top') : null), content, sub ? h('div', { style: 'margin-top:10px' }, back('bottom')) : null], { closable: false, cls: 'transparent' });
   if (!sub) {
@@ -241,7 +251,7 @@ function showTown(sub = null) {
     return;
   }
   if (sub === 'tavern') {
-    P([h('h3', {}, 'The Boar & Spoon — your party'), partyOrderList(() => showTown('tavern')),
+    P([h('h3', {}, 'The Boar & Spoon — your party'), partyOrderList(() => showTown('tavern')), btn('🧠 Companion Tactics', () => showTactics(null, () => showTown('tavern')), { id: 'btn-tavern-tactics', class: 'small' }),
       h('h3', {}, 'Chatter at the bar'), ...S.party.filter((c) => c.companion).map((c) => h('p', {}, h('b', { style: `color:${COMPANIONS[c.companion].color}` }, c.name + ': '), COMPANIONS[c.companion].blurb)),
       btn('🗣 Listen in', () => log(G.campDialogue(S), 'lore')),
       h('h3', {}, `Roster — waiting at the bar (party ${S.party.length}/4)`),
@@ -293,7 +303,7 @@ function prompt(kind) {
   } else if (kind === 'down') {
     openModal([h('h2', {}, 'Stairs Down'), h('div', { class: 'menu' }, btn('Descend ▼', async () => { closeModal(); handle(G.goDown(S)); await startDungeon(); autosave(); }, { class: 'primary' }), btn('Not yet', closeModal))]);
   } else if (kind === 'up') {
-    openModal([h('h2', {}, S.level === 0 ? 'Stairs to Town' : 'Stairs Up'), h('div', { class: 'menu' }, btn(S.level === 0 ? 'Return to Grokhaven ▲' : 'Climb ▲', async () => { closeModal(); const ev = G.goUp(S); if (S.mode === 'town') { handle(ev); } else { handle(ev); await startDungeon(); } }, { class: 'primary' }), btn('Stay', closeModal))]);
+    openModal([h('h2', {}, S.level === 0 ? 'Stairs to Town' : 'Stairs Up'), h('div', { class: 'menu' }, btn(S.level === 0 ? 'Return to Grokhaven ▲' : 'Climb ▲', async () => { closeModal(); const ev = G.goUp(S); if (S.mode === 'town') { handle(ev); } else { handle(ev); await startDungeon(); autosave(); } }, { class: 'primary' }), btn('Stay', closeModal))]);
   } else if (kind === 'lock') {
     openModal([h('h2', {}, 'A Locked Door'), h('div', { class: 'menu' }, btn('🗝 Pick the lock', () => { closeModal(); handle(G.pickLock(S)); }), btn('💪 Force it (Athletics, noisy)', () => { closeModal(); handle(G.pickLock(S, true)); }), btn('Leave', closeModal))]);
   } else if (kind === 'altar') {
@@ -315,6 +325,7 @@ function showCamp() {
     btn('🗣 Talk with companions', () => { log(G.campDialogue(S), 'lore'); }, { id: 'btn-talk' }),
     btn('✨ Cast Mage Armor on wizard', () => { const w = S.party.find((c) => c.cls === 'wizard' && !c.equip.armor && !c.dead && c.slots[0] > 0); if (!w) { log('No wizard with a free slot needs Mage Armor.', 'dim'); return; } w.slots[0]--; w.conditions.mageArmor = true; log(`${w.name} casts Mage Armor (AC ${armorClass(w)}).`, 'spell'); refresh(); }),
     btn('💊 Cleric: Lesser Restoration on poisoned', () => { const c = S.party.find((c) => c.cls === 'cleric' && !isDown(c) && c.slots[1] > 0); const t = S.party.find((x) => x.conditions.poisoned); if (!c || !t) { log('Nobody to cure, or no 2nd-level slot.', 'dim'); return; } c.slots[1]--; delete t.conditions.poisoned; log(`${c.name} cures ${t.name}.`, 'good'); refresh(); }),
+    btn('🧠 Companion Tactics', () => showTactics(null, showCamp), { id: 'btn-camp-tactics' }),
     btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }), btn('📂 Load', () => loadGame())),
   h('h3', { id: 'camp-levelup' }, '⬆ Level Up'),
   (() => { const ready = S.party.filter((c) => canLevelUp(c)); return ready.length
@@ -333,7 +344,7 @@ function inventoryList(redraw, shop = false) {
   if (!inv.length) return h('p', { class: 'hint' }, 'Empty.');
   return h('div', { class: 'menu' }, inv.map((k, i) => {
     const I = ITEMS[k]; const kind = I?.kind || (k.startsWith('w:') ? 'weapon' : k.startsWith('a:') || k === 'shield' ? 'armor' : '');
-    return h('div', { class: 'row' }, h('span', { style: 'flex:1' }, G.nameOf(k)),
+    return h('div', { class: 'row' }, h('span', { style: 'flex:1', class: 'itemname', info: () => itemInfo(k), tabindex: 0 }, G.nameOf(k)),
       kind === 'potion' ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.usePotion(S, i, c)); redraw(); } }, h('option', {}, 'Use on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
       ['weapon', 'armor', 'ring', 'cloak'].includes(kind) ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.equip(S, c, i)); redraw(); } }, h('option', {}, 'Equip on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
       shop && kind !== 'key' ? btn(`Sell ${Math.floor(G.priceOf(k) / 2)}gp`, () => { handle(G.sell(S, i)); redraw(); }, { class: 'small' }) : null);
@@ -353,6 +364,7 @@ function showSheet(c) {
     h('h2', {}, `${c.name} — Level ${c.level} ${Rr.name} ${C.name} (${C.sub})`),
     canLevelUp(c) ? h('p', { class: 'lvlready sheetready' }, `⬆ Ready to level up to ${c.level + 1}! Make camp (Camp → Level Up) or visit the Training Grounds.`) : null,
     c.companion ? h('p', { class: 'hint' }, COMPANIONS[c.companion].blurb) : c.recruit ? h('p', { class: 'hint' }, 'A recruit you created at the Training Grounds.') : null,
+    !G.isHero(c) ? btn(`🧠 Tactics: ${TACTIC_STYLES[tacticsOf(c).style].name}${c.ai ? '' : ' (when AI)'}`, () => showTactics(c, () => showSheet(c)), { class: 'small', id: 'btn-sheet-tactics' }) : null,
     h('div', { class: 'abil' }, ABILITIES.map((a) => h('div', { title: ABILITY_NAMES[a] }, h('small', {}, a.toUpperCase()), h('b', {}, c.scores[a]), h('small', {}, fmtMod(mod(c.scores[a])))))),
     h('div', { class: 'cols', style: 'margin-top:10px' },
       h('div', {}, h('table', {}, h('tbody', {},
@@ -382,7 +394,7 @@ async function startCombat(info) {
   document.body.classList.add('incombat'); $('#cmenu').innerHTML = '<div class="who dim">Combat begins…</div>';
   const theme = getLevel(S.level).def.color;
   combatInfo = info;
-  combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss });
+  combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss, difficulty: S.difficulty || 'normal' });
   R.setMode('combat'); sfx('encounter');
   await R.showMonsters(combat.monsters, theme);
   const names = {}; for (const m of combat.monsters) names[m.name] = (names[m.name] || 0) + 1;
@@ -438,7 +450,7 @@ function renderTargets() {
   for (const m of combat.monsters) {
     if (m.hp <= 0) continue; const p = R.screenPos(m.id); if (!p) continue;
     const conds = Object.keys(m.conditions);
-    el.append(h('div', { class: `mtag ${targetPick ? 'pick' : ''} ${combat.current() === m ? 'sel' : ''}`, style: `left:${p.x}%;top:${Math.max(8, p.y)}%`, onclick: () => targetPick && targetPick(m) },
+    el.append(h('div', { class: `mtag ${targetPick ? 'pick' : ''} ${combat.current() === m ? 'sel' : ''}`, style: `left:${p.x}%;top:${Math.max(8, p.y)}%`, onclick: () => targetPick && targetPick(m), info: () => monsterInfo(m) },
       h('div', {}, m.name), h('div', { class: 'bar' }, h('i', { style: `width:${m.hp / m.maxHp * 100}%` })), conds.length ? h('div', { class: 'conds' }, conds.join(',')) : null));
   }
 }
@@ -448,7 +460,7 @@ function chooseFrom(title, options) {
     const cm = $('#cmenu'); if (modal.classList.contains('combat')) closeModal();
     document.body.classList.add('incombat');
     const done = (o) => { modal._options = null; cm.innerHTML = ''; cm.append(h('div', { class: 'who dim' }, '…')); resolve(o); };
-    cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: o.primary ? 'primary' : '' })))));
+    cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: o.primary ? 'primary' : '', info: o.info || null })))));
     cm.scrollTop = 0; requestAnimationFrame(() => { const l = $('#log'); l.scrollTop = l.scrollHeight; });
     modal._resolve = done; modal._options = options;
   });
@@ -463,7 +475,7 @@ async function pickTarget(kind, c) {
   if (kind === 'enemy') {
     const live = combat.livingMonsters();
     if (live.length === 1) return live[0];
-    const opts = live.map((m) => ({ label: `${m.name} (${m.hp}/${m.maxHp})${Object.keys(m.conditions).length ? ' [' + Object.keys(m.conditions).join(',') + ']' : ''}`, m }));
+    const opts = live.map((m) => ({ info: () => monsterInfo(m), label: `${m.name} (${m.hp}/${m.maxHp})${Object.keys(m.conditions).length ? ' [' + Object.keys(m.conditions).join(',') + ']' : ''}`, m }));
     opts.push({ label: '← Back', back: true });
     let resolveTap; const tap = new Promise((r) => (resolveTap = r));
     targetPick = (m) => resolveTap({ m }); renderTargets();
@@ -493,7 +505,7 @@ async function playerTurn() {
     let args = {};
     if (o.target === 'enemy') { const m = await pickTarget('enemy', c); if (!m) continue; args.target = m; }
     if (o.id === 'cast') {
-      const list = combat.castable(c).map(({ k, s }) => ({ label: `${s.name}${s.level ? ` (L${s.level})` : ' (cantrip)'}${s.bonus ? ' [bonus]' : ''}${s.conc ? ' [conc]' : ''}`, k, s }));
+      const list = combat.castable(c).map(({ k, s }) => ({ info: () => spellInfo(k), label: `${s.name}${s.level ? ` (L${s.level})` : ' (cantrip)'}${s.bonus ? ' [bonus]' : ''}${s.conc ? ' [conc]' : ''}`, k, s }));
       list.push({ label: '← Back', back: true });
       const sp = await chooseFrom(`${c.name}: cast which spell? Slots: ${c.slots.map((n, i) => `L${i + 1}:${n}`).join(' ')}`, list);
       if (sp.back) continue;
@@ -509,7 +521,7 @@ async function playerTurn() {
       args = { spell: sp.k, slot, target };
     }
     if (o.id === 'item') {
-      const pots = [...new Set(S.inventory.filter((k) => ITEMS[k]?.kind === 'potion'))].map((k) => ({ label: `${ITEMS[k].name} (×${S.inventory.filter((x) => x === k).length})`, k }));
+      const pots = [...new Set(S.inventory.filter((k) => ITEMS[k]?.kind === 'potion'))].map((k) => ({ info: () => itemInfo(k), label: `${ITEMS[k].name} (×${S.inventory.filter((x) => x === k).length})`, k }));
       pots.push({ label: '← Back', back: true });
       const it = await chooseFrom('Use which item?', pots); if (it.back) continue;
       const tg = await pickTarget('ally', c); if (!tg) continue; args = { item: it.k, target: tg };
@@ -523,7 +535,7 @@ async function playerTurn() {
 async function endCombat() {
   await flushCombat(); await wait(500);
   const st = combat.state; const info = combatInfo;
-  if (st === 'won') { sfx('victory'); say(banter(S.party, 'victory', {}, 0.8)); }
+  if (st === 'won') { victoryUntil = Date.now() + 9000; playMusic('victory', true, () => { victoryUntil = 0; syncAudio(); }); say(banter(S.party, 'victory', {}, 0.8)); }
   const ev = G.afterCombat(S, combat, info);
   combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI();
   if (st === 'lost') { handle(ev); return; }
@@ -535,10 +547,11 @@ async function endCombat() {
 }
 
 /* ---------- Save/load ---------- */
-function autosave() { if (!S) return; try { S.savedAt = Date.now(); localStorage.setItem(G.SAVE_KEY, G.serialize(S)); } catch (e) { log('Save failed: ' + e.message, 'bad'); } }
+function autosave() { if (!S || combat) return; try { S.savedAt = Date.now(); writeSave(G.SAVE_KEY, G.serialize(S)); } catch (e) { log('Save failed: ' + e.message, 'bad'); } }
 async function loadGame(key = G.SAVE_KEY) {
-  const raw = localStorage.getItem(key); if (!raw) { log('No saved game.', 'bad'); return; }
-  try { S = G.deserialize(raw); } catch { log('Save is corrupted.', 'bad'); return; }
+  const got = readSave(key); if (!got) { log('No saved game.', 'bad'); return; }
+  try { S = G.deserialize(got.raw); } catch { log('Save is corrupted and no backup could be read.', 'bad'); return; }
+  if (got.recovered) log('⚠ That save was damaged — restored it from its automatic backup copy.', 'crit');
   abandonCombat(); closeModal(); closeMenu(); updateMenuBtn(); log('Game loaded.', 'sys');
   if (S.mode === 'dungeon') await startDungeon(); else showTown();
 }
@@ -548,10 +561,13 @@ async function boot() {
   log('Loading the 3D engine…', 'dim');
   const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
   R = new Renderer($('#view'));
-  window.__gw = { get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, banter: (k) => say(banter(S.party, k, {}, 1)) };
+  window.__gw = { showTactics, openMenu, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
+  const where = await initStorage([G.SAVE_KEY, ...SLOT_KEYS]);
+  if (where === 'icloud') log('Saves sync with iCloud.', 'dim');
+  if (!isNative() && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
   log('GrokWizard ready. Press New Game!', 'sys');
   showTitle();
 }
@@ -569,7 +585,7 @@ function menuBack() { if (menuView === 'main' || !S) closeMenu(); else openMenu(
 function latestKey() { let best = null, bt = -1; for (const k of [G.SAVE_KEY, ...SLOT_KEYS]) { const i = slotInfo(k); if (i && i.t > bt) { bt = i.t; best = k; } } return best; }
 function continueLatest() { const k = latestKey(); if (k) loadGame(k); }
 function slotLabel(k, i) { const inf = slotInfo(k); return `${i < 0 ? 'Autosave / Quick save' : 'Slot ' + (i + 1)}: ${inf ? inf.text : 'empty'}`; }
-function saveTo(k) { S.savedAt = Date.now(); localStorage.setItem(k, G.serialize(S)); }
+function saveTo(k) { S.savedAt = Date.now(); writeSave(k, G.serialize(S)); }
 function confirmView(title, text, yesLabel, yes, back = 'main') {
   openMenu(null, [h('h2', {}, title), h('p', { class: 'warn' }, text),
     h('div', { class: 'menu' }, btn(yesLabel, yes, { class: 'primary', id: 'btn-confirm' }), btn('Cancel', () => (S ? openMenu(back) : closeMenu()), { id: 'btn-cancel' }))]);
@@ -588,6 +604,7 @@ function openMenu(view = 'main', custom = null) {
         btn('💾 Save Game…', () => openMenu('save'), { id: 'menu-save', disabled: inCombat }),
         btn('📂 Load Game…', () => openMenu('load'), { id: 'menu-load' }),
         btn('⚙ Settings', () => openMenu('settings'), { id: 'menu-settings' }),
+        btn('⇅ Export / Import Saves', () => openMenu('backup'), { id: 'menu-backup' }),
         btn('💾⏏ Save & Quit to Title', () => openMenu('savequit'), { id: 'menu-savequit', disabled: inCombat }),
         btn('⏏ Quit to Title without saving', () => confirmView('Quit without saving?', 'Progress since your last save will be lost.', '⏏ Quit without saving', () => { closeMenu(); closeModal(); abandonCombat(); showTitle(); }), { id: 'menu-quit' }))];
   } else if (view === 'save' || view === 'savequit') {
@@ -607,12 +624,135 @@ function openMenu(view = 'main', custom = null) {
         btn('← Back', () => (S ? openMenu('main') : closeMenu()), { class: 'menuback' }))];
   } else if (view === 'settings') {
     const st = loadSettings();
-    body = [h('h2', {}, '⚙ Settings'), h('div', { class: 'menu' },
-      btn(`🔊 Sound: ${st.sound ? 'On' : 'Off'}`, () => { st.sound = !st.sound; saveSettings(st); setMuted(!st.sound); openMenu('settings'); }, { id: 'set-sound' }),
-      btn('← Back', () => openMenu('main'), { class: 'menuback' }))];
+    const slider = (key, label) => h('label', { class: 'slider' }, h('span', {}, label), h('input', { type: 'range', min: 0, max: 100, step: 5, value: Math.round(st[key] * 100), id: 'vol-' + key, 'aria-label': label + ' volume',
+      oninput: (e) => { st[key] = +e.target.value / 100; e.target.nextSibling.textContent = e.target.value + '%'; applyAudioSettings(st); }, onchange: () => { saveSettings(st); if (key === 'sfx') sfx('hit'); } }), h('b', {}, Math.round(st[key] * 100) + '%'));
+    body = [h('h2', {}, '⚙ Settings'),
+      h('h3', {}, 'Audio'),
+      h('div', { class: 'menu' }, btn(`🔊 Sound: ${st.sound ? 'On' : 'Off (all muted)'}`, () => { st.sound = !st.sound; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-sound' })),
+      slider('music', '🎵 Music'), slider('sfx', '💥 Sound effects'), slider('amb', '🌫 Ambience'),
+      S ? h('h3', {}, 'Difficulty') : null,
+      S ? h('div', { class: 'seg', role: 'radiogroup' }, Object.keys(DIFFICULTY).map((k) => btn(DIFF_LABEL[k], () => { S.difficulty = k; if (combat) combat.setDifficulty?.(k); autosave(); log(`Difficulty: ${DIFF_LABEL[k]}.`, 'sys'); openMenu('settings'); }, { class: (S.difficulty || 'normal') === k ? 'on' : '', 'data-diff': k, role: 'radio', 'aria-checked': String((S.difficulty || 'normal') === k) }))) : null,
+      S ? h('p', { class: 'hint' }, DIFF_HELP[S.difficulty || 'normal']) : null,
+      h('h3', {}, 'Help'),
+      h('div', { class: 'menu' }, btn('💡 Show the tutorial tips again', () => { st.tutorialDone = false; saveSettings(st); closeMenu(); startTutorial(); }, { id: 'set-tutorial' }),
+        btn('← Back', () => openMenu('main'), { class: 'menuback' }))];
+  } else if (view === 'backup') {
+    const cur = S && !combat ? G.serialize({ ...S, savedAt: Date.now() }) : (readSave(latestKey() || G.SAVE_KEY) || {}).raw;
+    const area = h('textarea', { id: 'import-code', rows: 4, placeholder: 'Paste a GW1: save code here…', spellcheck: 'false', autocapitalize: 'off' });
+    const file = h('input', { type: 'file', accept: '.json,.txt,application/json,text/plain', id: 'import-file', class: 'hidden', onchange: async (e) => { const f = e.target.files[0]; if (f) doImport(await f.text()); } });
+    body = [h('h2', {}, '⇅ Export / Import Saves'),
+      note('Back up your game, or move it to another device: export a file or copy the save code, then import it there.'),
+      h('h3', {}, 'Export'),
+      cur ? h('div', { class: 'menu' },
+        btn('⬇ Download save file (.json)', () => { const a = h('a', { href: URL.createObjectURL(new Blob([cur], { type: 'application/json' })), download: `grokwizard-${new Date().toISOString().slice(0, 10)}.json` }); document.body.append(a); a.click(); a.remove(); }, { id: 'btn-export-file' }),
+        btn('📋 Copy save code', async () => { const code = exportCode(cur); $('#export-code').value = code; try { await navigator.clipboard.writeText(code); log('Save code copied.', 'sys'); } catch { $('#export-code').select(); } }, { id: 'btn-export-code' }),
+        h('textarea', { id: 'export-code', rows: 3, readonly: true }, exportCode(cur))) : note(combat ? 'Finish the fight first — saves are never taken mid-combat.' : 'There is no save to export yet.'),
+      h('h3', {}, 'Import'),
+      note(S ? 'Importing replaces your current game (it is also kept in the autosave slot).' : 'The imported game goes into the autosave slot and loads.'),
+      area, file,
+      h('div', { class: 'menu' }, btn('⬆ Import from code', () => doImport(area.value), { id: 'btn-import-code' }), btn('📂 Import from file…', () => file.click(), { id: 'btn-import-file' }),
+        btn('← Back', () => (S ? openMenu('main') : closeMenu()), { class: 'menuback' }))];
   }
   gmenu.className = ''; gmenu.innerHTML = '';
   gmenu.append(h('div', { class: 'panel' }, h('div', { class: 'navbar closebar' }, btn('✕ Close', closeMenu, { class: 'small closebtn', id: 'menu-close' })), body));
 }
-setMuted(!loadSettings().sound);
+function doImport(text) {
+  let raw; try { raw = importCode(text); } catch (e) { openMenu(null, [h('h2', {}, 'Import failed'), h('p', { class: 'warn' }, e.message), h('div', { class: 'menu' }, btn('← Back', () => openMenu('backup')))]); return; }
+  const go = () => { const s2 = JSON.parse(raw); s2.savedAt = Date.now(); writeSave(G.SAVE_KEY, JSON.stringify(s2)); loadGame(G.SAVE_KEY).then(() => log('Save imported.', 'sys')); };
+  if (S) confirmView('Import this save?', 'It replaces the current game. Progress since your last save will be lost.', '⬆ Import', go, 'backup'); else go();
+}
+const DIFF_LABEL = { story: '🌱 Story', normal: '⚔ Normal', hard: '💀 Hard' };
+const DIFF_HELP = { story: 'Story: monsters have 70% HP and deal 60% damage.', normal: 'Normal: monsters as written in the SRD.', hard: 'Hard: monsters have 135% HP and deal 130% damage.' };
+
+/* ---------- Audio: music + ambience follow the game ---------- */
+let victoryUntil = 0;
+function applyAudioSettings(st = loadSettings()) { setMuted(!st.sound); setVolumes({ music: st.music, sfx: st.sfx, amb: st.amb }); }
+function syncAudio() {
+  const amb = !S ? null : S.mode === 'dungeon' ? 'dungeon' : 'town';
+  ambience(amb);
+  if (victoryUntil > Date.now()) return;
+  const track = !S ? 'title' : combat ? (combatInfo?.boss ? 'boss' : 'combat') : S.mode === 'dungeon' ? `dungeon${Math.min(2, S.level | 0)}` : 'town';
+  playMusic(track);
+}
+applyAudioSettings();
+setInterval(syncAudio, 1000);
+
+/* ---------- Companion tactics ---------- */
+function showTactics(only = null, back = null) {
+  if (!S) return;
+  const list = (only ? [only] : [...S.party, ...S.roster]).filter((c) => !G.isHero(c));
+  const draw = () => openModal([h('h2', {}, '🧠 Companion Tactics'),
+    h('p', { class: 'hint' }, 'How each AI-controlled companion fights. Player-controlled (YOU) companions ignore these until you switch them back to AI.'),
+    list.length ? null : h('p', {}, 'No companions yet — recruit some at the Tavern.'),
+    ...list.map((c) => { const t = c.tactics = { ...defaultTactics(), ...(c.tactics || {}) };
+      const tog = (key, label) => h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: t[key], 'data-tac': key, onchange: (e) => { t[key] = e.target.checked; autosave(); } }), h('span', {}, label));
+      return h('div', { class: 'tactic', 'data-member': c.id },
+        h('div', { class: 'row', style: 'justify-content:space-between' }, h('b', {}, `${c.name} · ${CLASSES[c.cls].name}`), h('span', { class: 'tag' }, c.ai ? 'AI' : 'YOU')),
+        h('div', { class: 'seg' }, Object.entries(TACTIC_STYLES).map(([k, v]) => btn(v.name, () => { t.style = k; autosave(); draw(); }, { class: t.style === k ? 'on' : '', 'data-style': k, info: () => [v.name, v.desc] }))),
+        h('p', { class: 'hint' }, TACTIC_STYLES[t.style].desc),
+        h('div', { class: 'toggles' }, tog('spells', '✨ Use spell slots'), tog('potions', '🧪 Use potions'), tog('aoe', '🔥 Area spells')),
+        h('label', { class: 'slider' }, h('span', {}, '❤ Heal allies below'), h('input', { type: 'range', min: 10, max: 90, step: 5, value: t.healAt, 'data-tac': 'healAt', 'aria-label': `${c.name} heal threshold`, oninput: (e) => { t.healAt = +e.target.value; e.target.nextSibling.textContent = t.healAt + '% HP'; }, onchange: () => autosave() }), h('b', {}, t.healAt + '% HP')));
+    }), back ? h('div', { class: 'menu' }, btn('← Back', back, { class: 'menuback', id: 'tactics-back' })) : null]);
+  draw();
+}
+
+/* ---------- Press-and-hold info popups (touch) / right-click (mouse) ---------- */
+const infoPop = h('div', { id: 'infopop', class: 'hidden', role: 'tooltip' }); document.body.append(infoPop);
+function findInfo(t) { for (let el = t; el && el !== document.body; el = el.parentElement) if (INFO.has(el)) return el; return null; }
+function showInfo(el, x, y) {
+  const lines = [].concat(INFO.get(el)() || []); if (!lines.length) return;
+  infoPop.innerHTML = ''; infoPop.append(h('b', {}, lines[0]), ...lines.slice(1).map((l) => h('div', {}, l)), h('small', {}, 'Tap anywhere to close'));
+  infoPop.className = ''; const r = infoPop.getBoundingClientRect();
+  infoPop.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, x - r.width / 2)) + 'px';
+  infoPop.style.top = Math.max(8, y - r.height - 24 < 8 ? Math.min(innerHeight - r.height - 8, y + 24) : y - r.height - 24) + 'px';
+}
+function hideInfo() { infoPop.className = 'hidden'; }
+let holdT = null, holdXY = null, swallowClick = false;
+document.addEventListener('pointerdown', (e) => {
+  if (!infoPop.classList.contains('hidden')) { hideInfo(); swallowClick = true; return; }
+  const el = findInfo(e.target); if (!el || e.button > 0) return; holdXY = [e.clientX, e.clientY];
+  holdT = setTimeout(() => { holdT = null; swallowClick = true; showInfo(el, holdXY[0], holdXY[1]); if (navigator.vibrate) navigator.vibrate(10); }, 450);
+}, true);
+document.addEventListener('pointermove', (e) => { if (holdT && Math.hypot(e.clientX - holdXY[0], e.clientY - holdXY[1]) > 10) { clearTimeout(holdT); holdT = null; } }, true);
+for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, () => { clearTimeout(holdT); holdT = null; }, true);
+document.addEventListener('click', (e) => { if (swallowClick) { swallowClick = false; e.stopPropagation(); e.preventDefault(); } }, true);
+document.addEventListener('contextmenu', (e) => { const el = findInfo(e.target); if (el) { e.preventDefault(); showInfo(el, e.clientX, e.clientY); } });
+function memberInfo(c) {
+  const t = tacticsOf(c);
+  return [`${c.name} — L${c.level} ${RACES[c.race].name} ${CLASSES[c.cls].name}`, `HP ${Math.max(0, c.hp)}/${c.maxHp} · AC ${armorClass(c)} · XP ${c.xp}`,
+    c.slots.length ? 'Spell slots ' + c.slots.map((n, l) => `L${l + 1}:${n}`).join(' ') : 'No spell slots',
+    Object.keys(c.conditions).length ? 'Conditions: ' + Object.keys(c.conditions).join(', ') : 'No conditions',
+    G.isHero(c) ? 'Your hero' : `${c.ai ? 'AI' : 'Player'}-controlled · Tactics: ${TACTIC_STYLES[t.style].name}, heal below ${t.healAt}%`];
+}
+function monsterInfo(m) {
+  const M = MONSTERS[m.key] || {};
+  return [`${m.name}${M.cr != null ? ` (CR ${M.cr < 1 ? '1/' + Math.round(1 / M.cr) : M.cr})` : ''}`, `HP ${m.hp}/${m.maxHp} · AC ${m.ac ?? M.ac}`,
+    ...(M.attacks || []).map((a) => `${a.name}: ${a.bonus != null ? fmtMod(a.bonus) + ' to hit, ' : ''}${a.dmg || ''} ${a.type || ''}`.trim()),
+    Object.keys(m.conditions || {}).length ? 'Conditions: ' + Object.keys(m.conditions).join(', ') : null].filter(Boolean);
+}
+function spellInfo(k) { const s = SPELLS[k]; return s ? [`${s.name} — ${s.level ? 'Level ' + s.level : 'Cantrip'}${s.conc ? ' · Concentration' : ''}`, s.desc || ''] : []; }
+function itemInfo(k) {
+  const I = ITEMS[k]; const w = k.startsWith('w:') ? WEAPONS[k.slice(2)] : null; const a = k.startsWith('a:') ? ARMOR[k.slice(2)] : null;
+  return [G.nameOf(k), I?.heal ? `Heals ${I.heal} HP` : I?.cure ? `Cures ${I.cure}` : w ? `${w.dmg} ${w.type} · ${w.cat}${w.props?.length ? ' · ' + w.props.join(', ') : ''}` : a ? `AC ${a.base} (${a.type} armor)` : k === 'shield' ? '+2 AC' : I?.desc || I?.kind || '', `Value ${G.priceOf(k)} gp`].filter(Boolean);
+}
+
+/* ---------- First-run tutorial ---------- */
+const TIPS = [
+  ['Welcome to Grokhaven!', 'Visit the Trading Post for gear, then head to the Edge of Town to enter the maze.'],
+  ['Moving', 'Use the arrow pad (or swipe / WASD). Search with 🔎 to find secret doors and traps.'],
+  ['Hold for info', 'Press and hold (or right-click) a party card, monster, item or spell to see its details.'],
+  ['Your companions', 'Tap AI/YOU on a card to control a companion yourself. Set how AI companions fight under 🧠 Companion Tactics at camp or the Tavern.'],
+  ['Saving', 'The game autosaves on stairs, after fights and in town. ☰ Menu has save slots, settings and export/import.'],
+];
+const tipEl = h('div', { id: 'tip', class: 'hidden', role: 'dialog', 'aria-label': 'Tutorial tip' }); document.body.append(tipEl);
+function startTutorial() {
+  const st = loadSettings(); if (st.tutorialDone) return;
+  let i = 0;
+  const end = () => { tipEl.className = 'hidden'; const s2 = loadSettings(); s2.tutorialDone = true; saveSettings(s2); };
+  const draw = () => { tipEl.className = ''; tipEl.innerHTML = '';
+    tipEl.append(h('div', { class: 'tiphead' }, h('b', {}, `💡 ${TIPS[i][0]}`), h('small', {}, `${i + 1} / ${TIPS.length}`)), h('p', {}, TIPS[i][1]),
+      h('div', { class: 'row' }, btn('Skip tips', end, { class: 'small', id: 'tip-skip' }), i < TIPS.length - 1 ? btn('Next ▶', () => { i++; draw(); }, { class: 'small primary', id: 'tip-next' }) : btn('Got it ✔', end, { class: 'small primary', id: 'tip-done' }))); };
+  draw();
+}
+
 setInterval(updateMenuBtn, 500);
