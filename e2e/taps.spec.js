@@ -47,6 +47,18 @@ test('pause mode: many rat fights with fast, double and mistimed taps always fin
         await expect.poll(() => page.evaluate(() => { const m = document.querySelector('#cmenu .combatmenu'); return !m || !!document.querySelector('#caption.show') || (m.offsetParent !== null && m.getBoundingClientRect().height > 40); }), { timeout: 4000, message: `fight ${fight}: player menu visible` }).toBe(true);
       }
     }
+    // the victory loot card stays up (the watchdog must not clear it) until a tap anywhere / Enter / Space
+    if (await page.evaluate(() => window.__gw.state.party.some((c) => c.hp > 0))) {
+      await expect(page.locator('#caption.show.loot'), `fight ${fight}: loot card`).toBeVisible();
+      if (fight % 4 === 0) { await page.waitForTimeout(2600); await expect(page.locator('#caption.show.loot'), 'watchdog leaves the loot card alone').toBeVisible(); }
+      const d = rnd(); await page.waitForTimeout(rnd() < 0.5 ? 30 : 300);
+      if (d < 0.4) await tapAt(page, 20 + rnd() * (vp.width - 40), 20 + rnd() * (vp.height - 40), rnd() < 0.7);
+      else if (d < 0.7) { await tapAt(page, vp.width / 2, vp.height / 3, true); await page.waitForTimeout(25); await tapAt(page, vp.width / 2, vp.height / 3, true); }
+      else await page.keyboard.press(d < 0.85 ? 'Enter' : ' ');
+      for (let k = 0; k < 6 && await page.locator('#caption.show.loot').isVisible(); k++) { await page.waitForTimeout(300); await page.keyboard.press('Enter'); } // a too-early tap is ignored by the double-tap guard
+      await expect(page.locator('#caption.show.loot')).toHaveCount(0);
+      const close = page.locator('#modal:not(.hidden) button', { hasText: '✕ Close' }).first(); if (await close.isVisible().catch(() => false)) await close.click().catch(() => {});
+    }
     expect(await page.evaluate(() => document.body.classList.contains('capup')), 'layout restored after the fight').toBe(false);
     await page.evaluate(() => window.__gw.state.mode === 'dungeon' || window.__gw.state.mode === 'town');
     const cont = page.locator('#modal:not(.hidden) button').first(); if (await cont.isVisible().catch(() => false)) await cont.click().catch(() => {});
@@ -88,3 +100,39 @@ test('exploration messages show as tap-to-dismiss cards, queued one at a time', 
   await expect.poll(() => page.evaluate(() => !!window.__gw.combat)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+// After every won battle the loot shows in the caption box until dismissed — in every battle-speed mode, on every device.
+for (const speed of ['normal', 'fast', 'pause']) {
+  test(`victory loot card (${speed} speed) stays until tapped, fits, and is logged`, async ({ page }, info) => {
+    test.skip(speed !== 'normal' && info.project.name !== 'iphone', 'speed variants on iPhone portrait');
+    const errors = trackErrors(page);
+    await page.addInitScript((sp) => localStorage.setItem('blackspire.settings', JSON.stringify({ ...JSON.parse(localStorage.getItem('blackspire.settings') || '{}'), battleSpeed: sp })), speed);
+    await newGame(page); await enterDungeon(page);
+    await page.evaluate(() => { for (const c of window.__gw.state.party) { c.maxHp = 999; c.hp = 999; } window.__gw.startCombat({ groups: [{ key: 'giantRat', count: 2 }] }); });
+    await expect.poll(() => page.evaluate(() => !!window.__gw.combat)).toBe(true);
+    // a big haul (long card): loot picked up during the fight shows on the card
+    await page.evaluate(() => { const s = window.__gw.state; s.inventory.push('potionHealing', 'potionHealing', 'potionGreater', 'antitoxin', 'spoon'); s.party[1].xp += 5000; });
+    const touch = !info.project.name.startsWith('desktop');
+    for (let i = 0; i < 600 && await page.evaluate(() => !!window.__gw.combat); i++) {
+      if (await page.locator('.combatmenu').isVisible()) { await page.locator('.combatmenu button', { hasText: 'Auto-battle' }).first().click().catch(() => {}); }
+      else if (speed === 'pause' && await capShown(page)) { await page.waitForTimeout(240); await page.keyboard.press('Enter'); }
+      else await page.waitForTimeout(150);
+    }
+    await expect(page.locator('#caption.show.loot')).toBeVisible();
+    const txt = await page.locator('#caption').textContent();
+    expect(txt).toMatch(/XP/); expect(txt).toMatch(/gold/); expect(txt).toMatch(/Potion of Healing/); expect(txt).toMatch(/ready for level/); expect(txt).toMatch(/Tap to continue/);
+    const m = await page.evaluate(() => { const b = (s) => { const e = document.querySelector(s); const r = e && e.offsetParent && e.getBoundingClientRect(); return r && r.width ? r : null; }; const c = document.querySelector('#caption'); return { c: b('#caption'), v: b('#view'), ctl: b('#controls'), fits: c.scrollHeight <= c.clientHeight + 1, font: parseFloat(getComputedStyle(c.querySelector('.caploot')).fontSize), log: document.querySelector('#log').textContent }; });
+    expect(m.c.top >= m.v.top - 1 && m.c.bottom <= m.v.bottom + 1, 'loot card inside the 3D view').toBe(true);
+    expect(!m.ctl || m.c.bottom <= m.ctl.top + 1 || m.c.top >= m.ctl.bottom - 1 || m.c.right <= m.ctl.left + 1 || m.c.left >= m.ctl.right - 1, 'loot card not covering the controls').toBe(true);
+    expect(m.fits, 'loot fits').toBe(true); expect(m.font).toBeGreaterThanOrEqual(12);
+    expect(m.log, 'loot logged').toMatch(/XP.*gold/);
+    await page.screenshot({ path: `test-results/loot-${speed}-${info.project.name}.png` });
+    await page.waitForTimeout(3000); await expect(page.locator('#caption.show.loot'), 'not auto-cleared').toBeVisible();
+    const pos = await page.evaluate(() => `${window.__gw.state.x},${window.__gw.state.y}`); await page.keyboard.press('ArrowUp'); await page.waitForTimeout(150);
+    expect(await page.evaluate(() => `${window.__gw.state.x},${window.__gw.state.y}`), 'no movement under the card').toBe(pos);
+    const vp = page.viewportSize(); if (touch) await page.touchscreen.tap(vp.width * 0.8, vp.height * 0.15); else await page.mouse.click(vp.width * 0.8, vp.height * 0.15);
+    await expect(page.locator('#caption.show')).toHaveCount(0);
+    await expect(page.locator('#modal:not(.hidden)')).toHaveCount(0); // the dismissing tap did not click through
+    expect(errors).toEqual([]);
+  });
+}
