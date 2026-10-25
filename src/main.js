@@ -474,7 +474,7 @@ function showCaption(e, tapHint = false) {
   const el = $('#caption'); clearTimeout(capTimer);
   el.className = 'show ' + (e.tone || ''); el.innerHTML = '';
   el.append(h('div', { class: 'captxt' }, e.text), e.sub ? h('div', { class: 'capsub' }, e.sub) : '', tapHint ? h('div', { class: 'captap' }, '▶ Tap to continue') : '');
-  clearTimeout(capDownTimer); document.body.classList.add('capup'); if (R && !R.captionUp) { R.captionUp = true; R.fitArena?.(); } placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 350);
+  clearTimeout(capDownTimer); capDownAt = 0; document.body.classList.add('capup'); if (R && !R.captionUp) { R.captionUp = true; R.fitArena?.(); } placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 350);
   if (!tapHint) capTimer = setTimeout(() => { el.classList.remove('show'); document.body.classList.remove('capcover'); captionDown(); placeBanter(); }, Math.max(2500, speed().hold * 2.5));
 }
 /** Put the caption in the band below the monsters and above anything covering the bottom of the view
@@ -506,21 +506,41 @@ const replaceOverlays = () => { const el = $('#caption'); if (el.classList.conta
 function hideCaption() { clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); captionDown(); placeBanter(); }
 /** The caption band (and, on phone portrait, the collapsed menu/log) is released a moment after the last caption, so
  *  back-to-back narration doesn't make the layout and camera pump between captions. */
-let capDownTimer = null;
+let capDownTimer = null, capDownAt = 0;
+const capDownPending = () => performance.now() < capDownAt;
 function captionDown(now = false) {
-  clearTimeout(capDownTimer); const go = () => { document.body.classList.remove('capup'); if (R?.captionUp) { R.captionUp = false; if (combat) R.fitArena?.(); } placeBanter(); };
+  clearTimeout(capDownTimer); capDownAt = now ? 0 : performance.now() + 900; const go = () => { capDownAt = 0; document.body.classList.remove('capup'); if (R?.captionUp) { R.captionUp = false; if (combat) R.fitArena?.(); } placeBanter(); };
   if (now) go(); else capDownTimer = setTimeout(go, 700);
 }
 const tapCatch = h('div', { id: 'tapcatch', class: 'hidden', 'aria-label': 'Tap to continue' }); document.body.append(tapCatch);
+let tapPending = null; // resolver of the caption currently waiting for a tap (pause mode)
 function tapToContinue() {
   return new Promise((resolve) => {
-    tapCatch.className = ''; let done = false;
-    const fin = (ev) => { if (done) return; if (ev && ev.type === 'keydown' && ![' ', 'Enter'].includes(ev.key)) return; if (ev) { ev.preventDefault(); ev.stopPropagation(); } done = true; tapCatch.className = 'hidden'; tapCatch.removeEventListener('pointerdown', fin); window.removeEventListener('keydown', fin, true); clearInterval(iv); resolve(); };
-    tapCatch.addEventListener('pointerdown', fin); window.addEventListener('keydown', fin, true);
-    // never get stuck: if the fight is abandoned or the speed setting is changed away from Pause, carry on
-    const iv = setInterval(() => { if (!combat || speed().hold !== 0) fin(); }, 250);
+    tapCatch.className = ''; let done = false; const t0 = performance.now();
+    const fin = (ev) => {
+      if (done) return;
+      if (ev && ev.type === 'keydown' && ![' ', 'Enter'].includes(ev.key)) return;
+      if (ev && performance.now() - t0 < 220) return; // the 2nd half of a double tap must not skip the next caption unread
+      if (ev && (ev.target === tapCatch || ev.type === 'keydown')) { ev.preventDefault(); ev.stopPropagation(); }
+      done = true; tapPending = null; tapCatch.className = 'hidden';
+      tapCatch.removeEventListener('pointerdown', fin); window.removeEventListener('pointerdown', fin, true); window.removeEventListener('keydown', fin, true); clearInterval(iv);
+      hideCaption(); // a tapped caption goes away (otherwise its stale "Tap to continue" would linger and keep the phone menu collapsed)
+      resolve();
+    };
+    tapPending = fin;
+    // any tap anywhere advances (also taps landing on the Menu button, a tip or a bubble), and Enter / Space
+    tapCatch.addEventListener('pointerdown', fin); window.addEventListener('pointerdown', fin, true); window.addEventListener('keydown', fin, true);
+    // never get stuck: the fight ended/was abandoned, the speed left Pause, or the caption we wait on is gone
+    const iv = setInterval(() => { if (!combat || speed().hold !== 0 || !$('#caption').classList.contains('show')) fin(); }, 250);
   });
 }
+/** Combat watchdog: whatever happens, the caption layer can never leave combat stalled. */
+setInterval(() => {
+  if (tapPending) return; const cap = $('#caption');
+  if (cap.classList.contains('show') && cap.querySelector('.captap')) hideCaption(); // a tap-caption nobody is waiting on
+  if (!cap.classList.contains('show') && document.body.classList.contains('capup') && !capDownPending()) captionDown(true); // menu/log left collapsed
+  if (!tapCatch.classList.contains('hidden')) tapCatch.className = 'hidden'; // catcher left over without a waiter
+}, 1000);
 async function startCombat(info) {
   if (combat) return;
   closeModal(); busy = true;
@@ -592,6 +612,7 @@ function chooseFrom(title, options) {
   return new Promise((resolve) => {
     // combat menu docks into the bottom panel (in place of movement controls) so it never covers the log
     const cm = $('#cmenu'); if (modal.classList.contains('combat')) closeModal();
+    if (!tapPending) { const cap = $('#caption'); if (cap.querySelector('.captap')) hideCaption(); captionDown(true); } // never ask with the menu collapsed
     document.body.classList.add('incombat');
     const done = (o) => { modal._options = null; cm.innerHTML = ''; cm.append(h('div', { class: 'who dim' }, '…')); resolve(o); };
     cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: o.primary ? 'primary' : '', info: o.info || null })))));
