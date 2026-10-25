@@ -9,9 +9,9 @@ export const SKILLS = {
 };
 export const SKILL_LABEL = (k) => k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
-export const XP_LEVELS = [0, 300, 900, 2700, 6500, 14000, 23000];
-export const MAX_LEVEL = 6;
-export const CR_XP = { 0.125: 25, 0.25: 50, 0.5: 100, 1: 200, 2: 450, 3: 700, 4: 1100, 5: 1800, 6: 2300, 8: 3900 };
+export const XP_LEVELS = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000];
+export const MAX_LEVEL = 9;
+export const CR_XP = { 0: 10, 0.125: 25, 0.25: 50, 0.5: 100, 1: 200, 2: 450, 3: 700, 4: 1100, 5: 1800, 6: 2300, 7: 2900, 8: 3900, 9: 5000, 10: 5900, 11: 7200, 12: 8400 };
 export const profBonus = (level) => 2 + Math.floor((level - 1) / 4);
 
 export const RACES = {
@@ -31,28 +31,84 @@ export const CLASSES = {
     name: 'Fighter', hitDie: 10, primary: ['str', 'con', 'dex', 'wis', 'cha', 'int'], saves: ['str', 'con'],
     armor: ['light', 'medium', 'heavy', 'shield'], weapons: ['simple', 'martial'], skillChoices: ['athletics', 'perception'],
     start: { weapon: 'longsword', ranged: 'lightCrossbow', armor: 'chainMail', shield: true }, sub: 'Champion',
-    features: { 1: ['Fighting Style (Defense)', 'Second Wind'], 2: ['Action Surge'], 3: ['Improved Critical'], 4: ['Ability Score Improvement'], 5: ['Extra Attack'], 6: ['Ability Score Improvement'] },
+    features: { 1: ['Fighting Style (Defense)', 'Second Wind'], 2: ['Action Surge'], 3: ['Improved Critical'], 4: ['Ability Score Improvement'], 5: ['Extra Attack'], 6: ['Ability Score Improvement'], 7: ['Remarkable Athlete'], 8: ['Ability Score Improvement'], 9: ['Indomitable'] },
   },
   cleric: {
     name: 'Cleric', hitDie: 8, primary: ['wis', 'con', 'str', 'dex', 'cha', 'int'], saves: ['wis', 'cha'], caster: 'wis',
     armor: ['light', 'medium', 'heavy', 'shield'], weapons: ['simple'], skillChoices: ['medicine', 'religion'],
     start: { weapon: 'mace', ranged: 'lightCrossbow', armor: 'chainMail', shield: true }, sub: 'Life Domain',
-    features: { 1: ['Spellcasting', 'Disciple of Life', 'Bonus Proficiency (Heavy Armor)'], 2: ['Channel Divinity: Preserve Life'], 4: ['Ability Score Improvement'], 5: ['Destroy Undead (CR 1/2)'], 6: ['Blessed Healer', 'Channel Divinity (2/rest)'] },
+    features: { 1: ['Spellcasting', 'Disciple of Life', 'Bonus Proficiency (Heavy Armor)'], 2: ['Channel Divinity: Preserve Life'], 4: ['Ability Score Improvement'], 5: ['Destroy Undead (CR 1/2)'], 6: ['Blessed Healer', 'Channel Divinity (2/rest)'], 8: ['Ability Score Improvement', 'Divine Strike'] },
   },
   rogue: {
     name: 'Rogue', hitDie: 8, primary: ['dex', 'con', 'wis', 'int', 'cha', 'str'], saves: ['dex', 'int'],
     armor: ['light'], weapons: ['simple', 'longsword', 'rapier', 'shortsword', 'handCrossbow'], skillChoices: ['stealth', 'perception', 'investigation', 'acrobatics'],
     expertise: ['stealth', 'perception'], start: { weapon: 'shortsword', ranged: 'shortbow', armor: 'leather', shield: false }, sub: 'Thief',
-    features: { 1: ['Expertise', 'Sneak Attack', "Thieves' Cant"], 2: ['Cunning Action'], 3: ['Fast Hands', 'Second-Story Work'], 4: ['Ability Score Improvement'], 5: ['Uncanny Dodge'], 6: ['Expertise'] },
+    features: { 1: ['Expertise', 'Sneak Attack', "Thieves' Cant"], 2: ['Cunning Action'], 3: ['Fast Hands', 'Second-Story Work'], 4: ['Ability Score Improvement'], 5: ['Uncanny Dodge'], 6: ['Expertise'], 7: ['Evasion'], 8: ['Ability Score Improvement'], 9: ['Supreme Sneak'] },
   },
   wizard: {
     name: 'Wizard', hitDie: 6, primary: ['int', 'dex', 'con', 'wis', 'cha', 'str'], saves: ['int', 'wis'], caster: 'int',
     armor: [], weapons: ['dagger', 'quarterstaff', 'lightCrossbow'], skillChoices: ['arcana', 'investigation'],
     start: { weapon: 'quarterstaff', ranged: 'lightCrossbow', armor: null, shield: false }, sub: 'School of Evocation',
-    features: { 1: ['Spellcasting', 'Arcane Recovery'], 2: ['Evocation Savant', 'Sculpt Spells'], 4: ['Ability Score Improvement'], 6: ['Potent Cantrip'] },
+    features: { 1: ['Spellcasting', 'Arcane Recovery'], 2: ['Evocation Savant', 'Sculpt Spells'], 4: ['Ability Score Improvement'], 6: ['Potent Cantrip'], 8: ['Ability Score Improvement'] },
+  },
+  barbarian: {
+    name: 'Barbarian', hitDie: 12, primary: ['str', 'con', 'dex', 'wis', 'cha', 'int'], saves: ['str', 'con'],
+    armor: ['light', 'medium', 'shield'], weapons: ['simple', 'martial'], skillChoices: ['athletics', 'survival'],
+    start: { weapon: 'greataxe', ranged: null, armor: null, shield: false }, sub: 'Path of the Berserker',
+    features: { 1: ['Rage', 'Unarmored Defense (Con)'], 2: ['Reckless Attack', 'Danger Sense'], 3: ['Frenzy'], 4: ['Ability Score Improvement'], 5: ['Extra Attack', 'Fast Movement'], 6: ['Mindless Rage'], 7: ['Feral Instinct'], 8: ['Ability Score Improvement'], 9: ['Brutal Critical'] },
+  },
+  bard: {
+    name: 'Bard', hitDie: 8, primary: ['cha', 'dex', 'con', 'wis', 'int', 'str'], saves: ['dex', 'cha'], caster: 'cha',
+    armor: ['light'], weapons: ['simple', 'longsword', 'rapier', 'shortsword', 'handCrossbow'], skillChoices: ['performance', 'persuasion', 'insight'],
+    start: { weapon: 'rapier', ranged: 'lightCrossbow', armor: 'leather', shield: false }, sub: 'College of Lore',
+    features: { 1: ['Spellcasting', 'Bardic Inspiration (d6)'], 2: ['Jack of All Trades', 'Song of Rest'], 3: ['Cutting Words', 'Expertise'], 4: ['Ability Score Improvement'], 5: ['Bardic Inspiration (d8)', 'Font of Inspiration'], 6: ['Countercharm', 'Additional Magical Secrets'], 8: ['Ability Score Improvement'] },
+  },
+  druid: {
+    name: 'Druid', hitDie: 8, primary: ['wis', 'con', 'dex', 'int', 'cha', 'str'], saves: ['int', 'wis'], caster: 'wis',
+    armor: ['light', 'medium', 'shield'], weapons: ['club', 'dagger', 'quarterstaff', 'spear', 'mace'], skillChoices: ['nature', 'animalHandling'],
+    start: { weapon: 'quarterstaff', ranged: null, armor: 'leather', shield: true }, sub: 'Circle of the Land',
+    features: { 1: ['Spellcasting', 'Druidic'], 2: ['Wild Shape', 'Natural Recovery'], 4: ['Ability Score Improvement'], 6: ["Land's Stride"], 8: ['Ability Score Improvement'] },
+  },
+  monk: {
+    name: 'Monk', hitDie: 8, primary: ['dex', 'wis', 'con', 'str', 'int', 'cha'], saves: ['str', 'dex'],
+    armor: [], weapons: ['simple', 'shortsword'], skillChoices: ['acrobatics', 'insight'],
+    start: { weapon: 'quarterstaff', ranged: null, armor: null, shield: false }, sub: 'Way of the Open Hand',
+    features: { 1: ['Unarmored Defense (Wis)', 'Martial Arts'], 2: ['Ki', 'Flurry of Blows', 'Patient Defense'], 3: ['Open Hand Technique', 'Deflect Missiles'], 4: ['Ability Score Improvement', 'Slow Fall'], 5: ['Extra Attack', 'Stunning Strike'], 6: ['Ki-Empowered Strikes', 'Wholeness of Body'], 7: ['Evasion', 'Stillness of Mind'], 8: ['Ability Score Improvement'], 9: ['Unarmored Movement Improvement'] },
+  },
+  paladin: {
+    name: 'Paladin', hitDie: 10, primary: ['str', 'cha', 'con', 'wis', 'dex', 'int'], saves: ['wis', 'cha'], caster: 'cha', half: true,
+    armor: ['light', 'medium', 'heavy', 'shield'], weapons: ['simple', 'martial'], skillChoices: ['athletics', 'religion'],
+    start: { weapon: 'longsword', ranged: null, armor: 'chainMail', shield: true }, sub: 'Oath of Devotion',
+    features: { 1: ['Divine Sense', 'Lay on Hands'], 2: ['Fighting Style (Defense)', 'Spellcasting', 'Divine Smite'], 3: ['Divine Health', 'Channel Divinity: Sacred Weapon'], 4: ['Ability Score Improvement'], 5: ['Extra Attack'], 6: ['Aura of Protection'], 7: ['Aura of Devotion'], 8: ['Ability Score Improvement'] },
+  },
+  ranger: {
+    name: 'Ranger', hitDie: 10, primary: ['dex', 'wis', 'con', 'str', 'int', 'cha'], saves: ['str', 'dex'], caster: 'wis', half: true,
+    armor: ['light', 'medium', 'shield'], weapons: ['simple', 'martial'], skillChoices: ['survival', 'perception', 'stealth'],
+    start: { weapon: 'shortsword', ranged: 'longbow', armor: 'scaleMail', shield: false }, sub: 'Hunter',
+    features: { 1: ['Favored Enemy', 'Natural Explorer'], 2: ['Fighting Style (Archery)', 'Spellcasting'], 3: ['Primeval Awareness', 'Colossus Slayer'], 4: ['Ability Score Improvement'], 5: ['Extra Attack'], 6: ['Favored Enemy (2nd)'], 7: ['Escape the Horde'], 8: ['Ability Score Improvement', "Land's Stride"] },
+  },
+  sorcerer: {
+    name: 'Sorcerer', hitDie: 6, primary: ['cha', 'con', 'dex', 'wis', 'int', 'str'], saves: ['con', 'cha'], caster: 'cha',
+    armor: [], weapons: ['dagger', 'quarterstaff', 'lightCrossbow'], skillChoices: ['arcana', 'intimidation'],
+    start: { weapon: 'dagger', ranged: 'lightCrossbow', armor: null, shield: false }, sub: 'Draconic Bloodline (Red)',
+    features: { 1: ['Spellcasting', 'Draconic Resilience'], 2: ['Font of Magic'], 3: ['Metamagic: Empowered Spell'], 4: ['Ability Score Improvement'], 6: ['Elemental Affinity (Fire)'], 8: ['Ability Score Improvement'] },
+  },
+  warlock: {
+    name: 'Warlock', hitDie: 8, primary: ['cha', 'con', 'dex', 'wis', 'int', 'str'], saves: ['wis', 'cha'], caster: 'cha', pact: true,
+    armor: ['light'], weapons: ['simple'], skillChoices: ['arcana', 'deception'],
+    start: { weapon: 'dagger', ranged: 'lightCrossbow', armor: 'leather', shield: false }, sub: 'The Fiend',
+    features: { 1: ['Pact Magic', "Dark One's Blessing"], 2: ['Eldritch Invocations: Agonizing Blast'], 3: ['Pact of the Blade'], 4: ['Ability Score Improvement'], 6: ["Dark One's Own Luck"], 8: ['Ability Score Improvement'] },
   },
 };
-export const FULL_CASTER_SLOTS = { 1: [2], 2: [3], 3: [4, 2], 4: [4, 3], 5: [4, 3, 2], 6: [4, 3, 3] };
+export const FULL_CASTER_SLOTS = { 1: [2], 2: [3], 3: [4, 2], 4: [4, 3], 5: [4, 3, 2], 6: [4, 3, 3], 7: [4, 3, 3, 1], 8: [4, 3, 3, 2], 9: [4, 3, 3, 3, 1] };
+export const HALF_CASTER_SLOTS = { 1: [], 2: [2], 3: [3], 4: [3], 5: [4, 2], 6: [4, 2], 7: [4, 3], 8: [4, 3], 9: [4, 3, 2] };
+/** Warlock Pact Magic: [slot count, slot level]. Stored as an array with only the pact level filled. */
+export const PACT_SLOTS = { 1: [1, 1], 2: [2, 1], 3: [2, 2], 4: [2, 2], 5: [2, 3], 6: [2, 3], 7: [2, 4], 8: [2, 4], 9: [2, 5] };
+export function slotsFor(cls, level) {
+  const C = CLASSES[cls]; if (!C.caster) return [];
+  if (C.pact) { const [n, l] = PACT_SLOTS[level]; return Array.from({ length: l }, (_, i) => (i === l - 1 ? n : 0)); }
+  return [...(C.half ? HALF_CASTER_SLOTS : FULL_CASTER_SLOTS)[level]];
+}
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 
 export const WEAPONS = {
@@ -131,33 +187,55 @@ export const SPELLS = {
   sacredFlame: { name: 'Sacred Flame', level: 0, cls: ['cleric'], kind: 'save', save: 'dex', dmg: '1d8', type: 'radiant', half: false, target: 'enemy', cantrip: true, desc: 'Radiant flame; Dex save negates. Scales at 5th level.' },
   spareTheDying: { name: 'Spare the Dying', level: 0, cls: ['cleric'], kind: 'util', target: 'downedAlly', desc: 'Stabilize a creature at 0 HP.' },
   guidance: { name: 'Guidance', level: 0, cls: ['cleric'], kind: 'util', target: 'none', desc: '+1d4 to one ability check (used automatically out of combat for searches).' },
-  bless: { name: 'Bless', level: 1, cls: ['cleric'], kind: 'buff', target: 'allAllies', conc: true, buff: 'blessed', maxTargets: 3, desc: 'Up to 3 allies add 1d4 to attack rolls and saving throws. Concentration.' },
-  cureWounds: { name: 'Cure Wounds', level: 1, cls: ['cleric'], kind: 'heal', heal: '1d8', perLevel: '1d8', addMod: true, target: 'ally', desc: 'Touch heals 1d8 + mod (+1d8 per slot level above 1st).' },
-  healingWord: { name: 'Healing Word', level: 1, cls: ['cleric'], kind: 'heal', heal: '1d4', perLevel: '1d4', addMod: true, target: 'ally', bonus: true, desc: 'Bonus action, heals 1d4 + mod at range.' },
+  bless: { name: 'Bless', level: 1, cls: ['cleric', 'paladin'], kind: 'buff', target: 'allAllies', conc: true, buff: 'blessed', maxTargets: 3, desc: 'Up to 3 allies add 1d4 to attack rolls and saving throws. Concentration.' },
+  cureWounds: { name: 'Cure Wounds', level: 1, cls: ['cleric', 'bard', 'druid', 'paladin', 'ranger'], kind: 'heal', heal: '1d8', perLevel: '1d8', addMod: true, target: 'ally', desc: 'Touch heals 1d8 + mod (+1d8 per slot level above 1st).' },
+  healingWord: { name: 'Healing Word', level: 1, cls: ['cleric', 'bard', 'druid'], kind: 'heal', heal: '1d4', perLevel: '1d4', addMod: true, target: 'ally', bonus: true, desc: 'Bonus action, heals 1d4 + mod at range.' },
   guidingBolt: { name: 'Guiding Bolt', level: 1, cls: ['cleric'], kind: 'attack', dmg: '4d6', perLevel: '1d6', type: 'radiant', target: 'enemy', rider: 'guided', desc: 'Spell attack 4d6 radiant; next attack against target has advantage.' },
-  shieldOfFaith: { name: 'Shield of Faith', level: 1, cls: ['cleric'], kind: 'buff', target: 'ally', conc: true, buff: 'shieldOfFaith', bonus: true, desc: '+2 AC to one creature. Concentration.' },
+  shieldOfFaith: { name: 'Shield of Faith', level: 1, cls: ['cleric', 'paladin'], kind: 'buff', target: 'ally', conc: true, buff: 'shieldOfFaith', bonus: true, desc: '+2 AC to one creature. Concentration.' },
   inflictWounds: { name: 'Inflict Wounds', level: 1, cls: ['cleric'], kind: 'attack', melee: true, dmg: '3d10', perLevel: '1d10', type: 'necrotic', target: 'enemy', desc: 'Melee spell attack, 3d10 necrotic.' },
-  aid: { name: 'Aid', level: 2, cls: ['cleric'], kind: 'buff', target: 'allAllies', buff: 'aid', maxTargets: 3, desc: 'Up to 3 allies gain +5 max and current HP until long rest.' },
-  lesserRestoration: { name: 'Lesser Restoration', level: 2, cls: ['cleric'], kind: 'util', target: 'ally', cure: ['poisoned', 'paralyzed', 'blinded'], desc: 'End the poisoned, blinded or paralyzed condition.' },
+  aid: { name: 'Aid', level: 2, cls: ['cleric', 'paladin'], kind: 'buff', target: 'allAllies', buff: 'aid', maxTargets: 3, desc: 'Up to 3 allies gain +5 max and current HP until long rest.' },
+  lesserRestoration: { name: 'Lesser Restoration', level: 2, cls: ['cleric', 'bard', 'druid', 'paladin', 'ranger'], kind: 'util', target: 'ally', cure: ['poisoned', 'paralyzed', 'blinded'], desc: 'End the poisoned, blinded or paralyzed condition.' },
   spiritualWeapon: { name: 'Spiritual Weapon', level: 2, cls: ['cleric'], kind: 'attack', dmg: '1d8', addMod: true, type: 'force', target: 'enemy', bonus: true, desc: 'Bonus action: spectral weapon makes a melee spell attack for 1d8 + mod force.' },
   spiritGuardians: { name: 'Spirit Guardians', level: 3, cls: ['cleric'], kind: 'buff', target: 'self', conc: true, buff: 'spiritGuardians', dmg: '3d8', type: 'radiant', save: 'wis', desc: 'Concentration. Each enemy takes 3d8 radiant at the start of its turn (Wis save half).' },
   massHealingWord: { name: 'Mass Healing Word', level: 3, cls: ['cleric'], kind: 'heal', heal: '1d4', addMod: true, target: 'allAllies', bonus: true, desc: 'Bonus action, heal each ally 1d4 + mod.' },
-  revivify: { name: 'Revivify', level: 3, cls: ['cleric'], kind: 'util', target: 'deadAlly', desc: 'Return a creature that died within the last minute to life with 1 HP (consumes 300 gp of diamonds).' },
+  revivify: { name: 'Revivify', level: 3, cls: ['cleric', 'paladin'], kind: 'util', target: 'deadAlly', desc: 'Return a creature that died within the last minute to life with 1 HP (consumes 300 gp of diamonds).' },
   // Wizard
-  fireBolt: { name: 'Fire Bolt', level: 0, cls: ['wizard'], kind: 'attack', dmg: '1d10', type: 'fire', target: 'enemy', cantrip: true, desc: 'Ranged spell attack, 1d10 fire. Scales at 5th level.' },
-  rayOfFrost: { name: 'Ray of Frost', level: 0, cls: ['wizard'], kind: 'attack', dmg: '1d8', type: 'cold', target: 'enemy', cantrip: true, desc: 'Ranged spell attack, 1d8 cold.' },
-  shockingGrasp: { name: 'Shocking Grasp', level: 0, cls: ['wizard'], kind: 'attack', melee: true, dmg: '1d8', type: 'lightning', target: 'enemy', cantrip: true, desc: 'Melee spell attack with advantage vs metal armor, 1d8 lightning.' },
-  magicMissile: { name: 'Magic Missile', level: 1, cls: ['wizard'], kind: 'auto', darts: 3, dmg: '1d4+1', type: 'force', target: 'enemy', desc: 'Three darts of 1d4+1 force that always hit (+1 dart per slot level above 1st).' },
-  sleep: { name: 'Sleep', level: 1, cls: ['wizard'], kind: 'sleep', pool: '5d8', perLevel: '2d8', target: 'allEnemies', desc: 'Creatures with the lowest HP fall unconscious, up to 5d8 HP total.' },
-  burningHands: { name: 'Burning Hands', level: 1, cls: ['wizard'], kind: 'save', save: 'dex', dmg: '3d6', perLevel: '1d6', type: 'fire', half: true, target: 'someEnemies', maxTargets: 3, desc: 'Cone: up to 3 enemies, 3d6 fire, Dex save half.' },
-  thunderwave: { name: 'Thunderwave', level: 1, cls: ['wizard'], kind: 'save', save: 'con', dmg: '2d8', perLevel: '1d8', type: 'thunder', half: true, target: 'someEnemies', maxTargets: 2, desc: 'Cube: up to 2 enemies, 2d8 thunder, Con save half.' },
-  shield: { name: 'Shield', level: 1, cls: ['wizard'], kind: 'reaction', desc: 'Reaction when hit: +5 AC until your next turn (used automatically if it would turn a hit into a miss).' },
-  mageArmor: { name: 'Mage Armor', level: 1, cls: ['wizard'], kind: 'buff', target: 'ally', buff: 'mageArmor', outOfCombat: true, desc: 'Unarmored target base AC becomes 13 + Dex for 8 hours.' },
-  scorchingRay: { name: 'Scorching Ray', level: 2, cls: ['wizard'], kind: 'rays', rays: 3, dmg: '2d6', type: 'fire', target: 'enemy', desc: 'Three rays, each a ranged spell attack for 2d6 fire.' },
-  web: { name: 'Web', level: 2, cls: ['wizard'], kind: 'save', save: 'dex', dmg: null, cond: 'restrained', target: 'someEnemies', maxTargets: 3, conc: true, desc: 'Up to 3 enemies must make a Dex save or be restrained. Concentration.' },
-  holdPerson: { name: 'Hold Person', level: 2, cls: ['wizard', 'cleric'], kind: 'save', save: 'wis', dmg: null, cond: 'paralyzed', humanoidOnly: true, target: 'enemy', conc: true, desc: 'Humanoid must make a Wis save or be paralyzed. Concentration.' },
-  fireball: { name: 'Fireball', level: 3, cls: ['wizard'], kind: 'save', save: 'dex', dmg: '8d6', perLevel: '1d6', type: 'fire', half: true, target: 'allEnemies', desc: '8d6 fire to every enemy, Dex save half.' },
-  lightningBolt: { name: 'Lightning Bolt', level: 3, cls: ['wizard'], kind: 'save', save: 'dex', dmg: '8d6', perLevel: '1d6', type: 'lightning', half: true, target: 'someEnemies', maxTargets: 3, desc: 'Line: up to 3 enemies, 8d6 lightning, Dex save half.' },
+  fireBolt: { name: 'Fire Bolt', level: 0, cls: ['wizard', 'sorcerer'], kind: 'attack', dmg: '1d10', type: 'fire', target: 'enemy', cantrip: true, desc: 'Ranged spell attack, 1d10 fire. Scales at 5th level.' },
+  rayOfFrost: { name: 'Ray of Frost', level: 0, cls: ['wizard', 'sorcerer'], kind: 'attack', dmg: '1d8', type: 'cold', target: 'enemy', cantrip: true, desc: 'Ranged spell attack, 1d8 cold.' },
+  shockingGrasp: { name: 'Shocking Grasp', level: 0, cls: ['wizard', 'sorcerer'], kind: 'attack', melee: true, dmg: '1d8', type: 'lightning', target: 'enemy', cantrip: true, desc: 'Melee spell attack with advantage vs metal armor, 1d8 lightning.' },
+  magicMissile: { name: 'Magic Missile', level: 1, cls: ['wizard', 'sorcerer'], kind: 'auto', darts: 3, dmg: '1d4+1', type: 'force', target: 'enemy', desc: 'Three darts of 1d4+1 force that always hit (+1 dart per slot level above 1st).' },
+  sleep: { name: 'Sleep', level: 1, cls: ['wizard', 'sorcerer', 'bard'], kind: 'sleep', pool: '5d8', perLevel: '2d8', target: 'allEnemies', desc: 'Creatures with the lowest HP fall unconscious, up to 5d8 HP total.' },
+  burningHands: { name: 'Burning Hands', level: 1, cls: ['wizard', 'sorcerer', 'warlock'], kind: 'save', save: 'dex', dmg: '3d6', perLevel: '1d6', type: 'fire', half: true, target: 'someEnemies', maxTargets: 3, desc: 'Cone: up to 3 enemies, 3d6 fire, Dex save half.' },
+  thunderwave: { name: 'Thunderwave', level: 1, cls: ['wizard', 'sorcerer', 'bard', 'druid'], kind: 'save', save: 'con', dmg: '2d8', perLevel: '1d8', type: 'thunder', half: true, target: 'someEnemies', maxTargets: 2, desc: 'Cube: up to 2 enemies, 2d8 thunder, Con save half.' },
+  shield: { name: 'Shield', level: 1, cls: ['wizard', 'sorcerer'], kind: 'reaction', desc: 'Reaction when hit: +5 AC until your next turn (used automatically if it would turn a hit into a miss).' },
+  mageArmor: { name: 'Mage Armor', level: 1, cls: ['wizard', 'sorcerer'], kind: 'buff', target: 'ally', buff: 'mageArmor', outOfCombat: true, desc: 'Unarmored target base AC becomes 13 + Dex for 8 hours.' },
+  scorchingRay: { name: 'Scorching Ray', level: 2, cls: ['wizard', 'sorcerer', 'warlock'], kind: 'rays', rays: 3, dmg: '2d6', type: 'fire', target: 'enemy', desc: 'Three rays, each a ranged spell attack for 2d6 fire.' },
+  web: { name: 'Web', level: 2, cls: ['wizard', 'sorcerer'], kind: 'save', save: 'dex', dmg: null, cond: 'restrained', target: 'someEnemies', maxTargets: 3, conc: true, desc: 'Up to 3 enemies must make a Dex save or be restrained. Concentration.' },
+  holdPerson: { name: 'Hold Person', level: 2, cls: ['wizard', 'cleric', 'bard', 'druid', 'sorcerer', 'warlock'], kind: 'save', save: 'wis', dmg: null, cond: 'paralyzed', humanoidOnly: true, target: 'enemy', conc: true, desc: 'Humanoid must make a Wis save or be paralyzed. Concentration.' },
+  // ---- Bard / Druid / Paladin / Ranger / Sorcerer / Warlock (SRD 5.1) ----
+  viciousMockery: { name: 'Vicious Mockery', level: 0, cls: ['bard'], kind: 'save', save: 'wis', dmg: '1d4', type: 'psychic', half: false, target: 'enemy', cantrip: true, cond: 'mocked', desc: 'Wis save or 1d4 psychic and disadvantage on its next attack.' },
+  produceFlame: { name: 'Produce Flame', level: 0, cls: ['druid'], kind: 'attack', dmg: '1d8', type: 'fire', target: 'enemy', cantrip: true, desc: 'Hurl a flame: ranged spell attack, 1d8 fire.' },
+  eldritchBlast: { name: 'Eldritch Blast', level: 0, cls: ['warlock'], kind: 'beams', dmg: '1d10', type: 'force', target: 'enemy', cantrip: true, desc: 'Beam of crackling energy: 1d10 force (+Cha with Agonizing Blast). Two beams at 5th level.' },
+  dissonantWhispers: { name: 'Dissonant Whispers', level: 1, cls: ['bard'], kind: 'save', save: 'wis', dmg: '3d6', perLevel: '1d6', type: 'psychic', half: true, target: 'enemy', desc: 'A maddening melody: 3d6 psychic, Wis save half.' },
+  entangle: { name: 'Entangle', level: 1, cls: ['druid'], kind: 'save', save: 'str', dmg: null, cond: 'restrained', target: 'someEnemies', maxTargets: 4, conc: true, desc: 'Grasping weeds: up to 4 enemies make a Str save or are restrained. Concentration.' },
+  huntersMark: { name: "Hunter's Mark", level: 1, cls: ['ranger'], kind: 'mark', bonus: true, conc: true, dmg: '1d6', type: 'force', target: 'enemy', desc: 'Bonus action: your weapon hits on the marked foe deal +1d6. Concentration.' },
+  hex: { name: 'Hex', level: 1, cls: ['warlock'], kind: 'mark', bonus: true, conc: true, dmg: '1d6', type: 'necrotic', target: 'enemy', desc: 'Bonus action: your attacks on the hexed foe deal +1d6 necrotic. Concentration.' },
+  shatter: { name: 'Shatter', level: 2, cls: ['bard', 'sorcerer', 'warlock'], kind: 'save', save: 'con', dmg: '3d8', perLevel: '1d8', type: 'thunder', half: true, target: 'someEnemies', maxTargets: 3, desc: 'A ringing blast: up to 3 enemies, 3d8 thunder, Con save half.' },
+  moonbeam: { name: 'Moonbeam', level: 2, cls: ['druid'], kind: 'save', save: 'con', dmg: '2d10', perLevel: '1d10', type: 'radiant', half: true, target: 'enemy', desc: 'A pale beam of moonlight: 2d10 radiant, Con save half.' },
+  callLightning: { name: 'Call Lightning', level: 3, cls: ['druid'], kind: 'save', save: 'dex', dmg: '3d10', perLevel: '1d10', type: 'lightning', half: true, target: 'someEnemies', maxTargets: 2, desc: 'Bolts from a storm cloud: up to 2 enemies, 3d10 lightning, Dex save half.' },
+  fear: { name: 'Fear', level: 3, cls: ['bard', 'sorcerer', 'warlock'], kind: 'save', save: 'wis', dmg: null, cond: 'frightened', target: 'allEnemies', conc: true, desc: 'Every enemy makes a Wis save or is frightened (disadvantage on attacks). Concentration.' },
+  conjureBarrage: { name: 'Conjure Barrage', level: 3, cls: ['ranger'], kind: 'save', save: 'dex', dmg: '3d8', type: 'piercing', half: true, target: 'allEnemies', desc: 'A storm of arrows: every enemy takes 3d8, Dex save half.' },
+  massCureWounds: { name: 'Mass Cure Wounds', level: 5, cls: ['cleric', 'bard', 'druid'], kind: 'heal', heal: '3d8', addMod: true, target: 'allAllies', desc: 'A wave of healing: every ally regains 3d8 + mod HP.' },
+  iceStorm: { name: 'Ice Storm', level: 4, cls: ['druid', 'sorcerer', 'wizard'], kind: 'save', save: 'dex', dmg: '6d6', perLevel: '1d6', type: 'cold', half: true, target: 'allEnemies', desc: 'Hail pounds every enemy: 6d6 cold and bludgeoning, Dex save half.' },
+  blight: { name: 'Blight', level: 4, cls: ['druid', 'sorcerer', 'warlock', 'wizard'], kind: 'save', save: 'con', dmg: '8d8', perLevel: '1d8', type: 'necrotic', half: true, target: 'enemy', desc: 'Drain the life from one foe: 8d8 necrotic, Con save half.' },
+  guardianOfFaith: { name: 'Guardian of Faith', level: 4, cls: ['cleric', 'paladin'], kind: 'save', save: 'dex', dmg: '4d10', type: 'radiant', half: true, target: 'someEnemies', maxTargets: 2, desc: 'A spectral guardian strikes up to 2 foes: 4d10 radiant, Dex save half.' },
+  greaterInvisibility: { name: 'Greater Invisibility', level: 4, cls: ['bard', 'sorcerer', 'wizard'], kind: 'buff', target: 'ally', conc: true, buff: 'invisible', desc: 'One ally becomes invisible: advantage on attacks, attacks against have disadvantage. Concentration.' },
+  coneOfCold: { name: 'Cone of Cold', level: 5, cls: ['sorcerer', 'wizard'], kind: 'save', save: 'con', dmg: '8d8', perLevel: '1d8', type: 'cold', half: true, target: 'someEnemies', maxTargets: 4, desc: 'A blast of frost: up to 4 enemies, 8d8 cold, Con save half.' },
+  flameStrike: { name: 'Flame Strike', level: 5, cls: ['cleric'], kind: 'save', save: 'dex', dmg: '8d6', perLevel: '1d6', type: 'fire', half: true, target: 'someEnemies', maxTargets: 2, desc: 'A column of holy fire: up to 2 enemies, 4d6 fire + 4d6 radiant, Dex save half.' },
+  insectPlague: { name: 'Insect Plague', level: 5, cls: ['druid', 'sorcerer'], kind: 'save', save: 'con', dmg: '4d10', perLevel: '1d10', type: 'piercing', half: true, target: 'allEnemies', desc: 'A biting swarm: every enemy takes 4d10 piercing, Con save half.' },
+  holdMonster: { name: 'Hold Monster', level: 5, cls: ['bard', 'sorcerer', 'warlock', 'wizard'], kind: 'save', save: 'wis', dmg: null, cond: 'paralyzed', target: 'enemy', conc: true, desc: 'Any creature makes a Wis save or is paralyzed. Concentration.' },
+  fireball: { name: 'Fireball', level: 3, cls: ['wizard', 'sorcerer', 'warlock'], kind: 'save', save: 'dex', dmg: '8d6', perLevel: '1d6', type: 'fire', half: true, target: 'allEnemies', desc: '8d6 fire to every enemy, Dex save half.' },
+  lightningBolt: { name: 'Lightning Bolt', level: 3, cls: ['wizard', 'sorcerer'], kind: 'save', save: 'dex', dmg: '8d6', perLevel: '1d6', type: 'lightning', half: true, target: 'someEnemies', maxTargets: 3, desc: 'Line: up to 3 enemies, 8d6 lightning, Dex save half.' },
 };
 
 /* ---------- Monsters (SRD 5.1 stat blocks, condensed) ----------

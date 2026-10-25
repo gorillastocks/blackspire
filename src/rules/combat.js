@@ -4,8 +4,9 @@ import { roll, d20, die, pick, rand } from './dice.js';
 import { narrateAttack, line as narr } from './narrate.js';
 import {
   mod, abilityMod, saveMod, armorClass, weaponStats, spellDC, spellAttack, spellMod, sneakDice, cantripDice, attacksPerAction,
-  critRange, prof, isDown, canAct, heal, hasTrait, skillMod, knownSpells,
+  critRange, prof, isDown, canAct, heal, hasTrait, skillMod, knownSpells, rageDamage, inspirationDie, unarmedStats,
 } from './character.js';
+const BPS = ['bludgeoning', 'piercing', 'slashing'];
 
 let mid = 1;
 export const DIFFICULTY = { story: { hp: 0.7, dmg: 0.6, label: 'Story' }, normal: { hp: 1, dmg: 1, label: 'Normal' }, hard: { hp: 1.35, dmg: 1.3, label: 'Hard' } };
@@ -34,7 +35,7 @@ export class Combat {
     this.monsters = [];
     for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp)); this.monsters.push(m); }
     this.log = []; this.events = []; this.round = 0; this.state = 'running'; this.turnIdx = -1; this.xp = 0; this.gold = 0;
-    for (const c of party) { c.reaction = true; delete c.conditions.dodging; delete c.conditions.hidden; c.side = 'party'; }
+    for (const c of party) { c.reaction = true; for (const k of ['dodging', 'hidden', 'raging', 'reckless', 'invisible', 'sacredWeapon']) delete c.conditions[k]; c.side = 'party'; if (c.tempHp == null) c.tempHp = 0; }
     // Initiative: d20 + Dex
     const all = [...party.filter((c) => !c.dead), ...this.monsters].map((who) => ({ who, init: d20() + (who.side === 'party' ? abilityMod(who, 'dex') : monsterSave(who, 'dex')) + rand() * 0.01 }));
     all.sort((a, b) => b.init - a.init);
@@ -72,7 +73,7 @@ export class Combat {
   }
   endCleanup() {
     for (const c of this.party) {
-      for (const k of ['dodging', 'hidden', 'blessed', 'shieldOfFaith', 'shieldSpell', 'prone', 'restrained', 'grappled', 'spiritGuardians', 'paralyzed']) delete c.conditions[k];
+      for (const k of ['dodging', 'hidden', 'blessed', 'shieldOfFaith', 'shieldSpell', 'prone', 'restrained', 'grappled', 'spiritGuardians', 'paralyzed', 'raging', 'reckless', 'invisible', 'sacredWeapon', 'frightened', 'mocked']) delete c.conditions[k];
       c.concentration = null;
       // Downed but not dead characters are stabilized after battle by companions
       if (!c.dead && c.hp <= 0) { c.stable = true; }
@@ -99,7 +100,7 @@ export class Combat {
   }
 
   startOfTurn(c) {
-    delete c.conditions.dodging; delete c.conditions.shieldSpell; c.reaction = true;
+    delete c.conditions.dodging; delete c.conditions.shieldSpell; delete c.conditions.reckless; c.reaction = true;
     if (c.conditions.prone && (c.side === 'monster' ? c.hp > 0 : c.hp > 0)) { delete c.conditions.prone; this.say(`${c.name} stands up.`, 'dim'); }
     if (c.side === 'monster') {
       // Spirit Guardians aura
@@ -125,6 +126,7 @@ export class Combat {
     if (c.conditions.poisoned && c.conditions.poisoned.rounds) { if (--c.conditions.poisoned.rounds <= 0) delete c.conditions.poisoned; }
   }
   endOfTurnSaves(c) {
+    if (c.conditions.frightened && c.side === 'monster' && d20() + monsterSave(c, 'wis') >= c.conditions.frightened.dc) { delete c.conditions.frightened; this.say(`${c.name} masters its fear.`, 'dim'); }
     if (c.conditions.paralyzed && c.side === 'monster') {
       if (d20() + monsterSave(c, 'wis') >= c.conditions.paralyzed.dc) { delete c.conditions.paralyzed; this.say(`${c.name} shakes off the paralysis.`); }
     }
@@ -146,6 +148,7 @@ export class Combat {
       this.emit({ type: 'hurt', who: target, amt, crit });
       if (target.hp <= 0) {
         target.hp = 0; this.say(`${target.name} is slain!`, 'good'); this.emit({ type: 'kill', who: target, by: src });
+        if (src && src.side === 'party' && src.cls === 'warlock' && !isDown(src)) { const th = Math.max(1, abilityMod(src, 'cha') + src.level); if (th > (src.tempHp || 0)) { src.tempHp = th; this.say(`Dark One's Blessing: ${src.name} gains ${th} temporary HP.`, 'spell'); } }
         this.xp += CR_XP[target.T.cr] || 10; this.gold += Math.floor(roll('2d6') * (1 + target.T.cr * 4));
         for (const p of this.party) if (p.concentration && p.concentration.targets) p.concentration.targets = p.concentration.targets.filter((x) => x !== target.id);
       }
@@ -154,8 +157,9 @@ export class Combat {
     // Party member
     const R = target.race;
     const resist = (R === 'hillDwarf' && type === 'poison') || ((R === 'dragonborn' || R === 'tiefling') && type === 'fire');
-    if (resist) amt = Math.floor(amt / 2);
+    if (resist || (target.conditions.raging && BPS.includes(type))) amt = Math.floor(amt / 2);
     if (target.dead) return 0;
+    if (target.tempHp > 0 && target.hp > 0) { const ab = Math.min(target.tempHp, amt); target.tempHp -= ab; amt -= ab; if (ab) this.say(`${target.name}'s temporary HP absorbs ${ab}.`, 'dim'); if (amt <= 0) return 0; }
     if (target.hp <= 0) {
       if (amt >= target.maxHp) { this.kill(target); return amt; }
       target.deathSaves.f += crit ? 2 : 1; target.stable = false; this.say(`${target.name} takes damage while down! (${target.deathSaves.f}✗)`, 'bad');
@@ -184,7 +188,7 @@ export class Combat {
     const conc = c.concentration; if (!conc) return; c.concentration = null;
     const all = [...this.party, ...this.monsters];
     for (const t of all) {
-      for (const k of ['blessed', 'shieldOfFaith', 'spiritGuardians', 'restrained', 'paralyzed']) if (t.conditions[k] && t.conditions[k].src === c.id) delete t.conditions[k];
+      for (const k of ['blessed', 'shieldOfFaith', 'spiritGuardians', 'restrained', 'paralyzed', 'marked', 'invisible', 'frightened']) if (t.conditions[k] && t.conditions[k].src === c.id) delete t.conditions[k];
     }
     this.say(`${SPELLS[conc.spell].name} ends.`, 'dim');
   }
@@ -197,9 +201,10 @@ export class Combat {
       return d20({ dis }) + monsterSave(target, ab) >= dc;
     }
     if ((target.hp <= 0 || target.conditions.paralyzed) && (ab === 'str' || ab === 'dex')) return false;
-    const adv = (ab === 'dex' && target.conditions.dodging) || (target.race === 'hillDwarf' && ab === 'con') || (target.race === 'rockGnome' && ['int', 'wis', 'cha'].includes(ab));
+    const adv = (ab === 'dex' && (target.conditions.dodging || (target.cls === 'barbarian' && target.level >= 2))) || (target.race === 'hillDwarf' && ab === 'con') || (target.race === 'rockGnome' && ['int', 'wis', 'cha'].includes(ab));
     const dis = ab === 'dex' && target.conditions.restrained;
-    const r = d20({ adv, dis, lucky: hasTrait(target, 'Lucky') }) + saveMod(target, ab) + (target.conditions.blessed ? roll('1d4') : 0);
+    const aura = Math.max(0, ...this.party.filter((p) => p.cls === 'paladin' && p.level >= 6 && !isDown(p)).map((p) => Math.max(1, abilityMod(p, 'cha'))));
+    const r = d20({ adv, dis, lucky: hasTrait(target, 'Lucky') }) + saveMod(target, ab) + (target.conditions.blessed ? roll('1d4') : 0) + aura;
     return r >= dc;
   }
 
@@ -207,7 +212,10 @@ export class Combat {
   advantageFor(att, tgt, { ranged }) {
     let adv = false, dis = false;
     if (att.conditions.poisoned || att.conditions.prone || att.conditions.restrained || att.conditions.frightened) dis = true;
-    if (att.conditions.hidden) adv = true;
+    if (att.conditions.hidden || att.conditions.reckless || att.conditions.invisible) adv = true;
+    if (att.conditions.mocked) dis = true;
+    if (tgt.conditions.invisible) dis = true;
+    if (tgt.conditions.reckless && !ranged) adv = true;
     if (tgt.conditions.prone) { if (ranged) dis = true; else adv = true; }
     if (tgt.conditions.restrained || tgt.conditions.paralyzed || tgt.conditions.unconscious || tgt.hp <= 0) adv = true;
     if (tgt.conditions.dodging) dis = true;
@@ -216,18 +224,22 @@ export class Combat {
     return { adv, dis };
   }
   /** Generic attack. Returns {hit, crit, dmg}. */
-  attack(att, tgt, { bonus, dmg, type, ranged = false, spell = false, label, extraOnCrit = 0, sneak = 0, dmgBonus = 0, rider = null, extra = null }) {
+  attack(att, tgt, { bonus, dmg, type, ranged = false, spell = false, label, extraOnCrit = 0, sneak = 0, dmgBonus = 0, rider = null, extra = null, onHit = null }) {
     const { adv, dis } = this.advantageFor(att, tgt, { ranged });
-    delete att.conditions.hidden; if (tgt.conditions.guided) delete tgt.conditions.guided;
+    delete att.conditions.hidden; delete att.conditions.mocked; if (tgt.conditions.guided) delete tgt.conditions.guided;
     const lucky = att.side === 'party' && hasTrait(att, 'Lucky');
     const nat = d20({ adv, dis, lucky });
-    const bless = att.conditions.blessed ? roll('1d4') : 0;
-    const total = nat + bonus + bless;
+    let bless = att.conditions.blessed ? roll('1d4') : 0;
+    if (att.conditions.inspired) { bless += roll('1' + att.conditions.inspired.die); delete att.conditions.inspired; }
+    if (att.conditions.sacredWeapon) bless += att.conditions.sacredWeapon.bonus;
+    let total = nat + bonus + bless;
     let ac = tgt.side === 'party' ? armorClass(tgt) : tgt.ac;
     const critOn = att.side === 'party' && !spell ? critRange(att) : 20;
     let crit = nat >= critOn;
     if (!ranged && (tgt.conditions.paralyzed || tgt.conditions.unconscious || (tgt.side === 'party' && tgt.hp <= 0))) crit = nat !== 1 ? true : crit;
     let hit = nat !== 1 && (crit || total >= ac);
+    // Cutting Words (College of Lore): a bard's reaction subtracts an inspiration die from a monster's attack
+    if (hit && !crit && att.side === 'monster') { const bard = this.party.find((p) => p.cls === 'bard' && p.level >= 3 && p.res.inspiration > 0 && p.reaction && !isDown(p)); if (bard) { const cw = roll('1' + inspirationDie(bard)); if (total - cw < ac) { bard.res.inspiration--; bard.reaction = false; total -= cw; hit = false; this.say(`${bard.name}'s Cutting Words throw off ${att.name} (-${cw})!`, 'spell'); } } }
     const advTxt = adv && !dis ? ' (adv)' : dis && !adv ? ' (dis)' : '';
     // Shield reaction
     if (hit && !crit && tgt.side === 'party' && tgt.reaction && knownSpells(tgt).includes('shield') && tgt.slots[0] > 0 && (!tgt.ai || tacticsOf(tgt).spells) && total < ac + 5 && tgt.hp > 0) {
@@ -238,13 +250,14 @@ export class Combat {
     let d = roll(dmg, { crit, extraDice: crit ? extraOnCrit : 0 }) + dmgBonus;
     let sneakTxt = '';
     if (sneak) { d += roll(`${sneak}d6`, { crit }); sneakTxt = ' +Sneak Attack'; }
+    if (onHit) { const ex = onHit(crit); if (ex) { d += roll(ex.dmg, { crit }); sneakTxt += ` +${ex.label}`; } }
     if (crit) this.emit({ type: 'crit', att, tgt });
     // Uncanny Dodge
     if (tgt.side === 'party' && tgt.cls === 'rogue' && tgt.level >= 5 && tgt.reaction && tgt.hp > 0) { tgt.reaction = false; d = Math.floor(d / 2); sneakTxt += ' (Uncanny Dodge halves)'; }
     this.say(`${att.name}'s ${label} ${crit ? 'CRITS' : 'hits'} ${tgt.name}${advTxt} for ${d} ${type}${sneakTxt}. [${nat}+${bonus}${bless ? '+' + bless : ''}=${total}]`, crit ? 'crit' : att.side === 'party' ? 'hit' : 'bad');
     this.emit({ type: 'hit', att, tgt, dmg: d, crit });
     this.damage(tgt, d, type, att, { crit, attack: true });
-    this.caption(narrateAttack({ att, tgt, label, type, hit: true, crit, ranged, spell, killed: tgt.side === 'monster' && tgt.hp <= 0, downed: tgt.side === 'party' && tgt.hp <= 0 }), `${d} ${type} damage${crit ? ' · CRITICAL' : ''}${sneak ? ' · Sneak Attack' : ''}`, crit ? 'crit' : att.side === 'party' ? 'hit' : 'bad');
+    this.caption(narrateAttack({ att, tgt, label, type, hit: true, crit, ranged, spell, killed: tgt.side === 'monster' && tgt.hp <= 0, downed: tgt.side === 'party' && tgt.hp <= 0 }), `${d} ${type} damage${crit ? ' · CRITICAL' : ''}${sneakTxt ? ' · ' + sneakTxt.trim().replace(/^\+/, '') : ''}`, crit ? 'crit' : att.side === 'party' ? 'hit' : 'bad');
     if (extra && !tgt.dead) { const e = roll(extra.dmg); this.say(`…plus ${e} ${extra.type}.`); this.damage(tgt, e, extra.type, att); }
     if (rider && !tgt.dead && (tgt.hp > 0 || rider.dmg)) this.applyRider(att, tgt, rider);
     return { hit: true, crit, dmg: d };
@@ -270,6 +283,9 @@ export class Combat {
       if (!front && c.equip.weapon && WEAPONS[c.equip.weapon.base].props.includes('thrown')) acts.push({ id: 'throw', label: 'Throw ' + WEAPONS[c.equip.weapon.base].name, target: 'enemy' });
       if (knownSpells(c).length) acts.push({ id: 'cast', label: 'Cast Spell…' });
       if (c.res.channelDivinity && c.cls === 'cleric') acts.push({ id: 'preserveLife', label: 'Channel Divinity: Preserve Life' });
+      if (front && c.equip.weapon && c.cls === 'paladin' && c.level >= 2 && c.slots.some((n) => n > 0)) acts.push({ id: 'smite', label: 'Attack + Divine Smite', target: 'enemy' });
+      if (c.cls === 'paladin' && c.res.layOnHands > 0) acts.push({ id: 'layOnHands', label: `Lay on Hands (${c.res.layOnHands} HP left)`, target: 'ally' });
+      if (c.cls === 'paladin' && c.res.sacredWeapon && !c.conditions.sacredWeapon) acts.push({ id: 'sacredWeapon', label: 'Channel Divinity: Sacred Weapon' });
       if (c.res.breath) acts.push({ id: 'breath', label: 'Breath Weapon (fire)' });
       if (this.inventory.some((k) => ITEMS[k]?.kind === 'potion')) acts.push({ id: 'item', label: 'Use Item…' });
       if (c.conditions.restrained) acts.push({ id: 'escape', label: 'Break Free (Athletics)' });
@@ -278,6 +294,11 @@ export class Combat {
     }
     if (t.bonus) {
       if (c.res.secondWind && c.hp < c.maxHp) acts.push({ id: 'secondWind', label: 'Second Wind (bonus)', bonus: true });
+      if (c.cls === 'barbarian' && c.res.rage > 0 && !c.conditions.raging) acts.push({ id: 'rage', label: `RAGE! (bonus, ${c.res.rage} left)`, bonus: true });
+      if (c.cls === 'barbarian' && c.level >= 3 && c.conditions.raging && t.attacked && this.inFront(c)) acts.push({ id: 'frenzy', label: 'Frenzy: extra attack (bonus)', bonus: true, target: 'enemy' });
+      if (c.cls === 'monk' && t.attacked && this.inFront(c)) { acts.push({ id: 'martialArts', label: 'Martial Arts: unarmed strike (bonus)', bonus: true, target: 'enemy' }); if (c.res.ki > 0) acts.push({ id: 'flurry', label: `Flurry of Blows (bonus, 1 ki of ${c.res.ki})`, bonus: true, target: 'enemy' }); }
+      if (c.cls === 'monk' && c.res.ki > 0 && !t.attacked) acts.push({ id: 'patientDefense', label: 'Patient Defense: Dodge (bonus, 1 ki)', bonus: true });
+      if (c.cls === 'bard' && c.res.inspiration > 0) acts.push({ id: 'inspire', label: `Bardic Inspiration (bonus, ${c.res.inspiration} left)`, bonus: true, target: 'ally' });
       if (c.cls === 'rogue' && c.level >= 2 && !c.conditions.hidden) acts.push({ id: 'hide', label: 'Cunning Action: Hide (bonus)', bonus: true });
       if (c.cls === 'rogue' && c.level >= 3 && this.inventory.some((k) => ITEMS[k]?.kind === 'potion')) acts.push({ id: 'item', label: 'Fast Hands: Use Item (bonus)', bonus: true });
     }
@@ -295,12 +316,13 @@ export class Combat {
     const t = this.turn; if (!t || this.state !== 'running') return;
     const enemy = () => { let tg = opts.target; if (!tg || tg.hp <= 0) tg = this.pickEnemy(); return tg; };
     switch (id) {
-      case 'attack': case 'shoot': case 'throw': {
-        t.action = 0;
+      case 'attack': case 'shoot': case 'throw': case 'smite': {
+        t.action = 0; t.attacked = true;
         const slot = id === 'shoot' ? 'ranged' : 'weapon';
+        if (c.cls === 'barbarian' && c.level >= 2 && id !== 'shoot' && (c.conditions.raging || opts.reckless)) c.conditions.reckless = true;
         for (let i = 0; i < attacksPerAction(c); i++) {
           const tg = enemy(); if (!tg) break;
-          const w = weaponStats(c, slot); const ranged = id !== 'attack';
+          const w = weaponStats(c, slot); const ranged = id === 'shoot' || id === 'throw';
           let sneak = 0;
           if (c.cls === 'rogue' && !t.sneakUsed && (w.finesse || w.ranged)) {
             const { adv, dis } = this.advantageFor(c, tg, { ranged });
@@ -308,13 +330,39 @@ export class Combat {
             if ((adv && !dis) || (allyEngaged && !dis)) sneak = sneakDice(c);
           }
           this.emit({ type: 'partyAttack', who: c, tgt: tg });
-          const res = this.attack(c, tg, { bonus: w.bonus, dmg: w.dmg, dmgBonus: w.dmgBonus, type: w.type, ranged, label: w.name, sneak, extraOnCrit: c.race === 'halfOrc' && !ranged ? 1 : 0 });
+          const res = this.weaponHit(c, tg, w, { ranged, sneak, smite: id === 'smite' || opts.smite });
           if (res.hit && sneak) t.sneakUsed = true;
           if (this.checkEnd()) return;
         }
         break;
       }
       case 'cast': { this.castSpell(c, opts.spell, opts); break; }
+      case 'rage': { t.bonus = 0; c.res.rage--; c.conditions.raging = true; this.say(`${c.name} flies into a RAGE!`, 'crit'); this.caption(`${c.name} throws back their head and ROARS, eyes blazing with fury!`, `Rage: +${rageDamage(c)} melee damage, resist weapon damage`, 'crit'); this.emit({ type: 'spell', who: c, spell: 'rage' }); break; }
+      case 'frenzy': case 'martialArts': case 'flurry': {
+        t.bonus = 0; const n = id === 'flurry' ? 2 : 1; if (id === 'flurry') c.res.ki--;
+        for (let i = 0; i < n; i++) {
+          const tg = enemy(); if (!tg) break;
+          const w = id === 'frenzy' ? weaponStats(c, 'weapon') : unarmedStats(c);
+          this.emit({ type: 'partyAttack', who: c, tgt: tg });
+          const r = this.weaponHit(c, tg, w, { ranged: false });
+          if (r.hit && id === 'flurry' && c.level >= 3 && tg.hp > 0 && !this.save(tg, 'dex', 8 + prof(c) + abilityMod(c, 'wis'))) { tg.conditions.prone = true; this.say(`Open Hand Technique: ${tg.name} is knocked prone!`, 'spell'); }
+          if (this.checkEnd()) return;
+        }
+        break;
+      }
+      case 'patientDefense': t.bonus = 0; c.res.ki--; c.conditions.dodging = true; this.say(`${c.name} uses Patient Defense.`); this.caption(`${c.name} flows into a calm, untouchable stance.`, 'Patient Defense: Dodge', ''); break;
+      case 'inspire': {
+        t.bonus = 0; c.res.inspiration--;
+        const ally = opts.target && opts.target.side === 'party' && opts.target !== c && !isDown(opts.target) ? opts.target : this.frontRow().find((p) => p !== c) || this.conscious().find((p) => p !== c) || c;
+        ally.conditions.inspired = { die: inspirationDie(c) }; this.say(`${c.name} inspires ${ally.name} (+1${inspirationDie(c)}).`, 'spell');
+        this.caption(`${c.name} strikes a rousing chord — ${ally.name} stands taller!`, `Bardic Inspiration: +1${inspirationDie(c)} on the next attack`, 'spell'); break;
+      }
+      case 'layOnHands': {
+        t.action = 0; const p = opts.target && opts.target.side === 'party' && !opts.target.dead ? opts.target : this.mostHurt();
+        const amt = Math.min(c.res.layOnHands, Math.max(1, p.maxHp - Math.max(0, p.hp))); c.res.layOnHands -= amt; const h = heal(p, amt);
+        this.say(`${c.name} lays hands on ${p.name}: +${h} HP.`, 'good'); this.caption(`Golden light flows from ${c.name}'s palms into ${p.name}.`, `Lay on Hands: +${h} HP`, 'good'); this.emit({ type: 'heal', who: p }); break;
+      }
+      case 'sacredWeapon': { t.action = 0; c.res.sacredWeapon = 0; const b = Math.max(1, abilityMod(c, 'cha')); c.conditions.sacredWeapon = { bonus: b }; this.say(`${c.name}'s weapon blazes with holy light (+${b} to hit).`, 'spell'); this.caption(`${c.name} raises their blade, and it bursts into sacred radiance!`, `Sacred Weapon: +${b} to attack rolls`, 'spell'); break; }
       case 'dodge': t.action = 0; c.conditions.dodging = true; this.say(`${c.name} takes the Dodge action.`); this.caption(`${c.name} raises their guard, ready to dodge.`, 'Dodge: attacks against have disadvantage', ''); break;
       case 'escape': {
         t.action = 0; const r = d20() + Math.max(skillMod(c, 'athletics'), skillMod(c, 'acrobatics'));
@@ -364,6 +412,27 @@ export class Combat {
     if (t.done || (!t.action && !t.bonus && !c.res.actionSurge) || (!t.action && !this.actionsFor(c).some((a) => a.bonus && a.id !== 'end') && !this.castable(c, true).length)) this.endTurn();
   }
 
+  /** A party weapon attack with all class riders: Rage, marks, Colossus Slayer, Divine Strike, Divine Smite, Brutal Critical. */
+  weaponHit(c, tg, w, { ranged = false, sneak = 0, smite = false } = {}) {
+    const t = this.turn || {};
+    const rage = c.conditions.raging && !ranged ? rageDamage(c) : 0;
+    const onHit = (crit) => {
+      const parts = [], labels = [];
+      if (tg.conditions.marked && tg.conditions.marked.src === c.id) { parts.push('1d6'); labels.push(SPELLS[tg.conditions.marked.spell]?.name || 'Mark'); }
+      if (c.cls === 'ranger' && c.level >= 3 && !t.colossus && tg.hp < tg.maxHp) { t.colossus = true; parts.push('1d8'); labels.push('Colossus Slayer'); }
+      if (c.cls === 'cleric' && c.level >= 8 && !t.divineStrike) { t.divineStrike = true; parts.push('1d8'); labels.push('Divine Strike'); }
+      if (c.cls === 'paladin' && !ranged && c.level >= 2 && (smite || (c.ai && this.wantsSmite(c, tg, crit)))) {
+        const l = this.lowestSlot(c, 1); if (l) { c.slots[l - 1]--; const n = Math.min(5, 1 + l + (tg.T && ['undead', 'fiend'].includes(tg.T.type) ? 1 : 0)); parts.push(`${n}d8`); labels.push('Divine Smite'); this.emit({ type: 'spell', who: c, spell: 'smite' }); }
+      }
+      if (!parts.length) return null;
+      const dice = {}; for (const p of parts) { const [n, f] = p.split('d'); dice[f] = (dice[f] || 0) + +n; }
+      return { dmg: Object.entries(dice).map(([f, n]) => `${n}d${f}`).join('+'), label: labels.join(' +') };
+    };
+    const brutal = (c.cls === 'barbarian' && c.level >= 9 && !ranged ? 1 : 0) + (c.race === 'halfOrc' && !ranged ? 1 : 0);
+    return this.attack(c, tg, { bonus: w.bonus, dmg: w.dmg, dmgBonus: w.dmgBonus + rage, type: w.type, ranged, label: w.name, sneak, extraOnCrit: brutal, onHit });
+  }
+  wantsSmite(c, tg, crit) { const big = this.boss || tg.T?.boss || tg.hp > 25; return crit || (big && c.slots.some((n) => n > 0) && (tacticsOf(c).spells !== false)); }
+
   castSpell(c, key, { target, targets, slot } = {}) {
     const S = SPELLS[key]; const t = this.turn;
     if (S.bonus) t.bonus = 0; else t.action = 0;
@@ -375,14 +444,26 @@ export class Combat {
     this.emit({ type: 'spell', who: c, spell: key, level: lvl });
     if (S.conc) { if (c.concentration) this.dropConcentration(c); c.concentration = { spell: key, targets: [] }; }
     const dmgExpr = (base) => { if (!base) return null; let e = base; const p = /^(\d+)d(\d+)/.exec(base); if (p) { let n = +p[1]; if (S.cantrip) n *= cantripDice(c); if (S.perLevel) n += up * +/^(\d+)/.exec(S.perLevel)[1]; e = `${n}d${p[2]}${base.slice(p[0].length)}`; } return e; };
+    // Sorcerer: Empowered Spell (reroll damage, keep the higher) and Elemental Affinity (+Cha to fire)
+    let empower = c.cls === 'sorcerer' && c.level >= 3 && lvl >= 1 && c.res.sorcery > 0 && S.dmg;
+    if (empower) { c.res.sorcery--; this.say(`${c.name} empowers the spell (sorcery points left: ${c.res.sorcery}).`, 'dim'); }
+    const affinity = c.cls === 'sorcerer' && c.level >= 6 && S.type === 'fire' ? Math.max(0, sm) : 0;
+    const rollD = (e) => (empower ? Math.max(roll(e), roll(e)) : roll(e));
     const enemies = this.livingMonsters();
     const pickT = () => (target && target.hp > 0 && target.side === 'monster' ? target : this.pickEnemy());
     switch (S.kind) {
       case 'attack': {
         const tg = pickT(); if (!tg) break;
-        const r = this.attack(c, tg, { bonus: atk, dmg: dmgExpr(S.dmg), dmgBonus: S.addMod ? sm : 0, type: S.type, ranged: !S.melee, spell: true, label: S.name });
+        const r = this.attack(c, tg, { bonus: atk, dmg: dmgExpr(S.dmg), dmgBonus: (S.addMod ? sm : 0) + affinity, type: S.type, ranged: !S.melee, spell: true, label: S.name });
         if (r.hit && S.rider === 'guided' && tg.hp > 0) tg.conditions.guided = true;
         break;
+      }
+      case 'beams': { const n = c.level >= 5 ? 2 : 1; for (let i = 0; i < n; i++) { const tg = pickT(); if (!tg) break; this.attack(c, tg, { bonus: atk, dmg: S.dmg, dmgBonus: c.level >= 2 ? Math.max(0, sm) : 0, type: S.type, ranged: true, spell: true, label: S.name }); } break; }
+      case 'mark': {
+        const tg = pickT(); if (!tg) break; if (c.concentration) c.concentration.targets = [tg.id];
+        for (const m of this.monsters) if (m.conditions.marked?.src === c.id) delete m.conditions.marked;
+        tg.conditions.marked = { src: c.id, spell: key }; this.say(`${tg.name} is marked by ${S.name}.`, 'spell');
+        this.caption(key === 'hex' ? `${c.name} whispers a curse, and shadows cling to ${tg.name}.` : `${c.name} fixes ${tg.name} with a hunter's stare.`, `${S.name}: +1d6 on every hit`, 'spell'); break;
       }
       case 'rays': { for (let i = 0; i < S.rays + up; i++) { const tg = pickT(); if (!tg) break; this.attack(c, tg, { bonus: atk, dmg: S.dmg, type: S.type, ranged: true, spell: true, label: 'Scorching Ray' }); } break; }
       case 'auto': {
@@ -397,10 +478,10 @@ export class Combat {
         tgs = tgs.filter(Boolean); let tot = 0, saved = 0, slain = 0, held = 0;
         for (const m of tgs) {
           if (m.hp <= 0) continue;
-          if (S.humanoidOnly) { this.say(`${m.name} is not a humanoid — no effect.`, 'dim'); continue; }
+          if (S.humanoidOnly && m.T.type !== 'humanoid') { this.say(`${m.name} is not a humanoid — no effect.`, 'dim'); continue; }
           const ok = this.save(m, S.save, dc);
           if (ok) saved++;
-          if (S.dmg) { let d = roll(dmgExpr(S.dmg)); if (ok) d = S.half ? Math.floor(d / 2) : 0; this.say(`${m.name} ${ok ? 'saves' : 'fails'}: ${d} ${S.type}.`, 'spell'); if (d) { this.emit({ type: 'hit', att: c, tgt: m, dmg: d }); this.damage(m, d, S.type, c); tot += d; if (m.hp <= 0) slain++; } }
+          if (S.dmg) { let d = rollD(dmgExpr(S.dmg)) + affinity; if (ok) d = S.half ? Math.floor(d / 2) : 0; if (S.cond && !ok && m.hp > d) { m.conditions[S.cond] = { dc, src: c.id }; held++; } this.say(`${m.name} ${ok ? 'saves' : 'fails'}: ${d} ${S.type}.`, 'spell'); if (d) { this.emit({ type: 'hit', att: c, tgt: m, dmg: d }); this.damage(m, d, S.type, c); tot += d; if (m.hp <= 0) slain++; } }
           else if (S.cond && !ok) { m.conditions[S.cond] = { dc, src: c.id }; held++; this.say(`${m.name} is ${S.cond}!`, 'spell'); }
           else if (S.cond) this.say(`${m.name} resists.`, 'dim');
         }
@@ -437,6 +518,7 @@ export class Combat {
         if (S.buff === 'spiritGuardians') { c.conditions.spiritGuardians = { src: c.id }; this.say(`Spectral guardians whirl around ${c.name}!`, 'spell'); }
         if (S.buff === 'aid') { for (const p of this.party.filter((p) => !p.dead).slice(0, 3)) if (!p.conditions.aid) { p.conditions.aid = true; p.maxHp += 5; heal(p, 5); } this.say(`Aid bolsters the party (+5 max HP).`, 'spell'); }
         if (S.buff === 'mageArmor') { const p = target || c; p.conditions.mageArmor = true; }
+        if (S.buff === 'invisible') { const p = target && target.side === 'party' && !isDown(target) ? target : this.frontRow()[0] || c; p.conditions.invisible = { src: c.id }; this.say(`${p.name} vanishes from sight!`, 'spell'); }
         break;
       }
       case 'util': {
@@ -455,7 +537,7 @@ export class Combat {
   /** Run the current combatant's turn automatically (monsters, AI companions). */
   autoTurn() {
     const c = this.current(); if (!c || this.state !== 'running') return;
-    if (c.side === 'monster') this.monsterTurn(c); else this.aiTurn(c);
+    if (c.side === 'monster') this.monsterTurn(c); else { this.aiTurn(c); this.aiBonusAfter(c); }
     if (this.state === 'running' && this.current() === c && !this.turn.done) this.endTurn();
   }
   monsterTurn(m) {
@@ -495,7 +577,10 @@ export class Combat {
     const cast = (k, o = {}) => go('cast', { spell: k, ...o });
     // Bonus actions first
     if (c.cls === 'fighter' && c.res.secondWind && c.hp < c.maxHp * 0.45) go('secondWind');
-    if (c.cls === 'cleric') {
+    if (c.cls === 'barbarian' && c.res.rage > 0 && !c.conditions.raging && t.bonus && (hard || c.res.rage > 2) && this.inFront(c)) go('rage');
+    if (c.cls === 'bard' && c.res.inspiration > 0 && t.bonus && hard && !downed.length && !this.frontRow().some((p) => p !== c && p.conditions.inspired)) go('inspire');
+    if ((c.cls === 'ranger' || c.cls === 'warlock') && t.bonus && !c.concentration && hard && T.spells) { const mk = c.cls === 'ranger' ? 'huntersMark' : 'hex'; if (can(mk)) cast(mk, { target: this.livingMonsters().sort((a, b) => b.hp - a.hp)[0] }); }
+    if (['cleric', 'bard', 'druid'].includes(c.cls)) {
       if (downed.length && can('healingWord')) cast('healingWord', { target: downed[0] });
       else if (hurt.length >= 3 && can('massHealingWord')) cast('massHealingWord');
       else if (hurt.length && can('healingWord') && (style === 'support' || (style !== 'aggressive' && rand() < 0.6))) cast('healingWord', { target: hurt[0] });
@@ -531,21 +616,57 @@ export class Combat {
       if (enemies.length >= 3 && can('burningHands') && hard) return cast('burningHands');
       if (hard && can('magicMissile') && c.slots[0] > 1) return cast('magicMissile', { target: this.pickEnemy() });
     }
-    if (potion && c.hp < c.maxHp * thr * 0.62 && !this.party.some((p) => p.cls === 'cleric' && canAct(p) && p !== c)) return go('item', { item: potion, target: c });
+    const veryHurt2 = style === 'aggressive' ? [] : this.party.filter((p) => !isDown(p) && p.hp < p.maxHp * Math.min(thr, 0.35));
+    const stillDown2 = this.party.filter((p) => p.hp <= 0 && !p.dead); const bossT = this.livingMonsters().find((m) => m.T.boss) || this.livingMonsters().sort((a, b) => b.hp - a.hp)[0];
+    if (c.cls === 'paladin') {
+      if (stillDown2.length && c.res.layOnHands > 0) return go('layOnHands', { target: stillDown2[0] });
+      if (veryHurt2.length && c.res.layOnHands >= 8) return go('layOnHands', { target: veryHurt2[0] });
+      if (stillDown2.length && can('cureWounds')) return cast('cureWounds', { target: stillDown2[0] });
+      if (hard && c.res.sacredWeapon && front && !c.conditions.sacredWeapon && enemies.length > 1) return go('sacredWeapon');
+      if (hard && !c.concentration && can('bless') && enemies.length > 2) return cast('bless');
+    }
+    if (c.cls === 'bard' || c.cls === 'druid') {
+      if (hurt.length >= 3 && can('massCureWounds')) return cast('massCureWounds');
+      if (stillDown2.length && can('cureWounds')) return cast('cureWounds', { target: stillDown2[0] });
+      if (veryHurt2.length && can('cureWounds')) return cast('cureWounds', { target: veryHurt2[0] });
+    }
+    if (hard && ['bard', 'druid', 'sorcerer', 'warlock', 'ranger', 'wizard', 'cleric'].includes(c.cls)) {
+      const plan = {
+        bard: [['holdMonster', this.boss], ['fear', enemies.length >= 3 && !c.concentration], ['shatter', enemies.length >= 2], ['holdPerson', bossT && bossT.T.type === 'humanoid' && !c.concentration], ['dissonantWhispers', true]],
+        druid: [['insectPlague', enemies.length >= 3], ['iceStorm', enemies.length >= 3], ['blight', this.boss], ['callLightning', enemies.length >= 2], ['moonbeam', true], ['entangle', enemies.length >= 2 && !c.concentration]],
+        sorcerer: [['coneOfCold', enemies.length >= 3], ['holdMonster', this.boss && !c.concentration], ['fireball', enemies.length >= 3], ['blight', this.boss], ['iceStorm', enemies.length >= 3], ['lightningBolt', enemies.length >= 2], ['shatter', enemies.length >= 2], ['scorchingRay', true], ['magicMissile', c.slots[0] > 1]],
+        warlock: [['holdMonster', this.boss && !c.concentration], ['fireball', enemies.length >= 3], ['blight', this.boss], ['shatter', enemies.length >= 2], ['scorchingRay', c.level < 5]],
+        ranger: [['conjureBarrage', enemies.length >= 3]],
+        wizard: [['coneOfCold', enemies.length >= 3], ['holdMonster', this.boss && !c.concentration], ['blight', this.boss], ['iceStorm', enemies.length >= 3]],
+        cleric: [['flameStrike', enemies.length >= 2], ['guardianOfFaith', enemies.length >= 2]],
+      }[c.cls];
+      for (const [k, ok] of plan) if (ok && can(k)) return cast(k, { target: k === 'holdMonster' || k === 'blight' ? bossT : this.pickEnemy() });
+    }
+    if (potion && c.hp < c.maxHp * thr * 0.62 && !this.party.some((p) => ['cleric', 'druid', 'bard', 'paladin'].includes(p.cls) && canAct(p) && p !== c)) return go('item', { item: potion, target: c });
     if (c.conditions.restrained && rand() < 0.5) return go('escape');
-    if (front && c.equip.weapon && c.cls !== 'wizard') return go('attack', { target: this.pickEnemy() });
-    if (c.cls === 'wizard') return cast(can('fireBolt') ? 'fireBolt' : 'rayOfFrost', { target: this.pickEnemy() });
+    const BLASTERS = { wizard: 'fireBolt', sorcerer: 'fireBolt', warlock: 'eldritchBlast', druid: 'produceFlame', bard: 'viciousMockery' };
+    if (front && c.equip.weapon && !['wizard', 'sorcerer', 'warlock', 'druid'].includes(c.cls)) return go('attack', { target: this.pickEnemy() });
+    if (BLASTERS[c.cls]) return cast(can(BLASTERS[c.cls]) ? BLASTERS[c.cls] : 'rayOfFrost', { target: this.pickEnemy() });
     if (style === 'defensive' && !front && !c.equip.ranged && c.cls !== 'cleric') return go('dodge');
     if (c.cls === 'cleric' && !front) return cast('sacredFlame', { target: this.pickEnemy() });
     if (c.equip.ranged) return go('shoot', { target: this.pickEnemy() });
     if (c.equip.weapon) return go(front ? 'attack' : 'dodge', { target: this.pickEnemy() });
     return go('dodge');
   }
+  /** Bonus actions that only make sense after attacking (Martial Arts, Flurry, Frenzy). */
+  aiBonusAfter(c) {
+    if (this.state !== 'running' || this.current() !== c || !this.turn || !this.turn.bonus) return;
+    const ids = this.actionsFor(c).map((a) => a.id); const hard = this.boss || this.livingMonsters().reduce((s, m) => s + m.hp, 0) > 30 + c.level * 8;
+    const go = (id) => this.act(c, id, { target: this.pickEnemy() });
+    if (ids.includes('flurry') && (hard || c.res.ki > c.level / 2)) return go('flurry');
+    if (ids.includes('martialArts')) return go('martialArts');
+    if (ids.includes('frenzy')) return go('frenzy');
+  }
   /** Run until player input is needed or combat ends (used by the simulator and tests). */
   runAuto(maxSteps = 2000) {
     for (let i = 0; i < maxSteps && this.state === 'running'; i++) {
       const c = this.current(); if (!c) break;
-      if (c.side === 'party' && !c.ai) { this.aiTurn(c); if (this.current() === c && this.state === 'running') this.endTurn(); }
+      if (c.side === 'party' && !c.ai) { this.aiTurn(c); this.aiBonusAfter(c); if (this.current() === c && this.state === 'running') this.endTurn(); }
       else this.autoTurn();
     }
     return this.state;

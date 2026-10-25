@@ -22,6 +22,9 @@ export function parse(expr) {
 }
 /** Roll a dice expression. crit doubles the number of dice (5e rule). extraDice adds more dice of same size. */
 export function roll(expr, { crit = false, extraDice = 0 } = {}) {
+  if (typeof expr === 'string' && /d\d+\s*\+\s*\d*d/.test(expr)) { // compound: '2d8+1d6'
+    const parts = expr.replace(/\s/g, '').split('+'); return parts.reduce((t, x, i) => t + roll(x, { crit, extraDice: i === 0 ? extraDice : 0 }), 0);
+  }
   const p = parse(expr);
   const n = p.n * (crit ? 2 : 1) + extraDice;
   let t = p.b;

@@ -4,7 +4,7 @@ import { SLOT_KEYS, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS } from '
 import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js';
 import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
-import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive } from './rules/character.js';
+import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience } from './audio.js';
@@ -276,7 +276,9 @@ function showTown(sub = null) {
   } else if (sub === 'train') {
     P([h('h3', {}, 'Training Grounds'), h('div', { class: 'menu' }, S.party.map((c) => h('div', { class: 'row' },
       btn(canLevelUp(c) ? `⬆ Train ${c.name} to level ${c.level + 1}` : `${c.name} — L${c.level} (${c.xp}/${xpForNext(c) === Infinity ? 'max' : xpForNext(c)} XP)`, () => { handle(G.train(S, c)); showTown('train'); }, { disabled: !canLevelUp(c) }),
+      (c.companion || c.recruit) ? btn('Re-class', () => reclassMenu(c), { class: 'small' }) : null,
       btn('Sheet', () => showSheet(c), { class: 'small' })))),
+      h('p', { class: 'hint' }, 'Re-class: retrain a companion or recruit into any of the 12 classes at the same level (50 gp per level).'),
       btn('✍ Create a new recruit', () => showCreate(true), { id: 'btn-train-recruit' })]);
   } else if (sub === 'edge') {
     P([h('h3', {}, 'Edge of Town'), h('p', { class: 'hint' }, 'The maze entrance yawns before you. The dwarven mine lift can take you to any level you have already reached.'),
@@ -495,6 +497,18 @@ function combatKey(e) {
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
   if (e.key === 'Escape') { const b = modal._options.find((o) => o.back); if (b) modal._resolve(b); }
 }
+async function reclassMenu(c) {
+  const cost = 50 * c.level;
+  const opts = Object.entries(CLASSES).filter(([k]) => k !== c.cls).map(([k, C]) => ({ label: `${C.name} — ${C.sub}`, k, disabled: S.gold < cost }));
+  opts.push({ label: '← Back', back: true });
+  const o = await chooseFrom(`Retrain ${c.name} (L${c.level} ${CLASSES[c.cls].name}) as… Cost ${cost} gp (you have ${S.gold}).`, opts);
+  if (!o.back && S.gold >= cost) {
+    const n = reclass(c, o.k); n.recruit = c.recruit;
+    for (const list of [S.party, S.roster]) { const i = list.indexOf(c); if (i >= 0) list[i] = n; }
+    S.gold -= cost; log(`${n.name} retrains as a ${CLASSES[o.k].name} (${CLASSES[o.k].sub}).`, 'good'); autosave();
+  }
+  showTown('train');
+}
 async function pickTarget(kind, c) {
   if (kind === 'enemy') {
     const live = combat.livingMonsters();
@@ -528,6 +542,7 @@ async function playerTurn() {
     if (o.id === 'speed') { const ks = Object.keys(BATTLE_SPEEDS); setSpeed(ks[(ks.indexOf(loadSettings().battleSpeed) + 1) % ks.length]); log(`Battle speed: ${speed().label}`, 'sys'); continue; }
     let args = {};
     if (o.target === 'enemy') { const m = await pickTarget('enemy', c); if (!m) continue; args.target = m; }
+    if (o.target === 'ally') { const p = await pickTarget('ally', c); if (!p) continue; args.target = p; }
     if (o.id === 'cast') {
       const list = combat.castable(c).map(({ k, s }) => ({ info: () => spellInfo(k), label: `${s.name}${s.level ? ` (L${s.level})` : ' (cantrip)'}${s.bonus ? ' [bonus]' : ''}${s.conc ? ' [conc]' : ''}`, k, s }));
       list.push({ label: '← Back', back: true });

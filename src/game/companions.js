@@ -85,9 +85,9 @@ export const COMPANIONS = {
     ],
   },
   grumsh: {
-    name: 'Grumsh Ashgrave', short: 'Grumsh', race: 'halfOrc', cls: 'fighter', color: '#a9c1ff',
-    base: { str: 15, dex: 12, con: 14, int: 10, wis: 10, cha: 13 }, skills: ['athletics', 'intimidation', 'performance'],
-    blurb: 'A melancholy half-orc fighter and failed bard who hums dirges mid-swing and writes a sad poem for every fallen foe.',
+    name: 'Grumsh Ashgrave', short: 'Grumsh', race: 'halfOrc', cls: 'barbarian', color: '#a9c1ff',
+    base: { str: 15, dex: 13, con: 14, int: 8, wis: 10, cha: 12 }, skills: ['athletics', 'intimidation', 'performance'],
+    blurb: 'A melancholy half-orc barbarian and failed bard who hums dirges mid-swing and writes a sad poem for every fallen foe.',
     lines: {
       recruit: ['Very well. I shall follow you into the dark. It is where I keep my feelings anyway.', 'Grumsh joins. Grumsh has packed his lute and his sorrow.'],
       combatStart: ['Another battle. Another verse for my endless ballad of woe.', 'Ah. Violence. The only song I was ever good at.', 'Let us dance, friend. A slow, sad dance.'],
@@ -112,9 +112,9 @@ export const COMPANIONS = {
     ],
   },
   zizzy: {
-    name: 'Zizzy Emberwhistle', short: 'Zizzy', race: 'tiefling', cls: 'wizard', color: '#ff9a5c',
-    base: { str: 8, dex: 14, con: 13, int: 15, wis: 10, cha: 12 }, skills: ['arcana', 'investigation', 'history'],
-    blurb: 'A relentlessly cheerful tiefling evoker who LOVES explosions, rates every fireball out of ten and has no eyebrows left.',
+    name: 'Zizzy Emberwhistle', short: 'Zizzy', race: 'tiefling', cls: 'sorcerer', color: '#ff9a5c',
+    base: { str: 8, dex: 14, con: 13, int: 12, wis: 10, cha: 15 }, skills: ['arcana', 'investigation', 'history'],
+    blurb: 'A relentlessly cheerful tiefling sorcerer who LOVES explosions, rates every fireball out of ten and has no eyebrows left.',
     lines: {
       recruit: ['YES! A party! Parties are just explosions with snacks!', 'Zizzy reporting for duty! Do we have a budget for property damage?'],
       combatStart: ['Ooh, they look FLAMMABLE!', 'Everybody stand back! Further! FURTHER!', 'Finally! I was getting so bored of not exploding things.'],
@@ -139,11 +139,11 @@ export const COMPANIONS = {
     ],
   },
   vexrath: {
-    name: 'Vexrath Quillscale', short: 'Vexrath', race: 'dragonborn', cls: 'cleric', color: '#6ee8c0',
-    base: { str: 14, dex: 10, con: 13, int: 12, wis: 15, cha: 10 }, skills: ['religion', 'medicine', 'insight'],
-    blurb: 'A bureaucratic dragonborn cleric of the god of paperwork, who files forms for every miracle and stamps defeated foes "PROCESSED".',
+    name: 'Vexrath Quillscale', short: 'Vexrath', race: 'dragonborn', cls: 'paladin', color: '#6ee8c0',
+    base: { str: 15, dex: 10, con: 13, int: 12, wis: 10, cha: 14 }, skills: ['religion', 'medicine', 'insight'],
+    blurb: 'A bureaucratic dragonborn paladin sworn to the god of paperwork, who files forms for every miracle and stamps defeated foes "PROCESSED".',
     lines: {
-      recruit: ['Application approved. Vexrath Quillscale, cleric, reporting. Please initial here, here and here.', 'I have filed my joining papers in triplicate. Let us begin.'],
+      recruit: ['Application approved. Vexrath Quillscale, paladin, reporting. Please initial here, here and here.', 'I have filed my joining papers in triplicate. Let us begin.'],
       combatStart: ['Hostile encounter logged. Form 7-B: Smiting, commencing.', 'Have you filed a permit to attack us? No? Most irregular.', 'Please take a number. You will all be smitten in order.'],
       kill: ['The {m} has been PROCESSED. *stamp*', 'One {m}, deceased. I will need a witness signature.'],
       crit: ['Divine intervention approved and expedited!', 'Stamped. Sealed. Smitten.'],
@@ -166,9 +166,9 @@ export const COMPANIONS = {
     ],
   },
   nettle: {
-    name: 'Nettle Quickstory', short: 'Nettle', race: 'halfElf', cls: 'rogue', color: '#c8ff6a',
+    name: 'Nettle Quickstory', short: 'Nettle', race: 'halfElf', cls: 'bard', color: '#c8ff6a',
     base: { str: 8, dex: 15, con: 13, int: 12, wis: 10, cha: 14 }, skills: ['deception', 'stealth', 'perception', 'sleightOfHand', 'investigation'],
-    blurb: 'A half-elf rogue and shameless teller of tall tales who has "definitely" fought a dragon, married a queen and invented the door.',
+    blurb: 'A half-elf bard and shameless teller of tall tales who has "definitely" fought a dragon, married a queen and invented the door.',
     lines: {
       recruit: ['Have I ever told you about the time I joined a party and saved the world? Well, here we go again.', "Nettle's in! Fun fact: I once robbed a lich. Twice. Same lich."],
       combatStart: ['This reminds me of the Battle of Nine Badgers. I was all nine badgers.', 'Easy. I once fought a hundred of these with a spoon.', 'Watch closely, this is the move I invented. Everyone uses it now.'],
