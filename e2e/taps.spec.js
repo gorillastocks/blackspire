@@ -124,6 +124,7 @@ for (const speed of ['normal', 'fast', 'pause']) {
     const m = await page.evaluate(() => { const b = (s) => { const e = document.querySelector(s); const r = e && e.offsetParent && e.getBoundingClientRect(); return r && r.width ? r : null; }; const c = document.querySelector('#caption'); return { c: b('#caption'), v: b('#view'), ctl: b('#controls'), fits: c.scrollHeight <= c.clientHeight + 1, font: parseFloat(getComputedStyle(c.querySelector('.caploot')).fontSize), log: document.querySelector('#log').textContent }; });
     expect(m.c.top >= m.v.top - 1 && m.c.bottom <= m.v.bottom + 1, 'loot card inside the 3D view').toBe(true);
     expect(!m.ctl || m.c.bottom <= m.ctl.top + 1 || m.c.top >= m.ctl.bottom - 1 || m.c.right <= m.ctl.left + 1 || m.c.left >= m.ctl.right - 1, 'loot card not covering the controls').toBe(true);
+    expect(await page.evaluate(() => { const c = document.querySelector('#caption').getBoundingClientRect(), r = document.querySelector('#btn-menu').getBoundingClientRect(); return r.width > 0 && r.left < c.right && r.right > c.left && r.top < c.bottom && r.bottom > c.top; }), 'Menu button not over the card').toBe(false);
     expect(m.fits, 'loot fits').toBe(true); expect(m.font).toBeGreaterThanOrEqual(12);
     expect(m.log, 'loot logged').toMatch(/XP.*gold/);
     await page.screenshot({ path: `test-results/loot-${speed}-${info.project.name}.png` });

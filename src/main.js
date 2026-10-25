@@ -483,7 +483,7 @@ function placeCaption(el = $('#caption')) {
   const view = $('#view').getBoundingClientRect(); if (!view.height) return; const msg = el.classList.contains('msg');
   let top = view.top + view.height * 0.62, bottom = view.bottom - 6;
   const r = !msg && combat && R.monsterRect ? R.monsterRect() : null; if (r) top = view.top + (Math.max(0, r.bottom) / 100) * view.height;
-  if (msg) top = Math.max(view.top + 8, $('#hud').getBoundingClientRect().bottom + 4);
+  if (msg) { top = Math.max(view.top + 8, $('#hud').getBoundingClientRect().bottom + 4); const mb = $('#btn-menu')?.getBoundingClientRect(); if (mb && mb.width && mb.top < view.top + view.height / 3 && mb.right > view.left + view.width / 2) top = Math.max(top, mb.bottom + 4); } // clear of a top-right ☰ Menu
   for (const sel of ['#cmenu', '#modal.combat .panel', '#log', '#controls']) {
     const m = document.querySelector(sel); if (!m || !m.offsetParent) continue; const b = m.getBoundingClientRect();
     if (b.height && b.width && b.top < bottom && b.bottom > top && b.left < view.right && b.right > view.left) bottom = Math.min(bottom, b.top - 6);
@@ -493,10 +493,13 @@ function placeCaption(el = $('#caption')) {
   const tx = el.querySelector('.captxt'), sub = el.querySelector('.capsub'), loot = el.querySelector('.caploot'); if (tx) tx.style.fontSize = ''; if (sub) sub.style.fontSize = ''; if (loot) loot.style.fontSize = '';
   let fs = tx ? parseFloat(getComputedStyle(tx).fontSize) : 20;
   while (el.scrollHeight > el.clientHeight + 1 && fs > (loot ? 12 : el._refit || msg ? 15 : 16)) { fs -= 1; if (tx) tx.style.fontSize = `${fs}px`; if (sub) sub.style.fontSize = `${Math.max(14, fs - 3)}px`; if (loot) loot.style.fontSize = `${Math.max(12, fs - 4)}px`; }
-  if (msg) { const free = bottom - top - el.offsetHeight; if (free > 0) el.style.top = `${top + free / 2 - view.top}px`; return; } // message card: centred in the free space
+  if (msg) { const free = bottom - top - el.offsetHeight; if (free > 0) el.style.top = `${top + free / 2 - view.top}px`; menuDodge(el); return; } // message card: centred in the free space
   // still too tall for the band: ask the 3D view to reserve more room (camera pulls back / shifts up) and place again
   if (el.scrollHeight > el.clientHeight + 1 && R.fitArena && !el._refit) { R.captionReservePx = Math.max(R.captionReservePx || 0, el.scrollHeight + (el.offsetHeight - el.clientHeight) + 18); R.fitArena(); el._refit = true; placeCaption(el); el._refit = false; return; }
   // the floating ☰ Menu button (docked bottom-left on landscape phones) hops to the top-left corner while a caption it would cover is up
+  menuDodge(el);
+}
+function menuDodge(el) {
   document.body.classList.remove('capcover'); const mb = $('#btn-menu'), c = el.getBoundingClientRect(), b = mb ? mb.getBoundingClientRect() : null;
   if (b && b.width && b.top < c.bottom && b.bottom > c.top && b.left < c.right && b.right > c.left) document.body.classList.add('capcover');
   placeBanter();
