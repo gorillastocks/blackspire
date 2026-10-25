@@ -29,7 +29,7 @@ const modal = $('#modal');
 const Story = G.Story;
 
 /* ---------- Story dialogue (portraits, line-by-line, choices) ---------- */
-function showDialogue(scene) {
+function showDialogue(scene, { closable = false } = {}) {
   return new Promise((resolve) => {
     const lines = scene.lines || []; let i = 0;
     const draw = () => {
@@ -41,7 +41,7 @@ function showDialogue(scene) {
         h('div', { class: 'hint' }, `${Math.min(i + 1, lines.length)} / ${lines.length}`),
         h('div', { class: 'menu' }, last
           ? (scene.choices?.length ? scene.choices : [{ id: 'ok', label: 'Continue ▶' }]).map((c) => btn(c.label, () => { closeModal(); resolve(c.id); }, { class: 'primary', 'data-choice': c.id, id: 'dlg-next' }))
-          : [btn('Next ▶', () => { i++; draw(); }, { class: 'primary', id: 'dlg-next' }), btn('Skip ⏭', () => { i = lines.length - 1; draw(); }, { class: 'small', id: 'dlg-skip' })]))], { closable: false });
+          : [btn('Next ▶', () => { i++; draw(); }, { class: 'primary', id: 'dlg-next' }), btn('Skip ⏭', () => { i = lines.length - 1; draw(); }, { class: 'small', id: 'dlg-skip' })]))], { closable });
     };
     draw();
   });
@@ -69,7 +69,7 @@ function showJournal(back) {
 }
 function showTownFolk() {
   openModal([h('h2', {}, 'Emberhollow Folk'), h('div', { class: 'menu' }, Story.TOWNFOLK.map((k) => { const sp = Story.speaker(k);
-    return btn(`${sp.icon} ${sp.name} — ${Story.townfolkStatus(S, k)}`, async () => { const r = Story.talkTo(S, k); await showDialogue({ lines: r.scene.lines }); handle(r.out); autosave(); showTownFolk(); }, { 'data-npc': k }); })),
+    return btn(`${sp.icon} ${sp.name} — ${Story.townfolkStatus(S, k)}`, async () => { const r = Story.talkTo(S, k); handle(r.out); autosave(); await showDialogue({ lines: r.scene.lines }, { closable: true }); showTownFolk(); }, { 'data-npc': k }); })),
     btn('← Back', () => showTown(), { class: 'backbtn' })], { closable: false, cls: 'transparent' });
 }
 
