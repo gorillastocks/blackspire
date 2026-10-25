@@ -156,3 +156,16 @@ body.incombat #log { min-height: 0; }
 @media (max-width: 700px), (max-height: 520px) and (orientation: landscape) { .panel .abil small { font-size: 16px; } }
 @media (max-width: 700px), (max-height: 520px) and (orientation: landscape) { .lvlready .lvlwhere { display: none; } .lvlready { padding: 2px 6px; } }
 .panel button.levelup { border-color: #ffd34d; }
+/* main menu */
+#btn-menu { position: fixed; top: calc(6px + env(safe-area-inset-top)); right: calc(6px + env(safe-area-inset-right)); z-index: 30; min-height: 40px; padding: 6px 12px; font-size: 16px; font-weight: bold; background: #2a1f52; color: #fff; border: 2px solid #3df0ff; border-radius: 10px; box-shadow: 0 2px 10px #000c; }
+#btn-menu.hidden { display: none; }
+#gmenu { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: #05030bf2; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing: border-box; }
+#gmenu.hidden { display: none; }
+#gmenu .panel { width: min(94vw, 520px); max-height: 92vh; overflow-y: auto; font-size: 16px; }
+#gmenu .panel button { font-size: 16px; min-height: 44px; text-align: left; }
+#gmenu .panel h2 { font-size: 19px; }
+#gmenu .panel .hint { font-size: 15px; }
+.panel .warn { background: #3a0d18; color: #ffe0e4; border: 1px solid #ff8090; border-radius: 8px; padding: 8px 10px; font-size: 16px; }
+body.ingame #modal:not(.combat) { padding-top: calc(52px + env(safe-area-inset-top)); box-sizing: border-box; }
+body.ingame #hud { right: 110px; }
+@media (max-width: 700px), (max-height: 520px) and (orientation: landscape) { #gmenu .panel .hint { font-size: 16px; } }

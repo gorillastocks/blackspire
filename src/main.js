@@ -1,11 +1,12 @@
 import './style.css';
 import * as G from './game/game.js';
+import { SLOT_KEYS, slotInfo, loadSettings, saveSettings } from './menu.js';
 import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js';
 import { Combat } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
 import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive } from './rules/character.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
-import { sfx } from './sfx.js';
+import { sfx, setMuted } from './sfx.js';
 
 const $ = (s) => document.querySelector(s);
 const h = (tag, attrs = {}, ...kids) => {
@@ -123,7 +124,9 @@ function doSearch() {
   handle(ev);
 }
 window.addEventListener('keydown', (e) => {
+  if (menuOpen()) { if (e.key === 'Escape') { e.preventDefault(); menuBack(); } return; }
   if (!S) return;
+  if (e.key === 'Escape' && !combat && modal.classList.contains('hidden')) { e.preventDefault(); openMenu(); return; }
   if (combat) return combatKey(e);
   if (!modal.classList.contains('hidden')) { if (e.key === 'Escape') { if (modal.dataset.closable) dismissModal(); else if (S.mode === 'town' && townSub) showTown(); } return; }
   if (S.mode !== 'dungeon' || busy) return;
@@ -156,15 +159,16 @@ function dismissModal() { closeModal(); if (!S) showTitle(); else if (S.mode ===
 
 /* ---------- Title & creation ---------- */
 async function showTitle() {
-  S = null; setControls(null); R.setMode('combat'); refresh();
+  S = null; closeMenu(); updateMenuBtn(); setControls(null); R.setMode('combat'); refresh();
   R.showMonsters([{ id: 't1', key: 'tyrannosaurus' }, { id: 't2', key: 'giantSpider' }, { id: 't3', key: 'giantWasp' }], 0xff3df0);
-  const has = !!localStorage.getItem(G.SAVE_KEY);
+  const has = [G.SAVE_KEY, ...SLOT_KEYS].some((k) => localStorage.getItem(k));
   openModal([
     h('h1', {}, 'GROKWIZARD'),
     h('p', { class: 'hint' }, 'Proving Grounds of the Thunder-Lizard · a first-person dungeon crawl in the spirit of 1981, built on the D&D 5e SRD'),
     h('div', { class: 'menu' },
       btn('▶ New Game', showCreate, { class: 'primary', id: 'btn-new' }),
-      has ? btn('⟲ Continue', () => loadGame()) : null,
+      has ? btn('⟲ Continue', () => continueLatest(), { id: 'btn-continue' }) : null,
+      has ? btn('📂 Load Game', () => openMenu('load'), { id: 'btn-title-load' }) : null,
       btn('? How to Play', showHelp),
       btn('© Credits & License', showCredits)),
   ], { closable: false, cls: 'transparent' });
@@ -389,10 +393,12 @@ async function startCombat(info) {
   combatLoop();
 }
 let looping = false;
+let loopGen = 0;
+function abandonCombat() { loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); R.clearMonsters(); $('#targets').innerHTML = ''; }
 async function combatLoop() {
-  if (looping || !combat) return; looping = true;
+  if (looping || !combat) return; looping = true; const gen = loopGen;
   try {
-    while (combat && combat.state === 'running') {
+    while (combat && combat.state === 'running' && gen === loopGen) {
       renderParty(); renderTargets();
       if (combat.needsInput() && !autoBattle) { await playerTurn(); }
       else {
@@ -402,13 +408,14 @@ async function combatLoop() {
         await flushCombat();
       }
     }
-    if (combat) await endCombat();
-  } finally { looping = false; }
+    if (combat && gen === loopGen) await endCombat();
+  } finally { if (gen === loopGen) looping = false; }
 }
 async function flushCombat() {
   const { log: lines, events } = combat.drain();
   for (const l of lines) log(l.t, l.cls);
   for (const e of events) {
+    if (!combat || !S) return;
     if (e.type === 'monsterAttack') { R.monsterAttack(e.who.id); sfx('swing'); await wait(380); }
     else if (e.type === 'partyAttack') { sfx('swing'); await wait(150); }
     else if (e.type === 'hit' && e.tgt.side === 'monster') { R.monsterHit(e.tgt.id, e.crit); floater(e.tgt.id, e.dmg, e.crit); sfx(e.crit ? 'crit' : 'hit'); await wait(260); }
@@ -528,11 +535,11 @@ async function endCombat() {
 }
 
 /* ---------- Save/load ---------- */
-function autosave() { if (!S) return; try { localStorage.setItem(G.SAVE_KEY, G.serialize(S)); } catch (e) { log('Save failed: ' + e.message, 'bad'); } }
-async function loadGame() {
-  const raw = localStorage.getItem(G.SAVE_KEY); if (!raw) { log('No saved game.', 'bad'); return; }
+function autosave() { if (!S) return; try { S.savedAt = Date.now(); localStorage.setItem(G.SAVE_KEY, G.serialize(S)); } catch (e) { log('Save failed: ' + e.message, 'bad'); } }
+async function loadGame(key = G.SAVE_KEY) {
+  const raw = localStorage.getItem(key); if (!raw) { log('No saved game.', 'bad'); return; }
   try { S = G.deserialize(raw); } catch { log('Save is corrupted.', 'bad'); return; }
-  combat = null; endCombatUI(); closeModal(); log('Game loaded.', 'sys');
+  abandonCombat(); closeModal(); closeMenu(); updateMenuBtn(); log('Game loaded.', 'sys');
   if (S.mode === 'dungeon') await startDungeon(); else showTown();
 }
 
@@ -549,3 +556,63 @@ async function boot() {
   showTitle();
 }
 boot();
+
+/* ---------- Main menu (☰ / Esc) ---------- */
+const gmenu = h('div', { id: 'gmenu', class: 'hidden', role: 'dialog', 'aria-label': 'Main menu' });
+const menuBtn = h('button', { id: 'btn-menu', class: 'hidden', 'aria-label': 'Main menu', title: 'Main menu (Esc)', onclick: () => (menuOpen() ? closeMenu() : openMenu()) }, '☰ Menu');
+document.body.append(gmenu, menuBtn);
+let menuView = 'main';
+function menuOpen() { return !gmenu.classList.contains('hidden'); }
+function closeMenu() { gmenu.className = 'hidden'; gmenu.innerHTML = ''; }
+function updateMenuBtn() { menuBtn.classList.toggle('hidden', !S); document.body.classList.toggle('ingame', !!S); }
+function menuBack() { if (menuView === 'main' || !S) closeMenu(); else openMenu('main'); }
+function latestKey() { let best = null, bt = -1; for (const k of [G.SAVE_KEY, ...SLOT_KEYS]) { const i = slotInfo(k); if (i && i.t > bt) { bt = i.t; best = k; } } return best; }
+function continueLatest() { const k = latestKey(); if (k) loadGame(k); }
+function slotLabel(k, i) { const inf = slotInfo(k); return `${i < 0 ? 'Autosave / Quick save' : 'Slot ' + (i + 1)}: ${inf ? inf.text : 'empty'}`; }
+function saveTo(k) { S.savedAt = Date.now(); localStorage.setItem(k, G.serialize(S)); }
+function confirmView(title, text, yesLabel, yes, back = 'main') {
+  openMenu(null, [h('h2', {}, title), h('p', { class: 'warn' }, text),
+    h('div', { class: 'menu' }, btn(yesLabel, yes, { class: 'primary', id: 'btn-confirm' }), btn('Cancel', () => (S ? openMenu(back) : closeMenu()), { id: 'btn-cancel' }))]);
+}
+function openMenu(view = 'main', custom = null) {
+  menuView = custom ? 'confirm' : view;
+  const inCombat = !!combat;
+  const note = (t) => h('p', { class: 'hint' }, t);
+  let body;
+  if (custom) body = custom;
+  else if (view === 'main') {
+    body = [h('h2', {}, '☰ Main Menu'),
+      inCombat ? h('p', { class: 'warn' }, '⚔ You are in combat. Saving is disabled until the fight ends, so a save never puts you in the middle of a battle. You can still quit: progress since your last save will be lost.') : null,
+      h('div', { class: 'menu' },
+        btn('▶ Resume', closeMenu, { class: 'primary', id: 'menu-resume' }),
+        btn('💾 Save Game…', () => openMenu('save'), { id: 'menu-save', disabled: inCombat }),
+        btn('📂 Load Game…', () => openMenu('load'), { id: 'menu-load' }),
+        btn('⚙ Settings', () => openMenu('settings'), { id: 'menu-settings' }),
+        btn('💾⏏ Save & Quit to Title', () => openMenu('savequit'), { id: 'menu-savequit', disabled: inCombat }),
+        btn('⏏ Quit to Title without saving', () => confirmView('Quit without saving?', 'Progress since your last save will be lost.', '⏏ Quit without saving', () => { closeMenu(); closeModal(); abandonCombat(); showTitle(); }), { id: 'menu-quit' }))];
+  } else if (view === 'save' || view === 'savequit') {
+    const quit = view === 'savequit';
+    body = [h('h2', {}, quit ? '💾 Save & Quit — choose a slot' : '💾 Save Game — choose a slot'),
+      note('Saving overwrites the slot. The Save button and autosave use their own quick-save slot.'),
+      h('div', { class: 'menu' }, SLOT_KEYS.map((k, i) => btn(slotLabel(k, i), () => confirmView(`Save to Slot ${i + 1}?`, slotInfo(k) ? `This overwrites: ${slotInfo(k).text}` : 'This slot is empty.', quit ? `💾 Save to Slot ${i + 1} and quit` : `💾 Save to Slot ${i + 1}`, () => {
+        try { saveTo(k); } catch (e) { log('Save failed: ' + e.message, 'bad'); return; }
+        log(`Game saved to Slot ${i + 1}.`, 'sys');
+        if (quit) { closeMenu(); closeModal(); showTitle(); } else openMenu('main', [h('h2', {}, '✔ Saved'), h('p', {}, `Saved to Slot ${i + 1}.`), h('div', { class: 'menu' }, btn('▶ Resume', closeMenu, { class: 'primary', id: 'menu-resume' }), btn('← Main Menu', () => openMenu('main')))]);
+      }, view), { class: 'slot', 'data-slot': i + 1 })),
+        btn('← Back', () => openMenu('main'), { class: 'menuback' }))];
+  } else if (view === 'load') {
+    const keys = [[G.SAVE_KEY, -1], ...SLOT_KEYS.map((k, i) => [k, i])];
+    body = [h('h2', {}, '📂 Load Game'), S ? note('Loading replaces the current game; progress since your last save will be lost.') : null,
+      h('div', { class: 'menu' }, keys.map(([k, i]) => btn(slotLabel(k, i), () => (S ? confirmView('Load this save?', 'Progress since your last save will be lost.', '📂 Load', () => loadGame(k), 'load') : loadGame(k)), { class: 'slot', 'data-load': i + 1, disabled: !slotInfo(k) })),
+        btn('← Back', () => (S ? openMenu('main') : closeMenu()), { class: 'menuback' }))];
+  } else if (view === 'settings') {
+    const st = loadSettings();
+    body = [h('h2', {}, '⚙ Settings'), h('div', { class: 'menu' },
+      btn(`🔊 Sound: ${st.sound ? 'On' : 'Off'}`, () => { st.sound = !st.sound; saveSettings(st); setMuted(!st.sound); openMenu('settings'); }, { id: 'set-sound' }),
+      btn('← Back', () => openMenu('main'), { class: 'menuback' }))];
+  }
+  gmenu.className = ''; gmenu.innerHTML = '';
+  gmenu.append(h('div', { class: 'panel' }, h('div', { class: 'navbar closebar' }, btn('✕ Close', closeMenu, { class: 'small closebtn', id: 'menu-close' })), body));
+}
+setMuted(!loadSettings().sound);
+setInterval(updateMenuBtn, 500);
