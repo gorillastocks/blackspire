@@ -490,9 +490,9 @@ function placeCaption(el = $('#caption')) {
   }
   top += 6; const avail = Math.max(40, bottom - top);
   el.style.top = `${top - view.top}px`; el.style.maxHeight = `${avail}px`;
-  const tx = el.querySelector('.captxt'), sub = el.querySelector('.capsub'); if (tx) tx.style.fontSize = ''; if (sub) sub.style.fontSize = '';
+  const tx = el.querySelector('.captxt'), sub = el.querySelector('.capsub'), loot = el.querySelector('.caploot'); if (tx) tx.style.fontSize = ''; if (sub) sub.style.fontSize = ''; if (loot) loot.style.fontSize = '';
   let fs = tx ? parseFloat(getComputedStyle(tx).fontSize) : 20;
-  while (el.scrollHeight > el.clientHeight + 1 && fs > (el._refit || msg ? 15 : 16)) { fs -= 1; if (tx) tx.style.fontSize = `${fs}px`; if (sub) sub.style.fontSize = `${Math.max(14, fs - 3)}px`; }
+  while (el.scrollHeight > el.clientHeight + 1 && fs > (loot ? 12 : el._refit || msg ? 15 : 16)) { fs -= 1; if (tx) tx.style.fontSize = `${fs}px`; if (sub) sub.style.fontSize = `${Math.max(14, fs - 3)}px`; if (loot) loot.style.fontSize = `${Math.max(12, fs - 4)}px`; }
   if (msg) { const free = bottom - top - el.offsetHeight; if (free > 0) el.style.top = `${top + free / 2 - view.top}px`; return; } // message card: centred in the free space
   // still too tall for the band: ask the 3D view to reserve more room (camera pulls back / shifts up) and place again
   if (el.scrollHeight > el.clientHeight + 1 && R.fitArena && !el._refit) { R.captionReservePx = Math.max(R.captionReservePx || 0, el.scrollHeight + (el.offsetHeight - el.clientHeight) + 18); R.fitArena(); el._refit = true; placeCaption(el); el._refit = false; return; }
@@ -546,14 +546,14 @@ function tapToContinue(alive = () => combat && speed().hold === 0) {
 }
 /* ---------- Exploration message cards: clues, notes, wall writings, discoveries ---------- */
 const msgQueue = []; let msgRunning = null;
-function queueMessage(text, cls = 'lore') { msgQueue.push({ text, cls }); if (!msgRunning) msgRunning = pumpMessages(); return msgRunning; }
+function queueMessage(text, cls = 'lore') { msgQueue.push(typeof text === 'object' ? text : { text, cls }); if (!msgRunning) msgRunning = pumpMessages(); return msgRunning; }
 async function pumpMessages() {
   document.body.classList.add('msgup');
   try {
     while (msgQueue.length) {
       const m = msgQueue.shift(); const el = $('#caption'); clearTimeout(capTimer);
-      el.className = `show msg ${m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = '';
-      el.append(h('div', { class: 'captxt' }, m.text), h('div', { class: 'captap' }, '▶ Tap to continue'));
+      el.className = `show msg ${m.cls === 'loot' ? 'loot crit' : m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = ''; capShownAt = performance.now();
+      el.append(h('div', { class: 'captxt' }, m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l) => h('div', {}, l))) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
       placeCaption(el); requestAnimationFrame(() => placeCaption(el));
       await tapToContinue(() => true);
     }
@@ -573,7 +573,7 @@ async function startCombat(info) {
   closeModal(); busy = true;
   document.body.classList.add('incombat'); $('#cmenu').innerHTML = '<div class="who dim">Combat begins…</div>';
   const theme = getLevel(S.level).def.color;
-  combatInfo = info;
+  combatInfo = info; lootBase = snapLoot();
   combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss && !info.town, difficulty: S.difficulty || 'normal', story: info.town ? {} : G.combatOpts(S, info) });
   R.setMode('combat'); sfx('encounter');
   await R.showMonsters(combat.monsters, theme);
@@ -727,13 +727,32 @@ async function playerTurn() {
   }
   closeModal();
 }
+/* ---------- Victory loot card: XP, gold, items, quest and level-up notes, tap to dismiss ---------- */
+let lootBase = null;
+const snapLoot = () => ({ gold: S.gold, xp: new Map(S.party.map((c) => [c, c.xp])), ready: new Set(S.party.filter((c) => canLevelUp(c))), inv: [...S.inventory] });
+const VICTORY_LINES = ['Victory!', 'The foe is vanquished!', 'Victory! The dust settles.', 'Victory — the way is clear.', 'Triumph! The party stands tall.'];
+function lootCard(ev, info) {
+  const b = lootBase || snapLoot(), lines = [];
+  const gains = S.party.filter((c) => !c.dead).map((c) => c.xp - (b.xp.get(c) ?? c.xp)).filter((n) => n > 0);
+  if (gains.length) lines.push(Math.min(...gains) === Math.max(...gains) ? `✦ +${gains[0]} XP each` : `✦ +${Math.min(...gains)}–${Math.max(...gains)} XP`);
+  const gold = S.gold - b.gold; if (gold > 0) lines.push(`💰 +${gold} gold`);
+  const left = [...b.inv], got = {}; for (const k of S.inventory) { const i = left.indexOf(k); if (i >= 0) left.splice(i, 1); else got[k] = (got[k] || 0) + 1; }
+  for (const [k, n] of Object.entries(got)) lines.push(`🎒 ${n > 1 ? n + '× ' : ''}${ITEMS[k]?.name || k}`);
+  for (const e of ev) if (e.log && !e.card && e.cls !== 'lore' && !/^Found /.test(e.log) && !e.combat && (e.cls === 'good' || e.cls === 'crit')) lines.push(`📜 ${e.log}`);
+  for (const c of S.party) if (!c.dead && canLevelUp(c) && !b.ready.has(c)) lines.push(`⬆ ${c.name} is ready for level ${c.level + 1}!`);
+  if (S.victory && info.boss) lines.push('👑 Gorvax the Tyrant falls! The Blackspire\'s lights go dark.');
+  if (!lines.length) lines.push('Nothing of value this time.');
+  const MAX = 8; if (lines.length > MAX) { const more = lines.length - (MAX - 1); lines.splice(MAX - 1, lines.length, `…and ${more} more — see the log.`); }
+  return { text: `⚔ ${VICTORY_LINES[Math.floor(Math.random() * VICTORY_LINES.length)]}`, cls: 'loot', lines };
+}
 async function endCombat() {
   await flushCombat(); await wait(500);
   const st = combat.state; const info = combatInfo;
   if (st === 'won') { victoryUntil = Date.now() + 9000; playMusic('victory', true, () => { victoryUntil = 0; syncAudio(); }); say(banter(S.party, 'victory', {}, 0.8)); }
   const ev = G.afterCombat(S, combat, info);
   combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI(); hideCaption();
-  if (info.town) { handle(ev.filter((e) => !e.toTown)); if (st === 'lost') for (const c of S.party) if (!c.dead) c.hp = Math.max(1, c.hp); await afterPrologueFight(); return; }
+  if (st === 'won') { const card = lootCard(ev, info); log(`${card.text} ${card.lines.join(' · ')}`, 'good'); queueMessage(card); } lootBase = null;
+  if (info.town) { handle(ev.filter((e) => !e.toTown)); if (st === 'lost') for (const c of S.party) if (!c.dead) c.hp = Math.max(1, c.hp); await messagesDone(); await afterPrologueFight(); return; }
   if (st === 'lost') { handle(ev); return; }
   R.setMode('dungeon');
   if (info.boss) await rebuild();

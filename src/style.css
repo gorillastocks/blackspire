@@ -295,3 +295,6 @@ body.capcover #btn-menu { top: calc(6px + env(safe-area-inset-top)); bottom: aut
 #caption.msg.lore .captxt { color: #ffe2b8; font-style: italic; }
 #caption.msg { background: #0b0716f5; }
 body.msgup #banter { visibility: hidden; } /* bubbles wait (they're in the log) while a message card is read */
+#caption .caploot { margin-top: 6px; font-size: clamp(15px, 1.7vw, 20px); line-height: 1.35; color: #ffe9a8; text-align: left; display: inline-block; max-width: 100%; }
+#caption .caploot div { overflow-wrap: anywhere; }
+#caption.msg.loot .captxt { color: #ffe9a8; }
