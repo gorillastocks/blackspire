@@ -70,7 +70,7 @@ export class Renderer {
     this.composer = null; this.ready = this.initPost();
     this.mode = 'dungeon'; this.monsterObjs = new Map(); this.fx = [];
     this.camPos = new THREE.Vector3(); this.camYaw = 0; this.targetPos = new THREE.Vector3(); this.targetYaw = 0;
-    window.addEventListener('resize', () => this.resize()); this.resize();
+    window.addEventListener('resize', () => this.resize()); if (window.ResizeObserver) new ResizeObserver(() => this.resize()).observe(container); this.resize();
     const loop = () => { this.raf = requestAnimationFrame(loop); if (!document.body.classList.contains('titlescreen')) this.update(); }; loop();
   }
   async initPost() {
@@ -90,6 +90,7 @@ export class Renderer {
     this.renderer.setSize(w, h, false); this.composer?.setSize(w, h);
     for (const c of [this.camera, this.arenaCam]) { c.aspect = w / h; c.updateProjectionMatrix(); }
     this.arenaCam.fov = Math.min(72, Math.max(50, 50 * 1.45 / (w / h))); this.arenaCam.updateProjectionMatrix(); if (this.monsterObjs?.size) this.fitArena(); // keep the whole monster line in frame on narrow views
+    this.onResize?.(); // let the UI re-place overlays that follow the monsters
   }
   makeDust() {
     const g = new THREE.BufferGeometry(); const n = 400; const p = new Float32Array(n * 3);
@@ -260,18 +261,19 @@ export class Renderer {
   fitArena() {
     const cam = this.arenaCam; const h = this.container.clientHeight || 1; const w = this.container.clientWidth || 1;
     const base = new THREE.Vector3(0, 2.1, 5.2), look = new THREE.Vector3(0, 1.3, -2); this.arenaLook = look;
-    const reserve = Math.min(0.62, Math.max(0.24, (this.captionReservePx || (w < 520 ? 150 : 140)) / h));
-    const top = 3, limit = 100 * (1 - reserve) - 2;
+    const phonePortrait = window.innerWidth <= 760 && window.innerHeight > window.innerWidth; // there the view itself grows while a caption is up
+    const reserve = phonePortrait && !this.captionUp ? 0.1 : Math.min(0.62, Math.max(0.24, (this.captionReservePx || (w < 520 ? 150 : 140)) / h)); // no caption up: just room for floaters
+    const hud = this.container.querySelector('#hud'), top = Math.max(3, hud && hud.offsetHeight ? ((hud.offsetTop + hud.offsetHeight) / h) * 100 + 1 : 3), limit = 100 * (1 - reserve) - 2;
     cam.clearViewOffset(); let k = 1;
     for (let i = 0; i < 8; i++) {
       cam.position.copy(look).addScaledVector(base.clone().sub(look), k); cam.lookAt(look); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
       const r = this.monsterRect(); if (!r) break;
       const span = r.bottom - r.top, avail = limit - top, wide = (r.right - r.left) / 90, half = Math.max(50 - r.left, r.right - 50) / 45;
-      const need = Math.max(span / avail, wide, half); if (need <= 1.001) break;
-      k *= Math.min(2.5, need * 1.03);
+      const need = Math.max(span / avail, wide, half); if (Math.abs(need - 0.97) < 0.03) break;
+      const nk = Math.max(0.4, k * Math.min(2.5, need * 1.03)); if (Math.abs(nk - k) < 0.002) break; k = nk; // pull back if too big, push in if small
     }
     const r = this.monsterRect(); this.arenaShift = 0;
-    if (r) { const shift = r.bottom - limit > 0 || r.top < top ? Math.max(r.bottom - limit, Math.min(0, r.top - top)) : 0; // + moves the picture up
+    if (r) { const shift = (r.top + r.bottom) / 2 - (top + limit) / 2; // centre the monsters in the band above the caption (+ moves the picture up)
       if (shift) { cam.setViewOffset(w, h, 0, (shift / 100) * h, w, h); this.arenaShift = shift; } }
     cam.updateProjectionMatrix();
   }
@@ -303,9 +305,22 @@ export class Renderer {
     }
     return r;
   }
+  /** Where the living monsters really are on screen right now (in % of the view, clipped to it): precise bounds of the
+   *  current, animated meshes projected through the arena camera (including its view offset and sway). For tests/layout checks. */
+  monsterScreenRect() {
+    let r = null; const v3 = new THREE.Vector3(); this.arenaCam.updateMatrixWorld();
+    for (const [, v] of this.monsterObjs) {
+      if (v.dead) continue; v.holder.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(v.holder, true); if (b.isEmpty()) continue;
+      for (let i = 0; i < 8; i++) { v3.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).project(this.arenaCam);
+        const x = (v3.x * 0.5 + 0.5) * 100, y = (-v3.y * 0.5 + 0.5) * 100;
+        if (!r) r = { left: x, right: x, top: y, bottom: y }; else { r.left = Math.min(r.left, x); r.right = Math.max(r.right, x); r.top = Math.min(r.top, y); r.bottom = Math.max(r.bottom, y); } }
+    }
+    if (!r) return null; const c = (n) => Math.max(0, Math.min(100, n));
+    return { left: c(r.left), right: c(r.right), top: c(r.top), bottom: c(r.bottom), raw: r };
+  }
   screenPos(id) {
     const v = this.monsterObjs.get(id); if (!v) return null;
-    const p = v.holder.position.clone(); p.y += v.height * 0.9; p.project(this.arenaCam);
+    const p = v.holder.position.clone(); p.y = v.wbox && !v.wbox.isEmpty() ? v.wbox.max.y + 0.05 : p.y + v.height * 0.9; p.project(this.arenaCam); // just above the head
     return { x: (p.x * 0.5 + 0.5) * 100, y: (-p.y * 0.5 + 0.5) * 100 };
   }
   setMode(mode) { this.mode = mode; if (!this.composer) return; this.renderPass.scene = mode === 'combat' ? this.arena : this.scene; this.renderPass.camera = mode === 'combat' ? this.arenaCam : this.camera; this.bloom.strength = mode === 'combat' ? 0.7 : 0.85; }

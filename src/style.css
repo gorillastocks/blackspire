@@ -275,3 +275,18 @@ label.switch input:checked+.slider{background:#c0602a}
 label.switch input:checked+.slider::after{left:21px}
 label.switch input:focus-visible+.slider{outline:2px solid #ffd77a}
 body.capcover #btn-menu { top: calc(6px + env(safe-area-inset-top)); bottom: auto; }
+/* phone portrait combat: give the 3D view most of the screen so the monsters stay big with the caption under them;
+   the minimap steps aside and the log shrinks to a short strip */
+@media (max-width: 760px) and (orientation: portrait) {
+  body.incombat #app { grid-template-rows: minmax(0, 1fr) auto auto auto; }
+  body.incombat #side #minimap { display: none; }
+  body.incombat #bottom { grid-template-rows: 58px auto; }
+  body.incombat #log { min-height: 0; }
+  body.incombat.capup #bottom { grid-template-rows: auto; }
+  body.incombat #party .card { padding: 2px 5px; }
+}
+#banter.offband { visibility: hidden; }
+@media (max-width: 760px) and (orientation: portrait) {
+  /* while a tap-to-continue caption is up nothing in the menu can be tapped, so it steps aside and the view grows */
+  body.incombat.capup #cmenu, body.incombat.capup #log { display: none; }
+}

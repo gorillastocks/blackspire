@@ -83,6 +83,22 @@ function say(b) {
   if (!b) return; const el = h('div', { class: 'bubble' }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
   $('#banter').append(el); log(`${b.who}: "${b.text}"`, 'lore'); setTimeout(() => el.remove(), 4200);
   while ($('#banter').children.length > 2) $('#banter').firstChild.remove();
+  placeBanter();
+}
+/** In combat, companion speech bubbles go in the free band under the monsters (and under any caption), or above the
+ *  monsters if that band is full; if neither fits they stay hidden (the line is in the log anyway). Never over a monster. */
+function placeBanter() {
+  const bn = $('#banter'); bn.classList.remove('offband'); bn.style.top = '';
+  if (!combat || !R?.monsterRect || !bn.children.length) return;
+  const view = $('#view').getBoundingClientRect(), r = R.monsterRect(); if (!r || !view.height) return;
+  const hb = bn.offsetHeight; let bottom = view.bottom - 6;
+  for (const sel of ['#cmenu', '#modal.combat .panel']) { const m = document.querySelector(sel); if (!m || !m.offsetParent) continue; const b = m.getBoundingClientRect(); if (b.height && b.top < bottom && b.bottom > view.top) bottom = Math.min(bottom, b.top - 6); }
+  const cap = $('#caption'), cr = cap.classList.contains('show') ? cap.getBoundingClientRect() : null;
+  let top = view.top + (r.bottom / 100) * view.height + 6; if (cr && cr.height) top = Math.max(top, cr.bottom + 6);
+  if (top + hb <= bottom) { bn.style.top = `${top - view.top}px`; return; }
+  const above = view.top + (r.top / 100) * view.height - 6 - hb, hud = $('#hud').getBoundingClientRect();
+  if (above >= Math.max(view.top + 4, hud.bottom + 2)) { bn.style.top = `${above - view.top}px`; return; }
+  bn.classList.add('offband');
 }
 function handle(events) {
   for (const e of events || []) {
@@ -458,8 +474,8 @@ function showCaption(e, tapHint = false) {
   const el = $('#caption'); clearTimeout(capTimer);
   el.className = 'show ' + (e.tone || ''); el.innerHTML = '';
   el.append(h('div', { class: 'captxt' }, e.text), e.sub ? h('div', { class: 'capsub' }, e.sub) : '', tapHint ? h('div', { class: 'captap' }, '▶ Tap to continue') : '');
-  placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 350);
-  if (!tapHint) capTimer = setTimeout(() => { el.classList.remove('show'); document.body.classList.remove('capcover'); }, Math.max(2500, speed().hold * 2.5));
+  clearTimeout(capDownTimer); document.body.classList.add('capup'); if (R && !R.captionUp) { R.captionUp = true; R.fitArena?.(); } placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 350);
+  if (!tapHint) capTimer = setTimeout(() => { el.classList.remove('show'); document.body.classList.remove('capcover'); captionDown(); placeBanter(); }, Math.max(2500, speed().hold * 2.5));
 }
 /** Put the caption in the band below the monsters and above anything covering the bottom of the view
  *  (combat menu, docked panels), shrinking the font a little only if a long caption would not otherwise fit. */
@@ -481,10 +497,20 @@ function placeCaption(el = $('#caption')) {
   // the floating ☰ Menu button (docked bottom-left on landscape phones) hops to the top-left corner while a caption it would cover is up
   document.body.classList.remove('capcover'); const mb = $('#btn-menu'), c = el.getBoundingClientRect(), b = mb ? mb.getBoundingClientRect() : null;
   if (b && b.width && b.top < c.bottom && b.bottom > c.top && b.left < c.right && b.right > c.left) document.body.classList.add('capcover');
+  placeBanter();
 }
 document.fonts?.addEventListener?.('loadingdone', () => { const el = $('#caption'); if (el.classList.contains('show')) placeCaption(el); });
 window.addEventListener('resize', () => { const el = $('#caption'); if (el.classList.contains('show')) requestAnimationFrame(() => placeCaption(el)); });
-function hideCaption() { clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); }
+// the 3D view changes height in combat (e.g. the phone-portrait menu steps aside while a caption is up): re-place caption + bubbles
+const replaceOverlays = () => { const el = $('#caption'); if (el.classList.contains('show') && !el._refit) placeCaption(el); else placeBanter(); };
+function hideCaption() { clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); captionDown(); placeBanter(); }
+/** The caption band (and, on phone portrait, the collapsed menu/log) is released a moment after the last caption, so
+ *  back-to-back narration doesn't make the layout and camera pump between captions. */
+let capDownTimer = null;
+function captionDown(now = false) {
+  clearTimeout(capDownTimer); const go = () => { document.body.classList.remove('capup'); if (R?.captionUp) { R.captionUp = false; if (combat) R.fitArena?.(); } placeBanter(); };
+  if (now) go(); else capDownTimer = setTimeout(go, 700);
+}
 const tapCatch = h('div', { id: 'tapcatch', class: 'hidden', 'aria-label': 'Tap to continue' }); document.body.append(tapCatch);
 function tapToContinue() {
   return new Promise((resolve) => {
@@ -558,7 +584,7 @@ function renderTargets() {
   for (const m of combat.monsters) {
     if (m.hp <= 0) continue; const p = R.screenPos(m.id); if (!p) continue;
     const conds = Object.keys(m.conditions);
-    el.append(h('div', { class: `mtag ${targetPick ? 'pick' : ''} ${combat.current() === m ? 'sel' : ''}`, style: `left:${p.x}%;top:${Math.max(8, p.y)}%`, onclick: () => targetPick && targetPick(m), info: () => monsterInfo(m) },
+    el.append(h('div', { class: `mtag ${targetPick ? 'pick' : ''} ${combat.current() === m ? 'sel' : ''}`, style: `left:${Math.min(86, Math.max(14, p.x))}%;top:${Math.max(8, p.y)}%`, onclick: () => targetPick && targetPick(m), info: () => monsterInfo(m) },
       h('div', {}, m.name), h('div', { class: 'bar' }, h('i', { style: `width:${m.hp / m.maxHp * 100}%` })), conds.length ? h('div', { class: 'conds' }, conds.join(',')) : null));
   }
 }
@@ -573,7 +599,7 @@ function chooseFrom(title, options) {
     modal._resolve = done; modal._options = options;
   });
 }
-function endCombatUI() { document.body.classList.remove('incombat'); $('#cmenu').innerHTML = ''; modal._options = null; }
+function endCombatUI() { captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
 function combatKey(e) {
   const n = parseInt(e.key, 10); if (!modal._options) return;
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
@@ -682,7 +708,7 @@ async function loadGame(key = G.SAVE_KEY) {
 async function boot() {
   log('Loading the 3D engine…', 'dim');
   const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
-  R = new Renderer($('#view'));
+  R = new Renderer($('#view')); R.onResize = () => { if (combat) { replaceOverlays(); renderTargets(); } };
   window.__gw = {
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
