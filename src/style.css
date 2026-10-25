@@ -274,4 +274,4 @@ label.switch .slider::after{content:'';position:absolute;left:3px;top:3px;width:
 label.switch input:checked+.slider{background:#c0602a}
 label.switch input:checked+.slider::after{left:21px}
 label.switch input:focus-visible+.slider{outline:2px solid #ffd77a}
-body.capcover #btn-menu { visibility: hidden; }
+body.capcover #btn-menu { top: calc(6px + env(safe-area-inset-top)); bottom: auto; }

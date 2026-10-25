@@ -19,7 +19,7 @@ function check(m, what) {
   expect(m.cap.t, `${what}: caption below the monsters`).toBeGreaterThanOrEqual(m.mon.b - 1);
   expect(overlap(m.cap, m.menu), `${what}: caption overlaps the combat menu ${JSON.stringify(m.menu)}`).toBe(false);
   expect(m.cap.t >= m.view.t - 1 && m.cap.b <= m.view.b + 1, `${what}: caption inside the 3D view`).toBe(true);
-  expect(m.font, `${what}: caption font stays large`).toBeGreaterThanOrEqual(16);
+  expect(m.font, `${what}: caption font stays large ${JSON.stringify(m.dbg)} mon ${JSON.stringify(m.mon)} cap ${JSON.stringify(m.cap)}`).toBeGreaterThanOrEqual(16);
   expect(m.clipped, `${what}: caption text fits ${JSON.stringify(m.dbg)} mon ${JSON.stringify(m.mon)}`).toBe(false);
 }
 

@@ -475,10 +475,10 @@ function placeCaption(el = $('#caption')) {
   el.style.top = `${top - view.top}px`; el.style.maxHeight = `${avail}px`;
   const tx = el.querySelector('.captxt'), sub = el.querySelector('.capsub'); if (tx) tx.style.fontSize = ''; if (sub) sub.style.fontSize = '';
   let fs = tx ? parseFloat(getComputedStyle(tx).fontSize) : 20;
-  while (el.scrollHeight > el.clientHeight + 1 && fs > 15) { fs -= 1; if (tx) tx.style.fontSize = `${fs}px`; if (sub) sub.style.fontSize = `${Math.max(14, fs - 3)}px`; }
+  while (el.scrollHeight > el.clientHeight + 1 && fs > (el._refit ? 15 : 16)) { fs -= 1; if (tx) tx.style.fontSize = `${fs}px`; if (sub) sub.style.fontSize = `${Math.max(14, fs - 3)}px`; }
   // still too tall for the band: ask the 3D view to reserve more room (camera pulls back / shifts up) and place again
   if (el.scrollHeight > el.clientHeight + 1 && R.fitArena && !el._refit) { R.captionReservePx = Math.max(R.captionReservePx || 0, el.scrollHeight + (el.offsetHeight - el.clientHeight) + 18); R.fitArena(); el._refit = true; placeCaption(el); el._refit = false; return; }
-  // the floating ☰ Menu button (docked bottom-left on landscape phones) steps aside while a caption it would cover is up
+  // the floating ☰ Menu button (docked bottom-left on landscape phones) hops to the top-left corner while a caption it would cover is up
   document.body.classList.remove('capcover'); const mb = $('#btn-menu'), c = el.getBoundingClientRect(), b = mb ? mb.getBoundingClientRect() : null;
   if (b && b.width && b.top < c.bottom && b.bottom > c.top && b.left < c.right && b.right > c.left) document.body.classList.add('capcover');
 }
