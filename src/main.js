@@ -515,6 +515,13 @@ function captionDown(now = false) {
   if (now) go(); else capDownTimer = setTimeout(go, 700);
 }
 const tapCatch = h('div', { id: 'tapcatch', class: 'hidden', 'aria-label': 'Tap to continue' }); document.body.append(tapCatch);
+/** Eat the click (and touch-end/pointer-up) that follows a dismissing tap, so it can't open a sheet or press a button underneath. */
+function eatNextClick() {
+  const eat = (e) => { e.preventDefault(); e.stopPropagation(); };
+  const types = ['click', 'pointerup', 'touchend', 'mouseup', 'dblclick'];
+  for (const t of types) window.addEventListener(t, eat, { capture: true, passive: false });
+  setTimeout(() => { for (const t of types) window.removeEventListener(t, eat, { capture: true }); }, 450);
+}
 let tapPending = null; // resolver of the caption currently waiting for a tap (pause mode)
 function tapToContinue(alive = () => combat && speed().hold === 0) {
   return new Promise((resolve) => {
@@ -524,6 +531,7 @@ function tapToContinue(alive = () => combat && speed().hold === 0) {
       if (ev && ev.type === 'keydown' && ![' ', 'Enter'].includes(ev.key)) return;
       if (ev && performance.now() - t0 < 220) return; // the 2nd half of a double tap must not skip the next caption unread
       if (ev && (ev.target === tapCatch || ev.type === 'keydown')) { ev.preventDefault(); ev.stopPropagation(); }
+      if (ev && ev.type === 'pointerdown') eatNextClick(); // the tap that dismissed the caption must not also press what's under it
       done = true; tapPending = null; tapCatch.className = 'hidden';
       tapCatch.removeEventListener('pointerdown', fin); window.removeEventListener('pointerdown', fin, true); window.removeEventListener('keydown', fin, true); clearInterval(iv);
       hideCaption(); // a tapped caption goes away (otherwise its stale "Tap to continue" would linger and keep the phone menu collapsed)
