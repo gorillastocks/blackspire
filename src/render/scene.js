@@ -89,7 +89,7 @@ export class Renderer {
     const w = this.container.clientWidth || 1, h = this.container.clientHeight || 1;
     this.renderer.setSize(w, h, false); this.composer?.setSize(w, h);
     for (const c of [this.camera, this.arenaCam]) { c.aspect = w / h; c.updateProjectionMatrix(); }
-    this.arenaCam.fov = Math.min(72, Math.max(50, 50 * 1.45 / (w / h))); // keep the whole monster line in frame on narrow views this.arenaCam.updateProjectionMatrix();
+    this.arenaCam.fov = Math.min(72, Math.max(50, 50 * 1.45 / (w / h))); this.arenaCam.updateProjectionMatrix(); if (this.monsterObjs?.size) this.fitArena(); // keep the whole monster line in frame on narrow views
   }
   makeDust() {
     const g = new THREE.BufferGeometry(); const n = 400; const p = new Float32Array(n * 3);
@@ -250,8 +250,30 @@ export class Renderer {
       const find = (re) => g.animations.find((a) => re.test(a.name));
       const clips = { idle: find(/Idle$|Idle(?!_2)|Flying|Swim/i) || g.animations[0], attack: find(/Attack|Bite_Front|Bite|Punch|Headbutt/i), death: find(/Death|Dead/i), hit: find(/Hit|Jump/i) };
       if (clips.idle) { const a = mixer.clipAction(clips.idle); a.time = Math.random() * 2; a.play(); }
-      this.monsterObjs.set(m.id, { holder, o, mixer, clips, mats, dead: false, height: target });
+      this.monsterGroup.updateMatrixWorld(true); const wbox = measure(); // world-space bounds, for keeping UI clear of the monsters
+      this.monsterObjs.set(m.id, { holder, o, mixer, clips, mats, dead: false, height: target, wbox });
     }));
+    this.fitArena();
+  }
+  /** Frame the arena camera so every monster sits in the upper part of the view, leaving a clear band at the
+   *  bottom for the narration caption (captionReservePx tall, between 24% and 62% of the view). */
+  fitArena() {
+    const cam = this.arenaCam; const h = this.container.clientHeight || 1; const w = this.container.clientWidth || 1;
+    const base = new THREE.Vector3(0, 2.1, 5.2), look = new THREE.Vector3(0, 1.3, -2); this.arenaLook = look;
+    const reserve = Math.min(0.62, Math.max(0.24, (this.captionReservePx || (w < 520 ? 150 : 140)) / h));
+    const top = 3, limit = 100 * (1 - reserve) - 2;
+    cam.clearViewOffset(); let k = 1;
+    for (let i = 0; i < 8; i++) {
+      cam.position.copy(look).addScaledVector(base.clone().sub(look), k); cam.lookAt(look); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
+      const r = this.monsterRect(); if (!r) break;
+      const span = r.bottom - r.top, avail = limit - top, wide = (r.right - r.left) / 90, half = Math.max(50 - r.left, r.right - 50) / 45;
+      const need = Math.max(span / avail, wide, half); if (need <= 1.001) break;
+      k *= Math.min(2.5, need * 1.03);
+    }
+    const r = this.monsterRect(); this.arenaShift = 0;
+    if (r) { const shift = r.bottom - limit > 0 || r.top < top ? Math.max(r.bottom - limit, Math.min(0, r.top - top)) : 0; // + moves the picture up
+      if (shift) { cam.setViewOffset(w, h, 0, (shift / 100) * h, w, h); this.arenaShift = shift; } }
+    cam.updateProjectionMatrix();
   }
   clearMonsters() { for (const [, v] of this.monsterObjs) { this.monsterGroup.remove(v.holder); const i = this.mixers.indexOf(v.mixer); if (i >= 0) this.mixers.splice(i, 1); } this.monsterObjs.clear(); }
   playOnce(id, name, then = 'idle') {
@@ -268,6 +290,18 @@ export class Renderer {
     const m = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshBasicMaterial({ color, toneMapped: false, transparent: true, opacity: 1 }));
     m.position.copy(pos); this.arena.add(m); const l = new THREE.PointLight(color, 40, 8, 2); l.position.copy(pos); this.arena.add(l);
     this.fx.push({ m, l, t: 0 });
+  }
+  /** Screen rectangle (in % of the view) covered by all living monsters, padded for idle/attack animation. */
+  monsterRect() {
+    let r = null; const v3 = new THREE.Vector3();
+    for (const [, v] of this.monsterObjs) {
+      if (v.dead || !v.wbox || v.wbox.isEmpty()) continue; const b = v.wbox.clone(); const sz = b.getSize(new THREE.Vector3());
+      b.min.x -= sz.x * 0.1; b.max.x += sz.x * 0.1; b.max.y += sz.y * 0.12; b.min.z -= sz.z * 0.1; b.max.z += sz.z * 0.1 + 0.4; // lunge toward camera
+      for (let i = 0; i < 8; i++) { v3.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).project(this.arenaCam);
+        const x = (v3.x * 0.5 + 0.5) * 100, y = (-v3.y * 0.5 + 0.5) * 100;
+        if (!r) r = { left: x, right: x, top: y, bottom: y }; else { r.left = Math.min(r.left, x); r.right = Math.max(r.right, x); r.top = Math.min(r.top, y); r.bottom = Math.max(r.bottom, y); } }
+    }
+    return r;
   }
   screenPos(id) {
     const v = this.monsterObjs.get(id); if (!v) return null;
@@ -293,8 +327,8 @@ export class Renderer {
     // arena
     if (this.mode === 'combat') {
       this.sparks.rotation.y += dt * 0.03; this.arenaRing.rotation.z += dt * 0.2;
-      this.arenaCam.position.x = Math.sin(t * 0.25) * 0.4;
-      this.arenaCam.lookAt(0, 1.2, -2.5);
+      this.arenaCam.position.x = Math.sin(t * 0.25) * 0.25; // gentle sway; fitArena leaves margin for it
+      this.arenaCam.lookAt(this.arenaLook || new THREE.Vector3(0, 1.3, -2));
       for (const [, v] of this.monsterObjs) {
         if (v.flash > 0) { v.flash -= dt; const k = Math.max(0, v.flash) * 6; for (const m of v.mats) m.emissive.setHex(v.flashColor).multiplyScalar(k * 0.4); if (v.flash <= 0) for (const m of v.mats) m.emissive.copy(m.color).multiplyScalar(0.08); }
         if (v.lunge > 0) { v.lunge -= dt; v.o.position.z = Math.sin((0.4 - v.lunge) / 0.4 * Math.PI) * 0.6; }

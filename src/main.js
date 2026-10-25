@@ -458,9 +458,33 @@ function showCaption(e, tapHint = false) {
   const el = $('#caption'); clearTimeout(capTimer);
   el.className = 'show ' + (e.tone || ''); el.innerHTML = '';
   el.append(h('div', { class: 'captxt' }, e.text), e.sub ? h('div', { class: 'capsub' }, e.sub) : '', tapHint ? h('div', { class: 'captap' }, '▶ Tap to continue') : '');
-  if (!tapHint) capTimer = setTimeout(() => el.classList.remove('show'), Math.max(2500, speed().hold * 2.5));
+  placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 350);
+  if (!tapHint) capTimer = setTimeout(() => { el.classList.remove('show'); document.body.classList.remove('capcover'); }, Math.max(2500, speed().hold * 2.5));
 }
-function hideCaption() { clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; }
+/** Put the caption in the band below the monsters and above anything covering the bottom of the view
+ *  (combat menu, docked panels), shrinking the font a little only if a long caption would not otherwise fit. */
+function placeCaption(el = $('#caption')) {
+  const view = $('#view').getBoundingClientRect(); if (!view.height) return;
+  let top = view.top + view.height * 0.62, bottom = view.bottom - 6;
+  const r = combat && R.monsterRect ? R.monsterRect() : null; if (r) top = view.top + (Math.max(0, r.bottom) / 100) * view.height;
+  for (const sel of ['#cmenu', '#modal.combat .panel', '#log', '#controls']) {
+    const m = document.querySelector(sel); if (!m || !m.offsetParent) continue; const b = m.getBoundingClientRect();
+    if (b.height && b.width && b.top < bottom && b.bottom > top && b.left < view.right && b.right > view.left) bottom = Math.min(bottom, b.top - 6);
+  }
+  top += 6; const avail = Math.max(40, bottom - top);
+  el.style.top = `${top - view.top}px`; el.style.maxHeight = `${avail}px`;
+  const tx = el.querySelector('.captxt'), sub = el.querySelector('.capsub'); if (tx) tx.style.fontSize = ''; if (sub) sub.style.fontSize = '';
+  let fs = tx ? parseFloat(getComputedStyle(tx).fontSize) : 20;
+  while (el.scrollHeight > el.clientHeight + 1 && fs > 15) { fs -= 1; if (tx) tx.style.fontSize = `${fs}px`; if (sub) sub.style.fontSize = `${Math.max(14, fs - 3)}px`; }
+  // still too tall for the band: ask the 3D view to reserve more room (camera pulls back / shifts up) and place again
+  if (el.scrollHeight > el.clientHeight + 1 && R.fitArena && !el._refit) { R.captionReservePx = Math.max(R.captionReservePx || 0, el.scrollHeight + (el.offsetHeight - el.clientHeight) + 18); R.fitArena(); el._refit = true; placeCaption(el); el._refit = false; return; }
+  // the floating ☰ Menu button (docked bottom-left on landscape phones) steps aside while a caption it would cover is up
+  document.body.classList.remove('capcover'); const mb = $('#btn-menu'), c = el.getBoundingClientRect(), b = mb ? mb.getBoundingClientRect() : null;
+  if (b && b.width && b.top < c.bottom && b.bottom > c.top && b.left < c.right && b.right > c.left) document.body.classList.add('capcover');
+}
+document.fonts?.addEventListener?.('loadingdone', () => { const el = $('#caption'); if (el.classList.contains('show')) placeCaption(el); });
+window.addEventListener('resize', () => { const el = $('#caption'); if (el.classList.contains('show')) requestAnimationFrame(() => placeCaption(el)); });
+function hideCaption() { clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); }
 const tapCatch = h('div', { id: 'tapcatch', class: 'hidden', 'aria-label': 'Tap to continue' }); document.body.append(tapCatch);
 function tapToContinue() {
   return new Promise((resolve) => {
@@ -662,7 +686,7 @@ async function boot() {
   window.__gw = {
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
-    showTactics, openMenu, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
