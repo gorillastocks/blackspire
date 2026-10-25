@@ -251,7 +251,7 @@ function showCreate(asRecruit = false) {
     const p = openModal([], { closable: true });
     const R_ = RACES[race], C = CLASSES[cls];
     const final = {}; for (const a of ABILITIES) final[a] = base[a] + (R_.bonus[a] || 0);
-    p.append(h('h2', {}, recruit ? 'Create a New Recruit' : 'Create Your Adventurer'), recruit ? h('p', { class: 'hint' }, `Recruits join at level ${G.partyLevel(S)} (near your party). If the party is full they wait in the Tavern roster.`) : null,
+    p.append(h('h2', {}, recruit ? 'Create a New Recruit' : 'Create Your Adventurer'), recruit ? h('p', { class: 'hint' }, `Recruits join at level ${G.partyLevel(S)} (near your party). If the party is full they wait in the Tavern roster.`) : '',
       h('div', { class: 'cols' },
         h('div', {}, h('h3', {}, 'Name'), h('input', { id: 'cname', value: name, maxlength: 18, oninput: (e) => { name = e.target.value; } }),
           h('h3', {}, 'Race'), h('select', { id: 'crace', onchange: (e) => { race = e.target.value; draw(); } }, Object.entries(RACES).map(([k, r]) => h('option', { value: k, selected: k === race }, r.name))),
@@ -457,7 +457,7 @@ let capTimer = null;
 function showCaption(e, tapHint = false) {
   const el = $('#caption'); clearTimeout(capTimer);
   el.className = 'show ' + (e.tone || ''); el.innerHTML = '';
-  el.append(h('div', { class: 'captxt' }, e.text), e.sub ? h('div', { class: 'capsub' }, e.sub) : null, tapHint ? h('div', { class: 'captap' }, '▶ Tap to continue') : null);
+  el.append(h('div', { class: 'captxt' }, e.text), e.sub ? h('div', { class: 'capsub' }, e.sub) : '', tapHint ? h('div', { class: 'captap' }, '▶ Tap to continue') : '');
   if (!tapHint) capTimer = setTimeout(() => el.classList.remove('show'), Math.max(2500, speed().hold * 2.5));
 }
 function hideCaption() { clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; }
