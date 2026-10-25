@@ -158,7 +158,7 @@ export function visitPoi(s, id) {
     case 'powder': { done(); startQuest(s, 'powder'); s.flags.powder = true; s.quests.powder = 'done'; out.push({ log: `A keg of dwarven blasting powder.${hasComp(s, 'zizzy') ? ' Zizzy\'s eyes light up. "Oh, we are SO using this on the gate."' : ' It looks like the sort of thing a sorcerer would enjoy.'}`, cls: 'good' }); break; }
     case 'gate': {
       if (s.flags.powder && hasComp(s, 'zizzy')) { done(); s.flags.gateBlown = true; out.push({ log: 'Zizzy packs the powder against the Ashforge gate. KA-BOOM! The gate — and its guards — are no longer a problem.', cls: 'good', shake: true }); break; }
-      done(); out.push({ log: 'The Ashforge gate grinds open — and its guardians step out!', cls: 'bad', combat: { groups: [{ key: 'gargoyle', count: 2 }, { key: 'magmin', count: 2 }], fixed: true, poi: id } }); break;
+      out.push({ log: 'The Ashforge gate grinds open — and its guardians step out!', cls: 'bad', combat: { groups: [{ key: 'gargoyle', count: 2 }, { key: 'magmin', count: 2 }], fixed: true, poi: id } }); break;
     }
     case 'horn': { done(); startQuest(s, 'horn'); s.quests.horn = 'done'; give(s, 'warhorn', out, ' Old Tamsin\'s tale was true. You will sound it when the Tyrant rises.'); break; }
     case 'armory': {
@@ -166,8 +166,8 @@ export function visitPoi(s, id) {
       else out.push({ log: `A spoon-shaped keyhole in the wall. You have ${prog(s, 'spoons')}/5 spoon clues.`, cls: 'dim' });
       break;
     }
-    case 'vey': done(); out.push({ log: 'Sister Vey rises from the black water, singing. "The princess passed this way. You will not."', cls: 'bad', combat: { groups: [{ key: 'sisterVey', count: 1 }, { key: 'cultist', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
-    case 'sporegrave': done(); out.push({ log: 'The cavern floor heaves. Mother Sporegrave unfurls, shriekers wailing around her!', cls: 'bad', combat: { groups: [{ key: 'motherSporegrave', count: 1 }, { key: 'shrieker', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
+    case 'vey': out.push({ log: 'Sister Vey rises from the black water, singing. "The princess passed this way. You will not."', cls: 'bad', combat: { groups: [{ key: 'sisterVey', count: 1 }, { key: 'cultist', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
+    case 'sporegrave': out.push({ log: 'The cavern floor heaves. Mother Sporegrave unfurls, shriekers wailing around her!', cls: 'bad', combat: { groups: [{ key: 'motherSporegrave', count: 1 }, { key: 'shrieker', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
     default: break;
   }
   return out;
@@ -189,6 +189,7 @@ export function choosePoi(s, id, choice, checkFn) {
 const BOSS_REWARD = ['dawnfang', 'sunshardAegis', 'dawncrestHelm', 'emberwardCloak', 'crownGuardPlate'];
 export function onCombatWon(s, info, level) {
   initStory(s); const out = [];
+  if (info?.poi) s.pois[info.poi] = true; // fight-POIs are only used up once you win
   if (info?.poi === 'vey') { out.push({ log: 'Sister Vey sinks beneath the water, her hymn ending in bubbles.', cls: 'good' }); give(s, 'potionGreater', out); }
   if (info?.poi === 'sporegrave') { out.push({ log: 'Mother Sporegrave collapses into a heap of harmless puffballs.', cls: 'good' }); give(s, 'potionStoneFlesh', out); }
   if (info?.boss && level === 4 && !info.phase2) { s.flags.boss4p1 = true; return out; } // phase 1 of the finale: the Tyrant comes next

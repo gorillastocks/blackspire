@@ -210,10 +210,11 @@ export function afterCombat(s, combat, info = {}) {
     const def = getLevel(s.level).def;
     const chain = info.boss && def.phase2 && !info.phase2;
     if (info.boss && !chain) { s.bossDead[s.level] = true; setTile(s, s.x, s.y, '.'); const q = [600, 3000, 9000, 22000, 0][s.level] || 0; if (q) for (const c of s.party) if (!c.dead) c.xp += q; out.push({ log: `The guardian is defeated! The way onward is open.${q ? ` Quest bonus: ${q} XP each.` : ''}`, cls: 'good' }); }
+    if (info.poi && tile(s, s.x, s.y) === 'Q') setTile(s, s.x, s.y, '.');
     out.push(...Story.onCombatWon(s, info, s.level));
     if (rand() < 0.2) { s.inventory.push('potionHealing'); out.push({ log: 'Found a Potion of Healing among the remains.', cls: 'good' }); }
     if (rand() < 0.06) { s.inventory.push('spoon'); s.spoons++; out.push({ log: 'Found a Silver Spoon!', cls: 'good', banter: banter(s.party, 'spoon', {}, 1) }); }
-    if (info.boss && def.final && !chain) { s.victory = true; }
+    if (info.boss && def.final && !chain) { s.victory = true; s.quests.main = 'done'; s.flags.elowenRescued = true; if (s.notes?.length >= 10 && s.quests.notes) s.quests.notes = 'done'; }
     // Unconscious survivors wake with 1 HP
     for (const c of s.party) if (!c.dead && c.hp <= 0) { c.hp = 1; delete c.conditions.unconscious; c.stable = false; c.deathSaves = { s: 0, f: 0 }; out.push({ log: `${c.name} is patched up and wakes with 1 HP.` }); }
     for (const c of s.party) delete c.conditions.grappled;
