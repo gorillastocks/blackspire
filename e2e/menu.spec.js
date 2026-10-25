@@ -67,7 +67,7 @@ test('quit without saving loses progress (with warning); combat: save disabled, 
   expect(await st(page, () => window.__gw.state.gold)).toBe(5000);
   // combat
   await enterDungeon(page);
-  await st(page, () => window.__gw.startCombat({ groups: [{ key: 'giantRat', count: 2 }] }));
+  await st(page, () => window.__gw.startCombat({ groups: [{ key: 'giantSpider', count: 3 }] }));
   await expect.poll(() => st(page, () => !!window.__gw.combat)).toBe(true);
   await expectReachable(page, menuBtn(page), 'Menu button (combat)');
   await menuBtn(page).click();

@@ -748,8 +748,8 @@ const tipEl = h('div', { id: 'tip', class: 'hidden', role: 'dialog', 'aria-label
 function startTutorial() {
   const st = loadSettings(); if (st.tutorialDone) return;
   let i = 0;
-  const end = () => { tipEl.className = 'hidden'; const s2 = loadSettings(); s2.tutorialDone = true; saveSettings(s2); };
-  const draw = () => { tipEl.className = ''; tipEl.innerHTML = '';
+  const end = () => { tipEl.className = 'hidden'; document.body.classList.remove('tipping'); const s2 = loadSettings(); s2.tutorialDone = true; saveSettings(s2); };
+  const draw = () => { tipEl.className = ''; tipEl.innerHTML = ''; document.body.classList.add('tipping');
     tipEl.append(h('div', { class: 'tiphead' }, h('b', {}, `💡 ${TIPS[i][0]}`), h('small', {}, `${i + 1} / ${TIPS.length}`)), h('p', {}, TIPS[i][1]),
       h('div', { class: 'row' }, btn('Skip tips', end, { class: 'small', id: 'tip-skip' }), i < TIPS.length - 1 ? btn('Next ▶', () => { i++; draw(); }, { class: 'small primary', id: 'tip-next' }) : btn('Got it ✔', end, { class: 'small primary', id: 'tip-done' }))); };
   draw();
