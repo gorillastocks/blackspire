@@ -71,7 +71,7 @@ export class Renderer {
     this.mode = 'dungeon'; this.monsterObjs = new Map(); this.fx = [];
     this.camPos = new THREE.Vector3(); this.camYaw = 0; this.targetPos = new THREE.Vector3(); this.targetYaw = 0;
     window.addEventListener('resize', () => this.resize()); this.resize();
-    const loop = () => { this.raf = requestAnimationFrame(loop); this.update(); }; loop();
+    const loop = () => { this.raf = requestAnimationFrame(loop); if (!document.body.classList.contains('titlescreen')) this.update(); }; loop();
   }
   async initPost() {
     const [{ EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }, { RoomEnvironment }] = await Promise.all([

@@ -51,7 +51,7 @@ export const COMPANIONS = {
     camp: [
       "Fizzwick: \"Fizzwick once lectured to a hall of three hundred. Two hundred ninety were asleep. Fizzwick counts that as a Sleep spell.\"",
       "Fizzwick: \"Pip, Fizzwick will trade you one spoon for a signed portrait of Fizzwick. No? Your loss.\"",
-      "Fizzwick: \"The Amulet of Grok is said to know everything. Fizzwick merely wishes to confirm it knows about Fizzwick.\"",
+      "Fizzwick: \"The Dawnstone Amulet is said to know everything. Fizzwick merely wishes to confirm it knows about Fizzwick.\"",
       "Fizzwick: \"Brambur, stop apologizing to the campfire. It is a chemical reaction.\" Brambur: \"Sorry.\" Fizzwick: \"...\"",
       "Fizzwick: \"Fizzwick's spellbook is bound in genuine dragon leather. Fine — lizard. A very confident lizard.\"",
     ],

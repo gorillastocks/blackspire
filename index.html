@@ -7,15 +7,16 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="description" content="GrokWizard — a Wizardry-style first-person dungeon crawler built on the D&D 5e SRD." />
+  <meta name="description" content="Blackspire — a Wizardry-style first-person dungeon crawler built on the D&D 5e SRD." />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="./icon-192.png" />
-  <title>GrokWizard</title>
+  <link rel="icon" href="./icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="./icon-180.png" />
+  <title>Blackspire</title>
 </head>
 <body>
+  <div id="titlebg" aria-hidden="true"></div>
   <div id="app">
-    <div id="view"><div id="floaters"></div><div id="hud"></div><div id="banter"></div><div id="targets"></div><div id="flash"></div></div>
+    <div id="view"><div id="floaters"></div><div id="hud"></div><div id="banter"></div><div id="targets"></div><div id="flash"></div><div id="caption" aria-live="polite"></div></div>
     <aside id="side"><canvas id="minimap" width="210" height="210"></canvas><div id="party"></div></aside>
     <section id="bottom"><div id="log"></div><div id="controls"></div><div id="cmenu"></div></section>
     <div id="modal" class="hidden"></div>

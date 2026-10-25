@@ -1,12 +1,12 @@
-# GrokWizard
+# Blackspire
 
 A Wizardry-style first-person grid dungeon crawler rendered in neon 3D with three.js, using D&D 5e **SRD 5.1** rules.
 
-**Play:** https://gorillastocks.github.io/grokwizard/
+**Play:** https://gorillastocks.github.io/blackspire/
 
 - Create a hero. Three quirky companions (Brambur, Fizzwick, Pip) join you, and each can be set to AI or player control.
-- In the town of Grokhaven you'll find the tavern, inn, temple, shop, and training grounds.
-- There are 3 maze levels (21×21), with doors, secret doors, traps, chests, keys, a boss per level, and the final boss GROKZILLA.
+- In the town of Emberhollow you'll find the tavern, inn, temple, shop, and training grounds.
+- There are 3 maze levels (21×21), with doors, secret doors, traps, chests, keys, a boss per level, and the final boss Gorvax the Tyrant.
 - Combat is turn-based SRD 5e: initiative, advantage, crits, death saves, concentration, spell slots, short and long rests, and levels 1–6.
 - Saves go to localStorage. Controls: keyboard (WASD/QE/arrows), touch swipes, and on-screen buttons. It installs as a PWA.
 

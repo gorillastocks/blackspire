@@ -45,7 +45,7 @@ test('save & quit to title, then Continue and Load restore the game', async ({ p
   await expect.poll(() => st(page, () => window.__gw.state?.gold)).toBe(1234);
   // the existing Save button still quick-saves
   await page.locator('#controls button', { hasText: 'Save' }).click();
-  expect(await st(page, () => JSON.parse(localStorage.getItem('grokwizard.save.v1')).gold)).toBe(1234);
+  expect(await st(page, () => JSON.parse(localStorage.getItem('blackspire.save.v1')).gold)).toBe(1234);
   // and the town square Save Game button too (after a reload, Continue still works)
   await page.reload(); await page.waitForSelector('#btn-new', { timeout: 90000 });
   await page.click('#btn-continue'); await expect.poll(() => st(page, () => window.__gw.state?.gold)).toBe(1234);
@@ -110,7 +110,7 @@ test('menu click-through: every button leaves a way back; Esc opens/closes it on
     }
     // settings: sound toggle persists
     await menuBtn(page).click(); await page.click('#menu-settings'); const was = (await page.locator('#set-sound').textContent()).includes('On'); await page.click('#set-sound');
-    await expect(page.locator('#set-sound')).toContainText(was ? 'Off' : 'On'); expect(await st(page, () => JSON.parse(localStorage.getItem('grokwizard.settings')).sound)).toBe(!was);
+    await expect(page.locator('#set-sound')).toContainText(was ? 'Off' : 'On'); expect(await st(page, () => JSON.parse(localStorage.getItem('blackspire.settings')).sound)).toBe(!was);
     await page.click('#set-sound'); await expect(page.locator('#set-sound')).toContainText(was ? 'On' : 'Off');
     await page.click('#menu-close');
   }

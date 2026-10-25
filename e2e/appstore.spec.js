@@ -13,7 +13,7 @@ test('first-run tutorial shows once and can be skipped', async ({ page }) => {
   await expectReachable(page, page.locator('#tip-next'), 'tip Next'); await page.click('#tip-next'); await expect(tip).toContainText('2 / 5');
   await auditText(page, '#tip', 13);
   await page.click('#tip-skip'); await expect(tip).toBeHidden();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('grokwizard.settings')).tutorialDone)).toBe(true);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('blackspire.settings')).tutorialDone)).toBe(true);
   await page.reload(); await page.waitForSelector('#btn-new', { timeout: 90000 }); await page.click('#btn-new'); await page.click('#btn-begin');
   await page.waitForTimeout(400); await expect(tip).toBeHidden();
   expect(errors).toEqual([]);
@@ -26,7 +26,7 @@ test('settings: volume sliders, difficulty, readable', async ({ page }, ti) => {
   for (const k of ['music', 'sfx', 'amb']) await expect(page.locator('#vol-' + k)).toBeVisible();
   await page.locator('#vol-music').fill('20'); await page.locator('#vol-music').dispatchEvent('change');
   await expect(page.locator('#gmenu .slider b').first()).toHaveText('20%');
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('grokwizard.settings')).music)).toBeCloseTo(0.2);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('blackspire.settings')).music)).toBeCloseTo(0.2);
   await page.click('[data-diff=hard]'); await expect(page.locator('[data-diff=hard]')).toHaveClass(/on/);
   expect(await page.evaluate(() => window.__gw.state.difficulty)).toBe('hard');
   await auditText(page, '#gmenu .panel', minPx(ti));
@@ -45,7 +45,7 @@ test('companion tactics editor changes AI settings and persists', async ({ page 
   await page.locator('.tactic').first().locator('[data-tac=healAt]').fill('70'); await page.locator('.tactic').first().locator('[data-tac=healAt]').dispatchEvent('change');
   const t = await page.evaluate(() => window.__gw.state.party.find((c) => c.companion).tactics);
   expect(t).toMatchObject({ style: 'support', aoe: false, healAt: 70, spells: true, potions: true });
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('grokwizard.save.v1')).party.find((c) => c.companion).tactics);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('blackspire.save.v1')).party.find((c) => c.companion).tactics);
   expect(saved.style).toBe('support');
   await auditText(page, '#modal .panel', minPx(ti));
   await page.screenshot({ path: `test-results/shots/tactics-${ti.project.name}.png` });
@@ -57,7 +57,7 @@ test('export code → import restores the game; corrupt saves recover from backu
   await newGame(page);
   await page.evaluate(() => { window.__gw.state.gold = 4321; });
   await page.click('#btn-menu'); await page.click('#menu-backup');
-  const code = await page.locator('#export-code').inputValue(); expect(code.startsWith('GW1:')).toBe(true);
+  const code = await page.locator('#export-code').inputValue(); expect(code.startsWith('BS1:')).toBe(true);
   await page.click('#menu-close');
   await page.evaluate(() => { window.__gw.state.gold = 1; });
   await page.click('#btn-menu'); await page.click('#menu-backup');
@@ -67,7 +67,7 @@ test('export code → import restores the game; corrupt saves recover from backu
   await page.click('#btn-menu'); await page.click('#menu-backup'); await page.fill('#import-code', 'not a save'); await page.click('#btn-import-code');
   await expect(page.locator('#gmenu')).toContainText('Import failed'); await page.click('#menu-close');
   // corrupt the autosave: Continue recovers from .bak
-  await page.evaluate(() => { localStorage.setItem('grokwizard.save.v1.bak', localStorage.getItem('grokwizard.save.v1')); localStorage.setItem('grokwizard.save.v1', '{"party":[{"na'); });
+  await page.evaluate(() => { localStorage.setItem('blackspire.save.v1.bak', localStorage.getItem('blackspire.save.v1')); localStorage.setItem('blackspire.save.v1', '{"party":[{"na'); });
   await page.reload(); await page.waitForSelector('#btn-continue', { timeout: 90000 }); await page.click('#btn-continue');
   await expect(page.locator('#log')).toContainText('automatic backup');
   expect(await page.evaluate(() => window.__gw.state.gold)).toBe(4321);
@@ -77,7 +77,7 @@ test('export code → import restores the game; corrupt saves recover from backu
 test('autosave on stairs and town entry; music follows the game', async ({ page }) => {
   const errors = trackErrors(page);
   await newGame(page);
-  const savedMode = () => page.evaluate(() => JSON.parse(localStorage.getItem('grokwizard.save.v1') || '{}').mode);
+  const savedMode = () => page.evaluate(() => JSON.parse(localStorage.getItem('blackspire.save.v1') || '{}').mode);
   expect(await savedMode()).toBe('town');
   await page.click('#btn-edge'); await page.click('#btn-enter');
   await expect.poll(savedMode).toBe('dungeon');
@@ -85,7 +85,7 @@ test('autosave on stairs and town entry; music follows the game', async ({ page 
   await expect.poll(() => page.evaluate(() => window.__gw.audio().track)).toBe('dungeon0');
   expect(await page.evaluate(() => window.__gw.audio().amb)).toBe('dungeon');
   await page.evaluate(() => { window.__gw.state.savedAt = 0; window.__gw.prompt('up'); });
-  await page.locator('#modal button', { hasText: 'Return to Grokhaven' }).click();
+  await page.locator('#modal button', { hasText: 'Return to Emberhollow' }).click();
   await expect(page.locator('#btn-tavern')).toBeVisible();
   await expect.poll(savedMode).toBe('town');
   await expect.poll(() => page.evaluate(() => window.__gw.audio().track)).toBe('town');
@@ -123,6 +123,6 @@ test('offline: service worker + no network loads', async ({ page }) => {
   const external = []; page.on('request', (r) => { if (!r.url().startsWith('http://localhost:4173')) external.push(r.url()); });
   await newGame(page);
   const sw = await page.request.get('./sw.js'); expect(sw.ok()).toBe(true);
-  const body = await sw.text(); expect(body).toContain('grokwizard-'); expect(body).toContain('index.html');
+  const body = await sw.text(); expect(body).toContain('blackspire-'); expect(body).toContain('index.html');
   expect(external.filter((u) => !u.startsWith('data:') && !u.startsWith('blob:'))).toEqual([]);
 });

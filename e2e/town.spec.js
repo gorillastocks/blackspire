@@ -84,7 +84,7 @@ test('existing saves load into the town square (never stuck in Training Grounds)
   await newGame(page);
   await openLocation(page, 'Training Grounds');
   // a save made while on the training screen, plus an older/odd save shape
-  await page.evaluate(() => { const s = window.__gw.state; const old = JSON.parse(JSON.stringify(s)); old.mode = 'train'; delete old.explored; delete old.mods; localStorage.setItem('grokwizard.save.v1', JSON.stringify(old)); });
+  await page.evaluate(() => { const s = window.__gw.state; const old = JSON.parse(JSON.stringify(s)); old.mode = 'train'; delete old.explored; delete old.mods; localStorage.setItem('blackspire.save.v1', JSON.stringify(old)); });
   await page.reload(); await page.waitForSelector('#btn-new', { timeout: 90000 });
   await page.locator('#modal button', { hasText: 'Continue' }).click();
   await expect(townSquare(page)).toBeVisible();

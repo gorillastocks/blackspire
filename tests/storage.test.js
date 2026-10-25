@@ -3,7 +3,7 @@ const mem = new Map();
 globalThis.localStorage = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) };
 globalThis.btoa ??= (s) => Buffer.from(s, 'binary').toString('base64');
 globalThis.atob ??= (s) => Buffer.from(s, 'base64').toString('binary');
-const { writeSave, readSave, exportCode, importCode } = await import('../src/storage.js');
+const { writeSave, readSave, exportCode, importCode, migrateLegacy } = await import('../src/storage.js');
 const save = (n) => JSON.stringify({ party: [{ name: 'Hero ' + n }], gold: n, savedAt: n });
 
 describe('save storage', () => {
@@ -28,4 +28,14 @@ describe('save storage', () => {
     expect(importCode(exportCode(raw))).toBe(raw); expect(importCode(raw)).toBe(raw);
     expect(() => importCode('GW1:Zm9v')).toThrow(); expect(() => importCode('hello')).toThrow();
   });
+  it('migrates saves and settings from the pre-rename keys without overwriting newer ones', () => {
+    const old = 'grok' + 'wizard.';
+    mem.set(old + 'save.v1', save(7)); mem.set(old + 'save.slot2', save(8)); mem.set(old + 'settings', '{"music":0.1}');
+    mem.set('blackspire.save.slot2', save(9));
+    expect(migrateLegacy(localStorage)).toBe(2);
+    expect(JSON.parse(readSave('blackspire.save.v1').raw).gold).toBe(7);
+    expect(JSON.parse(readSave('blackspire.save.slot2').raw).gold).toBe(9);
+    expect(mem.get('blackspire.settings')).toBe('{"music":0.1}');
+  });
+  it('still imports codes exported before the rename', () => { const raw = save(4); const code = exportCode(raw).replace(/^BS1/, 'GW1'); expect(importCode(code)).toBe(raw); });
 });

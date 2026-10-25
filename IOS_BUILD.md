@@ -17,7 +17,7 @@ The game is bundled inside the app (`dist/` → `ios/App/App/public`), so it mak
 
 ## 1. Build the web game and sync it into iOS
 ```bash
-git clone https://github.com/gorillastocks/grokwizard.git && cd grokwizard
+git clone https://github.com/gorillastocks/blackspire.git && cd blackspire
 npm ci
 npm run build          # → dist/
 npx cap sync ios       # copies dist into the app + runs pod install

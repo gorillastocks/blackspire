@@ -5,7 +5,7 @@ import { ITEMS, WEAPONS, ARMOR, CLASSES, XP_LEVELS } from '../rules/data.js';
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './companions.js';
 
-export const SAVE_KEY = 'grokwizard.save.v1';
+export const SAVE_KEY = 'blackspire.save.v1';
 
 export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base = null } = {}) {
   const hero = createCharacter({ name, race, cls, base: base || assignByPriority(cls) });
@@ -288,7 +288,7 @@ export function goDown(s) {
   return [{ log: `You descend to ${L.def.name}.`, cls: 'sys', banter: banter(s.party, 'stairs', {}, 0.9) }];
 }
 export function goUp(s) {
-  if (s.level === 0) { s.mode = 'town'; return [{ log: 'You climb back to the town of Grokhaven.', cls: 'sys', toTown: true }]; }
+  if (s.level === 0) { s.mode = 'town'; return [{ log: 'You climb back to the town of Emberhollow.', cls: 'sys', toTown: true }]; }
   s.level--; const L = getLevel(s.level);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (L.tiles[y][x] === '>') { s.x = x; s.y = y; }
   // face away from dead end

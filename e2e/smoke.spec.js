@@ -8,7 +8,7 @@ test('smoke: title → create → town → dungeon → combat → sheet, no cons
   await page.goto('./');
   await page.waitForSelector('#btn-new', { timeout: 60000 });
   await page.waitForTimeout(2500); await shot('01-title');
-  await page.click('#btn-new'); await page.click('#btn-roll'); await page.fill('#cname', 'Grokalot');
+  await page.click('#btn-new'); await page.click('#btn-roll'); await page.fill('#cname', 'Aldric');
   await page.selectOption('#crace', 'halfOrc'); await page.waitForTimeout(300); await shot('02-create');
   await page.click('#btn-begin');
   await page.click('#btn-tavern'); await page.waitForTimeout(800); await shot('03-tavern-party');
@@ -33,10 +33,13 @@ test('smoke: title → create → town → dungeon → combat → sheet, no cons
   expect(overlap, `menu ${JSON.stringify(mb)} log ${JSON.stringify(lb)}`).toBe(false);
   expect(lb.height).toBeGreaterThan(40);
   // pick first action (attack/shoot) for the hero, then auto-battle
-  await page.click('#cmenu .combatmenu button:has-text("Fast")');
-  await page.waitForSelector('#cmenu .combatmenu', { timeout: 60000 }).catch(() => {});
+  // cycle battle speed Normal → Fast, then watch for a narration caption
+  await page.click('#cmenu .combatmenu button:has-text("Battle speed")');
+  await expect(page.locator('#cmenu .combatmenu button:has-text("Battle speed")')).toContainText('Fast');
+  await page.evaluate(() => { window.__caps = []; new MutationObserver(() => { const t = document.querySelector('#caption')?.textContent; if (t) window.__caps.push(t); }).observe(document.querySelector('#caption'), { childList: true, subtree: true, characterData: true }); });
   const auto = page.locator('#cmenu .combatmenu button:has-text("Auto-battle")'); if (await auto.count()) await auto.first().click();
   await page.waitForFunction(() => !window.__gw.combat, null, { timeout: 120000 });
+  expect(await page.evaluate(() => window.__caps.length), 'narration captions shown').toBeGreaterThan(0);
   await page.waitForTimeout(1000); await shot('06-after-combat');
   await page.evaluate(() => { const m = document.querySelector('#modal'); m.className = 'hidden'; });
   await page.keyboard.press('i'); await page.waitForTimeout(300);

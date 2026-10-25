@@ -1,4 +1,4 @@
-// All GrokWizard audio is ORIGINAL and generated live with WebAudio — no audio files, no licensing, 0 bytes of assets.
+// All Blackspire audio is ORIGINAL and generated live with WebAudio — no audio files, no licensing, 0 bytes of assets.
 // Three buses (music / sfx / ambience) under a master gain, each with its own volume setting.
 // iOS/Safari: the AudioContext starts suspended until a user gesture, so unlock() runs on the first tap/key.
 let ctx = null, master, bus = {};

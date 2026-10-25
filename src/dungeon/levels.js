@@ -28,8 +28,8 @@ export const LEVEL_DEFS = [
     name: 'B3: The Thunder-Lizard Vault', seed: 777, color: 0xffb020, fog: 0x140804, trapDC: 15, secretDC: 15, lockDC: 16, trapDmg: '3d10', trapKind: 'darts', key: 'key3', rooms: 3, loops: 10, secrets: 3, fountain: true, final: true,
     table: [[{ key: 'animatedArmor', count: [1, 2] }], [{ key: 'flyingSword', count: [3, 5] }], [{ key: 'allosaurus', count: [1, 1] }], [{ key: 'direWolf', count: [2, 3] }], [{ key: 'giantWasp', count: [3, 4] }], [{ key: 'animatedArmor', count: [1, 1] }, { key: 'flyingSword', count: [2, 2] }]],
     fixed: [[{ key: 'triceratops', count: [1, 1] }], [{ key: 'allosaurus', count: [2, 2] }], [{ key: 'animatedArmor', count: [3, 3] }]],
-    boss: [{ key: 'tyrannosaurus', count: [1, 1] }], bossName: 'GROKZILLA, the Tyrant Lizard',
-    messages: ['Carved in gold: "HE WHO TAKES THE AMULET OF GROK SHALL KNOW EVERYTHING. ALSO SOME THINGS."', 'Enormous footprints. Fizzwick measures one. "Fizzwick estimates: large."', 'A shrine to a forgotten god of cutlery. Pip weeps openly.'],
+    boss: [{ key: 'tyrannosaurus', count: [1, 1] }], bossName: 'Gorvax the Tyrant',
+    messages: ['Carved in gold: "HE WHO TAKES THE DAWNSTONE AMULET SHALL KNOW EVERYTHING. ALSO SOME THINGS."', 'Enormous footprints. Fizzwick measures one. "Fizzwick estimates: large."', 'A shrine to a forgotten god of cutlery. Pip weeps openly.'],
     loot: { gold: [100, 300], items: ['potionGreater', 'potionGreater', 'runcibleSpoon', 'greatsword1', 'plate1', 'ringProtection', 'cloakProtection', 'longbow1'] },
   },
 ];

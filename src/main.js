@@ -1,6 +1,6 @@
 import './style.css';
 import * as G from './game/game.js';
-import { SLOT_KEYS, slotInfo, loadSettings, saveSettings } from './menu.js';
+import { SLOT_KEYS, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS } from './menu.js';
 import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js';
 import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
@@ -22,7 +22,9 @@ const btn = (label, onclick, attrs = {}) => h('button', { onclick: (e) => { sfx(
 
 let S = null; // game state
 let R = null; // renderer
-let combat = null; let combatInfo = null; let busy = false; let autoBattle = false; let fast = false;
+let combat = null; let combatInfo = null; let busy = false; let autoBattle = false;
+const speed = () => BATTLE_SPEEDS[loadSettings().battleSpeed] || BATTLE_SPEEDS.normal;
+function setSpeed(k) { const st = loadSettings(); st.battleSpeed = k; saveSettings(st); }
 const modal = $('#modal');
 
 /* ---------- Log & banter ---------- */
@@ -82,7 +84,7 @@ function refresh() { checkReady(); renderParty(); drawMinimap($('#minimap')); re
 function renderHud() {
   const el = $('#hud'); if (!S) { el.innerHTML = ''; return; }
   if (S.mode === 'dungeon') el.innerHTML = `<span>${getLevel(S.level).def.name}</span><span>⌖ ${S.x},${S.y} · ${DIR_NAMES[S.dir]} · ${S.gold} gp</span>`;
-  else el.innerHTML = `<span>Grokhaven</span><span>${S.gold} gp · 🥄 ${S.spoons}</span>`;
+  else el.innerHTML = `<span>Emberhollow</span><span>${S.gold} gp · 🥄 ${S.spoons}</span>`;
 }
 
 /* ---------- Minimap ---------- */
@@ -157,17 +159,19 @@ function openModal(content, { closable = true, cls = '' } = {}) {
   return p;
 }
 function closeModal() { modal.className = 'hidden'; modal.innerHTML = ''; }
+// leaving the title screen removes the title art backdrop
+new MutationObserver(() => { if (S) document.body.classList.remove('titlescreen'); }).observe(modal, { childList: true });
 // Closing a dialog (✕ / Esc) must never strand the player: in town, fall back to the town screen they came from.
 function dismissModal() { closeModal(); if (!S) showTitle(); else if (S.mode === 'town' && !combat) showTown(townSub); }
 
 /* ---------- Title & creation ---------- */
 async function showTitle() {
   S = null; townVisited = false; closeMenu(); updateMenuBtn(); setControls(null); R.setMode('combat'); refresh();
-  R.showMonsters([{ id: 't1', key: 'tyrannosaurus' }, { id: 't2', key: 'giantSpider' }, { id: 't3', key: 'giantWasp' }], 0xff3df0);
+  R.clearMonsters(); document.body.classList.add('titlescreen');
   const has = [G.SAVE_KEY, ...SLOT_KEYS].some((k) => slotInfo(k));
   openModal([
-    h('h1', {}, 'GROKWIZARD'),
-    h('p', { class: 'hint' }, 'Proving Grounds of the Thunder-Lizard · a first-person dungeon crawl in the spirit of 1981, built on the D&D 5e SRD'),
+    h('h1', { class: 'logo' }, 'BLACKSPIRE'),
+    h('p', { class: 'hint tagline' }, 'Five moons. Five seals. One princess in the Dread Sovereign\'s tower. · A first-person dungeon crawl built on the D&D 5e SRD'),
     h('div', { class: 'menu' },
       btn('▶ New Game', showCreate, { class: 'primary', id: 'btn-new' }),
       has ? btn('⟲ Continue', () => continueLatest(), { id: 'btn-continue' }) : null,
@@ -180,7 +184,7 @@ async function showTitle() {
 }
 function showHelp() {
   openModal([h('h2', {}, 'How to Play'), h('div', { html: `
-  <p>Descend through three levels beneath Grokhaven, defeat each level's guardian, and claim the <b>Amulet of Grok</b> from the Tyrant Lizard on B3.</p>
+  <p>Princess Elowen has been taken into the dungeons beneath <b>Blackspire</b>. Descend beneath Emberhollow, defeat each level's guardians, and stop Malthrax before the fifth seal breaks. Gorvax the Tyrant guards the <b>Dawnstone Amulet</b> in the deepest vault.</p>
   <table><tr><th>Move</th><td>W/↑ forward · S/↓ back · A/D or ←/→ turn · Q/E strafe · swipe on mobile</td></tr>
   <tr><th>Search</th><td>F / Space — find secret doors & traps, pick or force locks</td></tr>
   <tr><th>Camp</th><td>C — short/long rest, party talk, reorder, save/load</td></tr>
@@ -189,14 +193,14 @@ function showHelp() {
   <p>Companions can be AI- or player-controlled — tap the <b>AI/YOU</b> toggle on their card. Level up at the Training Grounds in town, or with Level Up in the Camp menu.</p>` })]);
 }
 function showCredits() {
-  openModal([h('h2', {}, 'Credits'), h('div', { html: `<p>Rules content from the <b>System Reference Document 5.1</b> by Wizards of the Coast LLC, licensed under <a style="color:#22e6ff" href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">CC-BY-4.0</a>. GrokWizard is unofficial Fan Content and is not affiliated with Wizards of the Coast.</p>
+  openModal([h('h2', {}, 'Credits'), h('div', { html: `<p>Rules content from the <b>System Reference Document 5.1</b> by Wizards of the Coast LLC, licensed under <a style="color:#22e6ff" href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">CC-BY-4.0</a>. Blackspire is unofficial Fan Content and is not affiliated with Wizards of the Coast.</p>
   <p>3D monster, chest and torch models by <b>Quaternius</b> (quaternius.com), CC0 1.0 — via the Easy Enemy, Animated Dinosaur, Ultimate Animated Animal, Platformer Game Kit, Cyberpunk Game Kit and Modular Dungeon packs.</p>
   <p>Music, ambience and sound effects are original, generated live in your browser with WebAudio — no third-party audio.</p>
   <p>Built with three.js (MIT), Vite (MIT) and Capacitor (MIT). Game code MIT.</p>` })]);
 }
 function showCreate(asRecruit = false) {
   const recruit = asRecruit === true;
-  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Grokalot', method = 'array', diff = 'normal';
+  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Aldric', method = 'array', diff = 'normal';
   const draw = () => {
     const p = openModal([], { closable: true });
     const R_ = RACES[race], C = CLASSES[cls];
@@ -221,7 +225,7 @@ function showCreate(asRecruit = false) {
           ...(recruit ? [] : COMPANION_KEYS.map((k) => COMPANIONS[k])).map((c) => h('p', { class: 'hint' }, h('b', { style: `color:${c.color}` }, c.name + ' — '), c.blurb)))),
       h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, recruit ? btn('Recruit ▶', () => { handle(G.createRecruit(S, { name, race, cls, base })); autosave(); showTown(townSub); }, { class: 'primary', id: 'btn-recruit-create' }) : btn('Begin Adventure ▶', () => {
         S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base }); S.difficulty = diff;
-        log(`Welcome to Grokhaven, ${name}. Three oddballs have agreed to join you…`, 'sys');
+        log(`Welcome to Emberhollow, ${name}. Three oddballs have agreed to join you…`, 'sys');
         for (const c of S.party.filter((c) => c.companion)) say({ who: COMPANIONS[c.companion].short, color: COMPANIONS[c.companion].color, text: COMPANIONS[c.companion].lines.combatStart[0] });
         showTown(); startTutorial();
       }, { class: 'primary', id: 'btn-begin' })));
@@ -236,7 +240,7 @@ function showTown(sub = null) {
   S.mode = 'town'; combat = null; endCombatUI(); setControls(null); R.setMode('combat'); R.clearMonsters(); refresh();
   if (arriving) autosave(); // autosave on every town entry
   const back = (where) => btn('← Back to Town Square', () => showTown(), { class: 'backbtn', 'data-back': where });
-  const P = (content) => openModal([h('div', { class: 'navbar' }, h('h2', {}, sub ? `Grokhaven · ${{ tavern: 'Tavern', temple: 'Temple', shop: 'Trading Post', train: 'Training Grounds', edge: 'Edge of Town' }[sub]}` : 'Grokhaven'), sub ? back('top') : null), content, sub ? h('div', { style: 'margin-top:10px' }, back('bottom')) : null], { closable: false, cls: 'transparent' });
+  const P = (content) => openModal([h('div', { class: 'navbar' }, h('h2', {}, sub ? `Emberhollow · ${{ tavern: 'Tavern', temple: 'Temple', shop: 'Trading Post', train: 'Training Grounds', edge: 'Edge of Town' }[sub]}` : 'Emberhollow'), sub ? back('top') : null), content, sub ? h('div', { style: 'margin-top:10px' }, back('bottom')) : null], { closable: false, cls: 'transparent' });
   if (!sub) {
     P(h('div', { class: 'menu grid' },
       btn('🍺 The Boar & Spoon Tavern', () => showTown('tavern'), { id: 'btn-tavern' }),
@@ -303,13 +307,13 @@ function prompt(kind) {
   } else if (kind === 'down') {
     openModal([h('h2', {}, 'Stairs Down'), h('div', { class: 'menu' }, btn('Descend ▼', async () => { closeModal(); handle(G.goDown(S)); await startDungeon(); autosave(); }, { class: 'primary' }), btn('Not yet', closeModal))]);
   } else if (kind === 'up') {
-    openModal([h('h2', {}, S.level === 0 ? 'Stairs to Town' : 'Stairs Up'), h('div', { class: 'menu' }, btn(S.level === 0 ? 'Return to Grokhaven ▲' : 'Climb ▲', async () => { closeModal(); const ev = G.goUp(S); if (S.mode === 'town') { handle(ev); } else { handle(ev); await startDungeon(); autosave(); } }, { class: 'primary' }), btn('Stay', closeModal))]);
+    openModal([h('h2', {}, S.level === 0 ? 'Stairs to Town' : 'Stairs Up'), h('div', { class: 'menu' }, btn(S.level === 0 ? 'Return to Emberhollow ▲' : 'Climb ▲', async () => { closeModal(); const ev = G.goUp(S); if (S.mode === 'town') { handle(ev); } else { handle(ev); await startDungeon(); autosave(); } }, { class: 'primary' }), btn('Stay', closeModal))]);
   } else if (kind === 'lock') {
     openModal([h('h2', {}, 'A Locked Door'), h('div', { class: 'menu' }, btn('🗝 Pick the lock', () => { closeModal(); handle(G.pickLock(S)); }), btn('💪 Force it (Athletics, noisy)', () => { closeModal(); handle(G.pickLock(S, true)); }), btn('Leave', closeModal))]);
   } else if (kind === 'altar') {
     if (!S.victory) { log('The amulet is sealed while the Tyrant lives.', 'dim'); return; }
     sfx('victory');
-    openModal([h('h1', {}, 'VICTORY!'), h('p', {}, `You lift the Amulet of Grok from its pedestal. It whispers the answer to everything, then asks if you've tried turning it off and on again.`),
+    openModal([h('h1', {}, 'VICTORY!'), h('p', {}, `You lift the Dawnstone Amulet from its pedestal. It whispers the answer to everything, then asks if you've tried turning it off and on again.`),
       h('p', { class: 'lore' }, 'Brambur: "I\'m so sorry, Mr. Rex." · Fizzwick: "Fizzwick will be writing a book. You are in a footnote." · Pip: "Does the amulet come with a spoon? …It IS a spoon? IT\'S A SPOON!"'),
       h('p', { class: 'hint' }, `Steps taken: ${S.steps} · Spoons: ${S.spoons} · Party levels: ${S.party.map((c) => c.level).join('/')}`),
       h('div', { class: 'menu' }, btn('Return to town as heroes', () => { S.mode = 'town'; closeModal(); showTown(); }), btn('Keep exploring', closeModal))]);
@@ -387,7 +391,26 @@ function showSheet(c) {
 }
 
 /* ---------- Combat ---------- */
-const wait = (ms) => new Promise((r) => setTimeout(r, fast ? ms / 3 : ms));
+const wait = (ms) => new Promise((r) => setTimeout(r, ms * speed().f));
+/* ---------- Action captions (large, centered narration of each action) ---------- */
+let capTimer = null;
+function showCaption(e, tapHint = false) {
+  const el = $('#caption'); clearTimeout(capTimer);
+  el.className = 'show ' + (e.tone || ''); el.innerHTML = '';
+  el.append(h('div', { class: 'captxt' }, e.text), e.sub ? h('div', { class: 'capsub' }, e.sub) : null, tapHint ? h('div', { class: 'captap' }, '▶ Tap to continue') : null);
+  if (!tapHint) capTimer = setTimeout(() => el.classList.remove('show'), Math.max(2500, speed().hold * 2.5));
+}
+function hideCaption() { clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; }
+const tapCatch = h('div', { id: 'tapcatch', class: 'hidden', 'aria-label': 'Tap to continue' }); document.body.append(tapCatch);
+function tapToContinue() {
+  return new Promise((resolve) => {
+    tapCatch.className = ''; let done = false;
+    const fin = (ev) => { if (done) return; if (ev && ev.type === 'keydown' && ![' ', 'Enter'].includes(ev.key)) return; if (ev) { ev.preventDefault(); ev.stopPropagation(); } done = true; tapCatch.className = 'hidden'; tapCatch.removeEventListener('pointerdown', fin); window.removeEventListener('keydown', fin, true); clearInterval(iv); resolve(); };
+    tapCatch.addEventListener('pointerdown', fin); window.addEventListener('keydown', fin, true);
+    // never get stuck: if the fight is abandoned or the speed setting is changed away from Pause, carry on
+    const iv = setInterval(() => { if (!combat || speed().hold !== 0) fin(); }, 250);
+  });
+}
 async function startCombat(info) {
   if (combat) return;
   closeModal(); busy = true;
@@ -406,7 +429,7 @@ async function startCombat(info) {
 }
 let looping = false;
 let loopGen = 0;
-function abandonCombat() { loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); R.clearMonsters(); $('#targets').innerHTML = ''; }
+function abandonCombat() { loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
 async function combatLoop() {
   if (looping || !combat) return; looping = true; const gen = loopGen;
   try {
@@ -428,6 +451,7 @@ async function flushCombat() {
   for (const l of lines) log(l.t, l.cls);
   for (const e of events) {
     if (!combat || !S) return;
+    if (e.type === 'caption') { renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0); if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
     if (e.type === 'monsterAttack') { R.monsterAttack(e.who.id); sfx('swing'); await wait(380); }
     else if (e.type === 'partyAttack') { sfx('swing'); await wait(150); }
     else if (e.type === 'hit' && e.tgt.side === 'monster') { R.monsterHit(e.tgt.id, e.crit); floater(e.tgt.id, e.dmg, e.crit); sfx(e.crit ? 'crit' : 'hit'); await wait(260); }
@@ -497,11 +521,11 @@ async function playerTurn() {
     const acts = combat.actionsFor(c);
     const opts = acts.map((a) => ({ ...a, primary: a.id === 'attack' || a.id === 'shoot' }));
     opts.push({ id: 'auto', label: '🤖 Auto-battle (all AI)', bonus: true });
-    opts.push({ id: 'fast', label: fast ? '🐢 Normal speed' : '⏩ Fast animations', bonus: true });
+    opts.push({ id: 'speed', label: `Battle speed: ${speed().short} ↻`, bonus: true, info: () => ['Battle speed', ...Object.values(BATTLE_SPEEDS).map((v) => v.label)] });
     const t = combat.turn;
     const o = await chooseFrom(`${c.name}'s turn — ${t.action ? 'Action' : ''}${t.action && t.bonus ? ' + ' : ''}${t.bonus ? 'Bonus action' : ''} available · HP ${c.hp}/${c.maxHp}`, opts);
     if (o.id === 'auto') { autoBattle = true; closeModal(); return; }
-    if (o.id === 'fast') { fast = !fast; continue; }
+    if (o.id === 'speed') { const ks = Object.keys(BATTLE_SPEEDS); setSpeed(ks[(ks.indexOf(loadSettings().battleSpeed) + 1) % ks.length]); log(`Battle speed: ${speed().label}`, 'sys'); continue; }
     let args = {};
     if (o.target === 'enemy') { const m = await pickTarget('enemy', c); if (!m) continue; args.target = m; }
     if (o.id === 'cast') {
@@ -537,12 +561,12 @@ async function endCombat() {
   const st = combat.state; const info = combatInfo;
   if (st === 'won') { victoryUntil = Date.now() + 9000; playMusic('victory', true, () => { victoryUntil = 0; syncAudio(); }); say(banter(S.party, 'victory', {}, 0.8)); }
   const ev = G.afterCombat(S, combat, info);
-  combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI();
+  combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI(); hideCaption();
   if (st === 'lost') { handle(ev); return; }
   R.setMode('dungeon');
   if (info.boss) await rebuild();
   handle(ev);
-  if (S.victory && info.boss) log('The Tyrant Lizard falls! The Amulet of Grok awaits on its altar beyond.', 'crit');
+  if (S.victory && info.boss) log('Gorvax the Tyrant falls! The Dawnstone Amulet awaits on its altar beyond.', 'crit');
   autosave();
 }
 
@@ -568,7 +592,7 @@ async function boot() {
   const where = await initStorage([G.SAVE_KEY, ...SLOT_KEYS]);
   if (where === 'icloud') log('Saves sync with iCloud.', 'dim');
   if (!isNative() && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
-  log('GrokWizard ready. Press New Game!', 'sys');
+  log('Blackspire ready. Press New Game!', 'sys');
   showTitle();
 }
 boot();
@@ -630,6 +654,9 @@ function openMenu(view = 'main', custom = null) {
       h('h3', {}, 'Audio'),
       h('div', { class: 'menu' }, btn(`🔊 Sound: ${st.sound ? 'On' : 'Off (all muted)'}`, () => { st.sound = !st.sound; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-sound' })),
       slider('music', '🎵 Music'), slider('sfx', '💥 Sound effects'), slider('amb', '🌫 Ambience'),
+      h('h3', {}, 'Battle speed'),
+      h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'normal') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'normal') === k) }))),
+      h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action.'),
       S ? h('h3', {}, 'Difficulty') : null,
       S ? h('div', { class: 'seg', role: 'radiogroup' }, Object.keys(DIFFICULTY).map((k) => btn(DIFF_LABEL[k], () => { S.difficulty = k; if (combat) combat.setDifficulty?.(k); autosave(); log(`Difficulty: ${DIFF_LABEL[k]}.`, 'sys'); openMenu('settings'); }, { class: (S.difficulty || 'normal') === k ? 'on' : '', 'data-diff': k, role: 'radio', 'aria-checked': String((S.difficulty || 'normal') === k) }))) : null,
       S ? h('p', { class: 'hint' }, DIFF_HELP[S.difficulty || 'normal']) : null,
@@ -638,13 +665,13 @@ function openMenu(view = 'main', custom = null) {
         btn('← Back', () => openMenu('main'), { class: 'menuback' }))];
   } else if (view === 'backup') {
     const cur = S && !combat ? G.serialize({ ...S, savedAt: Date.now() }) : (readSave(latestKey() || G.SAVE_KEY) || {}).raw;
-    const area = h('textarea', { id: 'import-code', rows: 4, placeholder: 'Paste a GW1: save code here…', spellcheck: 'false', autocapitalize: 'off' });
+    const area = h('textarea', { id: 'import-code', rows: 4, placeholder: 'Paste a BS1: save code here…', spellcheck: 'false', autocapitalize: 'off' });
     const file = h('input', { type: 'file', accept: '.json,.txt,application/json,text/plain', id: 'import-file', class: 'hidden', onchange: async (e) => { const f = e.target.files[0]; if (f) doImport(await f.text()); } });
     body = [h('h2', {}, '⇅ Export / Import Saves'),
       note('Back up your game, or move it to another device: export a file or copy the save code, then import it there.'),
       h('h3', {}, 'Export'),
       cur ? h('div', { class: 'menu' },
-        btn('⬇ Download save file (.json)', () => { const a = h('a', { href: URL.createObjectURL(new Blob([cur], { type: 'application/json' })), download: `grokwizard-${new Date().toISOString().slice(0, 10)}.json` }); document.body.append(a); a.click(); a.remove(); }, { id: 'btn-export-file' }),
+        btn('⬇ Download save file (.json)', () => { const a = h('a', { href: URL.createObjectURL(new Blob([cur], { type: 'application/json' })), download: `blackspire-${new Date().toISOString().slice(0, 10)}.json` }); document.body.append(a); a.click(); a.remove(); }, { id: 'btn-export-file' }),
         btn('📋 Copy save code', async () => { const code = exportCode(cur); $('#export-code').value = code; try { await navigator.clipboard.writeText(code); log('Save code copied.', 'sys'); } catch { $('#export-code').select(); } }, { id: 'btn-export-code' }),
         h('textarea', { id: 'export-code', rows: 3, readonly: true }, exportCode(cur))) : note(combat ? 'Finish the fight first — saves are never taken mid-combat.' : 'There is no save to export yet.'),
       h('h3', {}, 'Import'),
@@ -738,7 +765,7 @@ function itemInfo(k) {
 
 /* ---------- First-run tutorial ---------- */
 const TIPS = [
-  ['Welcome to Grokhaven!', 'Visit the Trading Post for gear, then head to the Edge of Town to enter the maze.'],
+  ['Welcome to Emberhollow!', 'Visit the Trading Post for gear, then head to the Edge of Town to enter the maze.'],
   ['Moving', 'Use the arrow pad (or swipe / WASD). Search with 🔎 to find secret doors and traps.'],
   ['Hold for info', 'Press and hold (or right-click) a party card, monster, item or spell to see its details.'],
   ['Your companions', 'Tap AI/YOU on a card to control a companion yourself. Set how AI companions fight under 🧠 Companion Tactics at camp or the Tavern.'],

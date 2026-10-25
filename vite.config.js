@@ -13,11 +13,11 @@ function offlineServiceWorker() {
       walk(out);
       const list = files.filter((f) => f !== 'sw.js' && !f.endsWith('.map'));
       const hash = createHash('sha1').update(list.join('|') + list.map((f) => statSync(join(out, f)).size).join(',')).digest('hex').slice(0, 10);
-      writeFileSync(join(out, 'sw.js'), `// GrokWizard offline service worker (generated at build time)
-const CACHE = 'grokwizard-${hash}';
+      writeFileSync(join(out, 'sw.js'), `// Blackspire offline service worker (generated at build time)
+const CACHE = 'blackspire-${hash}';
 const FILES = ${JSON.stringify(['./', ...list.map((f) => './' + f)])};
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
-self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('grokwizard-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('blackspire-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
   const req = e.request; if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate') { e.respondWith(fetch(req).then((r) => { const cp = r.clone(); caches.open(CACHE).then((c) => c.put('./', cp)); return r; }).catch(() => caches.match('./'))); return; }

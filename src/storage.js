@@ -7,6 +7,17 @@
 //    Reads fall back main → .bak → .tmp, so a corrupt or half-written save is recovered automatically.
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
+/** One-time migration of saves/settings from the game's old name (same origin on GitHub Pages, so old saves are visible). */
+export function migrateLegacy(store = (typeof localStorage !== 'undefined' ? localStorage : null)) {
+  if (!store) return 0; let n = 0;
+  const OLD = 'grok' + 'wizard.'; // old prefix, kept only to find pre-rename saves
+  for (const suf of ['save.v1', 'save.slot1', 'save.slot2', 'save.slot3', 'settings']) for (const ext of ['', '.bak']) {
+    try { const v = store.getItem(OLD + suf + ext); if (v != null && store.getItem('blackspire.' + suf + ext) == null) { store.setItem('blackspire.' + suf + ext, v); n++; } } catch { /* ignore */ }
+  }
+  return n;
+}
+try { migrateLegacy(); } catch { /* ignore */ }
+
 const native = () => { try { return Capacitor.isNativePlatform(); } catch { return false; } };
 let Prefs = null; let ICloud = null;
 export const isNative = native;
@@ -60,10 +71,10 @@ export async function initStorage(keys) {
 /* ---------- export / import (backup) ---------- */
 const b64e = (s) => btoa(unescape(encodeURIComponent(s)));
 const b64d = (s) => decodeURIComponent(escape(atob(s)));
-export function exportCode(raw) { return 'GW1:' + b64e(raw); }
+export function exportCode(raw) { return 'BS1:' + b64e(raw); }
 export function importCode(text) {
   let t = String(text || '').trim();
-  if (t.startsWith('GW1:')) t = b64d(t.slice(4).replace(/\s+/g, ''));
-  if (!valid(t)) throw new Error('That is not a GrokWizard save (code or .json file).');
+  if (/^(BS1|GW1):/.test(t)) t = b64d(t.slice(4).replace(/\s+/g, '')); // GW1 = codes exported before the rename
+  if (!valid(t)) throw new Error('That is not a Blackspire save (code or .json file).');
   return t;
 }

@@ -1,6 +1,7 @@
 // Turn-based combat engine implementing SRD 5.1 combat rules (condensed to a Wizardry-style party-vs-groups view).
 import { MONSTERS, SPELLS, CR_XP, WEAPONS, ITEMS } from './data.js';
 import { roll, d20, die, pick, rand } from './dice.js';
+import { narrateAttack, line as narr } from './narrate.js';
 import {
   mod, abilityMod, saveMod, armorClass, weaponStats, spellDC, spellAttack, spellMod, sneakDice, cantripDice, attacksPerAction,
   critRange, prof, isDown, canAct, heal, hasTrait, skillMod, knownSpells,
@@ -43,6 +44,8 @@ export class Combat {
   }
   say(t, cls = '') { this.log.push({ t, cls }); }
   emit(e) { this.events.push(e); }
+  /** Big centered action caption for the UI (flavor text + short mechanical result). */
+  caption(text, sub = '', tone = '') { this.emit({ type: 'caption', text, sub, tone }); }
   drain() { const l = this.log, e = this.events; this.log = []; this.events = []; return { log: l, events: e }; }
   livingMonsters() { return this.monsters.filter((m) => m.hp > 0); }
   awakeMonsters() { return this.livingMonsters().filter((m) => !m.conditions.unconscious); }
@@ -231,7 +234,7 @@ export class Combat {
       tgt.slots[0]--; tgt.reaction = false; tgt.conditions.shieldSpell = true; hit = false;
       this.say(`${tgt.name} casts Shield! (+5 AC) The ${label} glances off.`, 'spell'); this.emit({ type: 'spell', who: tgt, spell: 'shield' });
     }
-    if (!hit) { this.say(`${att.name}'s ${label} misses ${tgt.name}${advTxt}. [${nat}+${bonus}${bless ? '+' + bless : ''}=${total} vs AC ${ac}]`, 'dim'); this.emit({ type: 'miss', att, tgt }); return { hit: false, crit: false, dmg: 0 }; }
+    if (!hit) { this.caption(narrateAttack({ att, tgt, label, type, hit: false, ranged, spell }), `Miss — ${total} vs AC ${ac}`, 'miss'); this.say(`${att.name}'s ${label} misses ${tgt.name}${advTxt}. [${nat}+${bonus}${bless ? '+' + bless : ''}=${total} vs AC ${ac}]`, 'dim'); this.emit({ type: 'miss', att, tgt }); return { hit: false, crit: false, dmg: 0 }; }
     let d = roll(dmg, { crit, extraDice: crit ? extraOnCrit : 0 }) + dmgBonus;
     let sneakTxt = '';
     if (sneak) { d += roll(`${sneak}d6`, { crit }); sneakTxt = ' +Sneak Attack'; }
@@ -241,6 +244,7 @@ export class Combat {
     this.say(`${att.name}'s ${label} ${crit ? 'CRITS' : 'hits'} ${tgt.name}${advTxt} for ${d} ${type}${sneakTxt}. [${nat}+${bonus}${bless ? '+' + bless : ''}=${total}]`, crit ? 'crit' : att.side === 'party' ? 'hit' : 'bad');
     this.emit({ type: 'hit', att, tgt, dmg: d, crit });
     this.damage(tgt, d, type, att, { crit, attack: true });
+    this.caption(narrateAttack({ att, tgt, label, type, hit: true, crit, ranged, spell, killed: tgt.side === 'monster' && tgt.hp <= 0, downed: tgt.side === 'party' && tgt.hp <= 0 }), `${d} ${type} damage${crit ? ' · CRITICAL' : ''}${sneak ? ' · Sneak Attack' : ''}`, crit ? 'crit' : att.side === 'party' ? 'hit' : 'bad');
     if (extra && !tgt.dead) { const e = roll(extra.dmg); this.say(`…plus ${e} ${extra.type}.`); this.damage(tgt, e, extra.type, att); }
     if (rider && !tgt.dead && (tgt.hp > 0 || rider.dmg)) this.applyRider(att, tgt, rider);
     return { hit: true, crit, dmg: d };
@@ -311,7 +315,7 @@ export class Combat {
         break;
       }
       case 'cast': { this.castSpell(c, opts.spell, opts); break; }
-      case 'dodge': t.action = 0; c.conditions.dodging = true; this.say(`${c.name} takes the Dodge action.`); break;
+      case 'dodge': t.action = 0; c.conditions.dodging = true; this.say(`${c.name} takes the Dodge action.`); this.caption(`${c.name} raises their guard, ready to dodge.`, 'Dodge: attacks against have disadvantage', ''); break;
       case 'escape': {
         t.action = 0; const r = d20() + Math.max(skillMod(c, 'athletics'), skillMod(c, 'acrobatics'));
         if (r >= (c.conditions.restrained?.dc || 12)) { delete c.conditions.restrained; this.say(`${c.name} breaks free! (${r})`); } else this.say(`${c.name} struggles in vain. (${r})`);
@@ -324,8 +328,8 @@ export class Combat {
         if (r >= dc) { this.state = 'fled'; this.say(`The party flees! (${r} vs ${dc})`, 'good'); this.emit({ type: 'fled' }); this.endCleanup(); return; }
         this.say(`${c.name} fails to find an escape route. (${r} vs ${dc})`, 'bad'); break;
       }
-      case 'secondWind': { t.bonus = 0; c.res.secondWind = 0; const h = heal(c, roll('1d10') + c.level); this.say(`${c.name} catches a Second Wind: +${h} HP.`, 'good'); this.emit({ type: 'heal', who: c }); break; }
-      case 'actionSurge': { c.res.actionSurge = 0; t.action = 1; this.say(`${c.name} uses ACTION SURGE!`, 'crit'); break; }
+      case 'secondWind': { t.bonus = 0; c.res.secondWind = 0; const h = heal(c, roll('1d10') + c.level); this.say(`${c.name} catches a Second Wind: +${h} HP.`, 'good'); this.caption(`${c.name} grits their teeth and finds a second wind!`, `+${h} HP`, 'good'); this.emit({ type: 'heal', who: c }); break; }
+      case 'actionSurge': { c.res.actionSurge = 0; t.action = 1; this.say(`${c.name} uses ACTION SURGE!`, 'crit'); this.caption(`${c.name} roars and surges forward — ACTION SURGE!`, 'An extra action', 'crit'); break; }
       case 'hide': {
         t.bonus = 0; const r = d20({ dis: c.equip.armor && ['chainMail', 'splint', 'plate', 'scaleMail', 'halfPlate', 'ringMail', 'padded'].includes(c.equip.armor.base) }) + skillMod(c, 'stealth');
         const pp = Math.max(...this.awakeMonsters().map((m) => 10 + monsterSave(m, 'wis')), 0);
@@ -337,7 +341,7 @@ export class Combat {
         const key = opts.item || this.inventory.find((k) => ITEMS[k]?.kind === 'potion');
         const tgt = opts.target || c; const i = this.inventory.indexOf(key); if (i < 0) break; this.inventory.splice(i, 1);
         const I = ITEMS[key];
-        if (I.heal) { const h = heal(tgt, roll(I.heal)); this.say(`${c.name} uses ${I.name} on ${tgt.name}: +${h} HP.`, 'good'); this.emit({ type: 'heal', who: tgt }); }
+        if (I.heal) { const h = heal(tgt, roll(I.heal)); this.say(`${c.name} uses ${I.name} on ${tgt.name}: +${h} HP.`, 'good'); this.caption(tgt === c ? `${c.name} gulps down a ${I.name}.` : `${c.name} tips a ${I.name} into ${tgt.name}'s mouth.`, `+${h} HP`, 'good'); this.emit({ type: 'heal', who: tgt }); }
         if (I.cure) { delete tgt.conditions[I.cure]; this.say(`${tgt.name} is cured of being ${I.cure}.`, 'good'); }
         break;
       }
@@ -350,6 +354,7 @@ export class Combat {
       case 'breath': {
         t.action = 0; c.res.breath = 0; const dc = 8 + abilityMod(c, 'con') + prof(c); const dice = c.level >= 6 ? '3d6' : '2d6';
         this.emit({ type: 'spell', who: c, spell: 'breath' });
+        this.caption(`${c.name} draws a deep breath and exhales a torrent of dragonfire!`, 'Breath Weapon', 'spell');
         for (const m of this.livingMonsters().slice(0, 2)) { let dmg = roll(dice); const ok = this.save(m, 'dex', dc); if (ok) dmg = Math.floor(dmg / 2); this.say(`${c.name}'s fiery breath scorches ${m.name}: ${dmg}${ok ? ' (save)' : ''}.`, 'spell'); this.damage(m, dmg, 'fire', c); }
         break;
       }
@@ -382,39 +387,51 @@ export class Combat {
       case 'rays': { for (let i = 0; i < S.rays + up; i++) { const tg = pickT(); if (!tg) break; this.attack(c, tg, { bonus: atk, dmg: S.dmg, type: S.type, ranged: true, spell: true, label: 'Scorching Ray' }); } break; }
       case 'auto': {
         const n = S.darts + up;
-        for (let i = 0; i < n; i++) { const tg = pickT(); if (!tg) break; const d = roll(S.dmg); this.say(`A glowing dart strikes ${tg.name} for ${d}.`, 'spell'); this.emit({ type: 'hit', att: c, tgt: tg, dmg: d }); this.damage(tg, d, S.type, c); }
+        let tot = 0; const hitN = new Set(); let slain = 0;
+        for (let i = 0; i < n; i++) { const tg = pickT(); if (!tg) break; const d = roll(S.dmg); this.say(`A glowing dart strikes ${tg.name} for ${d}.`, 'spell'); this.emit({ type: 'hit', att: c, tgt: tg, dmg: d }); this.damage(tg, d, S.type, c); tot += d; hitN.add(tg.name); if (tg.hp <= 0) slain++; }
+        this.caption(narr(S.type, { a: c.name, t: [...hitN].join(' and ') || 'the foe', w: S.name }), `${n} darts · ${tot} ${S.type} damage${slain ? ` · ${slain} slain` : ''}`, 'spell');
         break;
       }
       case 'save': {
         let tgs = S.target === 'enemy' ? [pickT()] : S.target === 'allEnemies' ? enemies : (targets || this.pickGroup(target, S.maxTargets));
-        tgs = tgs.filter(Boolean);
+        tgs = tgs.filter(Boolean); let tot = 0, saved = 0, slain = 0, held = 0;
         for (const m of tgs) {
           if (m.hp <= 0) continue;
           if (S.humanoidOnly) { this.say(`${m.name} is not a humanoid — no effect.`, 'dim'); continue; }
           const ok = this.save(m, S.save, dc);
-          if (S.dmg) { let d = roll(dmgExpr(S.dmg)); if (ok) d = S.half ? Math.floor(d / 2) : 0; this.say(`${m.name} ${ok ? 'saves' : 'fails'}: ${d} ${S.type}.`, 'spell'); if (d) { this.emit({ type: 'hit', att: c, tgt: m, dmg: d }); this.damage(m, d, S.type, c); } }
-          else if (S.cond && !ok) { m.conditions[S.cond] = { dc, src: c.id }; this.say(`${m.name} is ${S.cond}!`, 'spell'); }
+          if (ok) saved++;
+          if (S.dmg) { let d = roll(dmgExpr(S.dmg)); if (ok) d = S.half ? Math.floor(d / 2) : 0; this.say(`${m.name} ${ok ? 'saves' : 'fails'}: ${d} ${S.type}.`, 'spell'); if (d) { this.emit({ type: 'hit', att: c, tgt: m, dmg: d }); this.damage(m, d, S.type, c); tot += d; if (m.hp <= 0) slain++; } }
+          else if (S.cond && !ok) { m.conditions[S.cond] = { dc, src: c.id }; held++; this.say(`${m.name} is ${S.cond}!`, 'spell'); }
           else if (S.cond) this.say(`${m.name} resists.`, 'dim');
+        }
+        if (tgs.length) {
+          const who = tgs.length > 1 ? `${tgs.length} foes` : tgs[0].name;
+          if (S.dmg) this.caption(narr(S.type, { a: c.name, t: who, w: S.name }), `${S.name}: ${tot} ${S.type} damage${saved ? ` · ${saved} saved` : ''}${slain ? ` · ${slain} slain` : ''}`, 'spell');
+          else this.caption(`${c.name}'s ${S.name} lashes out at ${who}!`, held ? `${held} ${S.cond}` : 'Resisted!', held ? 'spell' : 'miss');
         }
         break;
       }
       case 'sleep': {
         let pool = roll(`${5 + 2 * up}d8`); this.say(`Sleep affects up to ${pool} HP of creatures.`, 'spell');
-        for (const m of [...this.awakeMonsters()].filter((m) => !m.T.construct).sort((a, b) => a.hp - b.hp)) { if (m.hp > pool) break; pool -= m.hp; m.conditions.unconscious = true; this.say(`${m.name} falls asleep!`, 'spell'); }
+        let zz = 0;
+        for (const m of [...this.awakeMonsters()].filter((m) => !m.T.construct).sort((a, b) => a.hp - b.hp)) { if (m.hp > pool) break; pool -= m.hp; m.conditions.unconscious = true; zz++; this.say(`${m.name} falls asleep!`, 'spell'); }
+        this.caption(`${c.name} scatters a glittering sand of dreams…`, zz ? `${zz} ${zz > 1 ? 'foes fall' : 'foe falls'} asleep` : 'Nobody nods off!', zz ? 'spell' : 'miss');
         break;
       }
       case 'heal': {
-        const tgs = S.target === 'allAllies' ? this.party.filter((p) => !p.dead).slice(0, 6) : [target || this.mostHurt()];
+        const tgs = S.target === 'allAllies' ? this.party.filter((p) => !p.dead).slice(0, 6) : [target || this.mostHurt()]; const healed = [];
         for (const p of tgs) {
           if (!p || p.dead) continue;
           let amt = roll(S.perLevel && up ? `${1 + up}${S.heal.slice(1)}` : S.heal) + (S.addMod ? sm : 0);
           if (c.cls === 'cleric') amt += 2 + lvl; // Disciple of Life
-          const h = heal(p, amt); this.say(`${p.name} is healed for ${h}.`, 'good'); this.emit({ type: 'heal', who: p });
+          const h = heal(p, amt); this.say(`${p.name} is healed for ${h}.`, 'good'); this.emit({ type: 'heal', who: p }); healed.push([p.name, h]);
         }
+        if (healed.length) this.caption(narr('heal', { t: healed.length > 1 ? 'the party' : healed[0][0] }), `${S.name}: ${healed.map(([n, h]) => `${n} +${h}`).join(', ')} HP`, 'good');
         if (c.cls === 'cleric' && c.level >= 6 && tgs.some((p) => p !== c)) { const h = heal(c, 2 + lvl); if (h) this.say(`Blessed Healer: ${c.name} regains ${h}.`, 'good'); }
         break;
       }
       case 'buff': {
+        if (S.buff !== 'mageArmor') this.caption(`${c.name} invokes ${S.name}!`, S.desc.split('.')[0], 'spell');
         if (S.buff === 'blessed') { const tgs = this.party.filter((p) => !isDown(p)).slice(0, 3); for (const p of tgs) p.conditions.blessed = { src: c.id }; this.say(`${tgs.map((p) => p.name).join(', ')} feel blessed.`, 'spell'); }
         if (S.buff === 'shieldOfFaith') { const p = target && target.side === 'party' ? target : this.frontRow()[0] || c; p.conditions.shieldOfFaith = { src: c.id }; this.say(`A shimmering field surrounds ${p.name} (+2 AC).`, 'spell'); }
         if (S.buff === 'spiritGuardians') { c.conditions.spiritGuardians = { src: c.id }; this.say(`Spectral guardians whirl around ${c.name}!`, 'spell'); }
@@ -449,8 +466,8 @@ export class Combat {
     if (T.special && m.specialReady && rand() < 0.6) {
       m.specialReady = false; const tg = choose();
       this.emit({ type: 'monsterAttack', who: m, tgt: tg });
-      const nat = d20(); if (nat + T.special.bonus >= armorClass(tg)) { tg.conditions.restrained = { dc: T.special.escapeDc, src: m.id }; this.say(`${m.name} hurls sticky webbing — ${tg.name} is restrained!`, 'bad'); }
-      else this.say(`${m.name}'s web misses ${tg.name}.`, 'dim');
+      const nat = d20(); if (nat + T.special.bonus >= armorClass(tg)) { tg.conditions.restrained = { dc: T.special.escapeDc, src: m.id }; this.say(`${m.name} hurls sticky webbing — ${tg.name} is restrained!`, 'bad'); this.caption(`${m.name} sprays a net of sticky silk over ${tg.name}!`, `${tg.name} is restrained`, 'bad'); }
+      else { this.say(`${m.name}'s web misses ${tg.name}.`, 'dim'); this.caption(`${m.name} spits webbing — ${tg.name} dives clear!`, 'Miss', 'miss'); }
       return;
     }
     const n = T.multi || T.attacks.length;
