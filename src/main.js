@@ -473,7 +473,7 @@ let capTimer = null;
 function showCaption(e, tapHint = false) {
   const el = $('#caption'); clearTimeout(capTimer);
   el.className = 'show ' + (e.tone || ''); el.innerHTML = '';
-  el.append(h('div', { class: 'captxt' }, e.text), e.sub ? h('div', { class: 'capsub' }, e.sub) : '', tapHint ? h('div', { class: 'captap' }, '▶ Tap to continue') : '');
+  capShownAt = performance.now(); el.append(h('div', { class: 'captxt' }, e.text), e.sub ? h('div', { class: 'capsub' }, e.sub) : '', tapHint ? h('div', { class: 'captap' }, '▶ Tap to continue') : '');
   clearTimeout(capDownTimer); capDownAt = 0; document.body.classList.add('capup'); if (R && !R.captionUp) { R.captionUp = true; R.fitArena?.(); } placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 350);
   if (!tapHint) capTimer = setTimeout(() => { el.classList.remove('show'); document.body.classList.remove('capcover'); captionDown(); placeBanter(); }, Math.max(2500, speed().hold * 2.5));
 }
@@ -508,7 +508,7 @@ const replaceOverlays = () => { const el = $('#caption'); if (el.classList.conta
 function hideCaption() { clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); captionDown(); placeBanter(); }
 /** The caption band (and, on phone portrait, the collapsed menu/log) is released a moment after the last caption, so
  *  back-to-back narration doesn't make the layout and camera pump between captions. */
-let capDownTimer = null, capDownAt = 0;
+let capDownTimer = null, capDownAt = 0, capShownAt = 0;
 const capDownPending = () => performance.now() < capDownAt;
 function captionDown(now = false) {
   clearTimeout(capDownTimer); capDownAt = now ? 0 : performance.now() + 900; const go = () => { capDownAt = 0; document.body.classList.remove('capup'); if (R?.captionUp) { R.captionUp = false; if (combat) R.fitArena?.(); } placeBanter(); };
@@ -564,7 +564,7 @@ const messagesDone = () => msgRunning || Promise.resolve();
 /** Combat watchdog: whatever happens, the caption layer can never leave combat stalled. */
 setInterval(() => {
   if (tapPending) return; const cap = $('#caption');
-  if (cap.classList.contains('show') && cap.querySelector('.captap')) hideCaption(); // a tap-caption nobody is waiting on
+  if (cap.classList.contains('show') && cap.querySelector('.captap') && performance.now() - capShownAt > 2000) hideCaption(); // a tap-caption nobody is waiting on
   if (!cap.classList.contains('show') && document.body.classList.contains('capup') && !capDownPending()) captionDown(true); // menu/log left collapsed
   if (!tapCatch.classList.contains('hidden')) tapCatch.className = 'hidden'; // catcher left over without a waiter
 }, 1000);
