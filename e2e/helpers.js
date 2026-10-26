@@ -37,7 +37,16 @@ export const LOCATIONS = [
   { key: 'train', button: 'Training Grounds' },
   { key: 'edge', button: 'Edge of Town' },
 ];
-export const openLocation = (page, name) => page.locator('#modal button', { hasText: name }).first().click();
+/** Read through any lore cards / tutorial tips a location raises, the way a player would tap past them. */
+export const dismissCards = async (page) => {
+  for (let i = 0; i < 10; i++) {
+    await page.waitForTimeout(300);
+    const tip = page.locator('#tip-skip'); if (await tip.isVisible().catch(() => false)) { await tip.click(); continue; }
+    if (await page.locator('#tapcatch').isVisible().catch(() => false)) { await page.locator('#tapcatch').click({ force: true }); continue; }
+    break;
+  }
+};
+export const openLocation = async (page, name) => { await page.locator('#modal button', { hasText: name }).first().click(); await dismissCards(page); };
 
 /** From any screen, get back to the town square using only visible UI. */
 export async function recoverToTown(page, ctx) {

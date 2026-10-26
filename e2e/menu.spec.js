@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { trackErrors, newGame, openLocation, townSquare, expectReachable, auditText } from './helpers.js';
+import { trackErrors, newGame, openLocation, dismissCards, townSquare, expectReachable, auditText } from './helpers.js';
 
 test.describe.configure({ timeout: 400000 });
 const st = (page, f, a) => page.evaluate(f, a);
 const minPx = (info) => (info.project.name.startsWith('iphone') ? 16 : 13);
 const menuBtn = (page) => page.locator('#btn-menu');
-const enterDungeon = async (page) => { await openLocation(page, 'Edge of Town'); await page.click('#btn-enter'); await expect.poll(() => st(page, () => window.__gw.state.mode)).toBe('dungeon'); };
+const enterDungeon = async (page) => { await openLocation(page, 'Edge of Town'); await page.click('#btn-enter'); await expect.poll(() => st(page, () => window.__gw.state.mode)).toBe('dungeon'); await dismissCards(page); };
 
 test('save & quit to title, then Continue and Load restore the game', async ({ page }, info) => {
   const errors = trackErrors(page); const P = info.project.name;
