@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { trackErrors, newGame, openLocation } from './helpers.js';
+import { trackErrors, newGame, openLocation, dismissCards } from './helpers.js';
 
 // "Tap to continue" must never freeze the game: pause-mode rat fights hammered with fast, double and mistimed taps,
 // keys, and monsters dying mid-caption must always finish. Plus exploration message cards (clues, wall writings).
 test.describe.configure({ timeout: 600000 });
-const enterDungeon = async (page) => { await openLocation(page, 'Edge of Town'); await page.click('#btn-enter'); await expect.poll(() => page.evaluate(() => window.__gw.state.mode)).toBe('dungeon'); };
+const enterDungeon = async (page) => { await openLocation(page, 'Edge of Town'); await page.click('#btn-enter'); await expect.poll(() => page.evaluate(() => window.__gw.state.mode)).toBe('dungeon'); await dismissCards(page); };
 const capShown = (page) => page.locator('#caption.show').isVisible();
 
 async function tapAt(page, x, y, touch) { if (touch) await page.touchscreen.tap(x, y); else await page.mouse.click(x, y); }
