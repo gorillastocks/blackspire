@@ -266,7 +266,7 @@ export class Renderer {
     const phonePortrait = window.innerWidth <= 760 && window.innerHeight > window.innerWidth; // there the view itself grows while a caption is up
     const reserve = phonePortrait && !this.captionUp ? 0.1 : Math.min(0.62, Math.max(0.24, (this.captionReservePx || (w < 520 ? 150 : 140)) / h)); // no caption up: just room for floaters
     const hud = this.container.querySelector('#hud'), top = Math.max(3, hud && hud.offsetHeight ? ((hud.offsetTop + hud.offsetHeight) / h) * 100 + 1 : 3), limit = 100 * (1 - reserve) - 2;
-    cam.clearViewOffset(); let k = 1;
+    cam.clearViewOffset(); let k = 1; this._co?.set(0, 0, 0);
     for (let i = 0; i < 8; i++) {
       cam.position.copy(look).addScaledVector(base.clone().sub(look), k); cam.lookAt(look); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
       const r = this.monsterRect(); if (!r) break;
@@ -371,15 +371,17 @@ export class Renderer {
     // arena
     if (this.mode === 'combat') {
       this.sparks.rotation.y += dt * 0.03; this.arenaRing.rotation.z += dt * 0.2;
+      const co = (this._co ||= new THREE.Vector3()); this.arenaCam.position.y -= co.y; this.arenaCam.position.z -= co.z; co.set(0, 0, 0);
       this.arenaCam.position.x = Math.sin(t * 0.25) * 0.25; // gentle sway; fitArena leaves margin for it
       this.arenaCam.lookAt(this.arenaLook || new THREE.Vector3(0, 1.3, -2));
-      if (this.aBump > 0) { this.aBump -= dt; this.arenaCam.translateZ(-Math.sin(Math.max(0, this.aBump) / 0.22 * Math.PI) * 0.18); }
-      if (this.aShake > 0) { this.aShake -= dt; const a = Math.max(0, this.aShake) * 0.25; this.arenaCam.rotation.z += (Math.random() - 0.5) * a * 0.5; this.arenaCam.position.x += (Math.random() - 0.5) * a; this.arenaCam.position.y += (Math.random() - 0.5) * a; }
+      if (this.aBump > 0) { this.aBump -= dt; co.z = -Math.sin(Math.max(0, this.aBump) / 0.22 * Math.PI) * 0.18; }
+      if (this.aShake > 0) { this.aShake -= dt; const a = Math.max(0, this.aShake) * 0.25; this.arenaCam.rotation.z += (Math.random() - 0.5) * a * 0.5; this.arenaCam.position.x += (Math.random() - 0.5) * a; co.y = (Math.random() - 0.5) * a; }
+      this.arenaCam.position.y += co.y; this.arenaCam.position.z += co.z;
       this.cfx.update(dt);
       for (const [, v] of this.monsterObjs) {
         if (v.flash > 0) { v.flash -= dt; const k = Math.max(0, v.flash) * 6; for (const m of v.mats) m.emissive.setHex(v.flashColor).multiplyScalar(k * 0.4); if (v.flash <= 0) for (const m of v.mats) m.emissive.copy(m.color).multiplyScalar(0.08); }
         let z = 0, rx = 0;
-        if (v.lunge > 0) { v.lunge -= dt; z += Math.sin((1 - Math.max(0, v.lunge) / v.lungeT) * Math.PI) * 0.9; rx += Math.sin((1 - Math.max(0, v.lunge) / v.lungeT) * Math.PI) * 0.15; }
+        if (v.lunge > 0) { v.lunge -= dt; z += Math.sin((1 - Math.max(0, v.lunge) / v.lungeT) * Math.PI) * 0.5; rx += Math.sin((1 - Math.max(0, v.lunge) / v.lungeT) * Math.PI) * 0.05; }
         if (v.stagger > 0) { v.stagger -= dt; const k = Math.sin((1 - Math.max(0, v.stagger) / v.staggerT) * Math.PI); z -= k * v.knock; rx -= k * 0.22; }
         if (v.lunge !== undefined || v.stagger !== undefined) { v.o.position.z = z; v.o.rotation.x = rx; }
         if (v.dieT !== undefined) {
