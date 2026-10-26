@@ -5,6 +5,8 @@ import { ITEMS, WEAPONS, ARMOR, CLASSES, XP_LEVELS } from '../rules/data.js';
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './companions.js';
 import * as Story from './story.js';
+import * as Narr from './narration.js';
+export { Narr };
 export { Story };
 export const NLEVELS = LEVEL_DEFS.length;
 
@@ -106,7 +108,7 @@ export function enterDungeon(s, lvl = 0) {
   const L = getLevel(lvl);
   if (lvl === 0 || !s.arriveAtDown) { s.x = L.start[0]; s.y = L.start[1]; s.dir = L.start[2]; }
   s.sinceEncounter = 0; markExplored(s);
-  return [{ log: `You enter ${L.def.name}.`, cls: 'sys' }];
+  return [{ log: `You enter ${L.def.name}.`, cls: 'sys' }, ...Narr.floorIntro(s, lvl)];
 }
 
 function encounterGroups(table) {
@@ -134,12 +136,13 @@ export function move(s, rel = 0) {
   s.x = nx; s.y = ny; s.steps++; s.sinceEncounter++;
   for (const c of s.party) if (c.conditions.poisoned && c.conditions.poisoned.steps && --c.conditions.poisoned.steps <= 0) { delete c.conditions.poisoned; out.push({ log: `${c.name} is no longer poisoned.` }); }
   markExplored(s);
+  out.push(...Narr.secretAt(s, getLevel(s.level), nx, ny));
   out.push(...enterTile(s));
   return out;
 }
 
 export function enterTile(s) {
-  const ch = tile(s, s.x, s.y); const L = getLevel(s.level); const def = L.def; const out = [];
+  const ch = tile(s, s.x, s.y); const L = getLevel(s.level); const def = L.def; const out = [...Narr.areaAt(s, L, s.x, s.y)];
   const passivePerc = Math.max(...s.party.filter((c) => !isDown(c)).map((c) => passive(c, 'perception')));
   // Passive notice of adjacent secret doors
   for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'S' && passivePerc >= def.secretDC + 3) { setTile(s, s.x + dx, s.y + dy, 'D'); out.push({ log: 'Your keen eyes notice a hidden door!', cls: 'good', card: true, banter: banter(s.party, 'secret', {}, 0.9), reveal: true }); }
@@ -309,7 +312,8 @@ export function goDown(s) {
   if (s.level >= LEVEL_DEFS.length - 1) return [];
   s.level++; s.maxDepth = Math.max(s.maxDepth, s.level);
   const L = getLevel(s.level); s.x = L.start[0]; s.y = L.start[1]; s.dir = L.start[2]; markExplored(s);
-  return [{ log: `You descend to ${L.def.name}.`, cls: 'sys', banter: banter(s.party, 'stairs', {}, 0.9) }];
+  const intro = Narr.floorIntro(s, s.level);
+  return [{ log: `You descend to ${L.def.name}.`, cls: 'sys', banter: intro.some((e) => e.card) ? null : banter(s.party, 'stairs', {}, 0.9) }, ...intro];
 }
 export function goUp(s) {
   if (s.level === 0) { s.mode = 'town'; return [{ log: 'You climb back to the town of Emberhollow.', cls: 'sys', toTown: true }]; }
@@ -318,7 +322,7 @@ export function goUp(s) {
   // face away from dead end
   for (let d = 0; d < 4; d++) { const [dx, dy] = DIRS[d]; if (!isSolid(tile(s, s.x + dx, s.y + dy))) s.dir = d; }
   markExplored(s);
-  return [{ log: `You climb up to ${L.def.name}.`, cls: 'sys', banter: banter(s.party, 'stairs', {}, 0.6) }];
+  return [{ log: `You climb up to ${L.def.name}.`, cls: 'sys', banter: banter(s.party, 'stairs', {}, 0.6) }, ...Narr.floorIntro(s, s.level)];
 }
 
 /* ---------- Rest ---------- */

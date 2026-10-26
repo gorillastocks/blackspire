@@ -298,3 +298,5 @@ body.msgup #banter { visibility: hidden; } /* bubbles wait (they're in the log) 
 #caption .caploot { margin-top: 6px; font-size: clamp(15px, 1.7vw, 20px); line-height: 1.35; color: #ffe9a8; text-align: left; display: inline-block; max-width: 100%; }
 #caption .caploot div { overflow-wrap: anywhere; }
 #caption.msg.loot .captxt { color: #ffe9a8; }
+#caption.msg { z-index: 45; background: rgba(14,10,24,0.97); }
+body.msgup #modal:not(.combat):not(.transparent) { background: #05030b; } body.msgup #modal:not(.combat) .panel { opacity: .08; } /* read-aloud cards over town screens */

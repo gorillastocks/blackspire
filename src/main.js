@@ -102,12 +102,13 @@ function placeBanter() {
 }
 function handle(events) {
   for (const e of events || []) {
-    if (e.log) { log(e.log, e.cls); if (!combat && S?.mode === 'dungeon' && (e.card || e.cls === 'lore')) queueMessage(e.log, e.cls); } if (e.banter) say(e.banter); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
+    if (e.dm) { log(e.log, e.cls); if (loadSettings().areaDesc !== false && !combat) queueMessage({ text: e.log, cls: 'lore', quip: e.quip }); else if (e.quip) say(e.quip); } // Dungeon Master read-aloud
+    else if (e.log) { log(e.log, e.cls); if (!combat && S?.mode === 'dungeon' && (e.card || e.cls === 'lore')) queueMessage(e.log, e.cls); } if (e.banter) say(e.banter); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
     if (e.sfx) sfx(e.sfx);
     if (e.reveal || e.sfx === 'door' || e.sfx === 'chest') rebuild();
     if (e.toTown) { autosave(); showTown(); return; }
     if (e.combat) { startCombat(e.combat); return; }
-    if (e.prompt) prompt(e.prompt, e);
+    if (e.prompt) { if (msgRunning) messagesDone().then(() => S && !combat && prompt(e.prompt, e)); else prompt(e.prompt, e); } // read the card first
   }
   refresh();
 }
@@ -318,6 +319,7 @@ function showTown(sub = null) {
       btn('💾 Save Game', () => { autosave(); log('Game saved.', 'sys'); }),
       btn('📂 Load Game', () => loadGame()),
       btn('⏏ Title Screen', () => { closeModal(); showTitle(); })));
+    handle(G.Narr.townIntro(S, null));
     return;
   }
   if (sub === 'tavern') {
@@ -351,6 +353,7 @@ function showTown(sub = null) {
       h('div', { class: 'menu' }, btn('Descend the stairs to B1', () => enter(0), { class: 'primary', id: 'btn-enter' }),
         ...LEVEL_DEFS.map((_, l) => l).filter((l) => l > 0 && l <= S.maxDepth).map((l) => btn(`Mine lift to ${LEVEL_DEFS[l].name}`, () => enter(l))))]);
   }
+  if (sub) handle(G.Narr.townIntro(S, sub));
 }
 function enter(l) { closeModal(); handle(G.enterDungeon(S, l)); startDungeon(); say(banter(S.party, 'stairs', {}, 1)); autosave(); }
 async function startDungeon() {
@@ -557,8 +560,9 @@ async function pumpMessages() {
       const m = msgQueue.shift(); const el = $('#caption'); clearTimeout(capTimer);
       el.className = `show msg ${m.cls === 'loot' ? 'loot crit' : m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = ''; capShownAt = performance.now();
       el.append(h('div', { class: 'captxt' }, m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l) => h('div', {}, l))) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
-      placeCaption(el); requestAnimationFrame(() => placeCaption(el));
+      placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 400);
       await tapToContinue(() => true);
+      if (m.quip) say(m.quip); // a companion reacts once the card is read
     }
   } finally { msgRunning = null; document.body.classList.remove('msgup'); }
 }
@@ -778,7 +782,7 @@ async function loadGame(key = G.SAVE_KEY) {
 async function boot() {
   log('Loading the 3D engine…', 'dim');
   const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
-  R = new Renderer($('#view')); R.onResize = () => { if (combat) { replaceOverlays(); renderTargets(); } };
+  R = new Renderer($('#view')); R.onResize = () => { if (combat) { replaceOverlays(); renderTargets(); } else if ($('#caption').classList.contains('show')) replaceOverlays(); };
   window.__gw = {
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
@@ -857,6 +861,9 @@ function openMenu(view = 'main', custom = null) {
       S ? h('h3', {}, 'Difficulty') : null,
       S ? h('div', { class: 'seg', role: 'radiogroup' }, Object.keys(DIFFICULTY).map((k) => btn(DIFF_LABEL[k], () => { S.difficulty = k; if (combat) combat.setDifficulty?.(k); autosave(); log(`Difficulty: ${DIFF_LABEL[k]}.`, 'sys'); openMenu('settings'); }, { class: (S.difficulty || 'normal') === k ? 'on' : '', 'data-diff': k, role: 'radio', 'aria-checked': String((S.difficulty || 'normal') === k) }))) : null,
       S ? h('p', { class: 'hint' }, DIFF_HELP[S.difficulty || 'normal']) : null,
+      h('h3', {}, 'Storytelling'),
+      h('div', { class: 'menu' }, btn(`🕯 Area descriptions: ${st.areaDesc !== false ? 'On' : 'Off'}`, () => { st.areaDesc = st.areaDesc === false; saveSettings(st); openMenu('settings'); }, { id: 'set-areadesc' })),
+      h('p', { class: 'hint' }, 'A Dungeon Master reads out each new floor, room and town spot the first time you arrive. Off: they only go to the log.'),
       h('h3', {}, 'Help'),
       h('div', { class: 'menu' }, btn('💡 Show the tutorial tips again', () => { st.tutorialDone = false; saveSettings(st); closeMenu(); startTutorial(); }, { id: 'set-tutorial' }),
         btn('← Back', () => openMenu('main'), { class: 'menuback' }))];
