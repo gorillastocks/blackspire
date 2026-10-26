@@ -27,7 +27,8 @@ test('sound effects: all categories play; the Sound effects toggle silences them
   await expect(page.locator('#vol-sfx')).toBeVisible();
   // music/ambience keep scheduling notes, so compare against an equal quiet window
   const win = (play) => page.evaluate(async (play) => { const b = window.__started; if (play) for (const n of window.__gw.SFX_NAMES) window.__gw.sfx(n); await new Promise((r) => setTimeout(r, 400)); return window.__started - b; }, play);
-  const quiet = await win(false), silent = await win(true);
+  // background music bursts vary per window: take the busiest of several quiet windows as the baseline
+  const qs = []; for (let i = 0; i < 4; i++) qs.push(await win(false)); const quiet = Math.max(...qs), silent = await win(true);
   expect(silent, `sfx off: ${silent} nodes vs ${quiet} background`).toBeLessThanOrEqual(quiet + 4);
   expect(JSON.parse(await page.evaluate(() => localStorage.getItem('blackspire.settings'))).sfxOn).toBe(false);
   await page.locator('#set-sfx').click(); await expect(page.locator('#set-sfx')).toContainText('On');
