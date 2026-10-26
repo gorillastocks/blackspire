@@ -459,8 +459,9 @@ function showCamp() {
 
 /* ---------- Spell selection (SRD) ---------- */
 function trainWithSpells(c, back) {
-  const prev = SC.snapshot(c), lv = c.level; const ev = G.train(S, c); handle(ev); autosave();
-  if (c.level > lv) spellStep(c, 'levelup', prev, () => { autosave(); back(); }); else back();
+  const prev = SC.snapshot(c), lv = c.level; const ev = G.train(S, c); autosave();
+  const picks = c.level > lv && CLASSES[c.cls].caster && !c.ai && SC.hasChoices(c, 'levelup', prev);
+  if (picks) { handle(ev); showSpellPicker(c, 'levelup', prev, () => { autosave(); back(); }); } else { back(); handle(ev); }
 }
 /** Player-controlled casters get the picker; AI companions keep their auto-picks. */
 function spellStep(c, mode, prev, next) {
@@ -502,7 +503,7 @@ function showSpellPicker(c, mode, prev, done) {
         btn('★ Recommended', () => { SC.recommendSections(c, secs, mode, prev); draw(); }, { id: 'btn-spell-rec', class: 'small' }),
         btn('🎲 Auto-pick', () => { SC.autoPickSections(c, secs); draw(); }, { id: 'btn-spell-auto', class: 'small' }),
         mode === 'prepare' ? btn('Cancel', () => done(), { id: 'btn-spell-cancel', class: 'small' }) : null,
-        btn('✓ Confirm', () => { SC.applySections(c, secs); log(`${c.name}: spells ${mode === 'prepare' ? 'prepared' : 'chosen'} — ${knownSpells(c).map((k) => SPELLS[k].name).join(', ')}.`, 'spell'); done(); }, { id: 'btn-spell-ok', class: 'primary', disabled: !valid }))], { closable: false });
+        btn('✓ Confirm', () => { SC.applySections(c, secs); log(`${c.name}: spells ${mode === 'prepare' ? 'prepared' : 'chosen'} — ${knownSpells(c).map((k) => SPELLS[k].name).join(', ')}.`, 'spell'); done(); }, { id: 'btn-spell-ok', class: 'primary', disabled: !valid }))], { closable: mode === 'prepare' });
   };
   draw();
 }

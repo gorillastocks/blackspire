@@ -17,7 +17,8 @@ for (const rnd of [false, true]) for (const [i, difficulty] of ['story', 'normal
       await page.click('#dlg-skip'); await page.click('[data-choice="fight"]');
       await page.waitForSelector('.combatmenu', { timeout: 60000 });
       await page.locator('.combatmenu button', { hasText: 'Auto-battle' }).click();
-      await page.waitForSelector('#dlg-next', { timeout: 200000 }); await page.click('#dlg-skip'); await page.click('[data-choice="vow"]');
+      for (let k = 0; k < 400 && !(await page.locator('#dlg-next').isVisible()); k++) { if (await page.locator('#caption.show').isVisible()) await page.keyboard.press('Enter'); await page.waitForTimeout(500); } // tap through the victory loot card
+      await page.waitForSelector('#dlg-next', { timeout: 20000 }); await page.click('#dlg-skip'); await page.click('[data-choice="vow"]');
     } else await skipPrologue(page);
     const tip = page.locator('#tip-skip'); if (await tip.isVisible()) await tip.click();
     expect(await page.evaluate(() => window.__gw.state.difficulty)).toBe(difficulty);
