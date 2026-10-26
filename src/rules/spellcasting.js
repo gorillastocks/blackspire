@@ -70,8 +70,8 @@ export function ensureSpells(c) {
     else if (t === 'known') c.spells = Array.isArray(c.spells) ? c.spells : classPool(c.cls, maxL); // trimmed below
     c.prepared = Array.isArray(c.prepared) ? c.prepared : [];
     c.spellsInit = true;
+    autoFill(c);
   }
-  autoFill(c);
   return c;
 }
 export function autoFill(c) {
@@ -100,8 +100,8 @@ export function pickerSections(c, mode, prev = null) {
   if (mode !== 'prepare' && cantripsMax(c)) out.push({ id: 'cantrips', title: 'Cantrips', pool: cantripPool(c.cls), n: cantripsMax(c), sel: [...c.cantrips], locked: prev ? prev.cantrips || [] : [], swaps: 0 });
   if (mode !== 'prepare' && t === 'known' && knownMax(c)) out.push({ id: 'spells', title: 'Spells known', pool: classPool(c.cls, maxL), n: knownMax(c), sel: [...c.spells], locked: prev ? prev.spells || [] : [], swaps: prev ? 1 : 0 });
   if (mode !== 'prepare' && t === 'book') {
-    const pool = mode === 'create' ? classPool('wizard', 1) : classPool('wizard', maxL);
-    out.push({ id: 'spells', title: 'Spellbook', pool, n: mode === 'create' ? Math.min(6, pool.length) : bookMax(c), sel: [...c.spells], locked: prev ? prev.spells || [] : [], swaps: 0 });
+    const first = mode === 'create' && c.level === 1, pool = first ? classPool('wizard', 1) : classPool('wizard', maxL);
+    out.push({ id: 'spells', title: 'Spellbook', pool, n: first ? Math.min(6, pool.length) : bookMax(c), sel: [...c.spells], locked: prev ? prev.spells || [] : [], swaps: 0 });
   }
   if ((t === 'book' || t === 'prepared') && preparedMax(c)) out.push({ id: 'prepared', title: 'Prepared spells', pool: null, n: preparedMax(c), sel: [...c.prepared], locked: [], swaps: 0, fromBook: t === 'book' });
   return out;

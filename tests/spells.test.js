@@ -49,3 +49,10 @@ describe('SRD spell selection', () => {
   });
   it('reclass into a caster gets valid picks', () => { const c = reclass(mk('fighter', 5), 'druid'); expect(c.prepared.length).toBe(SC.preparedMax(c)); });
 });
+import { Combat } from '../src/rules/combat.js';
+describe('combat spell menu', () => {
+  it('only lists cantrips and prepared spells', () => {
+    const w = mk('wizard', 3); w.prepared = ['magicMissile']; const cb = new Combat([w], [{ key: 'giantRat', count: 1 }]); cb.turn = { action: true, bonus: true };
+    const ks = cb.castable(w).map((x) => x.k); expect(ks).toContain('magicMissile'); expect(ks).not.toContain('scorchingRay'); expect(ks).not.toContain('burningHands');
+  });
+});

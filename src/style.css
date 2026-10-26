@@ -313,3 +313,13 @@ body.msgup #modal:not(.combat):not(.transparent) { background: #05030b; } body.m
 }
 #controls { flex-shrink: 0; }
 @media (min-width: 761px) and (min-height: 521px) { .lvchip { font-size: 14px; padding: 0 5px; } }
+
+/* spell picker */
+.spellpick h3 .good { color: #6dffa8; } .spellpick h3 .bad { color: #ff8a8a; }
+.spelllist { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px; }
+.spellopt { text-align: left; padding: 6px 8px; min-height: 44px; }
+.spellopt.on { border-color: #ffd34d; background: #2a2410; }
+.sprow { display: flex; flex-direction: column; gap: 2px; }
+.spname { font-weight: bold; } .spmeta { color: #ffd34d; } .spdesc { color: #ddd; font-size: 13px; line-height: 1.3; }
+.spellbtns { margin-top: 10px; justify-content: flex-end; flex-wrap: wrap; gap: 6px; position: sticky; bottom: 0; background: #14121c; padding: 6px 0; }
+@media (max-width: 500px) { .spelllist { grid-template-columns: 1fr; } }

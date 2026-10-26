@@ -5,6 +5,7 @@ import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js
 import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
 import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
+import * as SC from './rules/spellcasting.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience } from './audio.js';
@@ -288,11 +289,11 @@ function showCreate(asRecruit = false) {
           recruit ? null : h('p', { class: 'hint' }, 'Off: the classic hand-tuned layouts. On: every floor is freshly generated for this game (saved with it), always with reachable stairs, keys, bosses and quest spots.'),
           recruit ? null : h('h3', {}, 'Your Companions'),
           ...(recruit ? [] : COMPANION_KEYS.map((k) => COMPANIONS[k])).map((c) => h('p', { class: 'hint' }, h('b', { style: `color:${c.color}` }, c.name + ' — '), c.blurb)))),
-      h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, recruit ? btn('Recruit ▶', () => { handle(G.createRecruit(S, { name, race, cls, base })); autosave(); showTown(townSub); }, { class: 'primary', id: 'btn-recruit-create' }) : btn('Begin Adventure ▶', () => {
+      h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, recruit ? btn('Recruit ▶', () => { const ev = G.createRecruit(S, { name, race, cls, base }); handle(ev); autosave(); spellStep(ev.char, 'create', null, () => { autosave(); showTown(townSub); }); }, { class: 'primary', id: 'btn-recruit-create' }) : btn('Begin Adventure ▶', () => {
         S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base, randomDungeons: randomDun }); S.difficulty = diff;
         log(`Welcome to Emberhollow, ${name}. Three oddballs have agreed to join you…`, 'sys');
         for (const c of S.party.filter((c) => c.companion)) say({ who: COMPANIONS[c.companion].short, color: COMPANIONS[c.companion].color, text: COMPANIONS[c.companion].lines.combatStart[0] });
-        runPrologue();
+        spellStep(G.heroOf(S), 'create', null, () => runPrologue());
       }, { class: 'primary', id: 'btn-begin' })));
   };
   draw();
@@ -343,7 +344,8 @@ function showTown(sub = null) {
     p.insertBefore(body, p.lastChild);
   } else if (sub === 'train') {
     P([h('h3', {}, 'Training Grounds'), h('div', { class: 'menu' }, S.party.map((c) => h('div', { class: 'row' },
-      btn(canLevelUp(c) ? `⬆ Train ${c.name} to level ${c.level + 1}` : `${c.name} — L${c.level} (${c.xp}/${xpForNext(c) === Infinity ? 'max' : xpForNext(c)} XP)`, () => { handle(G.train(S, c)); showTown('train'); }, { disabled: !canLevelUp(c) }),
+      btn(canLevelUp(c) ? `⬆ Train ${c.name} to level ${c.level + 1}` : `${c.name} — L${c.level} (${c.xp}/${xpForNext(c) === Infinity ? 'max' : xpForNext(c)} XP)`, () => trainWithSpells(c, () => showTown('train')), { disabled: !canLevelUp(c) }),
+      SC.preparedMax(c) ? btn('📖 Prepare', () => showSpellPicker(c, 'prepare', null, () => showTown('train')), { class: 'small', 'data-prepare': c.id }) : null,
       (c.companion || c.recruit) ? btn('Re-class', () => reclassMenu(c), { class: 'small' }) : null,
       btn('Sheet', () => showSheet(c), { class: 'small' })))),
       h('p', { class: 'hint' }, 'Re-class: retrain a companion or recruit into any of the 12 classes at the same level (50 gp per level).'),
@@ -439,16 +441,70 @@ function showCamp() {
     btn('☕ Short Rest (1 hr: hit dice, 2nd wind, arcane recovery)', () => { closeModal(); handle(G.rest(S, 'short')); }),
     btn('🌙 Long Rest (8 hrs, full recovery, risky)', () => { closeModal(); handle(G.rest(S, 'long')); }),
     btn('🗣 Talk with companions', () => { log(G.campDialogue(S), 'lore'); }, { id: 'btn-talk' }),
-    btn('✨ Cast Mage Armor on wizard', () => { const w = S.party.find((c) => c.cls === 'wizard' && !c.equip.armor && !c.dead && c.slots[0] > 0); if (!w) { log('No wizard with a free slot needs Mage Armor.', 'dim'); return; } w.slots[0]--; w.conditions.mageArmor = true; log(`${w.name} casts Mage Armor (AC ${armorClass(w)}).`, 'spell'); refresh(); }),
+    btn('✨ Cast Mage Armor on wizard', () => { const w = S.party.find((c) => c.cls === 'wizard' && !c.equip.armor && !c.dead && c.slots[0] > 0 && knownSpells(c).includes('mageArmor')); if (!w) { log('No wizard with a free slot and Mage Armor prepared needs it.', 'dim'); return; } w.slots[0]--; w.conditions.mageArmor = true; log(`${w.name} casts Mage Armor (AC ${armorClass(w)}).`, 'spell'); refresh(); }),
     btn('🧠 Companion Tactics', () => showTactics(null, showCamp), { id: 'btn-camp-tactics' }),
     btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }), btn('📂 Load', () => loadGame())),
   h('h3', { id: 'camp-levelup' }, '⬆ Level Up'),
   (() => { const ready = S.party.filter((c) => canLevelUp(c)); return ready.length
-    ? h('div', { class: 'menu' }, ready.map((c) => btn(`⬆ Level up ${c.name} to level ${c.level + 1}`, () => { const ev = G.train(S, c); showCamp(); handle(ev); autosave(); }, { class: 'levelup', 'data-levelup': c.id })))
+    ? h('div', { class: 'menu' }, ready.map((c) => btn(`⬆ Level up ${c.name} to level ${c.level + 1}`, () => trainWithSpells(c, showCamp), { class: 'levelup', 'data-levelup': c.id })))
     : h('p', { class: 'hint' }, 'Nobody has enough XP to level up yet.'); })(),
   h('h3', { id: 'camp-heal' }, '✚ Heal'), campHealSection(),
+  h('h3', { id: 'camp-prepare' }, '📖 Prepare spells'),
+  (() => { const preps = S.party.filter((c) => !c.dead && SC.preparedMax(c)); return preps.length
+    ? h('div', { class: 'menu' }, preps.map((c) => btn(`📖 ${c.name} — ${SC.casterType(c.cls) === 'book' ? 'from spellbook' : 'from the ' + CLASSES[c.cls].name + ' list'} (${SC.preparedMax(c)} prepared)`, () => showSpellPicker(c, 'prepare', null, showCamp), { 'data-prepare': c.id })))
+    : h('p', { class: 'hint' }, 'Nobody in the party prepares spells.'); })(),
   h('h3', {}, 'Marching order'), partyOrderList(showCamp)]);
   void p;
+}
+
+/* ---------- Spell selection (SRD) ---------- */
+function trainWithSpells(c, back) {
+  const prev = SC.snapshot(c), lv = c.level; const ev = G.train(S, c); handle(ev); autosave();
+  if (c.level > lv) spellStep(c, 'levelup', prev, () => { autosave(); back(); }); else back();
+}
+/** Player-controlled casters get the picker; AI companions keep their auto-picks. */
+function spellStep(c, mode, prev, next) {
+  if (!c || !CLASSES[c.cls].caster || (c.ai && mode !== 'prepare') || !SC.hasChoices(c, mode, prev)) { next(); return; }
+  showSpellPicker(c, mode, prev, next);
+}
+function showSpellPicker(c, mode, prev, done) {
+  const secs = SC.pickerSections(c, mode, prev);
+  const rec = SC.recommendSections(c, SC.pickerSections(c, mode, prev), mode, prev);
+  const recSet = new Set(rec.flatMap((s) => s.sel));
+  if (mode === 'create') SC.recommendSections(c, secs, mode, prev);
+  const title = { create: `Choose spells — ${c.name}`, levelup: `New spells — ${c.name} (level ${c.level})`, prepare: `Prepare spells — ${c.name}` }[mode];
+  const help = { create: 'Pick your starting spells.', levelup: 'Pick new spells. Spells-known casters may also swap out one old spell.', prepare: 'Choose which spells are ready to cast. You can change this at camp or the Training Grounds.' }[mode];
+  const draw = () => {
+    const body = h('div', { class: 'spellpick' });
+    for (const s of secs) {
+      const pool = SC.sectionPool(c, secs, s), need = SC.sectionNeed(c, secs, s);
+      s.sel = s.sel.filter((k) => pool.includes(k));
+      const swapped = s.locked.filter((k) => !s.sel.includes(k)).length, ok = SC.sectionValid(c, secs, s);
+      body.append(h('h3', { 'data-section': s.id }, `${s.title} `, h('span', { class: ok ? 'good' : 'bad', 'data-count': s.id }, `${s.sel.length}/${need}`),
+        s.swaps && s.locked.length ? h('small', { class: 'dim' }, ` · swaps ${swapped}/${s.swaps}`) : null));
+      const list = h('div', { class: 'spelllist' });
+      for (const k of [...pool].sort((a, b) => SPELLS[a].level - SPELLS[b].level || SPELLS[a].name.localeCompare(SPELLS[b].name))) {
+        const S_ = SPELLS[k], on = s.sel.includes(k), full = !on && s.sel.length >= need, lockedKeep = on && s.locked.includes(k) && swapped >= s.swaps;
+        const b = btn(h('span', { class: 'sprow' },
+          h('span', { class: 'spname' }, `${on ? '☑' : '☐'} ${S_.name}${recSet.has(k) ? ' ★' : ''}${s.locked.includes(k) ? ' ·known' : ''}`),
+          h('small', { class: 'spmeta' }, `${S_.level ? 'Level ' + S_.level : 'Cantrip'} · ${SC.SCHOOL[k] || ''}${S_.conc ? ' · Conc.' : ''}`),
+          h('small', { class: 'spdesc' }, S_.desc || '')), () => {
+          if (on) s.sel = s.sel.filter((x) => x !== k); else if (!full) s.sel = [...s.sel, k];
+          draw();
+        }, { class: 'spellopt' + (on ? ' on' : ''), 'data-spell': `${s.id}:${k}`, 'aria-pressed': String(on), disabled: full || lockedKeep });
+        list.append(b);
+      }
+      body.append(list);
+    }
+    const valid = secs.every((s) => SC.sectionValid(c, secs, s));
+    openModal([h('h2', {}, title), h('p', { class: 'hint' }, help + ' ★ = recommended.'), body,
+      h('div', { class: 'row spellbtns' },
+        btn('★ Recommended', () => { SC.recommendSections(c, secs, mode, prev); draw(); }, { id: 'btn-spell-rec', class: 'small' }),
+        btn('🎲 Auto-pick', () => { SC.autoPickSections(c, secs); draw(); }, { id: 'btn-spell-auto', class: 'small' }),
+        mode === 'prepare' ? btn('Cancel', () => done(), { id: 'btn-spell-cancel', class: 'small' }) : null,
+        btn('✓ Confirm', () => { SC.applySections(c, secs); log(`${c.name}: spells ${mode === 'prepare' ? 'prepared' : 'chosen'} — ${knownSpells(c).map((k) => SPELLS[k].name).join(', ')}.`, 'spell'); done(); }, { id: 'btn-spell-ok', class: 'primary', disabled: !valid }))], { closable: false });
+  };
+  draw();
 }
 
 /* ---------- Map ---------- */
@@ -839,7 +895,7 @@ async function boot() {
   window.__gw = {
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
-    showTactics, openMenu, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)

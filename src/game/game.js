@@ -63,7 +63,7 @@ export function recruitCompanion(s, key) {
 export function createRecruit(s, { name, race, cls, base }) {
   const c = createCharacter({ name: (name || 'Recruit').trim().slice(0, 18) || 'Recruit', race, cls, base: base || assignByPriority(cls) });
   c.recruit = true; c.ai = true; raiseTo(c, partyLevel(s));
-  return [{ log: place(s, c), cls: 'good' }];
+  const ev = [{ log: place(s, c), cls: 'good' }]; ev.char = c; return ev;
 }
 export function dismiss(s, c) {
   if (isHero(c)) return [{ log: 'You cannot dismiss yourself.', cls: 'dim' }];
