@@ -1,5 +1,6 @@
 import { ABILITIES, RACES, CLASSES, WEAPONS, ARMOR, ITEMS, SKILLS, SPELLS, slotsFor, XP_LEVELS, MAX_LEVEL, STANDARD_ARRAY, profBonus } from './data.js';
 import { die, roll, d20 } from './dice.js';
+import { activeSpells, ensureSpells, autoFill } from './spellcasting.js';
 
 export const mod = (score) => Math.floor((score - 10) / 2);
 export const fmtMod = (m) => (m >= 0 ? '+' : '') + m;
@@ -29,6 +30,7 @@ export function createCharacter({ name, race, cls, base, companion = null, skill
   c.maxHp = C.hitDie + mod(c.scores.con) + (R.hpPerLevel || 0) + (cls === 'sorcerer' ? 1 : 0);
   c.hp = c.maxHp;
   refreshResources(c, true);
+  ensureSpells(c);
   return c;
 }
 
@@ -113,8 +115,7 @@ export function spellAttack(c) { return prof(c) + spellMod(c); }
 export function maxSlotLevel(c) { return c.maxSlots.length; }
 export function knownSpells(c) {
   if (!CLASSES[c.cls].caster) return [];
-  const maxL = maxSlotLevel(c);
-  return Object.entries(SPELLS).filter(([, s]) => s.cls.includes(c.cls) && s.level <= maxL).map(([k]) => k);
+  return activeSpells(c);
 }
 export function sneakDice(c) { return c.cls === 'rogue' ? Math.ceil(c.level / 2) : 0; }
 export const martialDie = (c) => (c.level >= 5 ? '1d6' : '1d4');
@@ -216,6 +217,7 @@ export function levelUp(c) {
   // newly gained per-rest resources are ready immediately
   const fresh = { ...c.res }, keepSlots = [...c.slots]; refreshResources(c, true); const gained = c.res; c.res = fresh; c.slots = keepSlots;
   for (const k of ['rage', 'ki', 'layOnHands', 'sacredWeapon', 'inspiration', 'sorcery']) if ((gained[k] || 0) > (fresh[k] || 0)) c.res[k] = (fresh[k] || 0) + (gained[k] - (fresh[k] || 0));
+  if (C.caster) { ensureSpells(c); autoFill(c); } // AI/default picks; the UI may let the player change them
   if (c.cls === 'bard' && c.level === 3) c.expertise.push('persuasion', 'performance');
   if (c.cls === 'fighter' && c.level === 2) c.res.actionSurge = 1;
   if (c.cls === 'cleric' && c.level === 2) c.res.channelDivinity = 1;
