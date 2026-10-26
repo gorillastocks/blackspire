@@ -168,7 +168,7 @@ export class Combat {
       return amt;
     }
     target.hp -= amt;
-    this.emit({ type: 'partyHurt', who: target, amt, crit });
+    this.emit({ type: 'partyHurt', who: target, amt, crit, dtype: type });
     if (target.hp <= 0) {
       const overflow = -target.hp; target.hp = 0;
       if (overflow >= target.maxHp) { this.say(`Massive damage!`, 'bad'); this.kill(target); return amt; }
@@ -247,7 +247,7 @@ export class Combat {
       tgt.slots[0]--; tgt.reaction = false; tgt.conditions.shieldSpell = true; hit = false;
       this.say(`${tgt.name} casts Shield! (+5 AC) The ${label} glances off.`, 'spell'); this.emit({ type: 'spell', who: tgt, spell: 'shield' });
     }
-    if (!hit) { this.caption(narrateAttack({ att, tgt, label, type, hit: false, ranged, spell }), `Miss — ${total} vs AC ${ac}`, 'miss'); this.say(`${att.name}'s ${label} misses ${tgt.name}${advTxt}. [${nat}+${bonus}${bless ? '+' + bless : ''}=${total} vs AC ${ac}]`, 'dim'); this.emit({ type: 'miss', att, tgt }); return { hit: false, crit: false, dmg: 0 }; }
+    if (!hit) { this.caption(narrateAttack({ att, tgt, label, type, hit: false, ranged, spell }), `Miss — ${total} vs AC ${ac}`, 'miss'); this.say(`${att.name}'s ${label} misses ${tgt.name}${advTxt}. [${nat}+${bonus}${bless ? '+' + bless : ''}=${total} vs AC ${ac}]`, 'dim'); this.emit({ type: 'miss', att, tgt, spell: spell || null }); return { hit: false, crit: false, dmg: 0 }; }
     let d = roll(dmg, { crit, extraDice: crit ? extraOnCrit : 0 }) + dmgBonus;
     let sneakTxt = '';
     if (sneak) { d += roll(`${sneak}d6`, { crit }); sneakTxt = ' +Sneak Attack'; }
@@ -256,7 +256,7 @@ export class Combat {
     // Uncanny Dodge
     if (tgt.side === 'party' && tgt.cls === 'rogue' && tgt.level >= 5 && tgt.reaction && tgt.hp > 0) { tgt.reaction = false; d = Math.floor(d / 2); sneakTxt += ' (Uncanny Dodge halves)'; }
     this.say(`${att.name}'s ${label} ${crit ? 'CRITS' : 'hits'} ${tgt.name}${advTxt} for ${d} ${type}${sneakTxt}. [${nat}+${bonus}${bless ? '+' + bless : ''}=${total}]`, crit ? 'crit' : att.side === 'party' ? 'hit' : 'bad');
-    this.emit({ type: 'hit', att, tgt, dmg: d, crit });
+    this.emit({ type: 'hit', att, tgt, dmg: d, crit, dtype: type, spell: spell || null });
     this.damage(tgt, d, type, att, { crit, attack: true });
     this.caption(narrateAttack({ att, tgt, label, type, hit: true, crit, ranged, spell, killed: tgt.side === 'monster' && tgt.hp <= 0, downed: tgt.side === 'party' && tgt.hp <= 0 }), `${d} ${type} damage${crit ? ' · CRITICAL' : ''}${sneakTxt ? ' · ' + sneakTxt.trim().replace(/^\+/, '') : ''}`, crit ? 'crit' : att.side === 'party' ? 'hit' : 'bad');
     if (extra && !tgt.dead) { const e = roll(extra.dmg); this.say(`…plus ${e} ${extra.type}.`); this.damage(tgt, e, extra.type, att); }
@@ -475,7 +475,7 @@ export class Combat {
       case 'auto': {
         const n = S.darts + up;
         let tot = 0; const hitN = new Set(); let slain = 0;
-        for (let i = 0; i < n; i++) { const tg = pickT(); if (!tg) break; const d = roll(S.dmg); this.say(`A glowing dart strikes ${tg.name} for ${d}.`, 'spell'); this.emit({ type: 'hit', att: c, tgt: tg, dmg: d }); this.damage(tg, d, S.type, c); tot += d; hitN.add(tg.name); if (tg.hp <= 0) slain++; }
+        for (let i = 0; i < n; i++) { const tg = pickT(); if (!tg) break; const d = roll(S.dmg); this.say(`A glowing dart strikes ${tg.name} for ${d}.`, 'spell'); this.emit({ type: 'hit', att: c, tgt: tg, dmg: d, dtype: S.type, spell: key }); this.damage(tg, d, S.type, c); tot += d; hitN.add(tg.name); if (tg.hp <= 0) slain++; }
         this.caption(narr(S.type, { a: c.name, t: [...hitN].join(' and ') || 'the foe', w: S.name }), `${n} darts · ${tot} ${S.type} damage${slain ? ` · ${slain} slain` : ''}`, 'spell');
         break;
       }
@@ -487,7 +487,7 @@ export class Combat {
           if (S.humanoidOnly && m.T.type !== 'humanoid') { this.say(`${m.name} is not a humanoid — no effect.`, 'dim'); continue; }
           const ok = this.save(m, S.save, dc);
           if (ok) saved++;
-          if (S.dmg) { let d = rollD(dmgExpr(S.dmg)) + affinity; if (ok) d = S.half ? Math.floor(d / 2) : 0; if (S.cond && !ok && m.hp > d) { m.conditions[S.cond] = { dc, src: c.id }; held++; } this.say(`${m.name} ${ok ? 'saves' : 'fails'}: ${d} ${S.type}.`, 'spell'); if (d) { this.emit({ type: 'hit', att: c, tgt: m, dmg: d }); this.damage(m, d, S.type, c); tot += d; if (m.hp <= 0) slain++; } }
+          if (S.dmg) { let d = rollD(dmgExpr(S.dmg)) + affinity; if (ok) d = S.half ? Math.floor(d / 2) : 0; if (S.cond && !ok && m.hp > d) { m.conditions[S.cond] = { dc, src: c.id }; held++; } this.say(`${m.name} ${ok ? 'saves' : 'fails'}: ${d} ${S.type}.`, 'spell'); if (d) { this.emit({ type: 'hit', att: c, tgt: m, dmg: d, dtype: S.type, spell: key }); this.damage(m, d, S.type, c); tot += d; if (m.hp <= 0) slain++; } }
           else if (S.cond && !ok) { m.conditions[S.cond] = { dc, src: c.id }; held++; this.say(`${m.name} is ${S.cond}!`, 'spell'); }
           else if (S.cond) this.say(`${m.name} resists.`, 'dim');
         }
