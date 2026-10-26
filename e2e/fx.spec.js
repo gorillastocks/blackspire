@@ -30,6 +30,12 @@ test('combat animations: projectiles, impacts, death, floaters — no errors, ac
   const during = await busy;
   await page.evaluate((id) => window.__gw.R.monsterDie(id), ids[0]);
   await page.waitForTimeout(800); await shot('dissolve');
+  // weapon strikes, caught mid-swing (slowed down for the camera)
+  for (const k of ['sword', 'dagger', 'bow', 'crossbow', 'axe', 'mace', 'spear', 'fist']) {
+    await page.evaluate(([k, id]) => { window.__gw.R.weaponStrike(k, id, false, 1400, 0); }, [k, ids[1]]);
+    await page.waitForTimeout(['bow', 'crossbow'].includes(k) ? 900 : 700); await shot('weapon-' + k);
+    await page.waitForTimeout(1300);
+  }
   const active = await page.evaluate(() => window.__gw.R.cfx.activeCount);
   expect(active).toBeLessThanOrEqual(96);
   // real fights on Fast with auto-battle: floaters + spell flow, captions still advance

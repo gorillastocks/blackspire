@@ -314,6 +314,10 @@ export class Renderer {
     return this.cfx.projectile(this.partyOrigin(casterIdx), to, look, look.kind === 'ray' ? dur * 0.6 : dur).then(() => true);
   }
   monsterLineCenter() { const p = new THREE.Vector3(); let n = 0; for (const [, v] of this.monsterObjs) if (!v.dead) { p.add(v.holder.position); p.y += v.height * 0.5; n++; } return n ? p.divideScalar(n) : p.set(0, 1.2, -2); }
+  weaponStrike(kind, targetId, crit = false, durMs = 240, casterIdx = 0) {
+    this.cfx.reduceMotion = this.reduceMotion; const to = this.monsterCenter(targetId);
+    return this.cfx.weaponStrike(kind, to, { from: this.partyOrigin(casterIdx), crit, durMs, size: Math.min(3.2, Math.max(1.4, (this.monsterObjs.get(targetId)?.height || 1.6) * 1.25)) });
+  }
   partyHit(crit) { if (this.reduceMotion) return; this.aBump = 0.22; if (crit) this.aShake = 0.4; }
   spellFx(color = 0xff7020, targetId = null) {
     const v = targetId && this.monsterObjs.get(targetId);

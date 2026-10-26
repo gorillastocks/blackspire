@@ -6,9 +6,9 @@ import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
 import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
 import * as SC from './rules/spellcasting.js';
-import { SPELL_FX, TYPE_COLOR } from './render/fx.js';
+import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
-import { sfx, setMuted } from './sfx.js';
+import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience } from './audio.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 
@@ -710,30 +710,35 @@ async function combatLoop() {
 async function flushCombat() {
   const { log: lines, events } = combat.drain();
   for (const l of lines) log(l.t, l.cls);
-  syncFxSettings(); let pending = null;
+  syncFxSettings(); let pending = null; const wpn = new Map();
+  const dmgSfx = (e, sp) => sfx(sp === 'magicMissile' ? 'ping' : SPELL_SFX[e.dtype] || (sp ? 'arcane' : 'hit'));
   const idx = (c) => Math.max(0, S.party.indexOf(c));
   const fxDur = () => Math.round(420 * Math.max(0.4, speed().f));
   for (const e of events) {
     if (!combat || !S) return;
     if (e.type === 'caption') { pending = null; renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0); if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
     if (e.type === 'monsterAttack') { pending = null; R.monsterAttack(e.who.id); sfx('swing'); await wait(380); }
-    else if (e.type === 'partyAttack') { pending = null; sfx('swing'); await wait(150); }
+    else if (e.type === 'partyAttack') { pending = null; const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait(k === 'bow' || k === 'crossbow' ? 60 : 150); }
     else if (e.type === 'hit' && e.tgt.side === 'monster') {
       const sp = pending && pending.who === e.att ? pending.spell : null;
       if (sp && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur());
-      R.monsterHit(e.tgt.id, e.crit, e.dtype || 'slashing', !sp); floater(e.tgt.id, e.dmg, e.crit, e.dtype); sfx(e.crit ? 'crit' : 'hit'); await wait(sp ? 160 : 260);
+      const wk = !sp && e.att.side === 'party' ? wpn.get(e.att) : null;
+      if (wk) await R.weaponStrike(wk, e.tgt.id, e.crit, fxDur() * 0.6, idx(e.att));
+      R.monsterHit(e.tgt.id, e.crit, e.dtype || 'slashing', !sp && !wk); floater(e.tgt.id, e.dmg, e.crit, e.dtype);
+      if (sp) dmgSfx(e, sp); else sfx(WEAPON_SFX[wk] && wk !== 'bow' && wk !== 'crossbow' ? WEAPON_SFX[wk] : e.dtype === 'bludgeoning' ? 'thud' : e.dtype === 'piercing' ? 'stab' : SPELL_SFX[e.dtype] || 'slash');
+      if (e.crit) sfx('crit'); await wait(sp ? 160 : wk ? 200 : 260);
     }
-    else if (e.type === 'miss') { const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else cardFloat(e.tgt, 'Miss'); await wait(160); }
-    else if (e.type === 'partyHurt') { renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); sfx('hurt'); await wait(260); }
-    else if (e.type === 'kill') { R.monsterDie(e.who.id); sfx('kill'); say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(300); }
+    else if (e.type === 'miss') { const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else cardFloat(e.tgt, 'Miss'); sfx('miss'); await wait(160); }
+    else if (e.type === 'partyHurt') { renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); sfx('mhit'); if (e.crit) sfx('crit'); await wait(260); }
+    else if (e.type === 'kill') { if (e.who.side === 'party') sfx('kill'); else { R.monsterDie(e.who.id); sfx('mdeath'); } say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(300); }
     else if (e.type === 'crit') { if (e.att.side === 'party') say(banter(S.party, 'crit', { who: e.att }, 0.8)); else say(banter(S.party, 'enemyCrit', { who: e.tgt }, 0.8)); }
     else if (e.type === 'spell') {
-      sfx('spell'); const look = SPELL_FX[e.spell];
+      const look = SPELL_FX[e.spell]; sfx(look?.kind === 'area' ? (/fire|burn|breath/.test(e.spell) ? 'fire' : /ice/.test(e.spell) ? 'cold' : 'boom') : e.spell === 'magicMissile' ? 'ping' : /fire|flame/i.test(e.spell) ? 'fire' : /frost|ice/i.test(e.spell) ? 'cold' : /lightning|shock/i.test(e.spell) ? 'zap' : /sacred|guiding|bless|smite/i.test(e.spell) ? 'radiant' : 'arcane');
       if (look?.kind === 'area' && e.who.side !== 'monster') { pending = { spell: e.spell, who: e.who }; await R.spellCast(e.spell, null, idx(e.who), fxDur()); }
       else if (look && e.who.side !== 'monster') pending = { spell: e.spell, who: e.who };
       else { pending = null; const col = { sleep: 0x80a0ff, spiritGuardians: 0xffe080, smite: 0xfff0a0, rage: 0xff3020, shield: 0x80c0ff }[e.spell] || 0x60ffb0; R.spellFx(col, null); await wait(300); }
     }
-    else if (e.type === 'heal') { healFx(e.who); cardFloat(e.who, e.amt ? '+' + e.amt : '+', false, 'good'); sfx('heal'); }
+    else if (e.type === 'heal') { healFx(e.who); cardFloat(e.who, e.amt ? '+' + e.amt : '+', false, 'good'); sfx('chime'); }
     else if (e.type === 'down') { say(banter(S.party.filter((p) => p !== e.who), 'down', { p: e.who.name }, 0.9)); await wait(200); }
     else if (e.type === 'lowHp') say(banter(S.party, 'lowHp', { who: e.who }, 0.35));
     renderParty(); renderTargets();
@@ -912,7 +917,7 @@ async function boot() {
   log('Loading the 3D engine…', 'dim');
   const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
   R = new Renderer($('#view')); R.onResize = () => { if (combat) { replaceOverlays(); renderTargets(); } else if ($('#caption').classList.contains('show')) replaceOverlays(); };
-  window.__gw = {
+  window.__gw = { sfx, SFX_NAMES, applyAudioSettings,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
     showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
@@ -983,7 +988,8 @@ function openMenu(view = 'main', custom = null) {
     body = [h('h2', {}, '⚙ Settings'),
       h('h3', {}, 'Audio'),
       h('div', { class: 'menu' }, btn(`🔊 Sound: ${st.sound ? 'On' : 'Off (all muted)'}`, () => { st.sound = !st.sound; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-sound' })),
-      slider('music', '🎵 Music'), slider('sfx', '💥 Sound effects'), slider('amb', '🌫 Ambience'),
+      h('div', { class: 'menu' }, btn(`💥 Sound effects: ${st.sfxOn !== false ? 'On' : 'Off'}`, () => { st.sfxOn = st.sfxOn === false; saveSettings(st); applyAudioSettings(st); if (st.sfxOn) sfx('slash'); openMenu('settings'); }, { id: 'set-sfx' })),
+      slider('music', '🎵 Music'), slider('sfx', '💥 Sound effects volume'), slider('amb', '🌫 Ambience'),
       h('h3', {}, 'Battle speed'),
       h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'pause') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'pause') === k) }))),
       h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action.'),
@@ -1027,7 +1033,7 @@ const DIFF_HELP = { story: 'Story: monsters have 70% HP and deal 60% damage.', n
 
 /* ---------- Audio: music + ambience follow the game ---------- */
 let victoryUntil = 0;
-function applyAudioSettings(st = loadSettings()) { setMuted(!st.sound); setVolumes({ music: st.music, sfx: st.sfx, amb: st.amb }); }
+function applyAudioSettings(st = loadSettings()) { setMuted(!st.sound); setSfxOn(st.sfxOn !== false); setVolumes({ music: st.music, sfx: st.sfx, amb: st.amb }); }
 function syncAudio() {
   const amb = !S ? null : S.mode === 'dungeon' ? 'dungeon' : 'town';
   ambience(amb);

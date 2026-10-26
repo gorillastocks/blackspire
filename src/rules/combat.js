@@ -332,7 +332,7 @@ export class Combat {
             const allyEngaged = this.frontRow().some((p) => p !== c);
             if ((adv && !dis) || (allyEngaged && !dis)) sneak = sneakDice(c);
           }
-          this.emit({ type: 'partyAttack', who: c, tgt: tg });
+          this.emit({ type: 'partyAttack', who: c, tgt: tg, weapon: c.equip[slot]?.base || 'unarmed', ranged });
           const res = this.weaponHit(c, tg, w, { ranged, sneak, smite: id === 'smite' || opts.smite });
           if (res.hit && sneak) t.sneakUsed = true;
           if (this.checkEnd()) return;
@@ -346,7 +346,7 @@ export class Combat {
         for (let i = 0; i < n; i++) {
           const tg = enemy(); if (!tg) break;
           const w = id === 'frenzy' ? weaponStats(c, 'weapon') : unarmedStats(c);
-          this.emit({ type: 'partyAttack', who: c, tgt: tg });
+          this.emit({ type: 'partyAttack', who: c, tgt: tg, weapon: id === 'frenzy' ? c.equip.weapon?.base || 'unarmed' : 'unarmed', ranged: false });
           const r = this.weaponHit(c, tg, w, { ranged: false });
           if (r.hit && id === 'flurry' && c.level >= 3 && tg.hp > 0 && !this.save(tg, 'dex', 8 + prof(c) + abilityMod(c, 'wis'))) { tg.conditions.prone = true; this.say(`Open Hand Technique: ${tg.name} is knocked prone!`, 'spell'); }
           if (this.checkEnd()) return;
