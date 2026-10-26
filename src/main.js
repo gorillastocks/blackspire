@@ -626,18 +626,18 @@ function eatNextClick() {
   setTimeout(() => { for (const t of types) window.removeEventListener(t, eat, { capture: true }); }, 450);
 }
 let tapPending = null; // resolver of the caption currently waiting for a tap (pause mode)
-function tapToContinue(alive = () => combat && speed().hold === 0) {
+function tapToContinue(alive = () => combat && speed().hold === 0, guard = 220) {
   return new Promise((resolve) => {
-    tapCatch.className = ''; let done = false; const t0 = performance.now();
+    tapCatch.className = ''; let done = false; const t0 = performance.now(), shown = capShownAt;
     const fin = (ev) => {
       if (done) return;
       if (ev && ev.type === 'keydown' && ![' ', 'Enter'].includes(ev.key)) return;
-      if (ev && performance.now() - t0 < 220) return; // the 2nd half of a double tap must not skip the next caption unread
+      if (ev && performance.now() - t0 < guard) return; // the 2nd half of a double tap must not skip the next caption unread
       if (ev && (ev.target === tapCatch || ev.type === 'keydown')) { ev.preventDefault(); ev.stopPropagation(); }
       if (ev && ev.type === 'pointerdown') eatNextClick(); // the tap that dismissed the caption must not also press what's under it
-      done = true; tapPending = null; tapCatch.className = 'hidden';
+      done = true; if (tapPending === fin) { tapPending = null; tapCatch.className = 'hidden'; } // a newer waiter (e.g. the loot card) keeps its catcher
       tapCatch.removeEventListener('pointerdown', fin); window.removeEventListener('pointerdown', fin, true); window.removeEventListener('keydown', fin, true); clearInterval(iv);
-      hideCaption(); // a tapped caption goes away (otherwise its stale "Tap to continue" would linger and keep the phone menu collapsed)
+      if (capShownAt === shown) hideCaption(); // a tapped caption goes away (but never a newer card, e.g. the victory loot, that replaced it) (otherwise its stale "Tap to continue" would linger and keep the phone menu collapsed)
       resolve();
     };
     tapPending = fin;
@@ -658,7 +658,7 @@ async function pumpMessages() {
       el.className = `show msg ${m.cls === 'loot' ? 'loot crit' : m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = ''; capShownAt = performance.now();
       el.append(h('div', { class: 'captxt' }, m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l) => h('div', {}, l))) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
       placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 400);
-      await tapToContinue(() => true);
+      await tapToContinue(() => true, m.cls === 'loot' ? 1000 : 220); // a stray tap from the last fight can't skip the victory card unread
       if (m.quip) say(m.quip); // a companion reacts once the card is read
     }
   } finally { msgRunning = null; document.body.classList.remove('msgup'); }
@@ -725,7 +725,7 @@ async function flushCombat() {
     }
     else if (e.type === 'miss') { const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else cardFloat(e.tgt, 'Miss'); await wait(160); }
     else if (e.type === 'partyHurt') { renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); sfx('hurt'); await wait(260); }
-    else if (e.type === 'kill') { R.monsterDie(e.who.id); sfx('kill'); say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(combat.monsters?.every?.((m) => m.hp <= 0 || m.dead) ? 900 : 300); }
+    else if (e.type === 'kill') { R.monsterDie(e.who.id); sfx('kill'); say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(300); }
     else if (e.type === 'crit') { if (e.att.side === 'party') say(banter(S.party, 'crit', { who: e.att }, 0.8)); else say(banter(S.party, 'enemyCrit', { who: e.tgt }, 0.8)); }
     else if (e.type === 'spell') {
       sfx('spell'); const look = SPELL_FX[e.spell];

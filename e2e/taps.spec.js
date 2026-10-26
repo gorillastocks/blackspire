@@ -40,7 +40,7 @@ test('pause mode: many rat fights with fast, double and mistimed taps always fin
         const b = page.locator('.combatmenu button', { hasText: rnd() < 0.5 ? 'Attack' : 'Auto-battle' }).first();
         if (await b.isVisible()) { if (touch) await b.tap().catch(() => {}); else await b.click().catch(() => {}); if (rnd() < 0.3) await tapAt(page, x, y, touch); }
         const pick = page.locator('.mtag.pick').first(); if (await pick.isVisible().catch(() => false)) await pick.click({ force: true }).catch(() => {});
-        const m1 = page.locator('#cmenu .combatmenu button').first(); if (await page.locator('#cmenu .who', { hasText: /target|Which/i }).isVisible().catch(() => false)) await m1.click().catch(() => {});
+        const m1 = page.locator('#cmenu .combatmenu button').first(); if (await page.locator('#cmenu .who', { hasText: /target|Which|ally/i }).isVisible().catch(() => false)) await m1.click().catch(() => {});
       } else await page.waitForTimeout(120);
       // whenever it's the player's turn the menu must be really visible (not collapsed under a stale caption)
       if (await page.evaluate(() => !!document.querySelector('#cmenu .combatmenu') && !document.querySelector('#caption.show'))) {
