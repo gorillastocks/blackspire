@@ -12,6 +12,13 @@ import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience } from './audio.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
+// After a redeploy, an old tab's lazy chunks 404: reload once to pick up the new build.
+window.addEventListener('vite:preloadError', (e) => {
+  try { if (sessionStorage.getItem('gw-chunk-reload')) return; sessionStorage.setItem('gw-chunk-reload', '1'); } catch { return; }
+  e.preventDefault(); location.reload();
+});
+window.addEventListener('load', () => setTimeout(() => { try { sessionStorage.removeItem('gw-chunk-reload'); } catch {} }, 10000));
+
 
 const $ = (s) => document.querySelector(s);
 const INFO = new WeakMap(); // element → () => [title, ...lines] for press-and-hold info popups
