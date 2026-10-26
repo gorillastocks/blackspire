@@ -1,6 +1,6 @@
 // Three.js renderer: neon-wireframe-era dungeon in modern PBR 3D, plus a combat arena with animated glTF monsters.
-import { ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, TorusGeometry, Vector2, Vector3, WebGLRenderer } from 'three';
-const THREE = { ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, TorusGeometry, Vector2, Vector3, WebGLRenderer };
+import { ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, TorusGeometry, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, HalfFloatType } from 'three';
+const THREE = { WebGLRenderTarget, HalfFloatType, ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, TorusGeometry, Vector2, Vector3, WebGLRenderer };
 // three.js addons are lazy-loaded (separate chunks) so the first paint only needs three core.
 let SkeletonUtils = null;
 let loaderP = null;
@@ -58,7 +58,7 @@ export class Renderer {
     this.torch = new THREE.PointLight(0xffb36b, 30, 14, 1.6); this.torch.position.set(0.25, 0.2, 0.1); this.camera.add(this.torch);
     this.scene.add(new THREE.HemisphereLight(0x6c7cff, 0x221122, 0.35));
     this.levelGroup = new THREE.Group(); this.scene.add(this.levelGroup);
-    this.wallMat = new THREE.MeshStandardMaterial({ map: stoneTex(), roughness: 0.85, metalness: 0.05 });
+    this.wallMat = new THREE.MeshStandardMaterial({ map: stoneTex(), roughness: 0.85, metalness: 0.05, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
     this.floorMat = new THREE.MeshStandardMaterial({ map: floorTex(), roughness: 0.7, metalness: 0.1 });
     this.ceilMat = new THREE.MeshStandardMaterial({ map: stoneTex(), roughness: 0.95, color: 0x5a5470 });
     this.dust = this.makeDust(); this.scene.add(this.dust);
@@ -80,7 +80,7 @@ export class Renderer {
       import('three/examples/jsm/environments/RoomEnvironment.js')]);
     const r = this.renderer; const pm = new THREE.PMREMGenerator(r); this.envTex = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose();
     this.scene.environment = this.envTex; this.arena.environment = this.envTex;
-    const c = new EffectComposer(r);
+    const c = new EffectComposer(r, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
     this.renderPass = new RenderPass(this.scene, this.camera); c.addPass(this.renderPass);
     this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.65, 0.45, 0.85); c.addPass(this.bloom);
     c.addPass(new OutputPass()); this.composer = c; this.setMode(this.mode); this.resize();
@@ -104,7 +104,7 @@ export class Renderer {
     const grp = this.levelGroup; grp.clear(); this.torches = []; this.animated = [];
     const color = new THREE.Color(def.color);
     this.scene.fog = new THREE.FogExp2(def.fog, 0.075); this.scene.background = new THREE.Color(def.fog);
-    this.edgeMat = new THREE.LineBasicMaterial({ color: color.clone().multiplyScalar(1.6), toneMapped: false, transparent: true, opacity: 0.85 });
+    this.edgeMat = new THREE.LineBasicMaterial({ color: color.clone().multiplyScalar(0.8), toneMapped: false, fog: false }); // steady: opaque, no fog fade, kept under the bloom threshold so it doesn't pump
     const walls = [];
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const ch = tileFn(x, y);
@@ -117,7 +117,7 @@ export class Renderer {
     const box = new THREE.BoxGeometry(CELL, WALL_H, CELL);
     const inst = new THREE.InstancedMesh(box, this.wallMat, walls.length); const m = new THREE.Matrix4();
     const edgePos = []; const eg = new THREE.EdgesGeometry(box); const ea = eg.attributes.position.array;
-    walls.forEach(([x, y], i) => { m.makeTranslation(x * CELL, WALL_H / 2, y * CELL); inst.setMatrixAt(i, m); for (let k = 0; k < ea.length; k += 3) edgePos.push(ea[k] * 0.999 + x * CELL, ea[k + 1] + WALL_H / 2, ea[k + 2] * 0.999 + y * CELL); });
+    walls.forEach(([x, y], i) => { m.makeTranslation(x * CELL, WALL_H / 2, y * CELL); inst.setMatrixAt(i, m); for (let k = 0; k < ea.length; k += 3) edgePos.push(ea[k] * 1.004 + x * CELL, ea[k + 1] * 1.002 + WALL_H / 2, ea[k + 2] * 1.004 + y * CELL); });
     grp.add(inst);
     const eGeo = new THREE.BufferGeometry(); eGeo.setAttribute('position', new THREE.Float32BufferAttribute(edgePos, 3)); grp.add(new THREE.LineSegments(eGeo, this.edgeMat));
     // floor & ceiling with neon grid
@@ -138,7 +138,7 @@ export class Renderer {
       if (ch === 'D' || ch === 'd' || ch === 'L') {
         const ns = tileFn(x, y - 1) !== '#' && tileFn(x, y + 1) !== '#'; // corridor runs N-S -> door spans E-W
         const g = new THREE.Group(); add(g);
-        const frameMat = glow(ch === 'L' ? 0xff3050 : def.color, 1.5);
+        const frameMat = glow(ch === 'L' ? 0xff3050 : def.color, ch === 'L' ? 0.6 : 0.5);
         const postG = new THREE.BoxGeometry(0.12, WALL_H, 0.25);
         const p1 = new THREE.Mesh(postG, frameMat); p1.position.set(-CELL / 2 + 0.06, WALL_H / 2, 0); g.add(p1);
         const p2 = p1.clone(); p2.position.x = CELL / 2 - 0.06; g.add(p2);
