@@ -43,6 +43,7 @@ test('smoke: title → create → town → dungeon → combat → sheet, no cons
   expect(await page.evaluate(() => window.__caps.length), 'narration captions shown').toBeGreaterThan(0);
   await page.waitForTimeout(1000); await shot('06-after-combat');
   await page.evaluate(() => { const m = document.querySelector('#modal'); m.className = 'hidden'; });
+  await expect(page.locator('#caption.show.loot')).toBeVisible(); await page.keyboard.press('Enter'); await expect(page.locator('#caption.show')).toHaveCount(0); // victory loot card
   await page.keyboard.press('i'); await page.waitForTimeout(300);
   await page.click('.tabs button >> nth=3'); await page.waitForTimeout(400); await shot('07-sheet');
   await page.keyboard.press('Escape');
