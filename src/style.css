@@ -332,3 +332,16 @@ body.msgup #modal:not(.combat):not(.transparent) { background: #05030b; } body.m
 .card { position: relative; } .sparkle { position: absolute; pointer-events: none; color: #b8ffd8; font-size: 14px; text-shadow: 0 0 6px #6dffa8; animation: sparkle 1s ease-out forwards; opacity: 0; }
 @keyframes sparkle { 0% { opacity: 0; transform: translateY(0) scale(.5); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px) scale(1.2); } }
 body.reducemotion .card.hurt { animation: none; } body.reducemotion .sparkle { animation-duration: .01s; }
+
+/* phone portrait exploring: the 3D view takes the slack; party, log and both button rows are sized to content.
+   The two control rows never shrink or get covered; the log is capped and scrolls. #app already pads the safe area. */
+@media (max-width: 760px) and (orientation: portrait) {
+  body:not(.incombat) #app { grid-template-rows: minmax(90px, 1fr) auto auto; }
+  body:not(.incombat) #side { max-height: 34dvh; }
+  body:not(.incombat) #bottom { grid-row: 3; grid-template-rows: auto auto; }
+  body:not(.incombat) #log { min-height: 0; height: clamp(40px, 12dvh, 120px); }
+  #controls { padding-bottom: 6px; }
+  body.incombat #cmenu { padding-bottom: 6px; }
+}
+/* every layout: the control rows are laid out at their full height, never squeezed by the log */
+#controls { min-height: max-content; }
