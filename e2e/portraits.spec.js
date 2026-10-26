@@ -22,6 +22,8 @@ test('portraits: picker in creation, party panel, sheet change, companions + old
   const ps = await page.evaluate(() => window.__gw.state.party.map((c) => c.portrait));
   expect(ps[0]).toBe(5); for (const p of ps) expect(Number.isInteger(p)).toBe(true);
   await expect(page.locator('#party img.cport')).toHaveCount(ps.length);
+  // painted webp portraits must actually load
+  await page.waitForFunction(() => [...document.querySelectorAll('#party img.cport')].every((i) => i.complete && i.naturalWidth > 0));
   // party cards: portrait + name + AI toggle all inside the card
   const bad = await page.evaluate(() => [...document.querySelectorAll('#party .card')].flatMap((c) => { const r = c.getBoundingClientRect(); return [...c.querySelectorAll('.cport, .aitog, .tag')].filter((e) => { const q = e.getBoundingClientRect(); return q.left < r.left - 0.5 || q.right > r.right + 0.5; }).map((e) => c.id + ' ' + e.className); }));
   expect(bad).toEqual([]);
