@@ -6,6 +6,7 @@ import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
 import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
 import * as SC from './rules/spellcasting.js';
+import { SPELL_FX, TYPE_COLOR } from './render/fx.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience } from './audio.js';
@@ -113,7 +114,13 @@ function handle(events) {
   }
   refresh();
 }
-function flashRed() { const f = $('#flash'); f.style.opacity = 1; setTimeout(() => (f.style.opacity = 0), 250); }
+function flashRed(crit = false) { const f = $('#flash'); f.classList.toggle('crit', !!crit); f.style.opacity = 1; setTimeout(() => (f.style.opacity = 0), crit ? 380 : 250); }
+function reduceMotion() { const st = loadSettings(); return st.reduceMotion ?? (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false); }
+function syncFxSettings() { if (!R) return; R.speedF = speed().f; R.reduceMotion = reduceMotion(); document.body.classList.toggle('reducemotion', R.reduceMotion); }
+function healFx(c) { const el = document.getElementById('card-' + c.id); if (!el) return; el.classList.remove('healed'); void el.offsetWidth; el.classList.add('healed');
+  for (let i = 0; i < 8; i++) { const sp = h('span', { class: 'sparkle', style: `left:${8 + Math.random() * 84}%;top:${30 + Math.random() * 60}%;animation-delay:${(Math.random() * 0.35).toFixed(2)}s` }, '✦'); el.append(sp); setTimeout(() => sp.remove(), 1300); }
+  setTimeout(() => el.classList.remove('healed'), 1200); }
+const DTYPE_CSS = (t) => { const c = TYPE_COLOR[t]; return c && !['slashing', 'piercing', 'bludgeoning'].includes(t) ? '#' + c.toString(16).padStart(6, '0') : null; };
 
 /* ---------- Party panel ---------- */
 function portrait(c) {
@@ -703,25 +710,37 @@ async function combatLoop() {
 async function flushCombat() {
   const { log: lines, events } = combat.drain();
   for (const l of lines) log(l.t, l.cls);
+  syncFxSettings(); let pending = null;
+  const idx = (c) => Math.max(0, S.party.indexOf(c));
+  const fxDur = () => Math.round(420 * Math.max(0.4, speed().f));
   for (const e of events) {
     if (!combat || !S) return;
-    if (e.type === 'caption') { renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0); if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
-    if (e.type === 'monsterAttack') { R.monsterAttack(e.who.id); sfx('swing'); await wait(380); }
-    else if (e.type === 'partyAttack') { sfx('swing'); await wait(150); }
-    else if (e.type === 'hit' && e.tgt.side === 'monster') { R.monsterHit(e.tgt.id, e.crit); floater(e.tgt.id, e.dmg, e.crit); sfx(e.crit ? 'crit' : 'hit'); await wait(260); }
-    else if (e.type === 'miss') { if (e.tgt.side === 'monster') floater(e.tgt.id, 'miss'); else cardFloat(e.tgt, 'miss'); await wait(160); }
-    else if (e.type === 'partyHurt') { const el = document.getElementById('card-' + e.who.id); renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.dmg, e.crit); flashRed(); sfx('hurt'); void el; await wait(260); }
-    else if (e.type === 'kill') { R.monsterDie(e.who.id); sfx('kill'); say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(300); }
+    if (e.type === 'caption') { pending = null; renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0); if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
+    if (e.type === 'monsterAttack') { pending = null; R.monsterAttack(e.who.id); sfx('swing'); await wait(380); }
+    else if (e.type === 'partyAttack') { pending = null; sfx('swing'); await wait(150); }
+    else if (e.type === 'hit' && e.tgt.side === 'monster') {
+      const sp = pending && pending.who === e.att ? pending.spell : null;
+      if (sp && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur());
+      R.monsterHit(e.tgt.id, e.crit, e.dtype || 'slashing', !sp); floater(e.tgt.id, e.dmg, e.crit, e.dtype); sfx(e.crit ? 'crit' : 'hit'); await wait(sp ? 160 : 260);
+    }
+    else if (e.type === 'miss') { const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else cardFloat(e.tgt, 'Miss'); await wait(160); }
+    else if (e.type === 'partyHurt') { renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); sfx('hurt'); await wait(260); }
+    else if (e.type === 'kill') { R.monsterDie(e.who.id); sfx('kill'); say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(combat.monsters?.every?.((m) => m.hp <= 0 || m.dead) ? 900 : 300); }
     else if (e.type === 'crit') { if (e.att.side === 'party') say(banter(S.party, 'crit', { who: e.att }, 0.8)); else say(banter(S.party, 'enemyCrit', { who: e.tgt }, 0.8)); }
-    else if (e.type === 'spell') { const col = { fireball: 0xff6020, burningHands: 0xff8030, fireBolt: 0xff5020, magicMissile: 0xa060ff, sleep: 0x80a0ff, sacredFlame: 0xfff080, guidingBolt: 0xfff0a0, scorchingRay: 0xff4020, lightningBolt: 0x80d0ff, rayOfFrost: 0x80f0ff, thunderwave: 0x60a0ff, spiritGuardians: 0xffe080, breath: 0xff4000 }[e.spell] || 0x60ffb0; R.spellFx(col, null); sfx('spell'); await wait(300); }
-    else if (e.type === 'heal') { cardFloat(e.who, '+', false, 'good'); sfx('heal'); }
+    else if (e.type === 'spell') {
+      sfx('spell'); const look = SPELL_FX[e.spell];
+      if (look?.kind === 'area' && e.who.side !== 'monster') { pending = { spell: e.spell, who: e.who }; await R.spellCast(e.spell, null, idx(e.who), fxDur()); }
+      else if (look && e.who.side !== 'monster') pending = { spell: e.spell, who: e.who };
+      else { pending = null; const col = { sleep: 0x80a0ff, spiritGuardians: 0xffe080, smite: 0xfff0a0, rage: 0xff3020, shield: 0x80c0ff }[e.spell] || 0x60ffb0; R.spellFx(col, null); await wait(300); }
+    }
+    else if (e.type === 'heal') { healFx(e.who); cardFloat(e.who, e.amt ? '+' + e.amt : '+', false, 'good'); sfx('heal'); }
     else if (e.type === 'down') { say(banter(S.party.filter((p) => p !== e.who), 'down', { p: e.who.name }, 0.9)); await wait(200); }
     else if (e.type === 'lowHp') say(banter(S.party, 'lowHp', { who: e.who }, 0.35));
     renderParty(); renderTargets();
   }
 }
-function floater(id, v, crit) { const p = R.screenPos(id); if (!p) return; const el = h('div', { class: 'floater' + (crit ? ' crit' : ''), style: `left:${p.x}%;top:${p.y}%;color:${v === 'miss' ? '#aaa' : crit ? '' : '#fff'}` }, String(v)); $('#floaters').append(el); setTimeout(() => el.remove(), 1100); }
-function cardFloat(c, v, crit, cls = 'bad') { const el = document.getElementById('card-' + c.id); if (!el) return; const f = h('div', { class: 'floater', style: `left:70%;top:0;font-size:18px;color:${cls === 'good' ? '#6dffa8' : v === 'miss' ? '#aaa' : '#ff5a6e'}` }, String(v)); el.append(f); setTimeout(() => f.remove(), 1100); }
+function floater(id, v, crit, dtype) { const p = R.screenPos(id); if (!p) return; const miss = v === 'Miss'; const el = h('div', { class: 'floater' + (crit ? ' crit' : '') + (miss ? ' miss' : ''), 'data-dtype': dtype || '', style: `left:${p.x}%;top:${p.y}%;color:${miss ? '#bbb' : crit ? '' : DTYPE_CSS(dtype) || '#fff'}` }, ...(crit ? [h('small', {}, 'CRIT '), String(v)] : [String(v)])); $('#floaters').append(el); setTimeout(() => el.remove(), 1100); }
+function cardFloat(c, v, crit, cls = 'bad', dtype = null) { const el = document.getElementById('card-' + c.id); if (!el) return; const f = h('div', { class: 'floater' + (crit ? ' crit' : '') + (v === 'Miss' ? ' miss' : ''), style: `left:70%;top:0;font-size:${crit ? 24 : 18}px;color:${cls === 'good' ? '#6dffa8' : v === 'Miss' ? '#bbb' : DTYPE_CSS(dtype) || '#ff5a6e'}` }, crit ? 'CRIT ' + v : String(v)); el.append(f); setTimeout(() => f.remove(), 1100); }
 let targetPick = null;
 function renderTargets() {
   const el = $('#targets'); el.innerHTML = ''; if (!combat || combat.state !== 'running') return;
@@ -972,7 +991,8 @@ function openMenu(view = 'main', custom = null) {
       S ? h('div', { class: 'seg', role: 'radiogroup' }, Object.keys(DIFFICULTY).map((k) => btn(DIFF_LABEL[k], () => { S.difficulty = k; if (combat) combat.setDifficulty?.(k); autosave(); log(`Difficulty: ${DIFF_LABEL[k]}.`, 'sys'); openMenu('settings'); }, { class: (S.difficulty || 'normal') === k ? 'on' : '', 'data-diff': k, role: 'radio', 'aria-checked': String((S.difficulty || 'normal') === k) }))) : null,
       S ? h('p', { class: 'hint' }, DIFF_HELP[S.difficulty || 'normal']) : null,
       h('h3', {}, 'Storytelling'),
-      h('div', { class: 'menu' }, btn(`🕯 Area descriptions: ${st.areaDesc !== false ? 'On' : 'Off'}`, () => { st.areaDesc = st.areaDesc === false; saveSettings(st); openMenu('settings'); }, { id: 'set-areadesc' })),
+      h('div', { class: 'menu' }, btn(`🕯 Area descriptions: ${st.areaDesc !== false ? 'On' : 'Off'}`, () => { st.areaDesc = st.areaDesc === false; saveSettings(st); openMenu('settings'); }, { id: 'set-areadesc' }),
+        btn(`🌀 Reduce motion: ${reduceMotion() ? 'On' : 'Off'}`, () => { st.reduceMotion = !reduceMotion(); saveSettings(st); syncFxSettings(); openMenu('settings'); }, { id: 'set-reducemotion' })),
       h('p', { class: 'hint' }, 'A Dungeon Master reads out each new floor, room and town spot the first time you arrive. Off: they only go to the log.'),
       h('h3', {}, 'Help'),
       h('div', { class: 'menu' }, btn('💡 Show the tutorial tips again', () => { st.tutorialDone = false; saveSettings(st); closeMenu(); startTutorial(); }, { id: 'set-tutorial' }),

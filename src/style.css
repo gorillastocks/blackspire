@@ -323,3 +323,12 @@ body.msgup #modal:not(.combat):not(.transparent) { background: #05030b; } body.m
 .spname { font-weight: bold; } .spmeta { color: #ffd34d; } .spdesc { color: #ddd; font-size: 13px; line-height: 1.3; }
 .spellbtns { margin-top: 10px; justify-content: flex-end; flex-wrap: wrap; gap: 6px; position: sticky; bottom: 0; background: #14121c; padding: 6px 0; }
 @media (max-width: 500px) { .spelllist { grid-template-columns: 1fr; } }
+
+/* combat fx */
+#flash.crit { background: radial-gradient(transparent 30%, #ff002acc); }
+.floater.crit { font-size: 34px; } .floater.crit small { font-size: 16px; letter-spacing: 1px; margin-right: 2px; }
+.floater.miss { font-style: italic; font-size: 18px; }
+.card.healed { animation: healglow 1.1s ease-out; } @keyframes healglow { 0% { box-shadow: 0 0 0 0 #6dffa800; } 25% { box-shadow: 0 0 18px 4px #6dffa8cc; background-color: #123a24; } 100% { box-shadow: 0 0 0 0 #6dffa800; } }
+.card { position: relative; } .sparkle { position: absolute; pointer-events: none; color: #b8ffd8; font-size: 14px; text-shadow: 0 0 6px #6dffa8; animation: sparkle 1s ease-out forwards; opacity: 0; }
+@keyframes sparkle { 0% { opacity: 0; transform: translateY(0) scale(.5); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px) scale(1.2); } }
+body.reducemotion .card.hurt { animation: none; } body.reducemotion .sparkle { animation-duration: .01s; }

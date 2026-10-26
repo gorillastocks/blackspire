@@ -1,5 +1,6 @@
 // Three.js renderer: neon-wireframe-era dungeon in modern PBR 3D, plus a combat arena with animated glTF monsters.
 import { ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, TorusGeometry, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, HalfFloatType } from 'three';
+import { FX, SPELL_FX, IMPACT } from './fx.js';
 const THREE = { WebGLRenderTarget, HalfFloatType, ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, TorusGeometry, Vector2, Vector3, WebGLRenderer };
 // three.js addons are lazy-loaded (separate chunks) so the first paint only needs three core.
 let SkeletonUtils = null;
@@ -66,6 +67,7 @@ export class Renderer {
     this.arena = new THREE.Scene(); this.arena.environmentIntensity = 0.6;
     this.arenaCam = new THREE.PerspectiveCamera(50, 1, 0.1, 100); this.arenaCam.position.set(0, 2.1, 5.2); this.arenaCam.lookAt(0, 1.3, -2);
     this.buildArena();
+    this.cfx = new FX(this.arena, this.arenaCam); this.speedF = 1; this.reduceMotion = false; this.aShake = 0; this.aBump = 0;
     // Post-processing
     this.composer = null; this.ready = this.initPost();
     this.mode = 'dungeon'; this.monsterObjs = new Map(); this.fx = [];
@@ -277,15 +279,42 @@ export class Renderer {
       if (shift) { cam.setViewOffset(w, h, 0, (shift / 100) * h, w, h); this.arenaShift = shift; } }
     cam.updateProjectionMatrix();
   }
-  clearMonsters() { for (const [, v] of this.monsterObjs) { this.monsterGroup.remove(v.holder); const i = this.mixers.indexOf(v.mixer); if (i >= 0) this.mixers.splice(i, 1); } this.monsterObjs.clear(); }
+  clearMonsters() { this.cfx?.clear(); for (const [, v] of this.monsterObjs) { this.monsterGroup.remove(v.holder); const i = this.mixers.indexOf(v.mixer); if (i >= 0) this.mixers.splice(i, 1); } this.monsterObjs.clear(); }
   playOnce(id, name, then = 'idle') {
     const v = this.monsterObjs.get(id); if (!v || v.dead && name !== 'death') return; const clip = v.clips[name]; if (!clip) return;
     const a = v.mixer.clipAction(clip); v.mixer.stopAllAction(); a.reset(); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.play();
     if (name !== 'death') { const back = () => { v.mixer.removeEventListener('finished', back); if (!v.dead && v.clips[then]) { v.mixer.stopAllAction(); v.mixer.clipAction(v.clips[then]).reset().play(); } }; v.mixer.addEventListener('finished', back); }
   }
-  monsterAttack(id) { this.playOnce(id, 'attack'); const v = this.monsterObjs.get(id); if (v) v.lunge = 0.4; }
-  monsterHit(id, crit) { const v = this.monsterObjs.get(id); if (!v) return; v.flash = crit ? 0.5 : 0.3; v.flashColor = crit ? 0xffee55 : 0xffffff; if (v.clips.hit && !v.dead) this.playOnce(id, 'hit'); }
-  monsterDie(id) { const v = this.monsterObjs.get(id); if (!v || v.dead) return; v.dead = true; if (v.clips.death) this.playOnce(id, 'death'); v.fade = 1.6; }
+  monsterAttack(id) { const v = this.monsterObjs.get(id); if (!v || v.dead) return; this.playOnce(id, 'attack'); v.lunge = v.lungeT = Math.max(0.25, 0.45 * Math.min(1, this.speedF + 0.3)); }
+  /** Centre of a monster in world space. */
+  monsterCenter(id, out = new THREE.Vector3()) { const v = this.monsterObjs.get(id); if (!v) return out.set(0, 1.2, -2); out.copy(v.holder.position); out.y += v.height * 0.5; return out; }
+  partyOrigin(i = 0) { return new THREE.Vector3(this.arenaCam.position.x + (i % 2 ? 0.5 : -0.5), this.arenaCam.position.y - 0.7, this.arenaCam.position.z - 1.2); }
+  monsterHit(id, crit, dtype = null, weapon = true) {
+    const v = this.monsterObjs.get(id); if (!v) return;
+    v.flash = crit ? 0.35 : 0.18; v.flashColor = crit ? 0xffee55 : 0xffffff;
+    v.stagger = v.staggerT = crit ? 0.45 : 0.32; v.knock = crit ? 0.45 : 0.25;
+    if (v.clips.hit && !v.dead) this.playOnce(id, 'hit');
+    if (weapon && dtype) this.cfx.impact(this.monsterCenter(id), dtype, crit); else if (dtype) this.cfx.burst(this.monsterCenter(id), 0xffffff, crit ? 12 : 6, 1.4, 0.12);
+    if (crit && !this.reduceMotion) this.aShake = 0.35;
+  }
+  monsterDie(id) {
+    const v = this.monsterObjs.get(id); if (!v || v.dead) return; v.dead = true; v.id = id;
+    const f = Math.max(0.45, this.speedF);
+    if (v.clips.death) { this.playOnce(id, 'death'); v.dieT = 0; v.dieDur = 1.5 * f; v.dissolveAt = 0.55; }
+    else { v.dieT = 0; v.dieDur = 1.1 * f; v.dissolveAt = 0.35; v.collapse = true; }
+    for (const m of v.mats) { m.transparent = true; m.needsUpdate = true; }
+    this.cfx.burst(this.monsterCenter(id), 0x9a70ff, 10, 1.2, 0.18);
+  }
+  /** Spell visuals. Returns a promise that resolves when the effect lands (so the UI can sync numbers to it). */
+  spellCast(spell, targetId, casterIdx = 0, dur = 420) {
+    const look = SPELL_FX[spell]; if (!look) return Promise.resolve(false);
+    const to = targetId ? this.monsterCenter(targetId) : this.monsterLineCenter();
+    if (look.kind === 'column') return this.cfx.column(to.clone().setY(0.1), look.color, dur).then(() => true);
+    if (look.kind === 'area') return this.cfx.area(this.monsterLineCenter(), look.color, look.color === 0xff6020 ? 2.6 : 1.8, dur * 1.6).then(() => { if (!this.reduceMotion) this.aShake = Math.max(this.aShake, 0.25); return true; });
+    return this.cfx.projectile(this.partyOrigin(casterIdx), to, look, look.kind === 'ray' ? dur * 0.6 : dur).then(() => true);
+  }
+  monsterLineCenter() { const p = new THREE.Vector3(); let n = 0; for (const [, v] of this.monsterObjs) if (!v.dead) { p.add(v.holder.position); p.y += v.height * 0.5; n++; } return n ? p.divideScalar(n) : p.set(0, 1.2, -2); }
+  partyHit(crit) { if (this.reduceMotion) return; this.aBump = 0.22; if (crit) this.aShake = 0.4; }
   spellFx(color = 0xff7020, targetId = null) {
     const v = targetId && this.monsterObjs.get(targetId);
     const pos = v ? v.holder.position.clone().add(new THREE.Vector3(0, v.height * 0.5, 0)) : new THREE.Vector3(0, 1.2, -2);
@@ -344,10 +373,21 @@ export class Renderer {
       this.sparks.rotation.y += dt * 0.03; this.arenaRing.rotation.z += dt * 0.2;
       this.arenaCam.position.x = Math.sin(t * 0.25) * 0.25; // gentle sway; fitArena leaves margin for it
       this.arenaCam.lookAt(this.arenaLook || new THREE.Vector3(0, 1.3, -2));
+      if (this.aBump > 0) { this.aBump -= dt; this.arenaCam.translateZ(-Math.sin(Math.max(0, this.aBump) / 0.22 * Math.PI) * 0.18); }
+      if (this.aShake > 0) { this.aShake -= dt; const a = Math.max(0, this.aShake) * 0.25; this.arenaCam.rotation.z += (Math.random() - 0.5) * a * 0.5; this.arenaCam.position.x += (Math.random() - 0.5) * a; this.arenaCam.position.y += (Math.random() - 0.5) * a; }
+      this.cfx.update(dt);
       for (const [, v] of this.monsterObjs) {
         if (v.flash > 0) { v.flash -= dt; const k = Math.max(0, v.flash) * 6; for (const m of v.mats) m.emissive.setHex(v.flashColor).multiplyScalar(k * 0.4); if (v.flash <= 0) for (const m of v.mats) m.emissive.copy(m.color).multiplyScalar(0.08); }
-        if (v.lunge > 0) { v.lunge -= dt; v.o.position.z = Math.sin((0.4 - v.lunge) / 0.4 * Math.PI) * 0.6; }
-        if (v.fade !== undefined && v.dead) { v.fade -= dt; if (v.fade < 0.6) { const s = Math.max(0.001, v.fade / 0.6); v.holder.scale.setScalar(s); } }
+        let z = 0, rx = 0;
+        if (v.lunge > 0) { v.lunge -= dt; z += Math.sin((1 - Math.max(0, v.lunge) / v.lungeT) * Math.PI) * 0.9; rx += Math.sin((1 - Math.max(0, v.lunge) / v.lungeT) * Math.PI) * 0.15; }
+        if (v.stagger > 0) { v.stagger -= dt; const k = Math.sin((1 - Math.max(0, v.stagger) / v.staggerT) * Math.PI); z -= k * v.knock; rx -= k * 0.22; }
+        if (v.lunge !== undefined || v.stagger !== undefined) { v.o.position.z = z; v.o.rotation.x = rx; }
+        if (v.dieT !== undefined) {
+          v.dieT += dt; const k = Math.min(1, v.dieT / v.dieDur);
+          if (v.collapse) { const c = Math.min(1, k / 0.45); v.o.rotation.x = -c * c * 1.35; v.o.position.y = (v.o.userData.y0 ??= v.o.position.y) - c * v.height * 0.15; }
+          if (k > v.dissolveAt) { const d = (k - v.dissolveAt) / (1 - v.dissolveAt); for (const m of v.mats) m.opacity = 1 - d; v.holder.position.y -= dt * 0.4; if (!this.reduceMotion && Math.random() < 0.5) this.cfx.spawn({ pos: this.monsterCenter(v.id).add(new THREE.Vector3((Math.random() - 0.5) * 0.8, (Math.random() - 0.3) * v.height * 0.6, 0)), vel: new THREE.Vector3(0, 0.8, 0), life: 0.5, size: 0.14, grow: -0.1, color: 0xa080ff }); }
+          if (k >= 1) { v.holder.visible = false; v.dieT = undefined; }
+        }
       }
       for (const f of this.fx) { f.t += dt; f.m.scale.setScalar(1 + f.t * 8); f.m.material.opacity = Math.max(0, 1 - f.t * 2); f.l.intensity = Math.max(0, 40 * (1 - f.t * 2)); }
       this.fx = this.fx.filter((f) => { if (f.t > 0.6) { this.arena.remove(f.m, f.l); return false; } return true; });
