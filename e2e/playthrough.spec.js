@@ -6,7 +6,7 @@ import { trackErrors, skipPrologue } from './helpers.js';
 // lieutenants, bosses, two-phase finale), then the resulting save is loaded into the UI and the ending is played.
 for (const rnd of [false, true]) for (const [i, difficulty] of ['story', 'normal', 'hard'].entries()) {
   test(`full campaign on ${difficulty}${rnd ? ' with random dungeons' : ''}: every floor, boss and quest, then the ending`, async ({ page }, info) => {
-    test.skip(info.project.name !== 'desktop', 'campaign runs once, on desktop');
+    test.skip(info.project.name !== 'desktop' && !process.env.PT_ALL, 'campaign runs once, on desktop');
     test.setTimeout(240000);
     const errors = trackErrors(page);
     await page.goto('./'); await page.waitForSelector('#btn-new', { timeout: 90000 });
@@ -39,6 +39,7 @@ for (const rnd of [false, true]) for (const [i, difficulty] of ['story', 'normal
     for (const b of await page.locator('[data-npc]').all()) await expect(b).toContainText('✔');
     await page.locator('#modal .backbtn').click(); await page.click('#btn-journal');
     await expect(page.locator('#modal')).toContainText("Elowen's notes (10/10)"); await page.click('#btn-journal-close');
+    expect(await page.evaluate(() => document.body.innerText.match(/\bNaN\b|\bundefined\b|\[object Object\]/g)), 'no NaN/undefined in UI (B5)').toBeNull();
     // stand at the altar on B5 and play the ending
     await page.evaluate(async () => { const s = JSON.parse(window.__gw.G.serialize(window.__gw.state)); const t = window.__gw.G; s.mode = 'dungeon'; s.level = 4;
       for (let y = 0; y < 40; y++) for (let x = 0; x < 40; x++) { try { if (t.tile(s, x, y) === 'A') { s.x = x; s.y = y; } } catch {} }
@@ -47,6 +48,7 @@ for (const rnd of [false, true]) for (const [i, difficulty] of ['story', 'normal
     await expect(page.locator('#modal')).toContainText('sixth seal');
     await page.click('[data-choice="end"]');
     await expect(page.locator('#modal h1')).toHaveText('VICTORY!');
+    expect(await page.evaluate(() => document.body.innerText.match(/\bNaN\b|\bundefined\b|\[object Object\]/g)), 'no NaN/undefined in UI').toBeNull();
     if (i === 1 && !rnd) await page.screenshot({ path: `screenshots/campaign-victory.png` });
     expect(errors).toEqual([]);
   });

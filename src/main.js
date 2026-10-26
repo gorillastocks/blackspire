@@ -915,8 +915,8 @@ async function endCombat() {
   if (st === 'won') { const card = lootCard(ev, info); log(`${card.text} ${card.lines.join(' · ')}`, 'good'); queueMessage(card); } lootBase = null;
   if (info.town) { handle(ev.filter((e) => !e.toTown)); if (st === 'lost') for (const c of S.party) if (!c.dead) c.hp = Math.max(1, c.hp); await messagesDone(); await afterPrologueFight(); return; }
   if (st === 'lost') { handle(ev); return; }
-  R.setMode('dungeon');
   if (info.boss) await rebuild();
+  if (!combat) R.setMode('dungeon'); // a fight that began during the rebuild keeps its arena on screen
   handle(ev);
   if (S.victory && info.boss) log('Gorvax the Tyrant falls! The Blackspire\'s lights go dark. The altar beyond awaits.', 'crit');
   autosave();
