@@ -1,3 +1,4 @@
+import { PORTRAITS, portraitURL, randomPortrait } from './portraits.js';
 import './style.css';
 import * as G from './game/game.js';
 import { SLOT_KEYS, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS } from './menu.js';
@@ -123,9 +124,19 @@ function healFx(c) { const el = document.getElementById('card-' + c.id); if (!el
 const DTYPE_CSS = (t) => { const c = TYPE_COLOR[t]; return c && !['slashing', 'piercing', 'bludgeoning'].includes(t) ? '#' + c.toString(16).padStart(6, '0') : null; };
 
 /* ---------- Party panel ---------- */
-function portrait(c) {
-  const col = c.companion ? COMPANIONS[c.companion].color : c.recruit ? '#ffd0a0' : '#6dffa8';
-  return h('span', { class: 'portrait', style: `background:${col}` }, c.name[0]);
+function portrait(c, cls = 'portrait') {
+  if (!Number.isInteger(c.portrait)) { const col = c.companion ? COMPANIONS[c.companion].color : c.recruit ? '#ffd0a0' : '#6dffa8'; return h('span', { class: cls, style: `background:${col}` }, c.name[0]); }
+  return h('img', { class: cls + ' pimg', src: portraitURL(c.portrait), alt: `${c.name} portrait`, draggable: 'false' });
+}
+/** Portrait grid. sel = index or null (Random). onPick(index|null). */
+function portraitGrid(sel, onPick, { random = true } = {}) {
+  return h('div', { class: 'pgrid', id: 'pgrid', role: 'listbox', 'aria-label': 'Choose a portrait' },
+    random ? h('button', { class: `pick prand ${sel === null ? 'on' : ''}`, id: 'pick-random', title: 'Random portrait', onclick: () => onPick(null) }, '🎲') : null,
+    PORTRAITS.map((p) => h('button', { class: `pick ${sel === p.id ? 'on' : ''}`, 'data-pid': p.id, title: `${RACES[p.race].name} ${CLASSES[p.cls].name}`, onclick: () => onPick(p.id) }, h('img', { src: portraitURL(p.id), alt: '' }))));
+}
+function showPortraitPicker(c, back) {
+  openModal([h('h2', {}, `Portrait — ${c.name}`), portraitGrid(c.portrait, (i) => { c.portrait = i === null ? randomPortrait(c.race, c.cls) : i; autosave(); refresh(); back(); }),
+    h('div', { class: 'row', style: 'justify-content:flex-end;margin-top:8px' }, btn('Cancel', back))], { closable: true });
 }
 function renderParty() {
   const el = $('#party'); el.innerHTML = '';
@@ -135,7 +146,7 @@ function renderParty() {
     const pct = Math.max(0, c.hp) / c.maxHp * 100;
     const conds = Object.keys(c.conditions).filter((k) => !['mageArmor', 'aid'].includes(k));
     const card = h('div', { class: `card ${cur === c ? 'active' : ''} ${c.dead ? 'dead' : c.hp <= 0 ? 'down' : ''}`, id: 'card-' + c.id, onclick: () => showSheet(c), info: () => memberInfo(c) },
-      h('div', { class: 'nm' }, h('span', {}, `${i < 2 ? '⚔' : '🏹'} ${c.name}`, canLevelUp(c) ? h('span', { class: 'lvchip', title: 'Ready to level up! Make camp or visit the Training Grounds', 'aria-label': 'Ready to level up' }, '⬆') : null),
+      h('div', { class: 'nm' }, h('span', { class: 'nmw' }, portrait(c, 'cport'), `${i < 2 ? '⚔' : '🏹'} ${c.name}`, canLevelUp(c) ? h('span', { class: 'lvchip', title: 'Ready to level up! Make camp or visit the Training Grounds', 'aria-label': 'Ready to level up' }, '⬆') : null),
         !G.isHero(c) ? h('button', { class: `aitog small ${c.ai ? 'on' : ''}`, title: 'Toggle AI / player control', onclick: (e) => { e.stopPropagation(); c.ai = !c.ai; log(`${c.name} is now ${c.ai ? 'AI-controlled' : 'player-controlled'}.`, 'sys'); refresh(); if (combat) combatLoop(); } }, c.ai ? 'AI' : 'YOU') : h('span', { class: 'tag' }, 'YOU')),
       h('div', { class: 'sub' }, `L${c.level} ${RACES[c.race].name} ${CLASSES[c.cls].name} · AC ${armorClass(c)}`),
       h('div', { class: `bar hp ${pct < 30 ? 'low' : ''}` }, h('i', { style: `width:${pct}%` })),
@@ -271,7 +282,7 @@ function showCredits() {
 }
 function showCreate(asRecruit = false) {
   const recruit = asRecruit === true;
-  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Aldric', method = 'array', diff = 'normal', randomDun = false;
+  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Aldric', method = 'array', diff = 'normal', randomDun = false, pic = null;
   const draw = () => {
     const p = openModal([], { closable: true });
     const R_ = RACES[race], C = CLASSES[cls];
@@ -279,6 +290,7 @@ function showCreate(asRecruit = false) {
     p.append(h('h2', {}, recruit ? 'Create a New Recruit' : 'Create Your Adventurer'), recruit ? h('p', { class: 'hint' }, `Recruits join at level ${G.partyLevel(S)} (near your party). If the party is full they wait in the Tavern roster.`) : '',
       h('div', { class: 'cols' },
         h('div', {}, h('h3', {}, 'Name'), h('input', { id: 'cname', value: name, maxlength: 18, oninput: (e) => { name = e.target.value; } }),
+          h('h3', {}, 'Portrait'), portraitGrid(pic, (i) => { pic = i; draw(); }),
           h('h3', {}, 'Race'), h('select', { id: 'crace', onchange: (e) => { race = e.target.value; draw(); } }, Object.entries(RACES).map(([k, r]) => h('option', { value: k, selected: k === race }, r.name))),
           h('p', { class: 'hint' }, `+${Object.entries(R_.bonus).map(([a, v]) => `${v} ${a.toUpperCase()}`).join(', +')} · Speed ${R_.speed} · ${R_.traits.join(', ')}`),
           h('h3', {}, 'Class'), h('select', { id: 'ccls', onchange: (e) => { cls = e.target.value; base = method === 'array' ? assignByPriority(cls) : assignByPriority(cls, Object.values(base)); draw(); } }, Object.entries(CLASSES).map(([k, c]) => h('option', { value: k, selected: k === cls }, `${c.name} (${c.sub})`))),
@@ -296,8 +308,8 @@ function showCreate(asRecruit = false) {
           recruit ? null : h('p', { class: 'hint' }, 'Off: the classic hand-tuned layouts. On: every floor is freshly generated for this game (saved with it), always with reachable stairs, keys, bosses and quest spots.'),
           recruit ? null : h('h3', {}, 'Your Companions'),
           ...(recruit ? [] : COMPANION_KEYS.map((k) => COMPANIONS[k])).map((c) => h('p', { class: 'hint' }, h('b', { style: `color:${c.color}` }, c.name + ' — '), c.blurb)))),
-      h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, recruit ? btn('Recruit ▶', () => { const ev = G.createRecruit(S, { name, race, cls, base }); handle(ev); autosave(); spellStep(ev.char, 'create', null, () => { autosave(); showTown(townSub); }); }, { class: 'primary', id: 'btn-recruit-create' }) : btn('Begin Adventure ▶', () => {
-        S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base, randomDungeons: randomDun }); S.difficulty = diff;
+      h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, recruit ? btn('Recruit ▶', () => { const ev = G.createRecruit(S, { name, race, cls, base, portrait: pic }); handle(ev); autosave(); spellStep(ev.char, 'create', null, () => { autosave(); showTown(townSub); }); }, { class: 'primary', id: 'btn-recruit-create' }) : btn('Begin Adventure ▶', () => {
+        S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base, randomDungeons: randomDun, portrait: pic }); S.difficulty = diff;
         log(`Welcome to Emberhollow, ${name}. Three oddballs have agreed to join you…`, 'sys');
         for (const c of S.party.filter((c) => c.companion)) say({ who: COMPANIONS[c.companion].short, color: COMPANIONS[c.companion].color, text: COMPANIONS[c.companion].lines.combatStart[0] });
         spellStep(G.heroOf(S), 'create', null, () => runPrologue());
@@ -541,7 +553,8 @@ function showSheet(c) {
   const spells = knownSpells(c);
   openModal([
     h('div', { class: 'tabs' }, S.party.map((p) => btn(p.name, () => showSheet(p), { class: p === c ? 'on small' : 'small' }))),
-    h('h2', {}, `${c.name} — Level ${c.level} ${Rr.name} ${C.name} (${C.sub})`),
+    h('div', { class: 'row sheethead' }, h('button', { class: 'sheetport', id: 'btn-portrait', title: 'Change portrait', onclick: () => showPortraitPicker(c, () => showSheet(c)) }, portrait(c, 'bigport'), h('small', {}, 'Change')),
+      h('h2', {}, `${c.name} — Level ${c.level} ${Rr.name} ${C.name} (${C.sub})`)),
     canLevelUp(c) ? h('p', { class: 'lvlready sheetready' }, `⬆ Ready to level up to ${c.level + 1}! Make camp (Camp → Level Up) or visit the Training Grounds.`) : null,
     c.companion ? h('p', { class: 'hint' }, COMPANIONS[c.companion].blurb) : c.recruit ? h('p', { class: 'hint' }, 'A recruit you created at the Training Grounds.') : null,
     !G.isHero(c) ? btn(`🧠 Tactics: ${TACTIC_STYLES[tacticsOf(c).style].name}${c.ai ? '' : ' (when AI)'}`, () => showTactics(c, () => showSheet(c)), { class: 'small', id: 'btn-sheet-tactics' }) : null,

@@ -5,6 +5,8 @@ import { ITEMS, WEAPONS, ARMOR, CLASSES, XP_LEVELS, SPELLS } from '../rules/data
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './companions.js';
 import * as Story from './story.js';
+import { randomPortrait, PORTRAIT_COUNT } from '../portraits.js';
+const givePortrait = (c, want = null) => { c.portrait = Number.isInteger(want) && want >= 0 && want < PORTRAIT_COUNT ? want : randomPortrait(c.race, c.cls); return c; };
 import * as Narr from './narration.js';
 export { Narr };
 export { Story };
@@ -12,11 +14,11 @@ export const NLEVELS = LEVEL_DEFS.length;
 
 export const SAVE_KEY = 'blackspire.save.v1';
 
-export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base = null, randomDungeons = false, seeds = null } = {}) {
+export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base = null, randomDungeons = false, seeds = null, portrait = null } = {}) {
   const dseeds = seeds || (randomDungeons ? randomSeeds() : null); setDungeonSeeds(dseeds);
   const hero = createCharacter({ name, race, cls, base: base || assignByPriority(cls) });
-  hero.ai = false;
-  const comps = COMPANION_KEYS.map((k) => { const C = COMPANIONS[k]; return createCharacter({ name: C.short, race: C.race, cls: C.cls, base: C.base, companion: k, skills: C.skills }); });
+  hero.ai = false; givePortrait(hero, portrait);
+  const comps = COMPANION_KEYS.map((k) => { const C = COMPANIONS[k]; return createCharacter({ name: C.short, race: C.race, cls: C.cls, base: C.base, companion: k, skills: C.skills }); }).map((c) => givePortrait(c));
   // Default marching order: fighter-types in front
   const party = [hero, ...comps];
   const order = { fighter: 0, cleric: 1, rogue: 2, wizard: 3 };
@@ -54,15 +56,15 @@ export function availableCompanions(s) {
 }
 export function recruitCompanion(s, key) {
   const C = COMPANIONS[key]; if (!C || !availableCompanions(s).includes(key)) return [{ log: 'They are not available.', cls: 'dim' }];
-  const c = createCharacter({ name: C.short, race: C.race, cls: C.cls, base: C.base, companion: key, skills: C.skills });
+  const c = createCharacter({ name: C.short, race: C.race, cls: C.cls, base: C.base, companion: key, skills: C.skills }); givePortrait(c);
   raiseTo(c, partyLevel(s));
   const out = [{ log: place(s, c), cls: 'good' }];
   if (C.lines.recruit) out.push({ banter: { who: C.short, color: C.color, text: pick(C.lines.recruit) } });
   return out;
 }
-export function createRecruit(s, { name, race, cls, base }) {
+export function createRecruit(s, { name, race, cls, base, portrait = null }) {
   const c = createCharacter({ name: (name || 'Recruit').trim().slice(0, 18) || 'Recruit', race, cls, base: base || assignByPriority(cls) });
-  c.recruit = true; c.ai = true; raiseTo(c, partyLevel(s));
+  c.recruit = true; c.ai = true; givePortrait(c, portrait); raiseTo(c, partyLevel(s));
   const ev = [{ log: place(s, c), cls: 'good' }]; ev.char = c; return ev;
 }
 export function dismiss(s, c) {
@@ -413,6 +415,7 @@ export function deserialize(str) {
   // normalise older / odd saves so they always land somewhere playable (never inside a town sub-screen or a stale combat)
   if (s.mode !== 'dungeon') s.mode = 'town';
   s.roster = Array.isArray(s.roster) ? s.roster : [];
+  for (const c of [...s.party, ...s.roster]) if (!Number.isInteger(c.portrait) || c.portrait < 0 || c.portrait >= PORTRAIT_COUNT) givePortrait(c); // old saves: random portrait
   const N = LEVEL_DEFS.length;
   if (!Array.isArray(s.seeds) || s.seeds.length !== N) { s.seeds = null; s.randomDungeons = false; } setDungeonSeeds(s.seeds); // old saves: fixed classic layouts
   s.mods ||= []; s.explored ||= []; s.bossDead ||= [];
