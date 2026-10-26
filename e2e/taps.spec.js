@@ -12,7 +12,7 @@ async function tapAt(page, x, y, touch) { if (touch) await page.touchscreen.tap(
 test('pause mode: many rat fights with fast, double and mistimed taps always finish', async ({ page }, info) => {
   test.skip(info.project.name !== 'iphone', 'stress run on iPhone portrait');
   const errors = trackErrors(page);
-  await page.addInitScript(() => localStorage.setItem('blackspire.settings', JSON.stringify({ ...JSON.parse(localStorage.getItem('blackspire.settings') || '{}'), battleSpeed: 'pause' })));
+  await page.addInitScript(() => localStorage.setItem('blackspire.settings', JSON.stringify({ ...JSON.parse(localStorage.getItem('blackspire.settings') || '{}'), battleSpeed: 'pause', battleSpeedSet: true })));
   await newGame(page); await enterDungeon(page);
   const vp = page.viewportSize(); let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   for (let fight = 0; fight < 12; fight++) {
@@ -106,7 +106,7 @@ for (const speed of ['normal', 'fast', 'pause']) {
   test(`victory loot card (${speed} speed) stays until tapped, fits, and is logged`, async ({ page }, info) => {
     test.skip(speed !== 'normal' && info.project.name !== 'iphone', 'speed variants on iPhone portrait');
     const errors = trackErrors(page);
-    await page.addInitScript((sp) => localStorage.setItem('blackspire.settings', JSON.stringify({ ...JSON.parse(localStorage.getItem('blackspire.settings') || '{}'), battleSpeed: sp })), speed);
+    await page.addInitScript((sp) => localStorage.setItem('blackspire.settings', JSON.stringify({ ...JSON.parse(localStorage.getItem('blackspire.settings') || '{}'), battleSpeed: sp, battleSpeedSet: true })), speed);
     await newGame(page); await enterDungeon(page);
     await page.evaluate(() => { for (const c of window.__gw.state.party) { c.maxHp = 999; c.hp = 999; } window.__gw.startCombat({ groups: [{ key: 'giantRat', count: 2 }] }); });
     await expect.poll(() => page.evaluate(() => !!window.__gw.combat)).toBe(true);

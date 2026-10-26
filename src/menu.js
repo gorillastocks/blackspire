@@ -4,7 +4,7 @@ import { readSave } from './storage.js';
 export const SLOT_KEYS = ['blackspire.save.slot1', 'blackspire.save.slot2', 'blackspire.save.slot3'];
 export const SETTINGS_KEY = 'blackspire.settings';
 
-const DEFAULTS = { sound: true, music: 0.6, sfx: 0.8, amb: 0.6, tutorialDone: false, battleSpeed: 'normal', areaDesc: true };
+const DEFAULTS = { sound: true, music: 0.6, sfx: 0.8, amb: 0.6, tutorialDone: false, battleSpeed: 'pause', areaDesc: true };
 /** Battle speed: f scales animation waits; hold = how long each action caption stays before the next action (0 = wait for a tap). */
 export const BATTLE_SPEEDS = {
   pause: { label: '⏸ Pause after each action', short: 'Pause', f: 1, hold: 0 },
@@ -12,7 +12,14 @@ export const BATTLE_SPEEDS = {
   normal: { label: '▶ Normal', short: 'Normal', f: 1, hold: 1100 },
   fast: { label: '⏩ Fast', short: 'Fast', f: 0.35, hold: 300 },
 };
-export function loadSettings() { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }; } catch { return { ...DEFAULTS }; } }
+export function loadSettings() {
+  try {
+    const s = { ...DEFAULTS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') };
+    // the default became Pause after each action: players who never picked a speed (still on the old 'normal' default) move to it
+    if (!s.battleSpeedSet && s.battleSpeed === 'normal') s.battleSpeed = 'pause';
+    return s;
+  } catch { return { ...DEFAULTS }; }
+}
 export function saveSettings(s) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* ignore */ } }
 
 /** Summary of a stored save (or null). */

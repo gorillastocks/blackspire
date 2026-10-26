@@ -1,1 +1,1 @@
-{ "cookies": [], "origins": [{ "origin": "http://localhost:4173", "localStorage": [{ "name": "blackspire.settings", "value": "{\"areaDesc\":false}" }] }] }
+{ "cookies": [], "origins": [{ "origin": "http://localhost:4173", "localStorage": [{ "name": "blackspire.settings", "value": "{\"areaDesc\":false,\"battleSpeed\":\"normal\",\"battleSpeedSet\":true}" }] }] }

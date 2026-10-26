@@ -36,7 +36,7 @@ for (const speed of ['normal', 'fast', 'pause']) {
   test(`chest loot card (${speed} speed): gold + items, tap to dismiss, logged`, async ({ page }, info) => {
     test.skip(speed !== 'normal' && info.project.name !== 'iphone', 'speed variants on iPhone portrait');
     const errors = trackErrors(page);
-    await page.addInitScript((sp) => localStorage.setItem('blackspire.settings', JSON.stringify({ ...JSON.parse(localStorage.getItem('blackspire.settings') || '{}'), battleSpeed: sp })), speed);
+    await page.addInitScript((sp) => localStorage.setItem('blackspire.settings', JSON.stringify({ ...JSON.parse(localStorage.getItem('blackspire.settings') || '{}'), battleSpeed: sp, battleSpeedSet: true })), speed);
     await toChest(page, false);
     await page.locator('#modal button', { hasText: 'Open it' }).click();
     const txt = await page.locator('#caption').textContent();

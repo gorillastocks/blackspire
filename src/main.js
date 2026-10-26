@@ -25,8 +25,8 @@ const btn = (label, onclick, attrs = {}) => h('button', { onclick: (e) => { sfx(
 let S = null; // game state
 let R = null; // renderer
 let combat = null; let combatInfo = null; let busy = false; let autoBattle = false;
-const speed = () => BATTLE_SPEEDS[loadSettings().battleSpeed] || BATTLE_SPEEDS.normal;
-function setSpeed(k) { const st = loadSettings(); st.battleSpeed = k; saveSettings(st); }
+const speed = () => BATTLE_SPEEDS[loadSettings().battleSpeed] || BATTLE_SPEEDS.pause;
+function setSpeed(k) { const st = loadSettings(); st.battleSpeed = k; st.battleSpeedSet = true; saveSettings(st); }
 const modal = $('#modal');
 const Story = G.Story;
 
@@ -985,7 +985,7 @@ function openMenu(view = 'main', custom = null) {
       h('div', { class: 'menu' }, btn(`🔊 Sound: ${st.sound ? 'On' : 'Off (all muted)'}`, () => { st.sound = !st.sound; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-sound' })),
       slider('music', '🎵 Music'), slider('sfx', '💥 Sound effects'), slider('amb', '🌫 Ambience'),
       h('h3', {}, 'Battle speed'),
-      h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'normal') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'normal') === k) }))),
+      h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'pause') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'pause') === k) }))),
       h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action.'),
       S ? h('h3', {}, 'Difficulty') : null,
       S ? h('div', { class: 'seg', role: 'radiogroup' }, Object.keys(DIFFICULTY).map((k) => btn(DIFF_LABEL[k], () => { S.difficulty = k; if (combat) combat.setDifficulty?.(k); autosave(); log(`Difficulty: ${DIFF_LABEL[k]}.`, 'sys'); openMenu('settings'); }, { class: (S.difficulty || 'normal') === k ? 'on' : '', 'data-diff': k, role: 'radio', 'aria-checked': String((S.difficulty || 'normal') === k) }))) : null,
