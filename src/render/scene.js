@@ -254,6 +254,12 @@ export class Renderer {
       const clips = { idle: find(/Idle$|Idle(?!_2)|Flying|Swim/i) || g.animations[0], attack: find(/Attack|Bite_Front|Bite|Punch|Headbutt/i), death: find(/Death|Dead/i), hit: find(/Hit|Jump/i) };
       if (clips.idle) { const a = mixer.clipAction(clips.idle); a.time = Math.random() * 2; a.play(); }
       this.monsterGroup.updateMatrixWorld(true); const wbox = measure(); // world-space bounds, for keeping UI clear of the monsters
+      // include the attack/hit poses (e.g. Gorvax rearing up), so framing keeps the whole animation inside the view
+      for (const nm of ['attack', 'hit']) { const cl = clips[nm]; if (!cl || cl === clips.idle) continue; const act = mixer.clipAction(cl); act.reset().play(); act.setEffectiveWeight(1);
+        if (clips.idle) mixer.clipAction(clips.idle).setEffectiveWeight(0);
+        for (let k = 0; k <= 8; k++) { act.time = (cl.duration * k) / 8; mixer.update(0); this.monsterGroup.updateMatrixWorld(true); const bb = measure(); if (!bb.isEmpty()) wbox.union(bb); }
+        act.stop(); if (clips.idle) mixer.clipAction(clips.idle).setEffectiveWeight(1); }
+      mixer.update(0);
       this.monsterObjs.set(m.id, { holder, o, mixer, clips, mats, dead: false, height: target, wbox });
     }));
     this.fitArena();
