@@ -363,3 +363,18 @@ span.cport { display: inline-flex; align-items: center; justify-content: center;
 .cols > div { min-width: 0; }
 .pgrid { width: 100%; box-sizing: border-box; }
 .pgrid .pick { min-width: 0; }
+
+/* Party cards never overflow the screen: columns may shrink below their content, names ellipsize, controls shrink */
+#side, #party { min-width: 0; }
+#party { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#party .card { min-width: 0; max-width: 100%; box-sizing: border-box; overflow: hidden; }
+#party .card .nm { min-width: 0; }
+#party .nmw { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+#party .cnm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#party .card .nm > :not(.nmw) { flex: none; }
+#party .lvchip { flex: none; }
+@media (max-width: 760px), (max-height: 520px) and (orientation: landscape) {
+  #party .cport { width: 20px; height: 20px; margin-right: 3px; }
+  #party .aitog { min-width: 36px; padding: 1px 4px; }
+  #party .tag { padding: 0 4px; font-size: 10px; }
+}

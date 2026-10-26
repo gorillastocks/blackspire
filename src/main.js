@@ -153,7 +153,7 @@ function renderParty() {
     const pct = Math.max(0, c.hp) / c.maxHp * 100;
     const conds = Object.keys(c.conditions).filter((k) => !['mageArmor', 'aid'].includes(k));
     const card = h('div', { class: `card ${cur === c ? 'active' : ''} ${c.dead ? 'dead' : c.hp <= 0 ? 'down' : ''}`, id: 'card-' + c.id, onclick: () => showSheet(c), info: () => memberInfo(c) },
-      h('div', { class: 'nm' }, h('span', { class: 'nmw' }, portrait(c, 'cport'), `${i < 2 ? '⚔' : '🏹'} ${c.name}`, canLevelUp(c) ? h('span', { class: 'lvchip', title: 'Ready to level up! Make camp or visit the Training Grounds', 'aria-label': 'Ready to level up' }, '⬆') : null),
+      h('div', { class: 'nm' }, h('span', { class: 'nmw' }, portrait(c, 'cport'), h('span', { class: 'cnm', title: c.name }, `${i < 2 ? '⚔' : '🏹'} ${c.name}`), canLevelUp(c) ? h('span', { class: 'lvchip', title: 'Ready to level up! Make camp or visit the Training Grounds', 'aria-label': 'Ready to level up' }, '⬆') : null),
         !G.isHero(c) ? h('button', { class: `aitog small ${c.ai ? 'on' : ''}`, title: 'Toggle AI / player control', onclick: (e) => { e.stopPropagation(); c.ai = !c.ai; log(`${c.name} is now ${c.ai ? 'AI-controlled' : 'player-controlled'}.`, 'sys'); refresh(); if (combat) combatLoop(); } }, c.ai ? 'AI' : 'YOU') : h('span', { class: 'tag' }, 'YOU')),
       h('div', { class: 'sub' }, `L${c.level} ${RACES[c.race].name} ${CLASSES[c.cls].name} · AC ${armorClass(c)}`),
       h('div', { class: `bar hp ${pct < 30 ? 'low' : ''}` }, h('i', { style: `width:${pct}%` })),
