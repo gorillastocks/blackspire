@@ -5,7 +5,7 @@ test('smoke: title → create → town → dungeon → combat → sheet, no cons
   const errors = [];
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('pageerror', (e) => errors.push(String(e)));
-  const shot = (n) => page.screenshot({ path: `screenshots/${info.project.name}-${n}.png` });
+  const shot = async (n) => { for (let i = 0; i < 3; i++) { try { await page.screenshot({ path: `screenshots/${info.project.name}-${n}.png`, timeout: 8000 }); return; } catch { await page.mouse.move(1, 1); } } };
   await page.goto('./');
   await page.waitForSelector('#btn-new', { timeout: 60000 });
   await page.waitForTimeout(2500); await shot('01-title');

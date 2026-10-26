@@ -180,7 +180,7 @@ function setControls(kind) {
     const b = (l, f, cls = '', title = '') => el.append(h('button', { class: cls, title, onclick: () => { if (!busy && !combat && !msgRunning && modal.classList.contains('hidden')) f(); } }, l));
     b('↶', () => act(() => G.turn(S, -1)), '', 'Turn left (A)'); b('▲', () => act(() => G.move(S, 0)), '', 'Forward (W)'); b('↷', () => act(() => G.turn(S, 1)), '', 'Turn right (D)');
     b('◀', () => act(() => G.move(S, 3)), '', 'Strafe left (Q)'); b('▼', () => act(() => G.move(S, 2)), '', 'Back (S)'); b('▶', () => act(() => G.move(S, 1)), '', 'Strafe right (E)');
-    b('🔍 Search', doSearch, 'act', 'Search (F)'); b('⛺ Camp', showCamp, 'act', 'Camp (C)'); b('🗺 Map', showMap, 'act', 'Map (M)');
+    b('🔍 Search', doSearch, 'act', 'Search (F)'); b('⛺ Camp', () => { healSel = null; showCamp(); }, 'act', 'Camp (C)'); b('🗺 Map', showMap, 'act', 'Map (M)');
     b('📜 Sheet', () => showSheet(S.party[0]), 'act', 'Character sheet (I)'); b('🎒 Items', showInventory, 'act', 'Inventory (B)'); b('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, 'act', 'Save (P)');
   }
 }
@@ -380,8 +380,8 @@ function prompt(kind, e = {}) {
   }
   if (kind === 'chest') {
     openModal([h('h2', {}, 'A Treasure Chest'), h('p', { class: 'hint' }, 'It might be trapped. A rogue is best at inspecting and disarming.'),
-      h('div', { class: 'menu' }, btn('🔎 Inspect (Investigation)', () => handle(G.inspectChest(S))), btn('🗝 Disarm (Thieves\' Tools)', () => handle(G.disarmChest(S))),
-        btn('📦 Open it', () => { R.openChestAnim(S.x, S.y); closeModal(); handle(G.openChest(S)); }, { class: 'primary' }), btn('Leave it', closeModal))]);
+      h('div', { class: 'menu' }, btn('🔎 Inspect (Investigation)', () => chestStep(G.inspectChest)), btn('🗝 Disarm (Thieves\' Tools)', () => chestStep(G.disarmChest)),
+        btn('📦 Open it', () => chestStep(G.openChest), { class: 'primary' }), btn('Leave it', () => { chestNotes = []; closeModal(); }))]);
   } else if (kind === 'down') {
     openModal([h('h2', {}, 'Stairs Down'), h('div', { class: 'menu' }, btn('Descend ▼', async () => { closeModal(); handle(G.goDown(S)); await startDungeon(); autosave(); }, { class: 'primary' }), btn('Not yet', closeModal))]);
   } else if (kind === 'up') {
@@ -400,6 +400,39 @@ function prompt(kind, e = {}) {
 }
 document.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'f' && S?.mode === 'dungeon' && G.lockAt(S) && modal.classList.contains('hidden')) { /* handled by search */ } });
 
+/* ---------- Camp healing: caster → spell + slot level → target (or a potion → target) ---------- */
+let healSel = null;
+function campHealSection() {
+  const hurtOnes = S.party.filter(G.hurt), sel = healSel || {};
+  const casters = S.party.filter((c) => !c.dead && knownSpells(c).some((k) => G.CAMP_HEALS.includes(k)));
+  const potions = S.inventory.filter((x) => x === 'potionHealing').length;
+  const back = btn('← Back', () => { healSel = null; showCamp(); }, { class: 'small' });
+  const done = (r) => { healSel = null; handle(r.ev); showCamp(); if (r.card) queueMessage(r.card); refresh(); autosave(); };
+  const hp = (t) => t.hp <= 0 ? `DOWN 0/${t.maxHp}` : `HP ${t.hp}/${t.maxHp}`;
+  if (sel.k || sel.potion) {
+    const targets = sel.potion ? hurtOnes : G.campTargetsFor(S, sel.k);
+    const what = sel.potion ? 'Potion of Healing' : `${SPELLS[sel.k].name} (level ${sel.lvl})`;
+    if (!sel.potion && SPELLS[sel.k].target === 'allAllies') return h('div', { class: 'menu' }, h('p', { class: 'hint' }, `${sel.c.name}: ${what} heals the whole party.`), btn(`✨ Cast ${what}`, () => done(G.campHeal(S, sel.c, sel.k, sel.lvl)), { class: 'primary', 'data-heal-cast': '1' }), back);
+    return h('div', { class: 'menu' }, h('p', { class: 'hint' }, `${sel.potion ? 'Give' : sel.c.name + ' casts'} ${what} on…`),
+      ...targets.map((t) => btn(`${t.name} — ${hp(t)}`, () => done(sel.potion ? G.campPotion(S, t) : G.campHeal(S, sel.c, sel.k, sel.lvl, t)), { 'data-heal-target': t.id })),
+      targets.length ? null : h('p', { class: 'hint' }, 'Nobody needs that.'), back);
+  }
+  if (sel.c) {
+    const opts = G.campHealOptions(sel.c);
+    return h('div', { class: 'menu' }, h('p', { class: 'hint' }, `${sel.c.name}: choose a spell and slot level (higher slots heal more).`),
+      ...opts.flatMap((o) => o.levels.map((l) => { const need = G.campTargetsFor(S, o.k).length; return btn(`${o.s.name} · level ${l} slot${l > o.s.level ? ' (upcast)' : ''}${need ? '' : ' — nobody needs it'}`, () => { healSel = { ...sel, k: o.k, lvl: l }; showCamp(); }, { disabled: !need, 'data-heal-spell': `${o.k}:${l}` }); })), back);
+  }
+  const rows = [];
+  if (!hurtOnes.length && !S.party.some((c) => !c.dead && ['poisoned', 'paralyzed', 'blinded'].some((k) => c.conditions[k]))) rows.push(h('p', { class: 'hint', id: 'heal-none' }, 'Nobody is hurt. Everyone is at full health.'));
+  for (const c of casters) {
+    const opts = G.campHealOptions(c), why = c.dead ? 'dead' : isDown(c) ? 'unconscious' : !opts.length ? 'no spell slots left' : !hurtOnes.length && !opts.some((o) => G.campTargetsFor(S, o.k).length) ? 'nobody is hurt' : '';
+    rows.push(btn(`✨ ${c.name} casts…${why ? ` (${why})` : ''}`, () => { healSel = { c }; showCamp(); }, { disabled: !!why, 'data-heal-caster': c.id }));
+  }
+  if (!casters.length) rows.push(h('p', { class: 'hint' }, 'Nobody in the party knows a healing spell.'));
+  rows.push(btn(`🧪 Use a Potion of Healing (${potions} left)${!potions ? ' — none left' : !hurtOnes.length ? ' — nobody is hurt' : ''}`, () => { healSel = { potion: true }; showCamp(); }, { disabled: !potions || !hurtOnes.length, 'data-heal-potion': '1' }));
+  rows.push(h('p', { class: 'hint' }, 'Healing a downed ally (0 HP) gets them back up. The dead need the Temple.'));
+  return h('div', { class: 'menu' }, ...rows);
+}
 /* ---------- Camp ---------- */
 function showCamp() {
   const p = openModal([h('h2', {}, '⛺ Camp'), h('div', { class: 'menu grid' },
@@ -407,13 +440,13 @@ function showCamp() {
     btn('🌙 Long Rest (8 hrs, full recovery, risky)', () => { closeModal(); handle(G.rest(S, 'long')); }),
     btn('🗣 Talk with companions', () => { log(G.campDialogue(S), 'lore'); }, { id: 'btn-talk' }),
     btn('✨ Cast Mage Armor on wizard', () => { const w = S.party.find((c) => c.cls === 'wizard' && !c.equip.armor && !c.dead && c.slots[0] > 0); if (!w) { log('No wizard with a free slot needs Mage Armor.', 'dim'); return; } w.slots[0]--; w.conditions.mageArmor = true; log(`${w.name} casts Mage Armor (AC ${armorClass(w)}).`, 'spell'); refresh(); }),
-    btn('💊 Cleric: Lesser Restoration on poisoned', () => { const c = S.party.find((c) => c.cls === 'cleric' && !isDown(c) && c.slots[1] > 0); const t = S.party.find((x) => x.conditions.poisoned); if (!c || !t) { log('Nobody to cure, or no 2nd-level slot.', 'dim'); return; } c.slots[1]--; delete t.conditions.poisoned; log(`${c.name} cures ${t.name}.`, 'good'); refresh(); }),
     btn('🧠 Companion Tactics', () => showTactics(null, showCamp), { id: 'btn-camp-tactics' }),
     btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }), btn('📂 Load', () => loadGame())),
   h('h3', { id: 'camp-levelup' }, '⬆ Level Up'),
   (() => { const ready = S.party.filter((c) => canLevelUp(c)); return ready.length
     ? h('div', { class: 'menu' }, ready.map((c) => btn(`⬆ Level up ${c.name} to level ${c.level + 1}`, () => { const ev = G.train(S, c); showCamp(); handle(ev); autosave(); }, { class: 'levelup', 'data-levelup': c.id })))
     : h('p', { class: 'hint' }, 'Nobody has enough XP to level up yet.'); })(),
+  h('h3', { id: 'camp-heal' }, '✚ Heal'), campHealSection(),
   h('h3', {}, 'Marching order'), partyOrderList(showCamp)]);
   void p;
 }
@@ -733,6 +766,26 @@ async function playerTurn() {
     await flushCombat();
   }
   closeModal();
+}
+/* ---------- Chest loot card: same style as the victory card; inspect/disarm stay as the choice step ---------- */
+let chestNotes = [];
+const CHEST_LINES = ['The lid creaks open…', 'Hinges groan as the lid swings up…', 'Dust puffs out as the lid lifts…', 'The lock gives with a click…'];
+function chestStep(fn) {
+  const b = snapLoot();
+  const ev = fn(S); const opened = ev.some((e) => e.sfx === 'chest');
+  for (const e of ev) if (e.log && !opened) chestNotes.push(e.log.replace(/ \(\w+ \d+\)| \(\d+\)/g, ''));
+  if (!opened) { handle(ev); return; }
+  R.openChestAnim(S.x, S.y); closeModal(); handle(ev);
+  const lines = [];
+  for (const n of chestNotes) if (/trap|disarm/i.test(n)) lines.push(`🔎 ${n}`);
+  for (const e of ev) if (e.log && e.cls === 'bad') lines.push(`☠ ${e.log}`);
+  const gold = S.gold - b.gold; if (gold > 0) lines.push(`💰 +${gold} gold`);
+  const left = [...b.inv], got = {}; for (const k of S.inventory) { const i = left.indexOf(k); if (i >= 0) left.splice(i, 1); else got[k] = (got[k] || 0) + 1; }
+  for (const [k, n] of Object.entries(got)) lines.push(`${ITEMS[k]?.spoon || ITEMS[k]?.quest ? '📜' : '🎒'} ${n > 1 ? n + '× ' : ''}${ITEMS[k]?.name || k}`);
+  for (const e of ev) if (e.log && e.cls === 'crit') lines.push(`📜 ${e.log}`);
+  if (gold <= 0 && !Object.keys(got).length) lines.push('The chest is empty. Someone got here first.');
+  chestNotes = [];
+  queueMessage({ text: `📦 ${CHEST_LINES[Math.floor(Math.random() * CHEST_LINES.length)]}`, cls: 'loot', lines });
 }
 /* ---------- Victory loot card: XP, gold, items, quest and level-up notes, tap to dismiss ---------- */
 let lootBase = null;

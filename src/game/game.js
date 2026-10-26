@@ -1,7 +1,7 @@
 // Core game state & exploration logic (DOM-free, so it can be unit tested and simulated).
 import { getLevel, DIRS, W, H, tileOrdinal, LEVEL_DEFS, setDungeonSeeds, randomSeeds } from '../dungeon/levels.js';
-import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor, skillMod } from '../rules/character.js';
-import { ITEMS, WEAPONS, ARMOR, CLASSES, XP_LEVELS } from '../rules/data.js';
+import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor, skillMod, knownSpells, spellMod, heal } from '../rules/character.js';
+import { ITEMS, WEAPONS, ARMOR, CLASSES, XP_LEVELS, SPELLS } from '../rules/data.js';
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './companions.js';
 import * as Story from './story.js';
@@ -439,4 +439,46 @@ export { die };
 export function partyCheck(s, skill, dc) {
   const live = s.party.filter((c) => !c.dead && c.hp > 0); if (!live.length) return false;
   const best = Math.max(...live.map((c) => skillMod(c, skill))); return d20() + best >= dc;
+}
+
+/* ---------- Camp healing: spells and potions on a chosen ally ---------- */
+export const CAMP_HEALS = ['cureWounds', 'healingWord', 'prayerOfHealing', 'massCureWounds', 'lesserRestoration'];
+const CAMP_HEAL_LINES = {
+  cureWounds: ['{c} lays a glowing hand on {t}; torn flesh draws itself closed.', '{c} murmurs a prayer over {t}, and warm light seeps into every wound.'],
+  healingWord: ['{c} speaks a single bright word, and {t}\'s bruises fade like breath on glass.', '{c} whispers {t}\'s name with a blessing; the pain simply lets go.'],
+  prayerOfHealing: ['{c} leads ten quiet minutes of prayer. Candlelight seems to pour into the whole party.'],
+  massCureWounds: ['{c} raises both hands, and a wave of golden light rolls over the camp.'],
+  lesserRestoration: ['{c} touches {t}\'s brow; the sickness drains away like ink from water.'],
+  potion: ['{t} gulps the red potion. It tastes of cinnamon and copper, and the wounds knit shut.'],
+};
+const fill = (k, o) => { const a = CAMP_HEAL_LINES[k]; return a[Math.floor(rand() * a.length)].replace('{c}', o.c).replace('{t}', o.t); };
+export const hurt = (c) => !c.dead && c.hp < c.maxHp;
+const ailing = (c) => !c.dead && ['poisoned', 'paralyzed', 'blinded'].some((k) => c.conditions[k]);
+/** Heal spells a conscious caster can cast now, with the slot levels they could use. */
+export function campHealOptions(c) {
+  if (c.dead || isDown(c)) return [];
+  return knownSpells(c).filter((k) => CAMP_HEALS.includes(k)).map((k) => ({ k, s: SPELLS[k], levels: c.slots.map((n, i) => (n > 0 && i + 1 >= SPELLS[k].level ? i + 1 : 0)).filter(Boolean) })).filter((o) => o.levels.length);
+}
+export function campTargetsFor(s, k) { return k === 'lesserRestoration' ? s.party.filter(ailing) : s.party.filter(hurt); }
+export function campHeal(s, c, k, lvl, target) {
+  const S = SPELLS[k]; if (!S || !c.slots[lvl - 1]) return { ev: [{ log: 'No slot left for that.', cls: 'dim' }] };
+  const tgs = S.target === 'allAllies' ? s.party.filter((p) => !p.dead).slice(0, 6) : [target];
+  if (!tgs.length || tgs.some((t) => !t || t.dead)) return { ev: [{ log: 'The dead need the temple, not a spell.', cls: 'dim' }] };
+  c.slots[lvl - 1]--;
+  const rows = [];
+  if (k === 'lesserRestoration') { const t = tgs[0]; const cured = S.cure.filter((x) => t.conditions[x]); for (const x of cured) delete t.conditions[x]; rows.push({ t, before: t.hp, after: t.hp, note: cured.length ? `cured of ${cured.join(', ')}` : 'nothing to cure' }); }
+  else {
+    const up = lvl - S.level, sm = spellMod(c);
+    for (const t of tgs) { const before = t.hp; let amt = roll(S.perLevel && up ? `${(parseInt(S.heal) || 1) + up}${S.heal.slice(S.heal.indexOf('d'))}` : S.heal) + (S.addMod ? sm : 0); if (c.cls === 'cleric') amt += 2 + lvl; heal(t, Math.max(1, amt)); rows.push({ t, before: Math.max(0, before), after: t.hp, revived: before <= 0 && t.hp > 0 }); }
+  }
+  const text = fill(k, { c: c.name, t: tgs.length > 1 ? 'the party' : tgs[0].name });
+  const lines = rows.map((r) => `${r.note ? '💊' : '❤'} ${r.t.name}: ${r.note || `HP ${r.before} → ${r.after}/${r.t.maxHp}`}${r.revived ? ' — back on their feet!' : ''}`);
+  lines.push(`✦ ${c.name} spends a level ${lvl} slot (${c.slots[lvl - 1]} left)`);
+  return { ev: [{ log: `${c.name} casts ${S.name}${lvl > S.level ? ` at level ${lvl}` : ''}. ${lines.slice(0, -1).map((l) => l.slice(2)).join('; ')}.`, cls: 'spell' }], card: { text: `✨ ${text}`, cls: 'loot', lines } };
+}
+export function campPotion(s, target) {
+  const i = s.inventory.indexOf('potionHealing'); if (i < 0 || !target || target.dead) return { ev: [{ log: 'No potion to use.', cls: 'dim' }] };
+  s.inventory.splice(i, 1); const before = Math.max(0, target.hp); heal(target, roll(ITEMS.potionHealing.heal)); const left = s.inventory.filter((x) => x === 'potionHealing').length;
+  const lines = [`❤ ${target.name}: HP ${before} → ${target.hp}/${target.maxHp}${before === 0 && target.hp > 0 ? ' — back on their feet!' : ''}`, `🧪 ${left} Potion${left === 1 ? '' : 's'} of Healing left`];
+  return { ev: [{ log: `${target.name} drinks a Potion of Healing (HP ${before} → ${target.hp}).`, cls: 'good' }], card: { text: `🧪 ${fill('potion', { t: target.name })}`, cls: 'loot', lines } };
 }
