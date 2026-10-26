@@ -73,13 +73,14 @@ body.incombat #cmenu { display: block; }
 body.incombat #bottom { grid-template-columns: 1fr 420px; }
 @media (max-width: 760px), (max-height: 520px) and (orientation: landscape) {
   body { font-size: 13px; }
-  #app { grid-template-columns: 1fr; grid-template-rows: 42vh auto 1fr auto; }
+  #app { grid-template-columns: 1fr; grid-template-rows: minmax(120px, 42vh) minmax(0, auto) minmax(0, 1fr) auto; }
   #view { grid-row: 1; border-right: none; }
   #side { grid-column: 1; grid-row: 2; flex-direction: row; padding: 4px; overflow: hidden; position: relative; z-index: 1; }
   #minimap { width: 92px; height: 92px; flex: none; }
   #party { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; flex: 1; }
   .card { padding: 3px 5px; } .card .sub { display: none; } .card .slots { font-size: 10px; } .card .nm { font-size: 12px; }
-  #bottom { grid-row: 3 / span 2; grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  #bottom { grid-row: 3 / span 2; grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
+  #side { max-height: 34vh; overflow-y: auto; }
   #log { font-size: 12px; min-height: 60px; }
   #controls { grid-template-columns: repeat(6, 1fr); border-left: none; border-top: 1px solid var(--line); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); }
   #controls button { min-height: 44px; padding: 4px; }
@@ -300,3 +301,15 @@ body.msgup #banter { visibility: hidden; } /* bubbles wait (they're in the log) 
 #caption.msg.loot .captxt { color: #ffe9a8; }
 #caption.msg { z-index: 45; background: rgba(14,10,24,0.97); }
 body.msgup #modal:not(.combat):not(.transparent) { background: #05030b; } body.msgup #modal:not(.combat) .panel { opacity: .08; } /* read-aloud cards over town screens */
+
+/* compact level-up chip next to the name: never changes card height */
+.lvchip { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 5px; background: #ffd34d; color: #1a1000; font-size: 11px; line-height: 1.4; font-weight: bold; vertical-align: 1px; }
+/* action buttons always stay on screen: the party/log shrink instead */
+@media (max-height: 520px) and (orientation: landscape) {
+  #app { grid-template-rows: minmax(0, auto) minmax(0, 1fr); }
+  #side { max-height: 55vh; overflow-y: auto; }
+  #bottom { grid-template-rows: minmax(0, 1fr) auto; }
+  #log { min-height: 0; }
+}
+#controls { flex-shrink: 0; }
+@media (min-width: 761px) and (min-height: 521px) { .lvchip { font-size: 14px; padding: 0 5px; } }

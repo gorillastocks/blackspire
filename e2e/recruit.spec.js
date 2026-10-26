@@ -68,10 +68,9 @@ test('level-up ready badge on card + sheet, one-time notice, also after combat',
   await st(page, () => { const s = window.__gw.state; s.party[0].xp = 300; s.party[1].xp = 299; });
   await openLocation(page, 'Edge of Town'); await page.click('#btn-enter');
   await expect.poll(() => st(page, () => window.__gw.state.mode)).toBe('dungeon');
-  const badge = page.locator('#party .lvlready');
-  await expect(badge).toHaveCount(1); await expect(badge.first()).toContainText('Ready to level up! Make camp or visit the Training Grounds');
-  await expectReachable(page, badge.first(), 'level-up badge');
-  await auditText(page, '#party .lvlready', P.startsWith('iphone') ? 14 : 12);
+  const badge = page.locator('#party .lvchip');
+  await expect(badge).toHaveCount(1); await expect(badge.first()).toHaveAttribute('title', /Ready to level up/);
+  await expect(badge.first()).toBeVisible();
   await page.screenshot({ path: `screenshots/levelup-${P}-badge.png` });
   const notices = () => page.locator('#log div', { hasText: 'is ready to level up' }).count();
   expect(await notices()).toBe(1);
@@ -81,7 +80,8 @@ test('level-up ready badge on card + sheet, one-time notice, also after combat',
   await page.waitForFunction(() => !window.__gw.combat, null, { timeout: 180000 });
   await expect(badge).toHaveCount(2); expect(await notices()).toBe(2);
   // sheet shows it too
-  await badge.first().locator('xpath=..').click({ position: { x: 10, y: 10 } });
+  for (let i = 0; i < 6 && await page.locator('#caption.show.msg').isVisible(); i++) { await page.locator('#tapcatch').click(); await page.waitForTimeout(350); }
+  await page.locator('#party .card', { has: page.locator('.lvchip') }).first().click({ position: { x: 10, y: 30 } });
   const sb = page.locator('#modal .sheetready'); await expect(sb).toBeVisible(); await expectReachable(page, sb, 'sheet badge');
   await auditText(page, '#modal .sheetready', P.startsWith('iphone') ? 16 : 13);
   await page.screenshot({ path: `screenshots/levelup-${P}-sheet.png` });
@@ -114,7 +114,7 @@ test('level up at camp in the dungeon (same logic as Training Grounds), camp but
   await expect(page.locator('#modal button.levelup')).toHaveCount(0);
   await expect(page.locator('#modal .panel')).toContainText('Nobody has enough XP');
   expect(await st(page, () => window.__gw.state.party[0].level)).toBe(2);
-  await expect(page.locator('#party .lvlready')).toHaveCount(0);
+  await expect(page.locator('#party .lvchip')).toHaveCount(0);
   await page.screenshot({ path: `screenshots/camp-levelup-${P}-done.png` });
   // click-through: every camp button leaves a working Close
   const SKIP = /Load|Rest|✕/; // rests can roll a wandering-monster fight

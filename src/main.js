@@ -127,14 +127,14 @@ function renderParty() {
     const pct = Math.max(0, c.hp) / c.maxHp * 100;
     const conds = Object.keys(c.conditions).filter((k) => !['mageArmor', 'aid'].includes(k));
     const card = h('div', { class: `card ${cur === c ? 'active' : ''} ${c.dead ? 'dead' : c.hp <= 0 ? 'down' : ''}`, id: 'card-' + c.id, onclick: () => showSheet(c), info: () => memberInfo(c) },
-      h('div', { class: 'nm' }, h('span', {}, `${i < 2 ? '⚔' : '🏹'} ${c.name}`),
+      h('div', { class: 'nm' }, h('span', {}, `${i < 2 ? '⚔' : '🏹'} ${c.name}`, canLevelUp(c) ? h('span', { class: 'lvchip', title: 'Ready to level up! Make camp or visit the Training Grounds', 'aria-label': 'Ready to level up' }, '⬆') : null),
         !G.isHero(c) ? h('button', { class: `aitog small ${c.ai ? 'on' : ''}`, title: 'Toggle AI / player control', onclick: (e) => { e.stopPropagation(); c.ai = !c.ai; log(`${c.name} is now ${c.ai ? 'AI-controlled' : 'player-controlled'}.`, 'sys'); refresh(); if (combat) combatLoop(); } }, c.ai ? 'AI' : 'YOU') : h('span', { class: 'tag' }, 'YOU')),
       h('div', { class: 'sub' }, `L${c.level} ${RACES[c.race].name} ${CLASSES[c.cls].name} · AC ${armorClass(c)}`),
       h('div', { class: `bar hp ${pct < 30 ? 'low' : ''}` }, h('i', { style: `width:${pct}%` })),
       h('div', { class: 'row', style: 'justify-content:space-between;font-size:11px' }, h('span', {}, c.dead ? 'DEAD' : c.hp <= 0 ? `DOWN ${c.deathSaves.s}✓${c.deathSaves.f}✗` : `HP ${c.hp}/${c.maxHp}`),
         c.slots.length ? h('span', { class: 'slots' }, 'Slots ' + c.slots.map((n, l) => `${l + 1}:${n}`).join(' ')) : null),
       conds.length ? h('div', { class: 'conds' }, conds.join(', ')) : null,
-      canLevelUp(c) ? h('div', { class: 'lvlready', title: 'Ready to level up! Make camp or visit the Training Grounds' }, '⬆ Ready to level up!', h('span', { class: 'lvlwhere' }, ' Make camp or visit the Training Grounds')) : null);
+      null);
     el.append(card);
   });
 }
