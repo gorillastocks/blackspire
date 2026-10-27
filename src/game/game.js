@@ -143,6 +143,16 @@ export function move(s, rel = 0) {
   return out;
 }
 
+
+/** If a fight is about to start, keep area text in the log but do not request a DM read-aloud card/voice. */
+function suppressAmbientForCombat(out) {
+  if (!out?.some((e) => e.combat)) return out;
+  for (const e of out) {
+    if (e.dm || e.ambient) { e.card = false; e.dm = false; e.ambient = false; delete e.quip; }
+  }
+  return out;
+}
+
 export function enterTile(s) {
   const ch = tile(s, s.x, s.y); const L = getLevel(s.level); const def = L.def; const out = [...Narr.areaAt(s, L, s.x, s.y)];
   const passivePerc = Math.max(...s.party.filter((c) => !isDown(c)).map((c) => passive(c, 'perception')));
@@ -177,7 +187,7 @@ export function enterTile(s) {
     case 'Q': {
       const id = Story.poiAt(s.level, tileOrdinal(L, s.x, s.y));
       const ev = Story.visitPoi(s, id); if (ev.consumed) setTile(s, s.x, s.y, '.');
-      out.push(...ev); if (ev.some((e) => e.combat)) { s.sinceEncounter = 0; return out; }
+      out.push(...ev); if (ev.some((e) => e.combat)) { s.sinceEncounter = 0; return suppressAmbientForCombat(out); }
       if (ev.some((e) => e.prompt)) return out;
       break;
     }
@@ -190,12 +200,12 @@ export function enterTile(s) {
     case 'E': {
       const groups = encounterGroups([def.fixed[tileOrdinal(L, s.x, s.y) % def.fixed.length]]);
       setTile(s, s.x, s.y, '.');
-      out.push({ log: 'Something is lurking here!', cls: 'bad', combat: { groups, fixed: true } }); s.sinceEncounter = 0; return out;
+      out.push({ log: 'Something is lurking here!', cls: 'bad', combat: { groups, fixed: true } }); s.sinceEncounter = 0; return suppressAmbientForCombat(out);
     }
     case 'B': {
       if (!s.bossDead[s.level]) {
-        if (def.phase2 && s.flags?.boss4p1) { out.push({ log: 'The vault floor splits open. GORVAX THE TYRANT rises!', cls: 'bad', shake: true, combat: { groups: def.phase2.map((g) => ({ key: g.key, count: g.count[0] })), boss: true, phase2: true } }); return out; }
-        out.push({ log: `${def.bossName} blocks the way!`, cls: 'bad', combat: { groups: def.boss.map((g) => ({ key: g.key, count: g.count[0] })), boss: true } }); return out;
+        if (def.phase2 && s.flags?.boss4p1) { out.push({ log: 'The vault floor splits open. GORVAX THE TYRANT rises!', cls: 'bad', shake: true, combat: { groups: def.phase2.map((g) => ({ key: g.key, count: g.count[0] })), boss: true, phase2: true } }); return suppressAmbientForCombat(out); }
+        out.push({ log: `${def.bossName} blocks the way!`, cls: 'bad', combat: { groups: def.boss.map((g) => ({ key: g.key, count: g.count[0] })), boss: true } }); return suppressAmbientForCombat(out);
       }
       break;
     }
@@ -207,7 +217,7 @@ export function enterTile(s) {
   if (!out.some((o) => o.combat || o.prompt) && s.sinceEncounter > 6 && rand() < 0.045) {
     s.sinceEncounter = 0; out.push({ log: 'Monsters appear!', cls: 'bad', combat: { groups: randomEncounter(s) } });
   }
-  return out;
+  return suppressAmbientForCombat(out);
 }
 
 export function afterCombat(s, combat, info = {}) {

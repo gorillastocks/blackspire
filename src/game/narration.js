@@ -113,7 +113,7 @@ export function describe(s, key, text, reminder = null, quip = 0.35) {
   if (!text) return [];
   if (seen(s)[key]) return reminder ? [{ log: reminder, cls: 'dim' }] : [];
   seen(s)[key] = 1;
-  return [{ log: DM + text, cls: 'lore', card: true, dm: true, quip: banter(s.party, 'newArea', {}, quip) }];
+  return [{ log: DM + text, cls: 'lore', card: true, dm: true, ambient: true, quip: banter(s.party, 'newArea', {}, quip) }];
 }
 export const floorIntro = (s, lvl) => describe(s, `floor:${lvl}`, FLOOR_INTROS[lvl], FLOOR_REMINDERS[lvl], 0.6);
 export const townIntro = (s, sub) => describe(s, `town:${sub || 'square'}`, TOWN[sub || 'square'], null, 0.25);

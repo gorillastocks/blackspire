@@ -11,7 +11,7 @@ import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic, playVictorySting, victoryStingState, duckBed, ac, unlock as unlockAudio, isMuted } from './audio.js';
-import { playVoiceLine, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt } from './voices/voice.js';
+import { playVoiceLine, playAmbientNarration, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt, invalidateAmbientVoices, setAmbientVoiceGate, voiceGeneration } from './voices/voice.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 // After a redeploy, an old tab's lazy chunks 404: reload once to pick up the new build.
 window.addEventListener('vite:preloadError', (e) => {
@@ -46,7 +46,7 @@ function showDialogue(scene, { closable = false } = {}) {
     const lines = scene.lines || []; let i = 0;
     const draw = () => {
       const ln = lines[Math.min(i, lines.length - 1)] || { who: 'narrator', text: '' }; const sp = Story.speaker(ln.who); const last = i >= lines.length - 1;
-      playVoiceLine(ln.text, ln.who);
+      playVoiceLine(ln.text, ln.who, { kind: 'dialog' });
       openModal([h('div', { class: 'dialogue' },
         scene.title ? h('h2', {}, scene.title) : null,
         h('div', { class: 'dlgrow' }, h('span', { class: 'dlgportrait', style: `border-color:${sp.color}` }, sp.icon || (sp.name || '?')[0]),
@@ -93,7 +93,7 @@ function log(t, cls = '') {
   if (out) { out.hidden = false; out.append(h('div', { class: cls }, t)); while (out.children.length > 8) out.firstChild.remove(); out.scrollTop = out.scrollHeight; out.scrollIntoView({ block: "nearest" }); }
 }
 function say(b) {
-  if (!b) return; playVoiceLine(b.text, b.who); const el = h('div', { class: 'bubble' }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
+  if (!b) return; playVoiceLine(b.text, b.who, { kind: 'battle' }); const el = h('div', { class: 'bubble' }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
   $('#banter').append(el); log(`${b.who}: "${b.text}"`, 'lore'); setTimeout(() => el.remove(), 4200);
   while ($('#banter').children.length > 2) $('#banter').firstChild.remove();
   placeBanter();
@@ -114,9 +114,22 @@ function placeBanter() {
   bn.classList.add('offband');
 }
 function handle(events) {
-  for (const e of events || []) {
-    if (e.dm) { log(e.log, e.cls); if (loadSettings().areaDesc !== false && !combat) queueMessage({ text: e.log, cls: 'lore', quip: e.quip }); else if (e.quip) say(e.quip); } // Dungeon Master read-aloud
-    else if (e.log) { log(e.log, e.cls); if (!combat && S?.mode === 'dungeon' && (e.card || e.cls === 'lore')) queueMessage(e.log, e.cls); } if (e.banter) say(e.banter); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
+  const list = events || [];
+  const willCombat = list.some((e) => e.combat);
+  for (const e of list) {
+    if (e.dm || e.ambient) {
+      log(e.log, e.cls);
+      // Never queue area narration into a fight, menu, or dialogue; keep the log line only.
+      if (loadSettings().areaDesc !== false && !combat && !willCombat && !menuOpen() && !dialogueOpen()) {
+        queueMessage({ text: e.log, cls: 'lore', quip: e.quip, ambient: true, token: ambientToken() });
+      } else if (e.quip && !combat && !willCombat) say(e.quip);
+    } else if (e.log) {
+      log(e.log, e.cls);
+      if (!combat && !willCombat && S?.mode === 'dungeon' && (e.card || e.cls === 'lore')) {
+        queueMessage({ text: e.log, cls: e.cls || 'lore', ambient: true, token: ambientToken() });
+      }
+    }
+    if (e.banter) say(e.banter); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
     if (e.sfx) sfx(e.sfx);
     if (e.reveal || e.sfx === 'door' || e.sfx === 'chest') rebuild();
     if (e.toTown) { autosave(); showTown(); return; }
@@ -213,7 +226,7 @@ function setControls(kind) {
     b('📜 Sheet', () => showSheet(S.party[0]), 'act', 'Character sheet (I)'); b('🎒 Items', showInventory, 'act', 'Inventory (B)'); b('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, 'act', 'Save (P)');
   }
 }
-function act(f) { const ev = f(); R.setView(S.x, S.y, S.dir); if (ev.some?.((e) => !e.bump)) sfx('step'); handle(ev); }
+function act(f) { ambientMoveToken++; const ev = f(); R.setView(S.x, S.y, S.dir); if (ev.some?.((e) => !e.bump)) sfx('step'); handle(ev); }
 function doSearch() {
   const ev = G.search(S);
   if (G.lockAt(S)) ev.push({ prompt: 'lock' });
@@ -645,7 +658,7 @@ document.fonts?.addEventListener?.('loadingdone', () => { const el = $('#caption
 window.addEventListener('resize', () => { const el = $('#caption'); if (el.classList.contains('show')) requestAnimationFrame(() => placeCaption(el)); });
 // the 3D view changes height in combat (e.g. the phone-portrait menu steps aside while a caption is up): re-place caption + bubbles
 const replaceOverlays = () => { const el = $('#caption'); if (el.classList.contains('show') && !el._refit) placeCaption(el); else placeBanter(); };
-function hideCaption() { stopVoice(); clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); captionDown(); placeBanter(); }
+function hideCaption() { stopVoice(); invalidateAmbientVoices(); clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); captionDown(); placeBanter(); }
 /** The caption band (and, on phone portrait, the collapsed menu/log) is released a moment after the last caption, so
  *  back-to-back narration doesn't make the layout and camera pump between captions. */
 let capDownTimer = null, capDownAt = 0, capShownAt = 0;
@@ -686,27 +699,72 @@ function tapToContinue(alive = () => combat && speed().hold === 0, guard = 220) 
     const iv = setInterval(() => { if (!alive() || !$('#caption').classList.contains('show')) fin(); }, 250);
   });
 }
+
+/* ---------- Ambient / area narration gating (no DM voice mid-battle) ---------- */
+let ambientMoveToken = 0;
+function ambientToken() {
+  return { move: ambientMoveToken, x: S?.x, y: S?.y, level: S?.level, mode: S?.mode };
+}
+function dialogueOpen() {
+  return !!(modal && !modal.classList.contains('hidden') && modal.querySelector('.dialogue'));
+}
+function ambientVoiceAllowed() {
+  return !combat && !menuOpen() && !dialogueOpen();
+}
+/** Drop queued area/DM cards and cancel any in-flight narrator decode/play. */
+function clearAmbientNarration() {
+  ambientMoveToken++;
+  invalidateAmbientVoices();
+  for (let i = msgQueue.length - 1; i >= 0; i--) {
+    const m = msgQueue[i];
+    if (m.ambient || m.cls === 'lore' || m.dm) msgQueue.splice(i, 1);
+  }
+  // If a lore card is on screen (not loot), dismiss it so combat is not blocked behind it.
+  const cap = $('#caption');
+  if (cap?.classList.contains('show') && cap.classList.contains('msg') && !cap.classList.contains('loot')) {
+    hideCaption();
+    if (tapPending) { try { tapPending(); } catch { /* ignore */ } }
+  }
+}
+
 /* ---------- Exploration message cards: clues, notes, wall writings, discoveries ---------- */
 const msgQueue = []; let msgRunning = null;
 function queueMessage(text, cls = 'lore') { msgQueue.push(typeof text === 'object' ? text : { text, cls }); if (!msgRunning) msgRunning = pumpMessages(); return msgRunning; }
 async function pumpMessages() {
   document.body.classList.add('msgup');
+  const pumpToken = ambientMoveToken;
   try {
     while (msgQueue.length) {
-      const m = msgQueue.shift(); const el = $('#caption'); clearTimeout(capTimer);
+      // Combat / menu started — abandon remaining ambient cards (loot still allowed if somehow queued).
+      if (combat && msgQueue.every((x) => x.ambient || x.cls === 'lore')) { msgQueue.length = 0; break; }
+      const m = msgQueue.shift();
+      if ((m.ambient || m.cls === 'lore') && (combat || menuOpen() || dialogueOpen() || (m.token && m.token.move !== ambientMoveToken))) {
+        continue; // stale area description
+      }
+      const el = $('#caption'); clearTimeout(capTimer);
       el.className = `show msg ${m.cls === 'loot' ? 'loot crit' : m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = ''; capShownAt = performance.now();
       el.append(h('div', { class: 'captxt' }, m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l) => h('div', {}, l))) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
       placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 400);
-      playVoiceLine(m.text, 'narrator');
       if (m.cls === 'loot') {
-        // Same tick as a working voice line — belt-and-suspenders if endCombat sting was suspended.
+        playVoiceLine(m.text, 'narrator', { kind: 'other' });
         try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
         duckBed(0.15);
         playVictoryMusic();
+      } else if (m.ambient || m.cls === 'lore') {
+        const tok = m.token || ambientToken();
+        playAmbientNarration(m.text, {
+          token: tok,
+          stillValid: (token) => ambientVoiceAllowed() && token?.move === ambientMoveToken
+            && token?.x === S?.x && token?.y === S?.y && token?.level === S?.level,
+        });
+      } else {
+        playVoiceLine(m.text, 'narrator', { kind: 'other' });
       }
       await tapToContinue(() => true, m.cls === 'loot' ? 1000 : 220); // a stray tap from the last fight can't skip the victory card unread
       stopVoice();
-      if (m.quip) say(m.quip); // a companion reacts once the card is read
+      if (m.ambient || m.cls === 'lore') invalidateAmbientVoices();
+      if (combat && (m.ambient || m.cls === 'lore')) break;
+      if (m.quip && !combat) say(m.quip); // a companion reacts once the card is read
     }
   } finally { msgRunning = null; document.body.classList.remove('msgup'); }
 }
@@ -720,7 +778,10 @@ setInterval(() => {
   if (!tapCatch.classList.contains('hidden')) tapCatch.className = 'hidden'; // catcher left over without a waiter
 }, 1000);
 async function startCombat(info) {
-  if (combat) return; await messagesDone(); if (combat) return;
+  if (combat) return;
+  clearAmbientNarration(); // stop delayed DM/area voice and drop pending lore cards
+  await messagesDone(); if (combat) return;
+  clearAmbientNarration();
   closeModal(); busy = true;
   document.body.classList.add('incombat'); $('#cmenu').innerHTML = '<div class="who dim">Combat begins…</div>';
   const theme = getLevel(S.level).def.color;
@@ -980,7 +1041,7 @@ async function boot() {
   window.__gw = { sfx, SFX_NAMES, applyAudioSettings,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
-    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice }), testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
@@ -997,6 +1058,7 @@ async function boot() {
     window.addEventListener(ev, () => prefetchVictory(), { once: true, capture: true, passive: true });
   }
   if (new URLSearchParams(location.search).has('debug') || location.hash.includes('debug')) installAudioDebug();
+  setAmbientVoiceGate(() => ambientVoiceAllowed());
   log('Blackspire ready. Press New Game!', 'sys');
   showTitle();
 }
@@ -1020,6 +1082,7 @@ function confirmView(title, text, yesLabel, yes, back = 'main') {
     h('div', { class: 'menu' }, btn(yesLabel, yes, { class: 'primary', id: 'btn-confirm' }), btn('Cancel', () => (S ? openMenu(back) : closeMenu()), { id: 'btn-cancel' }))]);
 }
 function openMenu(view = 'main', custom = null) {
+  invalidateAmbientVoices();
   menuView = custom ? 'confirm' : view;
   const inCombat = !!combat;
   const note = (t) => h('p', { class: 'hint' }, t);

@@ -110,11 +110,34 @@ export function stopVoice() {
   current = null;
 }
 
+/** Generation token: bump to cancel in-flight ambient/area loads before they reach src.start. */
+let voiceGen = 0;
+let ambientGen = 0;
+
+/** Optional host gate: return false to block ambient/area starts (combat / menu / dialogue). */
+let ambientGate = () => true;
+export function setAmbientVoiceGate(fn) { ambientGate = typeof fn === 'function' ? fn : () => true; }
+
+export function voiceGeneration() { return { voiceGen, ambientGen }; }
+
+/**
+ * Stop any ambient/area narrator clip and invalidate pending ambient plays.
+ * Battle / dialogue / companion lines keep their own gen and are not cancelled.
+ */
+export function invalidateAmbientVoices() {
+  ambientGen++;
+  if (current?.ambient) stopVoice();
+}
+
 /**
  * Play a voiced line if we have a clip. Returns true if a match was found (playback may still be async).
- * speaker: cast key or display name (e.g. 'elowen', 'Marga', 'Dungeon Master').
+ * opts:
+ *   ambient: true for dungeon/town area DM read-aloud (cancelled on combat/move/menu)
+ *   kind: 'ambient' | 'battle' | 'dialog' | 'other'
+ *   token: opaque value; if stillValid provided, consulted after decode
+ *   stillValid: () => boolean — if false after decode, drop the line
  */
-export function playVoice(text, speaker = null) {
+export function playVoice(text, speaker = null, opts = {}) {
   if (!enabled || !text) return false;
   const file = resolve(text, speaker);
   if (!file) {
@@ -124,13 +147,29 @@ export function playVoice(text, speaker = null) {
     if (typeof console !== 'undefined') console.debug('[voice miss]', speaker, String(text).slice(0, 80));
     return false;
   }
+  const kind = opts.kind || (opts.ambient ? 'ambient' : 'other');
+  const ambient = kind === 'ambient' || !!opts.ambient;
+  // Ambient must not start while the host says we're in combat / menu / dialogue.
+  if (ambient && !ambientGate()) return false;
+
+  // Don't cut off a battle line with ambient, and vice-versa: ambient yields to non-ambient.
+  if (ambient && current && !current.ambient) return false;
   stopVoice();
   unlockVoices();
   const c = ac();
+  const myVoiceGen = ++voiceGen;
+  const myAmbientGen = ambientGen;
+  const token = opts.token;
+  const stillValid = opts.stillValid;
   const runWA = async () => {
     try {
       if (c && c.state !== 'running') await c.resume().catch(() => {});
       const buf = await loadBuf(file);
+      // Drop if a newer play superseded us, ambient was invalidated, or the host gate closed.
+      if (myVoiceGen !== voiceGen) return;
+      if (ambient && myAmbientGen !== ambientGen) return;
+      if (ambient && !ambientGate()) return;
+      if (typeof stillValid === 'function' && !stillValid(token)) return;
       if (!enabled) return;
       const ctx = ac();
       if (!ctx) throw new Error('no ctx');
@@ -142,7 +181,7 @@ export function playVoice(text, speaker = null) {
       // Voice sits on destination (not music bus) so Music volume / ducking never mutes dialogue.
       src.connect(g).connect(ctx.destination);
       src.onended = () => { if (current?.src === src) current = null; };
-      current = { src, gain: g, file, startedAt: ctx.currentTime, duration: buf.duration };
+      current = { src, gain: g, file, startedAt: ctx.currentTime, duration: buf.duration, ambient, kind, speaker, token };
       src.start(0);
     } catch (e) {
       if (typeof console !== 'undefined') console.warn('[voice play fail]', file, e);
@@ -170,8 +209,13 @@ export function castKey(who) {
   return WHO[k] || k.replace(/\s+/g, '');
 }
 
-export function playVoiceLine(text, who) {
-  return playVoice(text, castKey(who));
+export function playVoiceLine(text, who, opts = {}) {
+  return playVoice(text, castKey(who), opts);
+}
+
+/** Area / DM read-aloud — always ambient, cancelled if combat/menu/dialogue begins before decode finishes. */
+export function playAmbientNarration(text, opts = {}) {
+  return playVoiceLine(text, 'narrator', { ...opts, ambient: true, kind: 'ambient' });
 }
 
 export function hasVoice(text, who) {
@@ -182,7 +226,7 @@ export function hasVoice(text, who) {
 export function testVoice() {
   setVoicesEnabled(true);
   unlockVoices();
-  return playVoiceLine('Rise, Knight of the Dawn.', 'elowen');
+  return playVoiceLine('Rise, Knight of the Dawn.', 'elowen', { kind: 'other' });
 }
 
 /* ---------------- victory fanfare (procedural synth A — brass arpeggio) ---------------- */
