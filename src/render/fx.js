@@ -96,6 +96,16 @@ export class FX {
     this.burst(pos, color, 30, 4, 0.35); this.flashLight(pos, color, 60, 0.5);
     return new Promise((r) => setTimeout(r, durMs * 0.5));
   }
+  /** Dust/wind whoosh past the camera as a monster leaps in (no-op under reduceMotion). */
+  rush(pos, reduce = false) {
+    if (reduce || !pos) return;
+    const p = pos.clone();
+    for (let i = 0; i < 8; i++) {
+      const vel = new Vector3((Math.random() - 0.5) * 1.2, Math.random() * 0.6 - 0.1, 2.5 + Math.random() * 2.5);
+      this.spawn({ pos: p.clone().add(new Vector3((Math.random() - 0.5) * 0.6, (Math.random() - 0.2) * 0.8, 0)), vel, life: 0.28 + Math.random() * 0.18, size: 0.1 + Math.random() * 0.08, grow: -0.12, color: 0xd8c8ff, opacity: 0.7, gravity: 0 });
+    }
+    this.flashLight(p, 0xffffff, 18, 0.18);
+  }
   /** A stylized weapon striking the target at `pos` (monster centre). from: world point the shot starts at (bows).
    *  Resolves at the moment of contact; the weapon lingers briefly afterwards. */
   weaponStrike(kind, pos, { from = null, crit = false, durMs = 240, size = 1.3 } = {}) {

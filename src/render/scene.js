@@ -260,7 +260,7 @@ export class Renderer {
         for (let k = 0; k <= 8; k++) { act.time = (cl.duration * k) / 8; mixer.update(0); this.monsterGroup.updateMatrixWorld(true); const bb = measure(); if (!bb.isEmpty()) wbox.union(bb); }
         act.stop(); if (clips.idle) mixer.clipAction(clips.idle).setEffectiveWeight(1); }
       mixer.update(0);
-      this.monsterObjs.set(m.id, { holder, o, mixer, clips, mats, dead: false, height: target, wbox });
+      this.monsterObjs.set(m.id, { id: m.id, holder, o, mixer, clips, mats, dead: false, height: target, wbox });
     }));
     this.fitArena();
   }
@@ -291,7 +291,20 @@ export class Renderer {
     const a = v.mixer.clipAction(clip); v.mixer.stopAllAction(); a.reset(); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.play();
     if (name !== 'death') { const back = () => { v.mixer.removeEventListener('finished', back); if (!v.dead && v.clips[then]) { v.mixer.stopAllAction(); v.mixer.clipAction(v.clips[then]).reset().play(); } }; v.mixer.addEventListener('finished', back); }
   }
-  monsterAttack(id) { const v = this.monsterObjs.get(id); if (!v || v.dead) return; this.playOnce(id, 'attack'); v.lunge = v.lungeT = Math.max(0.25, 0.45 * Math.min(1, this.speedF + 0.3)); }
+  /** Leap/strike toward the camera: scale up, move closer, brief camera push near the peak, then recoil.
+   *  Strength scales with monster size; big bosses are capped so they stay framed. Reduce-motion is a subtle nudge. */
+  monsterAttack(id) {
+    const v = this.monsterObjs.get(id); if (!v || v.dead) return; this.playOnce(id, 'attack');
+    const h = v.height || 1.5, sizeK = Math.min(1, h / 2.2), bossCap = h >= 2.8 ? 0.55 : h >= 2.2 ? 0.72 : 1;
+    const rm = this.reduceMotion, f = Math.min(1.15, Math.max(0.55, this.speedF || 1));
+    v.baseSc ??= v.o.scale.x; v.o.userData.y0 ??= v.o.position.y;
+    v.lunge = v.lungeT = Math.max(0.4, Math.min(0.6, (rm ? 0.4 : 0.52) * f));
+    v.leapZ = (rm ? 0.35 : 1.15 + sizeK * 0.55) * bossCap;
+    v.leapGrow = (rm ? 0.06 : 0.22 + sizeK * 0.28) * bossCap;
+    v.leapLift = (rm ? 0.02 : 0.08 + sizeK * 0.05) * bossCap;
+    v.leapPitch = rm ? 0.03 : 0.1 + sizeK * 0.04;
+    v.leapPushed = false;
+  }
   /** Centre of a monster in world space. */
   monsterCenter(id, out = new THREE.Vector3()) { const v = this.monsterObjs.get(id); if (!v) return out.set(0, 1.2, -2); out.copy(v.holder.position); out.y += v.height * 0.5; return out; }
   partyOrigin(i = 0) { return new THREE.Vector3(this.arenaCam.position.x + (i % 2 ? 0.5 : -0.5), this.arenaCam.position.y - 0.7, this.arenaCam.position.z - 1.2); }
@@ -324,7 +337,7 @@ export class Renderer {
     this.cfx.reduceMotion = this.reduceMotion; const to = this.monsterCenter(targetId);
     return this.cfx.weaponStrike(kind, to, { from: this.partyOrigin(casterIdx), crit, durMs, size: Math.min(3.2, Math.max(1.4, (this.monsterObjs.get(targetId)?.height || 1.6) * 1.25)) });
   }
-  partyHit(crit) { if (this.reduceMotion) return; this.aBump = 0.22; if (crit) this.aShake = 0.4; }
+  partyHit(crit) { if (this.reduceMotion) { this.aBump = Math.max(this.aBump, 0.08); return; } this.aBump = Math.max(this.aBump, crit ? 0.34 : 0.28); this.aShake = Math.max(this.aShake, crit ? 0.48 : 0.24); }
   spellFx(color = 0xff7020, targetId = null) {
     const v = targetId && this.monsterObjs.get(targetId);
     const pos = v ? v.holder.position.clone().add(new THREE.Vector3(0, v.height * 0.5, 0)) : new THREE.Vector3(0, 1.2, -2);
@@ -337,7 +350,7 @@ export class Renderer {
     let r = null; const v3 = new THREE.Vector3();
     for (const [, v] of this.monsterObjs) {
       if (v.dead || !v.wbox || v.wbox.isEmpty()) continue; const b = v.wbox.clone(); const sz = b.getSize(new THREE.Vector3());
-      b.min.x -= sz.x * 0.1; b.max.x += sz.x * 0.1; b.max.y += sz.y * 0.12; b.min.z -= sz.z * 0.1; b.max.z += sz.z * 0.1 + 0.4; // lunge toward camera
+      b.min.x -= sz.x * 0.1; b.max.x += sz.x * 0.1; b.max.y += sz.y * 0.18; b.min.z -= sz.z * 0.1; b.max.z += sz.z * 0.1 + 1.7; // leap toward camera (+ scale-up headroom)
       for (let i = 0; i < 8; i++) { v3.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).project(this.arenaCam);
         const x = (v3.x * 0.5 + 0.5) * 100, y = (-v3.y * 0.5 + 0.5) * 100;
         if (!r) r = { left: x, right: x, top: y, bottom: y }; else { r.left = Math.min(r.left, x); r.right = Math.max(r.right, x); r.top = Math.min(r.top, y); r.bottom = Math.max(r.bottom, y); } }
@@ -384,16 +397,32 @@ export class Renderer {
       const co = (this._co ||= new THREE.Vector3()); this.arenaCam.position.y -= co.y; this.arenaCam.position.z -= co.z; co.set(0, 0, 0);
       this.arenaCam.position.x = Math.sin(t * 0.25) * 0.25; // gentle sway; fitArena leaves margin for it
       this.arenaCam.lookAt(this.arenaLook || new THREE.Vector3(0, 1.3, -2));
-      if (this.aBump > 0) { this.aBump -= dt; co.z = -Math.sin(Math.max(0, this.aBump) / 0.22 * Math.PI) * 0.18; }
+      if (this.aBump > 0) { const bumpT = Math.max(this.aBump, 0.22); this.aBump -= dt; co.z = -Math.sin(Math.max(0, this.aBump) / bumpT * Math.PI) * (this.reduceMotion ? 0.1 : 0.42); }
       if (this.aShake > 0) { this.aShake -= dt; const a = Math.max(0, this.aShake) * 0.25; this.arenaCam.rotation.z += (Math.random() - 0.5) * a * 0.5; this.arenaCam.position.x += (Math.random() - 0.5) * a; co.y = (Math.random() - 0.5) * a; }
       this.arenaCam.position.y += co.y; this.arenaCam.position.z += co.z;
       this.cfx.update(dt);
-      for (const [, v] of this.monsterObjs) {
+      for (const [mid, v] of this.monsterObjs) {
         if (v.flash > 0) { v.flash -= dt; const k = Math.max(0, v.flash) * 6; for (const m of v.mats) m.emissive.setHex(v.flashColor).multiplyScalar(k * 0.4); if (v.flash <= 0) for (const m of v.mats) m.emissive.copy(m.color).multiplyScalar(0.08); }
-        let z = 0, rx = 0;
-        if (v.lunge > 0) { v.lunge -= dt; z += Math.sin((1 - Math.max(0, v.lunge) / v.lungeT) * Math.PI) * 0.5; rx += Math.sin((1 - Math.max(0, v.lunge) / v.lungeT) * Math.PI) * 0.05; }
+        let z = 0, rx = 0, yOff = 0, sc = v.baseSc ?? null;
+        if (v.lunge > 0) {
+          v.lunge -= dt; const u = 1 - Math.max(0, v.lunge) / v.lungeT, wave = Math.sin(u * Math.PI);
+          z += wave * (v.leapZ ?? 0.5); rx += wave * (v.leapPitch ?? 0.05); yOff += wave * (v.leapLift ?? 0);
+          if (sc != null) sc *= 1 + wave * (v.leapGrow ?? 0);
+          // brief camera push-in + shake near the peak of the leap (the strike lands)
+          if (!v.leapPushed && u >= 0.42) {
+            v.leapPushed = true;
+            this.aBump = Math.max(this.aBump, this.reduceMotion ? 0.12 : 0.3);
+            this.aShake = Math.max(this.aShake, this.reduceMotion ? 0.08 : 0.22);
+            this.cfx?.rush?.(this.monsterCenter(v.id || mid), this.reduceMotion);
+          }
+          if (v.lunge <= 0 && v.baseSc != null) v.o.scale.setScalar(v.baseSc);
+        }
         if (v.stagger > 0) { v.stagger -= dt; const k = Math.sin((1 - Math.max(0, v.stagger) / v.staggerT) * Math.PI); z -= k * v.knock; rx -= k * 0.22; }
-        if (v.lunge !== undefined || v.stagger !== undefined) { v.o.position.z = z; v.o.rotation.x = rx; }
+        if (v.lunge !== undefined || v.stagger !== undefined) {
+          v.o.position.z = z; v.o.rotation.x = rx;
+          if (v.lunge > 0 || yOff) v.o.position.y = (v.o.userData.y0 ?? v.o.position.y) + yOff;
+          if (sc != null && v.lunge > 0) v.o.scale.setScalar(sc);
+        }
         if (v.dieT !== undefined) {
           v.dieT += dt; const k = Math.min(1, v.dieT / v.dieDur);
           if (v.collapse) { const c = Math.min(1, k / 0.45); v.o.rotation.x = -c * c * 1.35; v.o.position.y = (v.o.userData.y0 ??= v.o.position.y) - c * v.height * 0.15; }

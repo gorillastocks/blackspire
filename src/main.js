@@ -737,7 +737,7 @@ async function flushCombat() {
   for (const e of events) {
     if (!combat || !S) return;
     if (e.type === 'caption') { pending = null; renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0); if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
-    if (e.type === 'monsterAttack') { pending = null; R.monsterAttack(e.who.id); sfx('swing'); await wait(380); }
+    if (e.type === 'monsterAttack') { pending = null; R.monsterAttack(e.who.id); sfx('swing'); await wait(560); }
     else if (e.type === 'partyAttack') { pending = null; const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait(k === 'bow' || k === 'crossbow' ? 60 : 150); }
     else if (e.type === 'hit' && e.tgt.side === 'monster') {
       const sp = pending && pending.who === e.att ? pending.spell : null;

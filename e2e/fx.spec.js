@@ -24,6 +24,22 @@ test('combat animations: projectiles, impacts, death, floaters — no errors, ac
   await page.evaluate(() => { window.__gw.R.spellCast('fireball', null, 0, 900); });
   await page.waitForTimeout(700); await shot('fireball');
   await page.waitForTimeout(800);
+  // monster leap toward camera (mid-lunge): bigger + closer, then recoil
+  await page.evaluate((id) => window.__gw.R.monsterAttack(id), ids[0]);
+  await page.waitForTimeout(260); await shot('leap');
+  const leap = await page.evaluate((id) => { const v = window.__gw.R.monsterObjs.get(id); return { lunge: v.lunge, leapZ: v.leapZ, grow: v.leapGrow, sc: v.o.scale.x / v.baseSc, z: v.o.position.z }; }, ids[0]);
+  expect(leap.leapZ, 'leap reaches toward the camera').toBeGreaterThan(0.8);
+  expect(leap.sc, 'attacker scales up mid-lunge').toBeGreaterThan(1.1);
+  expect(leap.z, 'attacker moves toward camera (+z)').toBeGreaterThan(0.4);
+  await page.waitForTimeout(500);
+  // reduce-motion leap is subtle
+  await page.evaluate(() => { window.__gw.R.reduceMotion = true; });
+  await page.evaluate((id) => window.__gw.R.monsterAttack(id), ids[1]);
+  await page.waitForTimeout(200);
+  const soft = await page.evaluate((id) => { const v = window.__gw.R.monsterObjs.get(id); return { leapZ: v.leapZ, grow: v.leapGrow }; }, ids[1]);
+  expect(soft.leapZ).toBeLessThan(0.5); expect(soft.grow).toBeLessThan(0.1);
+  await page.evaluate(() => { window.__gw.R.reduceMotion = false; });
+  await page.waitForTimeout(400);
   await page.evaluate((id) => { window.__gw.R.monsterHit(id, true, 'slashing', true); window.__gw.R.partyHit(true); }, ids[2]);
   const busy = fps(page, 1200);
   await page.waitForTimeout(120); await shot('crit-slash');
@@ -43,5 +59,13 @@ test('combat animations: projectiles, impacts, death, floaters — no errors, ac
   await page.waitForSelector('.floater', { timeout: 60000 }); await shot('floater');
   console.log(`${info.project.name}: fps idle ${base.toFixed(1)} during fx ${during.toFixed(1)} pool ${active}`);
   expect(during).toBeGreaterThan(Math.min(24, base * 0.6));
+  // boss leap stays capped so Gorvax/Malthrax don't clip out of view
+  await page.evaluate(async () => { window.__gw.R.clearMonsters(); await window.__gw.R.showMonsters([{ id: 'boss1', key: 'tyrannosaurus', name: 'Gorvax', hp: 100, maxHp: 100 }], 0xaa44ff); });
+  await page.waitForTimeout(1200);
+  const bid = await page.evaluate(() => [...window.__gw.R.monsterObjs.keys()][0]);
+  await page.evaluate((id) => window.__gw.R.monsterAttack(id), bid);
+  await page.waitForTimeout(260); await shot('leap-gorvax');
+  const boss = await page.evaluate((id) => { const v = window.__gw.R.monsterObjs.get(id); return { leapZ: v.leapZ, grow: v.leapGrow, height: v.height }; }, bid);
+  expect(boss.height).toBeGreaterThan(3); expect(boss.leapZ).toBeLessThan(1.2); expect(boss.grow).toBeLessThan(0.4);
   expect(errors).toEqual([]);
 });
