@@ -265,7 +265,7 @@ export function search(s) {
   }
   out.unshift({ log: `${who.name} searches (Perception ${r.total})… ${found ? 'a secret door!' : 'nothing obvious.'}`, cls: found ? 'good' : 'dim', reveal: found });
   if (found) out.push({ banter: banter(s.party, 'secret', {}, 0.9) });
-  if (rand() < 0.08) out.push({ log: 'Your searching made noise…', cls: 'bad', combat: { groups: randomEncounter(s) } });
+  if (rand() < 0.08) out.push({ log: 'Your searching made noise…', cls: 'bad', combat: { groups: randomEncounter(s), ambush: true } });
   return out;
 }
 export function lockAt(s) { for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'L') return [s.x + dx, s.y + dy]; return null; }
@@ -275,7 +275,7 @@ export function pickLock(s, force = false) {
   if (force) {
     const who = bestBy(s, (c) => abilityMod(c, 'str')); const r = check(who, 'athletics');
     if (r.total >= def.lockDC + 2) { setTile(s, p[0], p[1], 'd'); return [{ log: `${who.name} shoulders the door open! (Athletics ${r.total})`, cls: 'good', sfx: 'door' }]; }
-    return [{ log: `${who.name} bounces off the door. (Athletics ${r.total})`, cls: 'dim' }, ...(rand() < 0.35 ? [{ log: 'The racket attracts attention!', cls: 'bad', combat: { groups: randomEncounter(s) } }] : [])];
+    return [{ log: `${who.name} bounces off the door. (Athletics ${r.total})`, cls: 'dim' }, ...(rand() < 0.35 ? [{ log: 'The racket attracts attention!', cls: 'bad', combat: { groups: randomEncounter(s), ambush: true } }] : [])];
   }
   const who = bestBy(s, thievesTools); const r = d20({}) + thievesTools(who);
   if (r >= def.lockDC) { setTile(s, p[0], p[1], 'd'); return [{ log: `${who.name} picks the lock! (${r})`, cls: 'good', sfx: 'door' }]; }
@@ -341,7 +341,7 @@ export function goUp(s) {
 export function rest(s, kind) {
   const out = [];
   if (s.mode === 'dungeon' && rand() < (kind === 'long' ? 0.3 : 0.12)) {
-    out.push({ log: 'Your rest is interrupted by monsters!', cls: 'bad', combat: { groups: randomEncounter(s) } }); return out;
+    out.push({ log: 'Your rest is interrupted by monsters!', cls: 'bad', combat: { groups: randomEncounter(s), ambush: true } }); return out;
   }
   if (kind === 'short') { for (const c of s.party) for (const l of shortRest(c)) out.push({ log: l }); out.push({ log: 'The party takes a short rest (1 hour).', cls: 'good' }); }
   else { for (const c of s.party) longRest(c); out.push({ log: 'The party takes a long rest. HP, spell slots and abilities restored.', cls: 'good' }); out.push(...Story.onLongRest(s)); }

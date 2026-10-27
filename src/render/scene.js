@@ -11,6 +11,7 @@ function getLoader() {
   return loaderP;
 }
 import { W, H, DIRS } from '../dungeon/levels.js';
+import { ANIM_SLOW } from '../menu.js';
 import { MONSTERS } from '../rules/data.js';
 
 const CELL = 2, WALL_H = 2.6;
@@ -298,7 +299,7 @@ export class Renderer {
     const h = v.height || 1.5, sizeK = Math.min(1, h / 2.2), bossCap = h >= 2.8 ? 0.55 : h >= 2.2 ? 0.72 : 1;
     const rm = this.reduceMotion, f = Math.min(1.15, Math.max(0.55, this.speedF || 1));
     v.baseSc ??= 1; v.o.userData.y0 ??= v.o.position.y;
-    v.lunge = v.lungeT = Math.max(0.4, Math.min(0.6, (rm ? 0.4 : 0.52) * f));
+    v.lunge = v.lungeT = Math.max(0.4 * ANIM_SLOW, Math.min(0.6 * ANIM_SLOW, (rm ? 0.4 : 0.52) * f * ANIM_SLOW)); // 1.5x longer lunge
     v.leapZ = (rm ? 0.35 : 1.15 + sizeK * 0.55) * bossCap;
     v.leapGrow = (rm ? 0.06 : 0.22 + sizeK * 0.28) * bossCap;
     v.leapLift = (rm ? 0.02 : 0.08 + sizeK * 0.05) * bossCap;
@@ -310,8 +311,8 @@ export class Renderer {
   partyOrigin(i = 0) { return new THREE.Vector3(this.arenaCam.position.x + (i % 2 ? 0.5 : -0.5), this.arenaCam.position.y - 0.7, this.arenaCam.position.z - 1.2); }
   monsterHit(id, crit, dtype = null, weapon = true) {
     const v = this.monsterObjs.get(id); if (!v) return;
-    v.flash = crit ? 0.35 : 0.18; v.flashColor = crit ? 0xffee55 : 0xffffff;
-    v.stagger = v.staggerT = crit ? 0.45 : 0.32; v.knock = crit ? 0.45 : 0.25;
+    v.flash = crit ? 0.5 : 0.28; v.flashColor = crit ? 0xffee55 : 0xffffff; // slightly longer impact hold at the hit frame
+    v.stagger = v.staggerT = (crit ? 0.45 : 0.32) * 1.4; v.knock = crit ? 0.45 : 0.25;
     if (v.clips.hit && !v.dead) this.playOnce(id, 'hit');
     if (weapon && dtype) this.cfx.impact(this.monsterCenter(id), dtype, crit); else if (dtype) this.cfx.burst(this.monsterCenter(id), 0xffffff, crit ? 12 : 6, 1.4, 0.12);
     if (crit && !this.reduceMotion) this.aShake = 0.35;
@@ -331,9 +332,10 @@ export class Renderer {
     if (look.kind === 'column') return this.cfx.column(to.clone().setY(0.1), look.color, dur).then(() => true);
     if (look.kind === 'area') {
       const rad = /fireball|breath/i.test(spell) ? 2.8 : /thunderwave|shatter/i.test(spell) ? 2.4 : 2.0;
+      const kk = Math.min(1.6, Math.max(0.4, this.speedF || 1));
       // flash every living monster so the blast clearly hits the whole group
       for (const [, v] of this.monsterObjs) if (!v.dead) { v.flash = 0.45; v.flashColor = look.color; }
-      return this.cfx.area(this.monsterLineCenter(), look.color, rad, Math.max(650, Math.min(900, dur * 1.8)), { element: look.element, reduce: this.reduceMotion }).then(() => {
+      return this.cfx.area(this.monsterLineCenter(), look.color, rad, Math.max(650 * ANIM_SLOW * kk, Math.min(900 * ANIM_SLOW * kk, dur * 1.8)), { element: look.element, reduce: this.reduceMotion }).then(() => {
         if (!this.reduceMotion) this.aShake = Math.max(this.aShake, 0.32); else this.aShake = Math.max(this.aShake, 0.1);
         return true;
       });

@@ -6,6 +6,8 @@ export const SETTINGS_KEY = 'blackspire.settings';
 
 const DEFAULTS = { sound: true, music: 0.6, sfx: 0.8, amb: 0.6, voices: true, voice: 0.85, tutorialDone: false, battleSpeed: 'pause', areaDesc: true };
 /** Battle speed: f scales animation waits; hold = how long each action caption stays before the next action (0 = wait for a tap). */
+/** Attack animations (weapon strikes, monster lunges, spell bolts/bursts) run this much longer than the original timings; battle speed still scales on top. */
+export const ANIM_SLOW = 1.5;
 export const BATTLE_SPEEDS = {
   pause: { label: '⏸ Pause after each action', short: 'Pause', f: 1, hold: 0 },
   slow: { label: '🐢 Slow', short: 'Slow', f: 1.6, hold: 2400 },

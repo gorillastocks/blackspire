@@ -122,7 +122,7 @@ export class FX {
    *  Palette is tinted by element (fire/cold/lightning/thunder/psychic). Mobile-friendly counts; reduceMotion is a soft flash. */
   area(pos, color, radius, durMs, { element = null, reduce = false } = {}) {
     const pal = paletteFor(element, color);
-    const dur = Math.max(0.6, Math.min(0.9, (durMs || 700) / 1000));
+    const dur = Math.max(0.4, Math.min(2.4, (durMs || 700) / 1000)); // caller (scene.spellCast) owns the range so the area burst scales with ANIM_SLOW + battle speed
     const T = textures();
     // bright core flash
     this.spawn({ pos, life: 0.32, size: radius * 0.55, grow: radius * 1.4, color: 0xffffff, opacity: 1 });

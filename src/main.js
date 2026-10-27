@@ -1,7 +1,7 @@
 import { PORTRAITS, portraitURL, randomPortrait } from './portraits.js';
 import './style.css';
 import * as G from './game/game.js';
-import { SLOT_KEYS, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS } from './menu.js';
+import { SLOT_KEYS, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS, ANIM_SLOW } from './menu.js';
 import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js';
 import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
@@ -115,7 +115,7 @@ function placeBanter() {
 }
 function handle(events) {
   const list = events || [];
-  const willCombat = list.some((e) => e.combat);
+  const willCombat = list.some((e) => e.combat) || combatStarting;
   for (const e of list) {
     if (e.dm || e.ambient) {
       log(e.log, e.cls);
@@ -702,6 +702,7 @@ function tapToContinue(alive = () => combat && speed().hold === 0, guard = 220) 
 
 /* ---------- Ambient / area narration gating (no DM voice mid-battle) ---------- */
 let ambientMoveToken = 0;
+let combatStarting = false; // true from startCombat() entry until the Combat object exists (banner included)
 function ambientToken() {
   return { move: ambientMoveToken, x: S?.x, y: S?.y, level: S?.level, mode: S?.mode };
 }
@@ -709,7 +710,7 @@ function dialogueOpen() {
   return !!(modal && !modal.classList.contains('hidden') && modal.querySelector('.dialogue'));
 }
 function ambientVoiceAllowed() {
-  return !combat && !menuOpen() && !dialogueOpen();
+  return !combat && !combatStarting && !menuOpen() && !dialogueOpen();
 }
 /** Drop queued area/DM cards and cancel any in-flight narrator decode/play. */
 function clearAmbientNarration() {
@@ -777,17 +778,62 @@ setInterval(() => {
   if (!cap.classList.contains('show') && document.body.classList.contains('capup') && !capDownPending()) captionDown(true); // menu/log left collapsed
   if (!tapCatch.classList.contains('hidden')) tapCatch.className = 'hidden'; // catcher left over without a waiter
 }, 1000);
+
+/* ---------- Encounter banner: bold flash before the battle UI appears ---------- */
+function encounterTitle(info) {
+  if (info?.ambush) return 'Ambush!';
+  if (info?.boss) {
+    const def = S ? getLevel(S.level).def : null;
+    if (def?.bossName && !info.phase2) return def.bossName;
+    return 'A powerful foe appears!';
+  }
+  return 'Encounter!';
+}
+let encounterEl = null;
+function showEncounterBanner(info, ms = 1200) {
+  return new Promise((resolve) => {
+    const view = $('#view'); if (!view) return resolve();
+    encounterEl?.remove();
+    const title = encounterTitle(info);
+    const boss = !!info?.boss && title !== 'Encounter!';
+    const el = h('div', { id: 'encounter', class: (boss ? 'boss ' : '') + (info?.ambush ? 'ambush ' : ''), role: 'alert', 'aria-live': 'assertive' },
+      h('div', { class: 'enc-panel' }, h('div', { class: 'enc-title' }, title), h('div', { class: 'enc-rule' })));
+    encounterEl = el; view.append(el);
+    flashRed(true); sfx('alarm');
+    let done = false;
+    const fin = (ev) => {
+      if (done) return;
+      if (ev && ev.type === 'keydown' && ![' ', 'Enter', 'Escape'].includes(ev.key)) return;
+      done = true; clearTimeout(tm);
+      window.removeEventListener('pointerdown', fin, true); window.removeEventListener('keydown', fin, true);
+      if (ev) { ev.preventDefault?.(); ev.stopPropagation?.(); if (ev.type === 'pointerdown') eatNextClick(); } // the skip tap must not press what is underneath
+      el.classList.add('out');
+      setTimeout(() => { el.remove(); if (encounterEl === el) encounterEl = null; }, ev ? 0 : 140);
+      resolve();
+    };
+    const tm = setTimeout(() => fin(), ms);
+    // a stray tap from the move that triggered the fight must not skip it unseen
+    setTimeout(() => { if (!done) { window.addEventListener('pointerdown', fin, true); window.addEventListener('keydown', fin, true); } }, 150);
+  });
+}
 async function startCombat(info) {
-  if (combat) return;
+  if (combat || combatStarting) return;
+  combatStarting = true;
   clearAmbientNarration(); // stop delayed DM/area voice and drop pending lore cards
-  await messagesDone(); if (combat) return;
-  clearAmbientNarration();
+  try {
+    await messagesDone(); if (combat) { combatStarting = false; return; }
+    clearAmbientNarration();
+    busy = true;
+    await showEncounterBanner(info);
+    clearAmbientNarration();
+  } catch (e) { combatStarting = false; busy = false; throw e; }
   closeModal(); busy = true;
   document.body.classList.add('incombat'); $('#cmenu').innerHTML = '<div class="who dim">Combat begins…</div>';
   const theme = getLevel(S.level).def.color;
   combatInfo = info; lootBase = snapLoot();
   combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss && !info.town, difficulty: S.difficulty || 'normal', story: info.town ? {} : G.combatOpts(S, info) });
-  R.setMode('combat'); sfx('encounter');
+  combatStarting = false;
+  R.setMode('combat');
   await R.showMonsters(combat.monsters, theme);
   const names = {}; for (const m of combat.monsters) names[m.name] = (names[m.name] || 0) + 1;
   log(`⚔ ${Object.entries(names).map(([n, k]) => `${k} ${n}${k > 1 ? 's' : ''}`).join(', ')}!`, 'bad');
@@ -821,12 +867,12 @@ async function flushCombat() {
   syncFxSettings(); let pending = null; const wpn = new Map();
   const dmgSfx = (e, sp) => sfx(sp === 'magicMissile' ? 'ping' : SPELL_SFX[e.dtype] || (sp ? 'arcane' : 'hit'));
   const idx = (c) => Math.max(0, S.party.indexOf(c));
-  const fxDur = () => Math.round(420 * Math.max(0.4, speed().f));
+  const fxDur = () => Math.round(420 * ANIM_SLOW * Math.max(0.4, speed().f)); // bolts / bursts / strikes ≈1.5x longer; scales with battle speed
   for (const e of events) {
     if (!combat || !S) return;
     if (e.type === 'caption') { pending = null; renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0); if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
-    if (e.type === 'monsterAttack') { pending = null; R.monsterAttack(e.who.id); sfx('swing'); await wait(560); }
-    else if (e.type === 'partyAttack') { pending = null; const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait(k === 'bow' || k === 'crossbow' ? 60 : 150); }
+    if (e.type === 'monsterAttack') { pending = null; R.monsterAttack(e.who.id); sfx('swing'); await wait(560 * ANIM_SLOW); }
+    else if (e.type === 'partyAttack') { pending = null; const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait((k === 'bow' || k === 'crossbow' ? 60 : 150) * ANIM_SLOW); }
     else if (e.type === 'hit' && e.tgt.side === 'monster') {
       const sp = pending && pending.who === e.att ? pending.spell : null;
       if (sp && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur());
@@ -834,10 +880,10 @@ async function flushCombat() {
       if (wk) await R.weaponStrike(wk, e.tgt.id, e.crit, fxDur() * 0.6, idx(e.att));
       R.monsterHit(e.tgt.id, e.crit, e.dtype || 'slashing', !sp && !wk); floater(e.tgt.id, e.dmg, e.crit, e.dtype);
       if (sp) dmgSfx(e, sp); else sfx(WEAPON_SFX[wk] && wk !== 'bow' && wk !== 'crossbow' ? WEAPON_SFX[wk] : e.dtype === 'bludgeoning' ? 'thud' : e.dtype === 'piercing' ? 'stab' : SPELL_SFX[e.dtype] || 'slash');
-      if (e.crit) sfx('crit'); await wait(sp ? 160 : wk ? 200 : 260);
+      if (e.crit) sfx('crit'); await wait((sp ? 160 : wk ? 200 : 260) * ANIM_SLOW + 90); // impact hold on the hit frame (sound already fired with the hit)
     }
-    else if (e.type === 'miss') { const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else cardFloat(e.tgt, 'Miss'); sfx('miss'); await wait(160); }
-    else if (e.type === 'partyHurt') { renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); sfx('mhit'); if (e.crit) sfx('crit'); await wait(260); }
+    else if (e.type === 'miss') { const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else cardFloat(e.tgt, 'Miss'); sfx('miss'); await wait(160 * ANIM_SLOW); }
+    else if (e.type === 'partyHurt') { renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); sfx('mhit'); if (e.crit) sfx('crit'); await wait(260 * ANIM_SLOW + 90); }
     else if (e.type === 'kill') { if (e.who.side === 'party') sfx('kill'); else { R.monsterDie(e.who.id); sfx('mdeath'); } say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(300); }
     else if (e.type === 'crit') { if (e.att.side === 'party') say(banter(S.party, 'crit', { who: e.att }, 0.8)); else say(banter(S.party, 'enemyCrit', { who: e.tgt }, 0.8)); }
     else if (e.type === 'spell') {
@@ -1041,7 +1087,7 @@ async function boot() {
   window.__gw = { sfx, SFX_NAMES, applyAudioSettings,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
-    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)

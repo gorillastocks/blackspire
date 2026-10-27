@@ -17,6 +17,7 @@ const S = {
   swing: () => tone(300, 0.08, 'triangle', 0.04, -200), hit: () => tone(160, 0.1, 'square', 0.06, -80), crit: () => { tone(880, 0.1); setTimeout(() => tone(1320, 0.2), 80); },
   hurt: () => tone(110, 0.2, 'sawtooth', 0.07, -50), kill: () => tone(400, 0.3, 'square', 0.05, -350), spell: () => tone(600, 0.35, 'sine', 0.07, 600),
   heal: () => tone(500, 0.3, 'sine', 0.05, 300), encounter: () => { tone(220, 0.15); setTimeout(() => tone(185, 0.3), 150); },
+  alarm: () => { tone(740, 0.12, 'sawtooth', 0.06); setTimeout(() => tone(520, 0.12, 'sawtooth', 0.06), 130); setTimeout(() => tone(740, 0.12, 'sawtooth', 0.06), 260); setTimeout(() => tone(110, 0.45, 'square', 0.08, -40), 400); },
   victory: () => { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'square', 0.05), i * 120)); }, dice: () => tone(900, 0.04, 'square', 0.03),
 };
 let sfxOn = true; export function setSfxOn(v) { sfxOn = !!v; }
