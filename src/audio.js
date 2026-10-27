@@ -191,7 +191,7 @@ export function playVictorySting(then = null) {
   const startWith = (buf) => {
     if (!ctx || !unlocked) { if (then) then(); return; }
     const g = ctx.createGain();
-    g.gain.value = 0.85 * 0.85;
+    g.gain.value = 1.0;
     g.connect(ctx.destination); // NOT bus.music
     const src = ctx.createBufferSource();
     src.buffer = buf;

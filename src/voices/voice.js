@@ -253,8 +253,8 @@ export function playVictoryMusic(then = null) {
       victoryLast.ctxState = ctx.state;
       const src = ctx.createBufferSource();
       const g = ctx.createGain();
-      // Same gain curve as voices (vol*vol), but use a dedicated audible level.
-      g.gain.value = 0.85 * 0.85;
+      // Loud and unducked: destination path, near-unity gain (file is already loudnormed ~-14 LUFS).
+      g.gain.value = 1.0;
       src.buffer = buf;
       // Destination — not music bus — so Music slider / bed ducking / stopMusic cannot mute it.
       src.connect(g).connect(ctx.destination);

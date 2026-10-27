@@ -57,7 +57,7 @@ test('victory sting: WebAudio source playing with gain>0 under Pause speed', asy
   // Prefer waiting for sting from real endCombat:
   const started = await page.waitForFunction(() => {
     const s = window.__gw.victoryMusicState();
-    return s.playing && s.gain > 0.1;
+    return s.playing && s.gain > 0.5;
   }, { timeout: 15000 }).then(() => true).catch(() => false);
 
   if (!started) {
@@ -67,19 +67,19 @@ test('victory sting: WebAudio source playing with gain>0 under Pause speed', asy
     });
     await expect.poll(async () => {
       const s = await page.evaluate(() => window.__gw.victoryMusicState());
-      return s.playing && s.gain > 0.1;
+      return s.playing && s.gain > 0.5;
     }, { timeout: 10000 }).toBe(true);
   }
 
   const at0 = await page.evaluate(() => window.__gw.victoryMusicState());
   expect(at0.playing).toBe(true);
-  expect(at0.gain).toBeGreaterThan(0.1);
+  expect(at0.gain).toBeGreaterThan(0.5);
 
   // Still playing ~1s later
   await page.waitForTimeout(1000);
   const at1 = await page.evaluate(() => window.__gw.victoryMusicState());
   expect(at1.playing, `sting should still be playing at +1s: ${JSON.stringify(at1)}`).toBe(true);
-  expect(at1.gain).toBeGreaterThan(0.1);
+  expect(at1.gain).toBeGreaterThan(0.5);
 
   await page.screenshot({ path: `/workspace/shots/victory-sting-${info.project.name}.png` });
   expect(errors.filter((e) => !/favicon/.test(e))).toEqual([]);
@@ -100,6 +100,6 @@ test('Test victory music button path plays sting', async ({ page }, info) => {
   await page.evaluate(() => window.__gw.testVictoryMusic());
   await expect.poll(async () => {
     const s = await page.evaluate(() => window.__gw.victoryMusicState());
-    return s.playing && s.gain > 0.1 && s.last?.ok === true;
+    return s.playing && s.gain > 0.5 && s.last?.ok === true;
   }, { timeout: 10000 }).toBe(true);
 });

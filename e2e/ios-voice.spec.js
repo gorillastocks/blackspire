@@ -66,10 +66,10 @@ test('victory sting plays over bed music', async ({ page }) => {
   await page.evaluate(() => window.__gw.playVictoryMusic());
   await expect.poll(async () => {
     const s = await page.evaluate(() => window.__gw.victoryMusicState());
-    return s.playing && s.gain > 0.1;
+    return s.playing && s.gain > 0.5;
   }, { timeout: 10000 }).toBe(true);
   await page.waitForTimeout(1000);
   const mid = await page.evaluate(() => window.__gw.victoryMusicState());
   expect(mid.playing).toBe(true);
-  expect(mid.gain).toBeGreaterThan(0.1);
+  expect(mid.gain).toBeGreaterThan(0.5);
 });

@@ -299,7 +299,7 @@ function showCredits() {
     <li>B5 The Blackspire — <i>Halls of the Undead</i></li>
     <li>Battle — <i>Death and Axes</i></li>
     <li>Boss — <i>Final Battle of the Dark Wizards</i></li>
-    <li>Victory — <i>Fanfare for Space</i></li>
+    <li>Victory — <i>The Curtain Rises</i> (short sting)</li>
     <li>Ending — <i>Despair and Triumph</i></li>
   </ul>
   <p>Ambience and sound effects are original WebAudio. Full license text in CREDITS.md.</p>
