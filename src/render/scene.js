@@ -274,19 +274,24 @@ export class Renderer {
     const reserve = phonePortrait && !this.captionUp ? 0.1 : Math.min(0.62, Math.max(0.24, (this.captionReservePx || (w < 520 ? 150 : 140)) / h)); // no caption up: just room for floaters
     const hud = this.container.querySelector('#hud'), top = Math.max(3, hud && hud.offsetHeight ? ((hud.offsetTop + hud.offsetHeight) / h) * 100 + 1 : 3), limit = 100 * (1 - reserve) - 2;
     cam.clearViewOffset(); let k = 1; this._co?.set(0, 0, 0);
+    // never dolly in so far that the padded monster box reaches the camera: points behind it project mirrored, the fit then
+    // "sees" a gigantic/flipped rect and throws the whole picture off the top of the screen (tall phone view, no menu yet)
+    let nearZ = -Infinity; for (const [, v] of this.monsterObjs) { if (v.dead || !v.wbox || v.wbox.isEmpty()) continue; const sz = v.wbox.getSize(new THREE.Vector3()); nearZ = Math.max(nearZ, v.wbox.max.z + sz.z * 0.1 + 0.4); }
+    const kMin = Number.isFinite(nearZ) ? Math.min(1.5, Math.max(0.4, (nearZ + 2.2 - look.z) / (base.z - look.z))) : 0.4;
     for (let i = 0; i < 8; i++) {
       cam.position.copy(look).addScaledVector(base.clone().sub(look), k); cam.lookAt(look); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
       const r = this.monsterRect(); if (!r) break;
       const span = r.bottom - r.top, avail = limit - top, wide = (r.right - r.left) / 90, half = Math.max(50 - r.left, r.right - 50) / 45;
       const need = Math.max(span / avail, wide, half); if (Math.abs(need - 0.97) < 0.03) break;
-      const nk = Math.max(0.4, k * Math.min(2.5, need * 1.03)); if (Math.abs(nk - k) < 0.002) break; k = nk; // pull back if too big, push in if small
+      const nk = Math.max(kMin, k * Math.min(2.5, need * 1.03)); if (Math.abs(nk - k) < 0.002) break; k = nk; // pull back if too big, push in if small
     }
     const r = this.monsterRect(); this.arenaShift = 0;
     if (r) { const shift = (r.top + r.bottom) / 2 - (top + limit) / 2; // centre the monsters in the band above the caption (+ moves the picture up)
-      if (shift) { cam.setViewOffset(w, h, 0, (shift / 100) * h, w, h); this.arenaShift = shift; } }
+      const s = Number.isFinite(shift) ? Math.max(-45, Math.min(45, shift)) : 0; // a bigger shift can only mean a bad measurement
+      if (s) { cam.setViewOffset(w, h, 0, (s / 100) * h, w, h); this.arenaShift = s; } }
     cam.updateProjectionMatrix();
   }
-  clearMonsters() { this.cfx?.clear(); for (const [, v] of this.monsterObjs) { this.monsterGroup.remove(v.holder); const i = this.mixers.indexOf(v.mixer); if (i >= 0) this.mixers.splice(i, 1); } this.monsterObjs.clear(); }
+  clearMonsters() { this.aBump = 0; this.aShake = 0; this._co?.set(0, 0, 0); this.arenaCam?.clearViewOffset?.(); this.arenaShift = 0; this.cfx?.clear(); for (const [, v] of this.monsterObjs) { this.monsterGroup.remove(v.holder); const i = this.mixers.indexOf(v.mixer); if (i >= 0) this.mixers.splice(i, 1); } this.monsterObjs.clear(); }
   playOnce(id, name, then = 'idle') {
     const v = this.monsterObjs.get(id); if (!v || v.dead && name !== 'death') return; const clip = v.clips[name]; if (!clip) return;
     const a = v.mixer.clipAction(clip); v.mixer.stopAllAction(); a.reset(); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.play();
