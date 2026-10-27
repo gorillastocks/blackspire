@@ -103,3 +103,23 @@ test('Test victory music button path plays sting', async ({ page }, info) => {
     return s.playing && s.gain > 0.5 && s.last?.ok === true;
   }, { timeout: 10000 }).toBe(true);
 });
+
+test('synth victory previews A–E schedule audible gain', async ({ page }, info) => {
+  test.skip(!['iphone', 'desktop'].includes(info.project.name), 'iphone+desktop');
+  test.setTimeout(60000);
+  await page.addInitScript(() => {
+    localStorage.setItem('blackspire.settings', JSON.stringify({
+      sound: true, music: 0.7, sfx: 0.8, amb: 0.6, voices: true, voice: 0.85,
+      tutorialDone: true, battleSpeed: 'pause', battleSpeedSet: true, areaDesc: true,
+    }));
+  });
+  await newGame(page);
+  await page.locator('body').click({ position: { x: 8, y: 8 } });
+  const ids = await page.evaluate(() => Object.keys(window.__gw.VICTORY_VARIANTS || {}));
+  expect(ids.sort().join('')).toBe('ABCDE');
+  for (const id of ids) {
+    const ok = await page.evaluate((vid) => window.__gw.previewVictorySynth(vid), id);
+    expect(ok).toBe(true);
+    await page.waitForTimeout(400);
+  }
+});
