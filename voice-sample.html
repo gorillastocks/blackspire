@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta name=viewport content="width=device-width,initial-scale=1"><title>Blackspire voice sample</title>
+<style>body{background:#120d1d;color:#e8dcff;font-family:Georgia,serif;padding:20px}button{display:block;width:100%;margin:10px 0;padding:16px;font-size:17px;border-radius:12px;border:1px solid #f0a040;background:#2a1d45;color:#fff;text-align:left}small{opacity:.7}</style></head><body>
+<h2>Blackspire: built-in phone voice sample</h2><p><small>Tap a line. Turn off silent mode first.</small></p><div id=b></div>
+<script>
+const L=[["Dungeon Master","Cold water drips from the ceiling of the Drowned Grotto. Somewhere in the dark, something large shifts in the shallows.",0.9,0.8],
+["Grumsh","Me smash rat. Rat go splat. Grumsh happy now.",0.9,0.5],
+["Vexrath","Charming. Another damp hole full of things that want to eat us.",1.0,1.1],
+["Ser Aldric","Stand fast, friends! For the princess, and for the realm!",0.95,0.9],
+["Malthrax","You are too late, little heroes. Elowen belongs to the Blackspire now.",0.8,0.4]];
+const vs=()=>speechSynthesis.getVoices().filter(v=>v.lang.startsWith('en'));
+L.forEach(([w,t,r,p],i)=>{const x=document.createElement('button');x.innerHTML='<b>'+w+'</b><br>'+t;x.onclick=()=>{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);const v=vs();if(v.length)u.voice=v[i%v.length];u.rate=r;u.pitch=p;speechSynthesis.speak(u)};b.appendChild(x)});
+</script></body></html>
