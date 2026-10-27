@@ -297,7 +297,7 @@ export class Renderer {
     const v = this.monsterObjs.get(id); if (!v || v.dead) return; this.playOnce(id, 'attack');
     const h = v.height || 1.5, sizeK = Math.min(1, h / 2.2), bossCap = h >= 2.8 ? 0.55 : h >= 2.2 ? 0.72 : 1;
     const rm = this.reduceMotion, f = Math.min(1.15, Math.max(0.55, this.speedF || 1));
-    v.baseSc ??= v.o.scale.x; v.o.userData.y0 ??= v.o.position.y;
+    v.baseSc ??= 1; v.o.userData.y0 ??= v.o.position.y;
     v.lunge = v.lungeT = Math.max(0.4, Math.min(0.6, (rm ? 0.4 : 0.52) * f));
     v.leapZ = (rm ? 0.35 : 1.15 + sizeK * 0.55) * bossCap;
     v.leapGrow = (rm ? 0.06 : 0.22 + sizeK * 0.28) * bossCap;
@@ -329,7 +329,15 @@ export class Renderer {
     const look = SPELL_FX[spell]; if (!look) return Promise.resolve(false);
     const to = targetId ? this.monsterCenter(targetId) : this.monsterLineCenter();
     if (look.kind === 'column') return this.cfx.column(to.clone().setY(0.1), look.color, dur).then(() => true);
-    if (look.kind === 'area') return this.cfx.area(this.monsterLineCenter(), look.color, look.color === 0xff6020 ? 2.6 : 1.8, dur * 1.6).then(() => { if (!this.reduceMotion) this.aShake = Math.max(this.aShake, 0.25); return true; });
+    if (look.kind === 'area') {
+      const rad = /fireball|breath/i.test(spell) ? 2.8 : /thunderwave|shatter/i.test(spell) ? 2.4 : 2.0;
+      // flash every living monster so the blast clearly hits the whole group
+      for (const [, v] of this.monsterObjs) if (!v.dead) { v.flash = 0.45; v.flashColor = look.color; }
+      return this.cfx.area(this.monsterLineCenter(), look.color, rad, Math.max(650, Math.min(900, dur * 1.8)), { element: look.element, reduce: this.reduceMotion }).then(() => {
+        if (!this.reduceMotion) this.aShake = Math.max(this.aShake, 0.32); else this.aShake = Math.max(this.aShake, 0.1);
+        return true;
+      });
+    }
     return this.cfx.projectile(this.partyOrigin(casterIdx), to, look, look.kind === 'ray' ? dur * 0.6 : dur).then(() => true);
   }
   monsterLineCenter() { const p = new THREE.Vector3(); let n = 0; for (const [, v] of this.monsterObjs) if (!v.dead) { p.add(v.holder.position); p.y += v.height * 0.5; n++; } return n ? p.divideScalar(n) : p.set(0, 1.2, -2); }
@@ -350,7 +358,7 @@ export class Renderer {
     let r = null; const v3 = new THREE.Vector3();
     for (const [, v] of this.monsterObjs) {
       if (v.dead || !v.wbox || v.wbox.isEmpty()) continue; const b = v.wbox.clone(); const sz = b.getSize(new THREE.Vector3());
-      b.min.x -= sz.x * 0.1; b.max.x += sz.x * 0.1; b.max.y += sz.y * 0.18; b.min.z -= sz.z * 0.1; b.max.z += sz.z * 0.1 + 1.7; // leap toward camera (+ scale-up headroom)
+      b.min.x -= sz.x * 0.1; b.max.x += sz.x * 0.1; b.max.y += sz.y * 0.12; b.min.z -= sz.z * 0.1; b.max.z += sz.z * 0.1 + 0.4; // lunge toward camera
       for (let i = 0; i < 8; i++) { v3.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).project(this.arenaCam);
         const x = (v3.x * 0.5 + 0.5) * 100, y = (-v3.y * 0.5 + 0.5) * 100;
         if (!r) r = { left: x, right: x, top: y, bottom: y }; else { r.left = Math.min(r.left, x); r.right = Math.max(r.right, x); r.top = Math.min(r.top, y); r.bottom = Math.max(r.bottom, y); } }
@@ -415,13 +423,13 @@ export class Renderer {
             this.aShake = Math.max(this.aShake, this.reduceMotion ? 0.08 : 0.22);
             this.cfx?.rush?.(this.monsterCenter(v.id || mid), this.reduceMotion);
           }
-          if (v.lunge <= 0 && v.baseSc != null) v.o.scale.setScalar(v.baseSc);
+          if (v.lunge <= 0) v.holder.scale.setScalar(1);
         }
         if (v.stagger > 0) { v.stagger -= dt; const k = Math.sin((1 - Math.max(0, v.stagger) / v.staggerT) * Math.PI); z -= k * v.knock; rx -= k * 0.22; }
         if (v.lunge !== undefined || v.stagger !== undefined) {
           v.o.position.z = z; v.o.rotation.x = rx;
           if (v.lunge > 0 || yOff) v.o.position.y = (v.o.userData.y0 ?? v.o.position.y) + yOff;
-          if (sc != null && v.lunge > 0) v.o.scale.setScalar(sc);
+          if (sc != null && v.lunge > 0) v.holder.scale.setScalar(sc);
         }
         if (v.dieT !== undefined) {
           v.dieT += dt; const k = Math.min(1, v.dieT / v.dieDur);

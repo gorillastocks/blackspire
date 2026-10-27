@@ -21,6 +21,15 @@ function textures() {
   TEX.w_arrow = W((g) => { g.strokeStyle = '#a8794a'; g.lineWidth = 4; g.beginPath(); g.moveTo(64, 20); g.lineTo(64, 116); g.stroke(); g.fillStyle = '#d9e2ee'; g.beginPath(); g.moveTo(64, 4); g.lineTo(73, 24); g.lineTo(55, 24); g.closePath(); g.fill(); g.fillStyle = '#e04848'; for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(64, 96); g.lineTo(64 + sx * 11, 106); g.lineTo(64 + sx * 11, 122); g.lineTo(64, 112); g.closePath(); g.fill(); } });
   TEX.w_bolt = W((g) => { g.strokeStyle = '#7a5530'; g.lineWidth = 6; g.beginPath(); g.moveTo(64, 26); g.lineTo(64, 100); g.stroke(); g.fillStyle = '#c8d2e0'; g.beginPath(); g.moveTo(64, 8); g.lineTo(74, 30); g.lineTo(54, 30); g.closePath(); g.fill(); g.fillStyle = '#d8d0b0'; for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(64, 86); g.lineTo(64 + sx * 9, 100); g.lineTo(64, 100); g.fill(); } });
   TEX.w_fist = W((g) => { g.fillStyle = '#e8b48a'; g.strokeStyle = '#8a5a3a'; g.lineWidth = 3; g.beginPath(); g.roundRect(34, 28, 60, 52, 14); g.fill(); g.stroke(); for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(49 + i * 15, 30); g.lineTo(49 + i * 15, 50); g.stroke(); } g.beginPath(); g.roundRect(28, 52, 26, 18, 8); g.fill(); g.stroke(); g.fillStyle = '#6b4426'; g.fillRect(40, 80, 48, 34); });
+  TEX.ring = tex((g, s) => {
+    g.clearRect(0, 0, s, s);
+    for (const [w, a, r0, r1] of [[10, 0.95, 0.28, 0.48], [5, 0.55, 0.34, 0.46], [2, 0.9, 0.38, 0.42]]) {
+      const grd = g.createRadialGradient(s/2, s/2, s * r0, s/2, s/2, s * r1);
+      grd.addColorStop(0, `rgba(255,255,255,0)`); grd.addColorStop(0.45, `rgba(255,255,255,${a})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = grd; g.beginPath(); g.arc(s/2, s/2, s * r1, 0, 7); g.arc(s/2, s/2, s * r0, 0, 7, true); g.fill();
+    }
+  }, 128);
+  TEX.streak = tex((g, s) => { g.clearRect(0, 0, s, s); const grd = g.createLinearGradient(s/2, 0, s/2, s); grd.addColorStop(0, 'rgba(255,255,255,0)'); grd.addColorStop(0.2, 'rgba(255,255,255,1)'); grd.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = grd; g.fillRect(s/2 - 4, 0, 8, s); g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(s/2 - 1.5, 4, 3, s - 8); }, 64);
   return TEX;
 }
 /** Visual family of a weapon (by its WEAPONS key). Unknown → null (plain slash). */
@@ -34,6 +43,23 @@ export function weaponKind(base) {
 export const TYPE_COLOR = { fire: 0xff6a20, cold: 0x8ae8ff, lightning: 0x9fd0ff, thunder: 0x7aa0ff, force: 0xc080ff, radiant: 0xfff2a0, necrotic: 0x9a60d0, poison: 0x7dff5a, acid: 0xb0ff40, psychic: 0xff7ae0, slashing: 0xffffff, piercing: 0xffffff, bludgeoning: 0xffffff };
 export const IMPACT = { slashing: 'slash', piercing: 'pierce', bludgeoning: 'smash' };
 /** Spell → projectile look. kind: bolt (single travelling orb + trail), ray (fast thin beam of orbs), darts, column, area. */
+export const AREA_PALETTE = {
+  fire: [0xff2200, 0xff6020, 0xffa020, 0xffe060, 0xffffff],
+  cold: [0x40e0ff, 0x90f0ff, 0xffffff, 0x6080ff, 0xc0f8ff],
+  lightning: [0xb060ff, 0xffffff, 0xffe060, 0x9fd0ff, 0xe0c0ff],
+  thunder: [0x6aa0ff, 0xffffff, 0x90d0ff, 0x4060ff, 0xd0e8ff],
+  psychic: [0xff60d0, 0xb060ff, 0x40e0c0, 0xffa0e0, 0xffffff],
+  force: [0xc080ff, 0xffffff, 0xa0c0ff, 0xe0b0ff, 0x80ffe0],
+};
+export function paletteFor(element, color = 0xff6020) {
+  if (element && AREA_PALETTE[element]) return AREA_PALETTE[element];
+  const r = (color >> 16) & 255, g = (color >> 8) & 255, b = color & 255;
+  if (r > 180 && g < 160 && b < 120) return AREA_PALETTE.fire;
+  if (r > 140 && b > 140 && g < 180) return AREA_PALETTE.psychic;
+  if (b > 160 && r > 120 && g < 180) return AREA_PALETTE.lightning;
+  if (b > 150 && r < 140) return AREA_PALETTE.cold;
+  return AREA_PALETTE.thunder;
+}
 export const SPELL_FX = {
   fireBolt: { kind: 'bolt', color: 0xff5020, trail: true, size: 0.28 },
   rayOfFrost: { kind: 'ray', color: 0x90f0ff, size: 0.16 },
@@ -49,18 +75,19 @@ export const SPELL_FX = {
   sacredFlame: { kind: 'column', color: 0xfff080 },
   moonbeam: { kind: 'column', color: 0xd8e8ff },
   flameStrike: { kind: 'column', color: 0xff9030 },
-  fireball: { kind: 'area', color: 0xff6020 },
-  iceStorm: { kind: 'area', color: 0x90e0ff },
-  shatter: { kind: 'area', color: 0x7aa0ff },
-  thunderwave: { kind: 'area', color: 0x6aa0ff },
-  burningHands: { kind: 'area', color: 0xff8030 },
-  lightningBolt: { kind: 'ray', color: 0x9fd0ff, size: 0.24 },
-  callLightning: { kind: 'column', color: 0x9fd0ff },
-  breath: { kind: 'area', color: 0xff4000 },
+  fireball: { kind: 'area', color: 0xff6020, element: 'fire' },
+  iceStorm: { kind: 'area', color: 0x90e0ff, element: 'cold' },
+  shatter: { kind: 'area', color: 0x7aa0ff, element: 'thunder' },
+  thunderwave: { kind: 'area', color: 0x6aa0ff, element: 'thunder' },
+  burningHands: { kind: 'area', color: 0xff8030, element: 'fire' },
+  breath: { kind: 'area', color: 0xff4000, element: 'fire' },
+  sleep: { kind: 'area', color: 0xc070ff, element: 'psychic' },
+  lightningBolt: { kind: 'ray', color: 0x9fd0ff, size: 0.24, element: 'lightning' },
+  callLightning: { kind: 'column', color: 0x9fd0ff, element: 'lightning' },
 };
 
 export class FX {
-  constructor(scene, cam, size = 96) {
+  constructor(scene, cam, size = 120) {
     const T = textures(); this.scene = scene; this.cam = cam; this.live = []; this.pool = []; this.jobs = [];
     for (let i = 0; i < size; i++) { const s = new Sprite(new SpriteMaterial({ map: T.glow, color: 0xffffff, blending: AdditiveBlending, transparent: true, depthWrite: false, toneMapped: false })); s.visible = false; s.renderOrder = 10; scene.add(s); this.pool.push(s); }
     this.light = new PointLight(0xffffff, 0, 9, 2); scene.add(this.light); this.lightT = 0;
@@ -91,10 +118,51 @@ export class FX {
   column(pos, color, durMs) {
     return new Promise((res) => this.jobs.push({ kind: 'column', pos: pos.clone(), color, t: 0, dur: Math.max(0.1, durMs / 1000), res, last: 0 }));
   }
-  area(pos, color, radius, durMs) {
-    this.ball.position.copy(pos); this.ball.material.color.setHex(color); this.ball.visible = true; this.ballT = 0; this.ballDur = Math.max(0.15, durMs / 1000); this.ballR = radius;
-    this.burst(pos, color, 30, 4, 0.35); this.flashLight(pos, color, 60, 0.5);
-    return new Promise((r) => setTimeout(r, durMs * 0.5));
+  /** Multicolor AOE burst: bright core, expanding shockwave ring, radiating sparks + streaks.
+   *  Palette is tinted by element (fire/cold/lightning/thunder/psychic). Mobile-friendly counts; reduceMotion is a soft flash. */
+  area(pos, color, radius, durMs, { element = null, reduce = false } = {}) {
+    const pal = paletteFor(element, color);
+    const dur = Math.max(0.6, Math.min(0.9, (durMs || 700) / 1000));
+    const T = textures();
+    // bright core flash
+    this.spawn({ pos, life: 0.32, size: radius * 0.55, grow: radius * 1.4, color: 0xffffff, opacity: 1 });
+    this.spawn({ pos, life: 0.45, size: radius * 0.35, grow: radius * 0.9, color: pal[0], opacity: 0.95 });
+    this.flashLight(pos, pal[0], reduce ? 28 : 75, 0.5);
+    // expanding coloured ball as soft shockwave volume
+    this.ball.position.copy(pos); this.ball.material.color.setHex(pal[1] || color); this.ball.visible = true;
+    this.ballT = 0; this.ballDur = dur; this.ballR = radius * (reduce ? 0.85 : 1.15);
+    // shockwave ring sprite (grows + fades)
+    if (!reduce) {
+      const ring = this.spawn({ pos: this.tmp.copy(pos).setY(pos.y + 0.05), life: dur * 0.85, size: radius * 0.4, grow: radius * 2.4, color: pal[2] || 0xffffff, map: 'ring', opacity: 0.95 });
+      if (ring) ring.material.rotation = 0;
+      // second ring, delayed feel via smaller start
+      this.spawn({ pos: this.tmp.copy(pos).setY(pos.y + 0.08), life: dur * 0.7, size: radius * 0.2, grow: radius * 2.8, color: pal[3] || pal[0], map: 'ring', opacity: 0.7 });
+    }
+    // radiating sparks
+    const nSpark = reduce ? 6 : 26;
+    for (let i = 0; i < nSpark; i++) {
+      const a = (i / nSpark) * Math.PI * 2 + Math.random() * 0.4;
+      const elev = (Math.random() - 0.25) * 0.9;
+      const spd = (2.2 + Math.random() * 2.8) * radius * 0.55;
+      const vel = new Vector3(Math.cos(a) * spd, elev * spd * 0.7 + 0.6, Math.sin(a) * spd * 0.55);
+      this.spawn({ pos, vel, life: 0.35 + Math.random() * 0.4, size: 0.14 + Math.random() * 0.16, grow: -0.12, color: pal[i % pal.length], gravity: -1.5, opacity: 0.95 });
+    }
+    // streaks (pierce/streak sprites flung outward)
+    if (!reduce) {
+      const nStreak = 10;
+      for (let i = 0; i < nStreak; i++) {
+        const a = (i / nStreak) * Math.PI * 2 + 0.2;
+        const spd = (3.2 + Math.random() * 2) * radius * 0.5;
+        const vel = new Vector3(Math.cos(a) * spd, 0.4 + Math.random() * 1.2, Math.sin(a) * spd * 0.5);
+        const sp = this.spawn({ pos, vel, life: 0.3 + Math.random() * 0.25, size: 0.55, grow: 0.4, color: pal[(i + 2) % pal.length], map: Math.random() < 0.5 ? 'streak' : 'pierce', rot: a + Math.PI / 2, spin: 0, gravity: -0.4, opacity: 0.85 });
+      }
+    }
+    // late glitter
+    if (!reduce) for (let i = 0; i < 8; i++) {
+      const vel = new Vector3((Math.random() - 0.5) * 1.4, 1.5 + Math.random() * 2, (Math.random() - 0.5) * 1.2);
+      this.spawn({ pos, vel, life: 0.5 + Math.random() * 0.3, size: 0.08, grow: -0.05, color: pal[i % pal.length], gravity: -3, opacity: 0.8 });
+    }
+    return new Promise((r) => setTimeout(r, dur * 1000 * 0.55));
   }
   /** Dust/wind whoosh past the camera as a monster leaps in (no-op under reduceMotion). */
   rush(pos, reduce = false) {

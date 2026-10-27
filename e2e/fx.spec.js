@@ -22,12 +22,24 @@ test('combat animations: projectiles, impacts, death, floaters — no errors, ac
   await page.waitForTimeout(400); await shot('missiles');
   await page.waitForTimeout(700);
   await page.evaluate(() => { window.__gw.R.spellCast('fireball', null, 0, 900); });
-  await page.waitForTimeout(700); await shot('fireball');
+  await page.waitForFunction(() => window.__gw.R.cfx.activeCount > 8, null, { timeout: 2000 }).catch(() => {});
+  await page.waitForTimeout(180); await shot('fireball'); // mid-burst
+  await page.waitForTimeout(900);
+  await page.evaluate(() => { window.__gw.R.spellCast('sleep', null, 0, 900); });
+  await page.waitForTimeout(200); await shot('sleep-burst');
   await page.waitForTimeout(800);
+  await page.evaluate(() => { window.__gw.R.spellCast('thunderwave', null, 0, 900); });
+  await page.waitForTimeout(200); await shot('thunder-burst');
+  await page.waitForTimeout(700);
   // monster leap toward camera (mid-lunge): bigger + closer, then recoil
   await page.evaluate((id) => window.__gw.R.monsterAttack(id), ids[0]);
-  await page.waitForTimeout(260); await shot('leap');
-  const leap = await page.evaluate((id) => { const v = window.__gw.R.monsterObjs.get(id); return { lunge: v.lunge, leapZ: v.leapZ, grow: v.leapGrow, sc: v.o.scale.x / v.baseSc, z: v.o.position.z }; }, ids[0]);
+  // poll until the leap is past its peak (scale/z up), then screenshot — the box can skip frames
+  const leap = await page.waitForFunction((id) => {
+    const v = window.__gw.R.monsterObjs.get(id); if (!v || !v.baseSc) return null;
+    const sc = v.holder.scale.x, z = v.o.position.z;
+    return (sc > 1.12 && z > 0.5) ? { leapZ: v.leapZ, grow: v.leapGrow, sc, z, lunge: v.lunge } : null;
+  }, ids[0], { timeout: 3000 }).then((h) => h.jsonValue());
+  await shot('leap');
   expect(leap.leapZ, 'leap reaches toward the camera').toBeGreaterThan(0.8);
   expect(leap.sc, 'attacker scales up mid-lunge').toBeGreaterThan(1.1);
   expect(leap.z, 'attacker moves toward camera (+z)').toBeGreaterThan(0.4);
@@ -64,7 +76,8 @@ test('combat animations: projectiles, impacts, death, floaters — no errors, ac
   await page.waitForTimeout(1200);
   const bid = await page.evaluate(() => [...window.__gw.R.monsterObjs.keys()][0]);
   await page.evaluate((id) => window.__gw.R.monsterAttack(id), bid);
-  await page.waitForTimeout(260); await shot('leap-gorvax');
+  await page.waitForFunction((id) => { const v = window.__gw.R.monsterObjs.get(id); return v && v.o.position.z > 0.2; }, bid, { timeout: 3000 });
+  await shot('leap-gorvax');
   const boss = await page.evaluate((id) => { const v = window.__gw.R.monsterObjs.get(id); return { leapZ: v.leapZ, grow: v.leapGrow, height: v.height }; }, bid);
   expect(boss.height).toBeGreaterThan(3); expect(boss.leapZ).toBeLessThan(1.2); expect(boss.grow).toBeLessThan(0.4);
   expect(errors).toEqual([]);
