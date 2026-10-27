@@ -26,6 +26,8 @@ export function unlock() {
   if (!unlocked) { // play one silent buffer — required by older iOS to fully open the audio session
     try { const b = c.createBuffer(1, 1, 22050), s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0); } catch { /* ignore */ }
     unlocked = true; if (want) play(want, true); if (ambWant) ambience(ambWant, true);
+    // Decode the victory sting now so the first win is not racing a cold fetch/decode.
+    prefetchMusic('victory');
   }
 }
 for (const ev of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(ev, unlock, { capture: true, passive: true });
@@ -54,30 +56,36 @@ function assetUrl(path) {
   try { return new URL(clean, new URL(base, typeof document !== 'undefined' ? document.baseURI : 'http://local/')).href; }
   catch { return base + clean; }
 }
-function musicUrl(stem) {
-  // Prefer m4a (Safari/iOS); ogg as fallback for older Firefox. Paths are base-relative (./music/…).
+function musicUrl(stem, { preferMp3 = false } = {}) {
+  // Paths are base-relative (./music/…). Scene beds: m4a on Safari, ogg elsewhere.
+  // Victory sting: prefer mp3 — same container voices already decode reliably on iOS.
+  if (preferMp3 || /\/victory$/.test(stem) || stem.endsWith('victory')) return assetUrl(`${stem}.mp3`);
   const a = typeof document !== 'undefined' ? document.createElement('audio') : { canPlayType: () => '' };
   const ext = (a.canPlayType('audio/mp4; codecs="mp4a.40.2"') || a.canPlayType('audio/aac')) ? 'm4a'
     : a.canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'm4a';
   return assetUrl(`${stem}.${ext}`);
 }
 async function loadTrack(stem) {
-  if (bufCache.has(stem)) return bufCache.get(stem);
+  const preferMp3 = /victory$/.test(stem);
+  const cacheKey = preferMp3 ? stem + '#mp3' : stem;
+  if (bufCache.has(cacheKey)) return bufCache.get(cacheKey);
   const p = (async () => {
-    const url = musicUrl(stem);
+    const url = musicUrl(stem, { preferMp3 });
     const r = await fetch(url);
     if (!r.ok) throw new Error(`music ${url} ${r.status}`);
     const ab = await r.arrayBuffer();
     const c = ac();
+    if (!c) throw new Error('no audio');
+    if (c.state !== 'running') await c.resume().catch(() => {});
     return await c.decodeAudioData(ab.slice(0));
   })();
-  bufCache.set(stem, p);
+  bufCache.set(cacheKey, p);
   try {
     const buf = await p;
-    bufCache.set(stem, buf);
+    bufCache.set(cacheKey, buf);
     return buf;
   } catch (e) {
-    bufCache.delete(stem);
+    bufCache.delete(cacheKey);
     throw e;
   }
 }
@@ -133,61 +141,101 @@ export function play(name, force = false, then = null) {
 }
 export function currentTrack() { return cur || want; }
 
-/* ---------------- victory sting (ducks bed music, short one-shot) ---------------- */
-let stingSrc = null, stingGain = null, duckSaved = null;
+/* ---------------- victory sting (independent of bed crossfade) ---------------- */
+let stingSrc = null, stingGain = null, duckSaved = null, stingStartedAt = 0, stingPlaying = false;
 function unduckBed() {
   if (duckSaved == null || !trackGain || !ctx) { duckSaved = null; return; }
   try {
     const g = trackGain.gain, now = ctx.currentTime;
     g.cancelScheduledValues(now);
-    g.setValueAtTime(g.value, now);
+    g.setValueAtTime(Math.max(g.value, 0.0001), now);
     g.linearRampToValueAtTime(duckSaved, now + 0.6);
   } catch { /* ignore */ }
   duckSaved = null;
 }
+function duckBed(to = 0.15) {
+  if (!trackGain || !ctx) return;
+  try {
+    const g = trackGain.gain, now = ctx.currentTime;
+    // Capture the *target* bed level (1) if a fade-in is still ramping from near-silence.
+    const cur = g.value;
+    duckSaved = duckSaved != null ? duckSaved : (cur > 0.2 ? cur : 1);
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(Math.max(cur, 0.0001), now);
+    g.linearRampToValueAtTime(to, now + 0.12);
+  } catch { /* ignore */ }
+}
 function stopSting() {
   try { stingSrc?.stop?.(); } catch { /* ignore */ }
   try { stingGain?.disconnect(); } catch { /* ignore */ }
-  stingSrc = null; stingGain = null;
+  stingSrc = null; stingGain = null; stingPlaying = false;
+}
+/** Probe for tests / debug: is the fanfare audibly scheduled? */
+export function victoryStingState() {
+  let gain = 0;
+  try { gain = stingGain ? stingGain.gain.value : 0; } catch { /* ignore */ }
+  return {
+    playing: !!stingPlaying && !!stingSrc,
+    gain,
+    startedAt: stingStartedAt,
+    hasBuf: bufCache.has('music/victory#mp3') || bufCache.has('music/victory'),
+  };
 }
 /**
- * Play the short victory fanfare over the current bed track (ducked), then restore.
- * Does NOT replace the bed track — floor/town music keeps looping underneath.
+ * Play the short victory fanfare. Independent of bed track swaps:
+ * connects straight to the master bus (not the fading bed gain), so play(bed)
+ * crossfades cannot cancel or silence it. Prefetch via unlock/prefetchMusic.
  */
 export function playVictorySting(then = null) {
-  if (!ctx || !unlocked) { if (then) then(); return; }
+  unlock();
+  if (!ctx || !unlocked) { if (then) setTimeout(then, 0); return false; }
   stopSting();
   const meta = TRACKS.victory;
-  if (!meta) { if (then) then(); return; }
-  // duck bed
-  if (trackGain) {
-    try {
-      const g = trackGain.gain, now = ctx.currentTime;
-      duckSaved = g.value > 0.01 ? g.value : 1;
-      g.cancelScheduledValues(now);
-      g.setValueAtTime(duckSaved, now);
-      g.linearRampToValueAtTime(0.12, now + 0.15);
-    } catch { duckSaved = 1; }
-  }
-  loadTrack(meta.stem).then((buf) => {
-    if (!ctx || !unlocked) { unduckBed(); if (then) then(); return; }
+  if (!meta) { if (then) setTimeout(then, 0); return false; }
+
+  const startWith = (buf) => {
+    if (!ctx || !unlocked) { if (then) then(); return; }
+    duckBed(0.15);
+    // Re-duck shortly after in case play(bed) just installed a new trackGain mid-fade-in.
+    setTimeout(() => duckBed(0.15), 200);
+    setTimeout(() => duckBed(0.15), 600);
     const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, ctx.currentTime);
-    g.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.05);
+    // Audible immediately — do not start at near-zero (easy to miss a short sting).
+    g.gain.setValueAtTime(0.85, ctx.currentTime);
+    // Bypass bed trackGain entirely: music bus → master, so stopMusic/crossfade cannot kill us.
     g.connect(bus.music);
     const src = ctx.createBufferSource();
     src.buffer = buf;
     src.loop = false;
     src.connect(g);
-    stingGain = g; stingSrc = src;
+    stingGain = g; stingSrc = src; stingPlaying = true; stingStartedAt = ctx.currentTime;
     src.onended = () => {
       if (stingSrc !== src) return;
-      stingSrc = null; stingGain = null;
+      stingSrc = null; stingGain = null; stingPlaying = false;
       unduckBed();
       if (then) then();
     };
-    try { src.start(0); } catch { unduckBed(); if (then) then(); }
-  }).catch(() => { unduckBed(); if (then) then(); });
+    try {
+      src.start(0);
+    } catch (e) {
+      stingPlaying = false;
+      if (typeof console !== 'undefined') console.warn('[victory sting] start failed', e);
+      unduckBed();
+      if (then) then();
+    }
+  };
+
+  const cached = bufCache.get('music/victory#mp3') || bufCache.get('music/victory');
+  if (cached && !(cached instanceof Promise)) {
+    startWith(cached);
+    return true;
+  }
+  loadTrack(meta.stem).then(startWith).catch((e) => {
+    if (typeof console !== 'undefined') console.warn('[victory sting] load failed', e);
+    unduckBed();
+    if (then) then();
+  });
+  return true;
 }
 
 
