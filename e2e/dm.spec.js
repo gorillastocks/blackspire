@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { trackErrors, newGame, openLocation } from './helpers.js';
+import { trackErrors, newGame } from './helpers.js';
+// NOT helpers.openLocation: that taps the #tapcatch after 300ms (dismissCards), which would close the very DM card this spec inspects.
+const openLocation = (page, name) => page.locator('#modal button', { hasText: name }).first().click();
 
 // Dungeon Master read-aloud cards: once per save, readable on every device, can be switched off.
 test.use({ storageState: { cookies: [], origins: [] } });

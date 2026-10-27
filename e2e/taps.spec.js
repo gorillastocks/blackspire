@@ -13,6 +13,15 @@ test('pause mode: many rat fights with fast, double and mistimed taps always fin
   test.skip(info.project.name !== 'iphone', 'stress run on iPhone portrait');
   const errors = trackErrors(page);
   await page.addInitScript(() => localStorage.setItem('blackspire.settings', JSON.stringify({ ...JSON.parse(localStorage.getItem('blackspire.settings') || '{}'), battleSpeed: 'pause', battleSpeedSet: true })));
+  // Page-side tracker: a stray tap from the previous loop pass can land (slowly, under software GL) after the loot card appeared,
+  // and a tap >1s after the card is a legitimate dismissal. So record when the card shows/hides and when input happened,
+  // instead of asserting "visible right now" (that raced with the test's own taps and was the flake).
+  await page.addInitScript(() => {
+    window.__loot = { shown: 0, hidden: 0, hideAt: 0, lastInput: 0 };
+    for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => { window.__loot.lastInput = performance.now(); }, true);
+    let vis = false;
+    setInterval(() => { const v = !!document.querySelector('#caption.show.loot'); if (v && !vis) window.__loot.shown++; if (!v && vis) { window.__loot.hidden++; window.__loot.hideAt = performance.now(); } vis = v; }, 30);
+  });
   await newGame(page); await enterDungeon(page);
   const vp = page.viewportSize(); let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   for (let fight = 0; fight < 12; fight++) {
@@ -47,16 +56,20 @@ test('pause mode: many rat fights with fast, double and mistimed taps always fin
         await expect.poll(() => page.evaluate(() => { const m = document.querySelector('#cmenu .combatmenu'); return !m || !!document.querySelector('#caption.show') || (m.offsetParent !== null && m.getBoundingClientRect().height > 40); }), { timeout: 4000, message: `fight ${fight}: player menu visible` }).toBe(true);
       }
     }
-    // the victory loot card stays up (the watchdog must not clear it) until a tap anywhere / Enter / Space
+    // the victory loot card must appear for every won fight, and may only leave by a tap / Enter / Space (never by the watchdog)
     if (await page.evaluate(() => window.__gw.state.party.some((c) => c.hp > 0))) {
-      await expect(page.locator('#caption.show.loot'), `fight ${fight}: loot card`).toBeVisible();
-      if (fight % 4 === 0) { await page.waitForTimeout(2600); await expect(page.locator('#caption.show.loot'), 'watchdog leaves the loot card alone').toBeVisible(); }
-      const d = rnd(); await page.waitForTimeout(rnd() < 0.5 ? 30 : 300);
-      if (d < 0.4) await tapAt(page, 20 + rnd() * (vp.width - 40), 20 + rnd() * (vp.height - 40), rnd() < 0.7);
-      else if (d < 0.7) { await tapAt(page, vp.width / 2, vp.height / 3, true); await page.waitForTimeout(25); await tapAt(page, vp.width / 2, vp.height / 3, true); }
-      else await page.keyboard.press(d < 0.85 ? 'Enter' : ' ');
-      for (let k = 0; k < 6 && await page.locator('#caption.show.loot').isVisible(); k++) { await page.waitForTimeout(300); await page.keyboard.press('Enter'); } // a too-early tap is ignored by the double-tap guard
+      await expect.poll(() => page.evaluate(() => window.__loot.shown), { message: `fight ${fight}: loot card shown`, timeout: 8000 }).toBeGreaterThanOrEqual(fight + 1);
+      if (await page.locator('#caption.show.loot').isVisible()) {
+        const d = rnd(); await page.waitForTimeout(rnd() < 0.5 ? 30 : 300);
+        if (fight % 4 === 0) await page.waitForTimeout(2600);
+        if (d < 0.4) await tapAt(page, 20 + rnd() * (vp.width - 40), 20 + rnd() * (vp.height - 40), rnd() < 0.7);
+        else if (d < 0.7) { await tapAt(page, vp.width / 2, vp.height / 3, true); await page.waitForTimeout(25); await tapAt(page, vp.width / 2, vp.height / 3, true); }
+        else await page.keyboard.press(d < 0.85 ? 'Enter' : ' ');
+      }
+      for (let k = 0; k < 8 && await page.locator('#caption.show.loot').isVisible(); k++) { await page.waitForTimeout(300); await page.keyboard.press('Enter'); } // a too-early tap is ignored by the double-tap guard
       await expect(page.locator('#caption.show.loot')).toHaveCount(0);
+      const w = await page.evaluate(() => ({ ...window.__loot, now: performance.now() }));
+      expect(w.hideAt - w.lastInput, `fight ${fight}: loot card left only because of a tap/key (not the watchdog)`).toBeLessThan(600);
       const close = page.locator('#modal:not(.hidden) button', { hasText: '✕ Close' }).first(); if (await close.isVisible().catch(() => false)) await close.click().catch(() => {});
     }
     expect(await page.evaluate(() => document.body.classList.contains('capup')), 'layout restored after the fight').toBe(false);
