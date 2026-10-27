@@ -11,7 +11,6 @@ import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic, playVictorySting, victoryStingState, duckBed, ac, unlock as unlockAudio, isMuted } from './audio.js';
-import { playVictorySynth, VICTORY_VARIANTS } from './victory-synth.js';
 import { playVoiceLine, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt } from './voices/voice.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 // After a redeploy, an old tab's lazy chunks 404: reload once to pick up the new build.
@@ -300,7 +299,6 @@ function showCredits() {
     <li>B5 The Blackspire — <i>Halls of the Undead</i></li>
     <li>Battle — <i>Death and Axes</i></li>
     <li>Boss — <i>Final Battle of the Dark Wizards</i></li>
-    <li>Victory — <i>The Curtain Rises</i> (short sting)</li>
     <li>Ending — <i>Despair and Triumph</i></li>
   </ul>
   <p>Ambience and sound effects are original WebAudio. Full license text in CREDITS.md.</p>
@@ -973,17 +971,6 @@ async function loadGame(key = G.SAVE_KEY) {
 }
 
 
-/** Preview a procedural victory variant (A–E). Does not change the win-default (still Curtain Rises file). */
-function previewVictorySynth(id = 'A') {
-  try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
-  const c = ac(); if (!c) return false;
-  duckBed(0.12);
-  setTimeout(() => duckBed(0.12), 200);
-  playVictorySynth(c, id, {
-    then: () => { try { /* unduck happens via playVictoryMusic path elsewhere; soft restore */ } catch { /* ignore */ } },
-  });
-  return true;
-}
 
 /* ---------- Boot ---------- */
 async function boot() {
@@ -993,7 +980,7 @@ async function boot() {
   window.__gw = { sfx, SFX_NAMES, applyAudioSettings,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
-    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice }), testVoice, testVictoryMusic, previewVictorySynth, VICTORY_VARIANTS, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice }), testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
@@ -1077,8 +1064,6 @@ function openMenu(view = 'main', custom = null) {
       slider('voice', '🗣 Voice volume'),
       h('div', { class: 'menu' }, btn('🗣 Test voice (Elowen)', () => { st.voices = true; if (!st.sound) { st.sound = true; } saveSettings(st); applyAudioSettings(st); testVoice(); }, { id: 'set-test-voice' })),
       h('div', { class: 'menu' }, btn('🎺 Test victory music', () => { if (!st.sound) { st.sound = true; saveSettings(st); applyAudioSettings(st); } try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ } testVictoryMusic(); }, { id: 'set-test-victory' })),
-      h('p', { class: 'hint' }, 'Victory sting candidates (synth previews — pick one later; win still uses the current track):'),
-      h('div', { class: 'menu' }, ...Object.values(VICTORY_VARIANTS).map((v) => btn(`🎺 ${v.id}: ${v.label}`, () => { if (!st.sound) { st.sound = true; saveSettings(st); applyAudioSettings(st); } previewVictorySynth(v.id); }, { id: 'set-test-victory-' + v.id }))),
       h('h3', {}, 'Battle speed'),
       h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'pause') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'pause') === k) }))),
       h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action.'),
@@ -1131,7 +1116,7 @@ function syncAudio() {
   playMusic(track);
 }
 applyAudioSettings();
-for (const k of ['title', 'town', 'combat', 'victory']) prefetchMusic(k);
+for (const k of ['title', 'town', 'combat']) prefetchMusic(k);
 setInterval(syncAudio, 1000);
 
 /* ---------- Companion tactics ---------- */

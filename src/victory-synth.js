@@ -67,7 +67,7 @@ function convolverTail(ctx, dest, seconds = 0.5, decay = 2.4) {
   const conv = ctx.createConvolver();
   conv.buffer = buf;
   const wet = ctx.createGain();
-  wet.gain.value = 0.26;
+  wet.gain.value = 0.22;
   conv.connect(wet).connect(dest);
   return conv;
 }
@@ -86,9 +86,9 @@ function masterBus(ctx, dest) {
 
 function variantA(ctx, dest, t0) {
   const bus = masterBus(ctx, dest);
-  [C4, E4, G4].forEach((f, i) => brassVoice(ctx, f, t0 + i * 0.11, 0.22, bus, 0.22));
+  [C4, E4, G4].forEach((f, i) => brassVoice(ctx, f, t0 + i * 0.11, 0.24, bus, 0.28));
   const chordT = t0 + 0.36;
-  for (const f of [C5, E5, G5, C6]) brassVoice(ctx, f, chordT, 1.2, bus, f === C5 || f === C6 ? 0.24 : 0.15);
+  for (const f of [C5, E5, G5, C6]) brassVoice(ctx, f, chordT, 1.25, bus, f === C5 || f === C6 ? 0.32 : 0.2);
   return 1.75;
 }
 

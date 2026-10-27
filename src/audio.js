@@ -1,3 +1,4 @@
+import { playVictorySynth } from './victory-synth.js';
 // Blackspire audio: royalty-free music files (lazy-loaded) + procedural SFX/ambience via WebAudio.
 // Three buses (music / sfx / ambience) under a master gain, each with its own volume setting.
 // iOS/Safari: the AudioContext starts suspended until a user gesture, so unlock() runs on the first tap/key.
@@ -45,7 +46,6 @@ export const TRACKS = {
   dungeon4: { stem: 'music/dungeon4', loop: true },
   combat:   { stem: 'music/combat',   loop: true },
   boss:     { stem: 'music/boss',     loop: true },
-  victory:  { stem: 'music/victory',  loop: false, once: true },
   ending:   { stem: 'music/ending',   loop: true },
 };
 
@@ -141,8 +141,8 @@ export function play(name, force = false, then = null) {
 }
 export function currentTrack() { return cur || want; }
 
-/* ---------------- victory sting (legacy entry; prefer voices/playVictoryMusic) ---------------- */
-let stingSrc = null, stingGain = null, duckSaved = null, stingStartedAt = 0, stingPlaying = false;
+/* ---------------- victory sting (synth A + bed duck) ---------------- */
+let stingGain = null, duckSaved = null, stingStartedAt = 0, stingPlaying = false, stingUntil = 0, stingHandle = null;
 export function unduckBed() {
   if (duckSaved == null || !trackGain || !ctx) { duckSaved = null; return; }
   try {
@@ -153,7 +153,7 @@ export function unduckBed() {
   } catch { /* ignore */ }
   duckSaved = null;
 }
-export function duckBed(to = 0.15) {
+export function duckBed(to = 0.12) {
   if (!trackGain || !ctx) return;
   try {
     const g = trackGain.gain, now = ctx.currentTime;
@@ -161,64 +161,46 @@ export function duckBed(to = 0.15) {
     duckSaved = duckSaved != null ? duckSaved : (cur > 0.2 ? cur : 1);
     g.cancelScheduledValues(now);
     g.setValueAtTime(Math.max(cur, 0.0001), now);
-    g.linearRampToValueAtTime(to, now + 0.12);
+    g.linearRampToValueAtTime(to, now + 0.1);
   } catch { /* ignore */ }
 }
-function stopSting() {
-  try { stingSrc?.stop?.(); } catch { /* ignore */ }
-  try { stingGain?.disconnect(); } catch { /* ignore */ }
-  stingSrc = null; stingGain = null; stingPlaying = false;
-}
-/** @deprecated use playVictoryMusic from voices/voice.js — kept for duck + tests */
 export function victoryStingState() {
   let gain = 0;
   try { gain = stingGain ? stingGain.gain.value : 0; } catch { /* ignore */ }
   return {
-    playing: !!stingPlaying && !!stingSrc,
+    playing: !!stingPlaying && !!ctx && ctx.currentTime < stingUntil,
     gain,
     startedAt: stingStartedAt,
-    hasBuf: bufCache.has('music/victory#mp3') || bufCache.has('music/victory'),
+    hasBuf: true,
   };
 }
+/** Legacy alias — procedural brass arpeggio (variant A) to destination. */
 export function playVictorySting(then = null) {
-  // Destination path (same as voices), not music-bus — iPhone-proven.
   unlock();
   if (!ctx || !unlocked) { if (then) setTimeout(then, 0); return false; }
-  stopSting();
-  duckBed(0.15);
-  setTimeout(() => duckBed(0.15), 200);
-  setTimeout(() => duckBed(0.15), 600);
-  const startWith = (buf) => {
-    if (!ctx || !unlocked) { if (then) then(); return; }
-    const g = ctx.createGain();
-    g.gain.value = 1.0;
-    g.connect(ctx.destination); // NOT bus.music
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = false;
-    src.connect(g);
-    stingGain = g; stingSrc = src; stingPlaying = true; stingStartedAt = ctx.currentTime;
-    src.onended = () => {
-      if (stingSrc !== src) return;
-      stingSrc = null; stingGain = null; stingPlaying = false;
+  try { stingHandle?.cancel?.(); } catch { /* ignore */ }
+  try { stingGain?.disconnect(); } catch { /* ignore */ }
+  stingGain = null; stingPlaying = false;
+  duckBed(0.12);
+  setTimeout(() => duckBed(0.12), 200);
+  setTimeout(() => duckBed(0.12), 500);
+  if (ctx.state !== 'running') ctx.resume().catch(() => {});
+  const master = ctx.createGain();
+  master.gain.value = 1.35;
+  master.connect(ctx.destination);
+  stingGain = master; stingPlaying = true; stingStartedAt = ctx.currentTime;
+  stingHandle = playVictorySynth(ctx, 'A', {
+    dest: master,
+    then: () => {
+      stingPlaying = false; stingGain = null;
+      try { master.disconnect(); } catch { /* ignore */ }
       unduckBed();
       if (then) then();
-    };
-    try {
-      if (ctx.state !== 'running') ctx.resume().catch(() => {});
-      src.start(0);
-    } catch (e) {
-      stingPlaying = false;
-      unduckBed();
-      if (then) then();
-    }
-  };
-  const cached = bufCache.get('music/victory#mp3') || bufCache.get('music/victory');
-  if (cached && !(cached instanceof Promise)) { startWith(cached); return true; }
-  loadTrack(TRACKS.victory.stem).then(startWith).catch(() => { unduckBed(); if (then) then(); });
+    },
+  });
+  stingUntil = ctx.currentTime + (stingHandle?.duration || 1.75);
   return true;
 }
-
 
 
 /* ---------------- ambience ---------------- */

@@ -15,7 +15,7 @@ function offlineServiceWorker() {
       const hash = createHash('sha1').update(list.join('|') + list.map((f) => statSync(join(out, f)).size).join(',')).digest('hex').slice(0, 10);
       // Shell-only precache (hashed bundles + HTML). Full addAll of every voice/music file
       // often fails on iPhone quota and leaves the old SW forever — Sean then never gets new JS.
-      const shell = list.filter((f) => f === 'index.html' || f.endsWith('.css') || /^assets\/index-/.test(f) || f === 'manifest.webmanifest' || f === 'icon-192.png' || f === 'icon-180.png' || f === 'music\/victory.mp3');
+      const shell = list.filter((f) => f === 'index.html' || f.endsWith('.css') || /^assets\/index-/.test(f) || f === 'manifest.webmanifest' || f === 'icon-192.png' || f === 'icon-180.png');
       writeFileSync(join(out, 'sw.js'), `// Blackspire offline service worker (generated at build time)
 const CACHE = 'blackspire-${hash}';
 const SHELL = ${JSON.stringify(['./', ...shell.map((f) => './' + f)])};

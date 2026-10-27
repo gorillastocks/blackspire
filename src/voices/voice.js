@@ -1,7 +1,8 @@
 // Spoken dialogue clips (ElevenLabs). Lazy-loads MP3s; looks up by speaker+normalized text.
 // Asset URLs must respect Vite base (./ → /blackspire/ on GitHub Pages) — never fetch from "/voice/...".
 import index from './index.json';
-import { ac, unlock as unlockAudio } from '../audio.js';
+import { ac, unlock as unlockAudio, duckBed } from '../audio.js';
+import { playVictorySynth } from '../victory-synth.js';
 
 const byText = index.byText || {};
 const cache = new Map(); // url → AudioBuffer | Promise
@@ -184,58 +185,50 @@ export function testVoice() {
   return playVoiceLine('Rise, Knight of the Dawn.', 'elowen');
 }
 
-/* ---------------- victory fanfare (same WebAudio path as dialogue) ---------------- */
-const VICTORY_FILE = 'music/victory.mp3';
-let victoryCurrent = null; // { src, gain, file, startedAt, duration }
-let victoryLast = { at: 0, ok: false, error: null, ctxState: null, file: VICTORY_FILE };
-let victoryPrimed = false;
+/* ---------------- victory fanfare (procedural synth A — brass arpeggio) ---------------- */
+const VICTORY_VARIANT = 'A';
+let victoryCurrent = null; // { gain, startedAt, duration, variant, handle }
+let victoryLast = { at: 0, ok: false, error: null, ctxState: null, variant: VICTORY_VARIANT };
+let victoryPrimed = true; // synth needs no decode
 
 export function victoryMusicState() {
   let gain = 0;
   try { gain = victoryCurrent?.gain ? victoryCurrent.gain.gain.value : 0; } catch { /* ignore */ }
-  const playing = !!(victoryCurrent?.src);
+  const playing = !!(victoryCurrent && victoryCurrent.until > (ac()?.currentTime || 0));
   return {
     playing,
     gain,
     startedAt: victoryCurrent?.startedAt || 0,
-    hasBuf: (() => {
-      try {
-        const url = assetUrl(VICTORY_FILE);
-        const v = cache.get(url);
-        return !!(v && !(v instanceof Promise));
-      } catch { return false; }
-    })(),
+    hasBuf: true, // procedural — always ready after unlock
     last: { ...victoryLast },
-    file: VICTORY_FILE,
+    variant: VICTORY_VARIANT,
+    file: null,
   };
 }
 
 export function lastVictoryAttempt() { return { ...victoryLast }; }
 
-/** Prefetch + decode victory.mp3 through the same loader voices use. */
+/** No asset to prefetch; ensure AudioContext is unlocked. */
 export function prefetchVictory() {
   unlockVoices();
-  loadBuf(VICTORY_FILE).then(() => { victoryPrimed = true; }).catch((e) => {
-    victoryLast = { at: Date.now(), ok: false, error: String(e?.message || e), ctxState: ac()?.state || null, file: VICTORY_FILE };
-  });
+  victoryPrimed = true;
 }
 
 function stopVictoryMusic() {
   if (!victoryCurrent) return;
-  try { victoryCurrent.src.stop?.(); } catch { /* ignore */ }
+  try { victoryCurrent.handle?.cancel?.(); } catch { /* ignore */ }
   try { victoryCurrent.gain.disconnect(); } catch { /* ignore */ }
   victoryCurrent = null;
 }
 
 /**
- * Play the victory sting through the EXACT path as playVoice:
- * fetch → decodeAudioData → BufferSource → gain → ctx.destination (not the music bus).
- * Not gated by Voices toggle; skipped only when Sound master is off (caller enables for Test).
+ * Play synth victory A into ctx.destination (same unlock/resume path as voices).
+ * Loud master gain; not routed through the music bus so bed ducking cannot silence it.
  */
 export function playVictoryMusic(then = null) {
   unlockVoices();
   const c = ac();
-  victoryLast = { at: Date.now(), ok: false, error: null, ctxState: c?.state || null, file: VICTORY_FILE };
+  victoryLast = { at: Date.now(), ok: false, error: null, ctxState: c?.state || null, variant: VICTORY_VARIANT };
   if (!c) {
     victoryLast.error = 'no AudioContext';
     if (then) setTimeout(then, 0);
@@ -245,30 +238,42 @@ export function playVictoryMusic(then = null) {
   const run = async () => {
     try {
       if (c.state !== 'running') await c.resume().catch(() => {});
-      victoryLast.ctxState = c.state;
-      const buf = await loadBuf(VICTORY_FILE);
       const ctx = ac();
       if (!ctx) throw new Error('no ctx');
       if (ctx.state !== 'running') await ctx.resume().catch(() => {});
       victoryLast.ctxState = ctx.state;
-      const src = ctx.createBufferSource();
-      const g = ctx.createGain();
-      // Loud and unducked: destination path, near-unity gain (file is already loudnormed ~-14 LUFS).
-      g.gain.value = 1.0;
-      src.buffer = buf;
-      // Destination — not music bus — so Music slider / bed ducking / stopMusic cannot mute it.
-      src.connect(g).connect(ctx.destination);
-      src.onended = () => {
-        if (victoryCurrent?.src === src) victoryCurrent = null;
-        if (then) then();
+      duckBed(0.12);
+      setTimeout(() => duckBed(0.12), 200);
+      setTimeout(() => duckBed(0.12), 500);
+      // Loud destination bus for the sting
+      const master = ctx.createGain();
+      master.gain.value = 1.35;
+      master.connect(ctx.destination);
+      const handle = playVictorySynth(ctx, VICTORY_VARIANT, {
+        dest: master,
+        then: () => {
+          if (victoryCurrent?.gain === master) victoryCurrent = null;
+          try { master.disconnect(); } catch { /* ignore */ }
+          if (then) then();
+        },
+      });
+      const dur = handle?.duration || 1.75;
+      victoryCurrent = {
+        gain: master,
+        startedAt: ctx.currentTime,
+        duration: dur,
+        until: ctx.currentTime + dur,
+        variant: VICTORY_VARIANT,
+        handle,
       };
-      victoryCurrent = { src, gain: g, file: VICTORY_FILE, startedAt: ctx.currentTime, duration: buf.duration };
-      src.start(0);
-      victoryLast = { at: Date.now(), ok: true, error: null, ctxState: ctx.state, file: VICTORY_FILE, startedAt: ctx.currentTime };
+      victoryLast = {
+        at: Date.now(), ok: true, error: null, ctxState: ctx.state,
+        variant: VICTORY_VARIANT, startedAt: ctx.currentTime,
+      };
       victoryPrimed = true;
     } catch (e) {
-      victoryLast = { at: Date.now(), ok: false, error: String(e?.message || e), ctxState: ac()?.state || null, file: VICTORY_FILE };
-      if (typeof console !== 'undefined') console.warn('[victory play fail]', VICTORY_FILE, e);
+      victoryLast = { at: Date.now(), ok: false, error: String(e?.message || e), ctxState: ac()?.state || null, variant: VICTORY_VARIANT };
+      if (typeof console !== 'undefined') console.warn('[victory synth fail]', e);
       if (then) then();
     }
   };
@@ -276,7 +281,7 @@ export function playVictoryMusic(then = null) {
   return true;
 }
 
-/** Settings → Test victory music. Forces sound on at the call site. */
+/** Settings → Test victory music (synth A). */
 export function testVictoryMusic() {
   unlockVoices();
   return playVictoryMusic();
