@@ -13,6 +13,18 @@ const measure = (page) => page.evaluate(() => {
   const hud = box(document.querySelector('#hud'));
   return { bub, raw: m && m.raw, vh: view.height, view: { l: view.left, t: view.top, r: view.right, b: view.bottom }, mon, cap: box(cap), menu: box(document.querySelector('#cmenu')), font: parseFloat(getComputedStyle(cap.querySelector('.captxt')).fontSize), clipped: cap.scrollHeight > cap.clientHeight + 1, dbg: [cap.scrollHeight, cap.clientHeight, cap.style.maxHeight, window.__gw.R.captionReservePx, window.__gw.R.arenaShift, view.height, window.__gw.R.monsterRect()] };
 });
+// monsters measure at rest: a lunge/stagger from the last enemy attack (now 1.5x longer) may still be finishing when the menu appears
+const settle = (page) => page.waitForFunction(() => { const R = window.__gw.R; return ![...R.monsterObjs.values()].some((v) => v.lunge > 0 || v.stagger > 0) && !(R.aBump > 0) && !(R.aShake > 0); }, null, { timeout: 4000, polling: 100 }).catch(() => {});
+// A real layout bug fails on every attempt; a lunge, a screen shake or a caption swapped by the next narration line only fails one frame.
+async function checkAtRest(page, what) {
+  let err;
+  for (let i = 0; i < 8; i++) {
+    await page.waitForSelector('#caption.show .captxt', { timeout: 30000 }); await settle(page);
+    const m = await measure(page).catch(() => null); if (!m) { await page.waitForTimeout(300); continue; }
+    try { check(m, what); return m; } catch (e) { err = e; await page.waitForTimeout(400); }
+  }
+  throw err || new Error(what + ': never measurable');
+}
 const overlap = (a, b) => !!a && !!b && a.l < b.r - 1 && a.r > b.l + 1 && a.t < b.b - 1 && a.b > b.t + 1;
 function check(m, what) {
   expect(m.cap, `${what}: caption visible`).toBeTruthy();
@@ -42,14 +54,14 @@ for (const [name, groups] of [['Gorvax', [{ key: 'tyrannosaurus', count: 1 }]], 
     for (const [label, e] of [['short', { text: 'Gorvax bites Ser Aldric!', sub: '14 damage', tone: 'bad' }], ['long', { text: LONG, sub: '27 piercing damage — CRITICAL!', tone: 'crit' }]]) {
       await page.evaluate((e) => { window.__gw.say({ who: 'Fizzwick', color: '#ff80ff', text: 'Fizzwick notes the enemy\'s poor posture. Advantage: Fizzwick.' }); window.__gw.caption(e, true); }, e);
       await page.waitForTimeout(600);
-      check(await measure(page), `${name}/${label}`);
+      await checkAtRest(page, `${name}/${label}`);
       if (label === 'long') await page.screenshot({ path: `test-results/caption-${name.split(' ').pop().toLowerCase()}-${info.project.name}.png` });
     }
     // a real narration caption from the combat engine
     await page.evaluate(() => window.__gw.hideCaption());
     await page.locator('.combatmenu button', { hasText: 'Auto-battle' }).click();
     await page.waitForSelector('#caption.show', { timeout: 120000 });
-    check(await measure(page), `${name}/live`);
+    await checkAtRest(page, `${name}/live`);
     expect(errors).toEqual([]);
   });
 }
