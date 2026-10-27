@@ -1,0 +1,594 @@
+[
+  {
+    "id": "elowen-591217990d9f",
+    "speaker": "elowen",
+    "text": "Rise, Knight of the Dawn.",
+    "priority": 10,
+    "source": "story.js",
+    "chars": 25
+  },
+  {
+    "id": "elowen-3a67bbfa5e0f",
+    "speaker": "elowen",
+    "text": "Take it! Follow me down \u00e2\u0080\u0094 I'll leave you a trail!",
+    "priority": 10,
+    "source": "story.js",
+    "chars": 51
+  },
+  {
+    "id": "elowen-e85e02b05dee",
+    "speaker": "elowen",
+    "text": "To Emberhollow \u00e2\u0080\u0094 and to whoever finally finishes Marga's pie!",
+    "priority": 10,
+    "source": "story.js",
+    "chars": 63
+  },
+  {
+    "id": "elowen-note-1024318d97ae",
+    "speaker": "elowen",
+    "text": "Note 6: \"Mushrooms that scream. I am not making this up. Kill the little ones first.\"",
+    "priority": 11,
+    "source": "story.js",
+    "chars": 85
+  },
+  {
+    "id": "elowen-note-d11cd65f17d7",
+    "speaker": "elowen",
+    "text": "Note 8: \"Brakk carries a dwarf-made hammer far too fine for him. Brambur will know it.\"",
+    "priority": 11,
+    "source": "story.js",
+    "chars": 87
+  },
+  {
+    "id": "elowen-note-0fbdc5693982",
+    "speaker": "elowen",
+    "text": "Note 3: \"Water to my knees. Sister Vey sings to the old lizard. It is very bad singing.\"",
+    "priority": 11,
+    "source": "story.js",
+    "chars": 88
+  },
+  {
+    "id": "elowen-note-4fb1c440b527",
+    "speaker": "elowen",
+    "text": "Note 10: \"His staff is the anchor. Break it and I am free. I will be ready. \u00e2\u0080\u0094 Your friend, E.\"",
+    "priority": 11,
+    "source": "story.js",
+    "chars": 96
+  },
+  {
+    "id": "elowen-note-018a8ba075a7",
+    "speaker": "elowen",
+    "text": "Note 1: \"If you are reading this, you followed. Good. They tied my hands but not my pencil. \u00e2\u0080\u0094 E.\"",
+    "priority": 11,
+    "source": "story.js",
+    "chars": 99
+  },
+  {
+    "id": "elowen-note-455e6dedd2b7",
+    "speaker": "elowen",
+    "text": "Note 2: \"The spider-rider is called Skarn. He talks to his mount. It does not answer. Neither do I.\"",
+    "priority": 11,
+    "source": "story.js",
+    "chars": 100
+  },
+  {
+    "id": "elowen-note-b1f61767d24f",
+    "speaker": "elowen",
+    "text": "Note 5: \"The crystals hum when the basilisk looks at them. Mirrors, perhaps? Bring something shiny.\"",
+    "priority": 11,
+    "source": "story.js",
+    "chars": 100
+  },
+  {
+    "id": "elowen-note-d4d7024cb566",
+    "speaker": "elowen",
+    "text": "Note 4: \"Malthrax says there are five seals and one breaks with every moonrise. Hurry. But eat something.\"",
+    "priority": 11,
+    "source": "story.js",
+    "chars": 106
+  },
+  {
+    "id": "elowen-note-429f5944c7f7",
+    "speaker": "elowen",
+    "text": "Note 7: \"Ashforge. They chain smiths to the anvils. The chimera wears a collar \u00e2\u0080\u0094 Brakk is afraid of it.\"",
+    "priority": 11,
+    "source": "story.js",
+    "chars": 106
+  },
+  {
+    "id": "elowen-note-de69fc8cd1a9",
+    "speaker": "elowen",
+    "text": "Note 9: \"I can see the vault. Something very large is sleeping under the floor. Malthrax keeps saying 'Gorvax'.\"",
+    "priority": 11,
+    "source": "story.js",
+    "chars": 112
+  },
+  {
+    "id": "malthrax-826e0c25c64e",
+    "speaker": "malthrax",
+    "text": "Princess. You will make a lovely key.",
+    "priority": 20,
+    "source": "story.js",
+    "chars": 37
+  },
+  {
+    "id": "malthrax-574f65a99572",
+    "speaker": "malthrax",
+    "text": "Five moons, Emberhollow. Then you kneel before Blackspire.",
+    "priority": 20,
+    "source": "story.js",
+    "chars": 58
+  },
+  {
+    "id": "narrator-boss4-dc2a6e848f75",
+    "speaker": "narrator",
+    "text": "The ground shakes. Bones of enormous beasts form an archway here, and the hot, rotten wind blowing through it is breath.",
+    "priority": 22,
+    "source": "narration.js",
+    "chars": 120
+  },
+  {
+    "id": "narrator-boss3-4e096a68a172",
+    "speaker": "narrator",
+    "text": "The forge-hall opens up around an anvil the size of a wagon, glowing white-hot. Heavy footsteps ring out from beyond the smoke.",
+    "priority": 22,
+    "source": "narration.js",
+    "chars": 127
+  },
+  {
+    "id": "narrator-boss1-bb678cce797b",
+    "speaker": "narrator",
+    "text": "The cave drops into a drowned amphitheatre, water black and mirror-still. Ripples spread from the centre, where nothing should be.",
+    "priority": 22,
+    "source": "narration.js",
+    "chars": 130
+  },
+  {
+    "id": "narrator-boss2-553da9a312df",
+    "speaker": "narrator",
+    "text": "Crystals here grow in a perfect ring around a pedestal of black glass. Your reflections in them stop moving when you do. Then one of them smiles.",
+    "priority": 22,
+    "source": "narration.js",
+    "chars": 145
+  },
+  {
+    "id": "narrator-boss0-e31895cfc415",
+    "speaker": "narrator",
+    "text": "The tunnel widens into a nest of chewed bones, gnawed armour and stolen cutlery, piled into a lopsided throne. Something big stirs on top of it and sniffs the air.",
+    "priority": 22,
+    "source": "narration.js",
+    "chars": 163
+  },
+  {
+    "id": "wren-offer-ccbc45ef254b",
+    "speaker": "wren",
+    "text": "Mind the basilisk, dear.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 24
+  },
+  {
+    "id": "osric-offer-3d3af167ae7e",
+    "speaker": "osric",
+    "text": "The Temple stands with you.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 27
+  },
+  {
+    "id": "dobbin-offer-5b05d65ede8f",
+    "speaker": "dobbin",
+    "text": "The forges are lit for you.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 27
+  },
+  {
+    "id": "marga-offer-5f99af26a896",
+    "speaker": "marga",
+    "text": "Room's ready whenever you are.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 30
+  },
+  {
+    "id": "tamsin-offer-85e55a931bc9",
+    "speaker": "tamsin",
+    "text": "Blow it hard. Wake the valley.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 30
+  },
+  {
+    "id": "rowan-offer-43748ccb42ff",
+    "speaker": "rowan",
+    "text": "The town's behind you. Bring her home.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 38
+  },
+  {
+    "id": "marga-6b5801ec1059",
+    "speaker": "marga",
+    "text": "Nobody finishes my pie. That's the tradition.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 45
+  },
+  {
+    "id": "rowan-1af6d298654c",
+    "speaker": "rowan",
+    "text": "All four, alive! Here's 75 gold. They'll walk the Warrens with you from now on.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 79
+  },
+  {
+    "id": "osric-6cebf0a6e34b",
+    "speaker": "osric",
+    "text": "Her relics! The Temple owes you a life \u00e2\u0080\u0094 one Raise Dead, free. And take these.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 80
+  },
+  {
+    "id": "rowan-fd4b01af5d09",
+    "speaker": "rowan",
+    "text": "One more thing, Knight. The Sovereign's staff... we never found it among the rubble.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 84
+  },
+  {
+    "id": "wren-f2583bdc840c",
+    "speaker": "wren",
+    "text": "Perfect caps! Three Potions of Stone-to-Flesh. Drink one if you start feeling... gravelly.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 90
+  },
+  {
+    "id": "dobbin-aba4e616307a",
+    "speaker": "dobbin",
+    "text": "My brothers are home. This blade took all six of us to forge. +2, and it sings when it cuts.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 92
+  },
+  {
+    "id": "marga-0e4db05d707c",
+    "speaker": "marga",
+    "text": "Quiet as a tomb down there now. Rooms are free for you, love. Forever. Don't tell the others.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 93
+  },
+  {
+    "id": "dobbin-offer-4ad42d715e95",
+    "speaker": "dobbin",
+    "text": "They took my brother smiths to the Ashforge in chains. Free them and I'll forge you the finest blade in Emberhollow.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 116
+  },
+  {
+    "id": "marga-offer-6571fbf699c1",
+    "speaker": "marga",
+    "text": "Something's digging into my cellar from below. Scratching all night. Collapse that tunnel and you'll never pay for a room again.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 128
+  },
+  {
+    "id": "wren-offer-885a9c6b9d41",
+    "speaker": "wren",
+    "text": "Glowcaps! The Glimmerdeep is full of them. Three, and I can brew you something for basilisk trouble. Stone-to-flesh, dear. Very fashionable.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 140
+  },
+  {
+    "id": "rowan-offer-c1bd42b8e8ab",
+    "speaker": "rowan",
+    "text": "Four of my guards chased the cultists into the Rat-Warrens and never came back. Bring them home and I'll see you paid \u00e2\u0080\u0094 and they'll fight at your side.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 153
+  },
+  {
+    "id": "osric-offer-ea9047068582",
+    "speaker": "osric",
+    "text": "The princess carried a satchel of relics from this temple. If it survived, it fell in the Drowned Grotto. Bring it back and the Temple will owe you a life.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 155
+  },
+  {
+    "id": "rowan-484442cb68e1",
+    "speaker": "rowan",
+    "text": "You. You fought like the Dawn's own knight. Take this writ \u00e2\u0080\u0094 it gives you the Crown's authority below. Bring her back. I'll have work for you in town, too.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 157
+  },
+  {
+    "id": "tamsin-offer-7ae34b57ccc9",
+    "speaker": "tamsin",
+    "text": "When I was a girl, the Warden kept a horn that woke the whole valley. It's down in the vault still. Sound it when the big lizard wakes \u00e2\u0080\u0094 trust an old woman.",
+    "priority": 30,
+    "source": "story.js",
+    "chars": 158
+  },
+  {
+    "id": "narrator-floor1-b14075c29d70",
+    "speaker": "narrator",
+    "text": "Cold water closes over your boots, and the splash rolls away through vaulted caves. Pale fungus glows above black pools far deeper than they look. The air tastes of salt and rust. Something large shifts beneath the Drowned Grotto, then goes still.",
+    "priority": 35,
+    "source": "narration.js",
+    "chars": 247
+  },
+  {
+    "id": "narrator-floor2-8ba1912aa6ff",
+    "speaker": "narrator",
+    "text": "The Glimmerdeep opens like the inside of a geode, its crystals humming one endless note. A hundred reflections march beside you, each a heartbeat out of step. The air smells of flint and ozone. Deeper in stand statues frozen in surprise. Nobody carved them.",
+    "priority": 35,
+    "source": "narration.js",
+    "chars": 257
+  },
+  {
+    "id": "narrator-floor0-a08f9719a44e",
+    "speaker": "narrator",
+    "text": "Wet steps lead down into low, dripping tunnels that reek of damp straw and old cheese. Tiny claws scritch in every crack. Your torch catches dozens of red eyes that blink out the moment you look. Somewhere ahead a soup-tin bell tinkles once: the Rat-Warrens are awake.",
+    "priority": 35,
+    "source": "narration.js",
+    "chars": 268
+  },
+  {
+    "id": "narrator-floor4-d6c12d0d3b20",
+    "speaker": "narrator",
+    "text": "Silence falls like a lid. Colossal pillars carved with roaring lizards rise into darkness above claw-scored floors. The air smells of warm scales and old blood, and trembles with slow, heavy breathing. Elowen's light lies somewhere beyond. So does the thing that guards it.",
+    "priority": 35,
+    "source": "narration.js",
+    "chars": 273
+  },
+  {
+    "id": "narrator-floor3-3d03b8cab547",
+    "speaker": "narrator",
+    "text": "Heat slaps your face. Slag crawls glowing through dwarf-cut channels, and hammers ring from forges that should be cold. Ash sifts down, bitter with sulphur, gritty between your teeth. Every shadow flickers, and some flicker back. Whatever feeds the Ashforge is still hungry.",
+    "priority": 35,
+    "source": "narration.js",
+    "chars": 274
+  },
+  {
+    "id": "narrator-edc8f99b4036",
+    "speaker": "narrator",
+    "text": "Far below, in the dark of the empty vault, a sixth seal nobody knew about begins to glow.",
+    "priority": 40,
+    "source": "story.js",
+    "chars": 89
+  },
+  {
+    "id": "narrator-4f4ab2fb8d31",
+    "speaker": "narrator",
+    "text": "Gorvax the Tyrant crashes down, and the Blackspire shudders. One by one its violet lights go dark.",
+    "priority": 40,
+    "source": "story.js",
+    "chars": 98
+  },
+  {
+    "id": "narrator-6b3a77a5e31f",
+    "speaker": "narrator",
+    "text": "The fire goes out. Elowen is gone. The floor of the cellar has cracked open onto a stair leading down.",
+    "priority": 40,
+    "source": "story.js",
+    "chars": 102
+  },
+  {
+    "id": "narrator-2a77770a7a79",
+    "speaker": "narrator",
+    "text": "Shadow-hands seize Elowen. As she is dragged into the fire, she wrenches her signet ring free and throws it to you.",
+    "priority": 40,
+    "source": "story.js",
+    "chars": 115
+  },
+  {
+    "id": "narrator-68b5c3a71384",
+    "speaker": "narrator",
+    "text": "As the last cultist falls, the hearth fire turns violet. A tall shadow steps out of it, wearing a crown of black iron.",
+    "priority": 40,
+    "source": "story.js",
+    "chars": 118
+  },
+  {
+    "id": "narrator-7f90a2f34204",
+    "speaker": "narrator",
+    "text": "Emberhollow, harvest night. The Boar & Spoon is packed to the rafters, and Princess Elowen herself is pouring the cider.",
+    "priority": 40,
+    "source": "story.js",
+    "chars": 120
+  },
+  {
+    "id": "narrator-177149261910",
+    "speaker": "narrator",
+    "text": "Then the candles gutter out, all at once. Robed figures pour through the cellar door, with rats and wolf-spiders at their heels.",
+    "priority": 40,
+    "source": "story.js",
+    "chars": 128
+  },
+  {
+    "id": "narrator-93a9d2755e58",
+    "speaker": "narrator",
+    "text": "Back in Emberhollow, in the Boar & Spoon, which is still missing a few spoons, Elowen draws Dawnfang and lays it on your shoulder.",
+    "priority": 40,
+    "source": "story.js",
+    "chars": 130
+  },
+  {
+    "id": "narrator-04aa1ec6c46b",
+    "speaker": "narrator",
+    "text": "You raise the Warden's Warhorn and blow. The note rolls up through five floors of stone, and far above, Emberhollow's bells answer.",
+    "priority": 40,
+    "source": "story.js",
+    "chars": 131
+  },
+  {
+    "id": "vexrath-victory-eed65d47e2f0",
+    "speaker": "vexrath",
+    "text": "Victory, duly notarised.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 24
+  },
+  {
+    "id": "brambur-rest-d3450c4068f4",
+    "speaker": "brambur",
+    "text": "ll take first watch. I won",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 26
+  },
+  {
+    "id": "grumsh-victory-c9424bdee50c",
+    "speaker": "grumsh",
+    "text": "We won. And yet\u00e2\u0080\u00a6 did we?",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 26
+  },
+  {
+    "id": "brambur-combatStart-8ff17d5a016b",
+    "speaker": "brambur",
+    "text": "m terribly sorry about what",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 27
+  },
+  {
+    "id": "grumsh-levelUp-a5aff00bfab8",
+    "speaker": "grumsh",
+    "text": "I grow stronger. My sorrow grows with me.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 41
+  },
+  {
+    "id": "vexrath-rest-0566e98f2ef8",
+    "speaker": "vexrath",
+    "text": "I will catch up on my backlog of blessings.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 43
+  },
+  {
+    "id": "grumsh-combatStart-514f36450dfc",
+    "speaker": "grumsh",
+    "text": "Ah. Violence. The only song I was ever good at.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 47
+  },
+  {
+    "id": "grumsh-rest-9a65984934f4",
+    "speaker": "grumsh",
+    "text": "I will keep watch. Sleep is for the untroubled.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 47
+  },
+  {
+    "id": "vexrath-levelUp-ddb501624967",
+    "speaker": "vexrath",
+    "text": "Promotion granted! I shall need a bigger stamp.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 47
+  },
+  {
+    "id": "grumsh-victory-87f02fe0e3c2",
+    "speaker": "grumsh",
+    "text": "Victory. I shall compose something unbearably moving.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 53
+  },
+  {
+    "id": "grumsh-recruit-0943d9dec689",
+    "speaker": "grumsh",
+    "text": "Grumsh joins. Grumsh has packed his lute and his sorrow.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 56
+  },
+  {
+    "id": "vexrath-combatStart-eca78ffac16c",
+    "speaker": "vexrath",
+    "text": "Hostile encounter logged. Form 7-B: Smiting, commencing.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 56
+  },
+  {
+    "id": "vexrath-combatStart-93e015a876a0",
+    "speaker": "vexrath",
+    "text": "Have you filed a permit to attack us? No? Most irregular.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 57
+  },
+  {
+    "id": "grumsh-combatStart-340d4b6ad14c",
+    "speaker": "grumsh",
+    "text": "Another battle. Another verse for my endless ballad of woe.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 59
+  },
+  {
+    "id": "vexrath-recruit-fd20a40c944c",
+    "speaker": "vexrath",
+    "text": "I have filed my joining papers in triplicate. Let us begin.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 59
+  },
+  {
+    "id": "vexrath-rest-e1c6ede0f7c2",
+    "speaker": "vexrath",
+    "text": "Rest period approved: eight hours, minus one hour of filing.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 60
+  },
+  {
+    "id": "grumsh-rest-595fce806fad",
+    "speaker": "grumsh",
+    "text": "Let me play you to sleep. It is a lament. They are all laments.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 63
+  },
+  {
+    "id": "vexrath-victory-f89f073abb36",
+    "speaker": "vexrath",
+    "text": "Encounter closed. Outcome: favourable. Please rate your smiting experience.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 75
+  },
+  {
+    "id": "grumsh-recruit-98356b674302",
+    "speaker": "grumsh",
+    "text": "Very well. I shall follow you into the dark. It is where I keep my feelings anyway.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 83
+  },
+  {
+    "id": "vexrath-recruit-174e0abfb133",
+    "speaker": "vexrath",
+    "text": "Application approved. Vexrath Quillscale, paladin, reporting. Please initial here, here and here.",
+    "priority": 60,
+    "source": "companions.js",
+    "chars": 97
+  }
+]

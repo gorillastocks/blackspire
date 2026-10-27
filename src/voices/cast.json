@@ -1,0 +1,92 @@
+{
+  "elowen": {
+    "id": "hpp4J3VqNfWAUOO0d1Us",
+    "name": "Elowen",
+    "note": "Princess"
+  },
+  "narrator": {
+    "id": "JBFqnCBsd6RMkjVDRZzb",
+    "name": "Dungeon Master",
+    "note": "Narrator"
+  },
+  "malthrax": {
+    "id": "pNInz6obpgDQGcFmaJgB",
+    "name": "Malthrax",
+    "note": "Dread Sovereign"
+  },
+  "grumsh": {
+    "id": "SOYHLrjzK2X1ezoPC6cr",
+    "name": "Grumsh",
+    "note": "Companion"
+  },
+  "vexrath": {
+    "id": "N2lVS1w4EtoT3dr4eOWO",
+    "name": "Vexrath",
+    "note": "Companion"
+  },
+  "serAldric": {
+    "id": "IKne3meq5aSn9XLyUdCD",
+    "name": "Ser Aldric",
+    "note": "Hero default"
+  },
+  "marga": {
+    "id": "XrExE9yKIg1WjnnlVkGX",
+    "name": "Marga",
+    "note": "Innkeeper"
+  },
+  "rowan": {
+    "id": "pNInz6obpgDQGcFmaJgB",
+    "name": "Rowan",
+    "note": "Captain (Adam)"
+  },
+  "osric": {
+    "id": "pqHfZKP75CvOlQylNhV4",
+    "name": "Osric",
+    "note": "Temple"
+  },
+  "wren": {
+    "id": "FGY2WhTYpPnrIDTdsKH5",
+    "name": "Wren",
+    "note": "Apothecary"
+  },
+  "dobbin": {
+    "id": "CwhRBWXzGAHq8TQ4Fs17",
+    "name": "Dobbin",
+    "note": "Smith"
+  },
+  "tamsin": {
+    "id": "Xb7hH8MSUJpSbSDYk0k2",
+    "name": "Tamsin",
+    "note": "Warden"
+  },
+  "brambur": {
+    "id": "ErXwobaYiN019PkySvjV",
+    "name": "Brambur",
+    "note": "Antoni - dwarf cleric (free premade; Josh is library-only)"
+  },
+  "pip": {
+    "id": "MF3mGyEYCl7XYWbV9V6O",
+    "name": "Pip",
+    "note": "Elli - halfling"
+  },
+  "fizzwick": {
+    "id": "yoZ06aMxZJJ28mfd3POQ",
+    "name": "Fizzwick",
+    "note": "Sam - gnome"
+  },
+  "skarn": {
+    "id": "VR6AewLTigWG4xSOukaG",
+    "name": "Skarn",
+    "note": "Arnold - B1 boss"
+  },
+  "brakk": {
+    "id": "N2lVS1w4EtoT3dr4eOWO",
+    "name": "Brakk",
+    "note": "Callum - B4"
+  },
+  "gorvax": {
+    "id": "VR6AewLTigWG4xSOukaG",
+    "name": "Gorvax",
+    "note": "Arnold - final boss"
+  }
+}

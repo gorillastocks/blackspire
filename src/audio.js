@@ -1,4 +1,4 @@
-// All Blackspire audio is ORIGINAL and generated live with WebAudio — no audio files, no licensing, 0 bytes of assets.
+// Blackspire audio: royalty-free music files (lazy-loaded) + procedural SFX/ambience via WebAudio.
 // Three buses (music / sfx / ambience) under a master gain, each with its own volume setting.
 // iOS/Safari: the AudioContext starts suspended until a user gesture, so unlock() runs on the first tap/key.
 let ctx = null, master, bus = {};
@@ -31,75 +31,111 @@ export function unlock() {
 for (const ev of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(ev, unlock, { capture: true, passive: true });
 document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend().catch(() => {}); else if (unlocked) ctx.resume().catch(() => {}); });
 
-/* ---------------- procedural music ---------------- */
-const N = (n) => 440 * Math.pow(2, (n - 69) / 12); // MIDI → Hz
-// Each track: tempo, scale degrees (semitones), chord roots per bar (scale steps), lead pattern (scale steps / null), bass + pad voices.
+/* ---------------- file-based music (lazy-load AAC/OGG, crossfade) ---------------- */
+/** Track catalog: path stem under /music (browser picks .m4a or .ogg). */
 export const TRACKS = {
-  title:   { bpm: 76, root: 50, scale: [0, 2, 3, 5, 7, 8, 10], bars: [0, 5, 3, 4], lead: [7, null, 9, 8, 7, null, 4, null], lw: 'triangle', pad: 'sawtooth', drums: 0, padVol: 0.05 },
-  town:    { bpm: 104, root: 55, scale: [0, 2, 4, 5, 7, 9, 11], bars: [0, 3, 4, 0, 5, 3, 4, 4], lead: [4, 5, 7, null, 7, 5, 4, 2], lw: 'square', pad: 'triangle', drums: 1, padVol: 0.04 },
-  dungeon0:{ bpm: 70, root: 45, scale: [0, 2, 3, 5, 7, 8, 10], bars: [0, 0, 5, 4], lead: [null, 4, null, 3, null, 2, null, null], lw: 'sine', pad: 'triangle', drums: 0, padVol: 0.06 },
-  dungeon1:{ bpm: 64, root: 43, scale: [0, 1, 3, 5, 7, 8, 10], bars: [0, 1, 0, 6], lead: [null, null, 7, 8, null, 7, null, 4], lw: 'sine', pad: 'sawtooth', drums: 0, padVol: 0.045 },
-  dungeon2:{ bpm: 58, root: 40, scale: [0, 1, 3, 4, 6, 8, 10], bars: [0, 1, 4, 1], lead: [7, null, null, 8, null, null, 4, null], lw: 'triangle', pad: 'sawtooth', drums: 0, padVol: 0.05 },
-  dungeon3:{ bpm: 70, root: 45, scale: [0, 2, 3, 6, 7, 8, 11], bars: [0, 4, 3, 1], lead: [null, 9, null, 7, 8, null, 4, null], lw: 'sine', pad: 'triangle', drums: 0, padVol: 0.05 },
-  dungeon4:{ bpm: 84, root: 38, scale: [0, 1, 4, 5, 7, 8, 10], bars: [0, 1, 5, 4], lead: [7, 8, null, 7, 4, null, 2, 1], lw: 'square', pad: 'sawtooth', drums: 1, padVol: 0.06 },
-  combat:  { bpm: 148, root: 45, scale: [0, 2, 3, 5, 7, 8, 10], bars: [0, 0, 5, 6, 0, 0, 3, 4], lead: [7, 7, 9, 7, 10, 9, 7, 4], lw: 'square', pad: 'sawtooth', drums: 2, padVol: 0.03, bassEighths: true },
-  boss:    { bpm: 160, root: 40, scale: [0, 1, 3, 5, 6, 8, 10], bars: [0, 1, 0, 4, 0, 1, 5, 4], lead: [7, 8, 7, 4, 7, 8, 11, 10], lw: 'sawtooth', pad: 'sawtooth', drums: 3, padVol: 0.035, bassEighths: true },
-  victory: { bpm: 132, root: 60, scale: [0, 2, 4, 5, 7, 9, 11], bars: [0, 3, 4, 0], lead: [0, 2, 4, 7, 4, 7, 9, 11], lw: 'square', pad: 'triangle', drums: 1, padVol: 0.04, once: true },
+  title:    { stem: 'music/title',    loop: true },
+  town:     { stem: 'music/town',     loop: true },
+  dungeon0: { stem: 'music/dungeon0', loop: true },
+  dungeon1: { stem: 'music/dungeon1', loop: true },
+  dungeon2: { stem: 'music/dungeon2', loop: true },
+  dungeon3: { stem: 'music/dungeon3', loop: true },
+  dungeon4: { stem: 'music/dungeon4', loop: true },
+  combat:   { stem: 'music/combat',   loop: true },
+  boss:     { stem: 'music/boss',     loop: true },
+  victory:  { stem: 'music/victory',  loop: false, once: true },
+  ending:   { stem: 'music/ending',   loop: true },
 };
-const deg = (t, d) => { const L = t.scale.length; const o = Math.floor(d / L); return t.root + t.scale[((d % L) + L) % L] + 12 * o; };
 
-let cur = null, want = null, timer = null, step = 0, nextT = 0, trackGain = null, onDone = null;
-function voice(type, freq, t0, dur, v, dest, attack = 0.01) {
-  const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = freq;
-  g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(v, t0 + attack); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  o.connect(g).connect(dest); o.start(t0); o.stop(t0 + dur + 0.05);
+const bufCache = new Map(); // stem → AudioBuffer | Promise
+function musicUrl(stem) {
+  // Prefer m4a (Safari/iOS); ogg as fallback for older Firefox.
+  const a = document.createElement('audio');
+  if (a.canPlayType('audio/mp4; codecs="mp4a.40.2"') || a.canPlayType('audio/aac')) return `/${stem}.m4a`;
+  if (a.canPlayType('audio/ogg; codecs="vorbis"')) return `/${stem}.ogg`;
+  return `/${stem}.m4a`;
 }
-let noiseBuf = null;
-function noise() { if (noiseBuf) return noiseBuf; noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return noiseBuf; }
-function hit(kind, t0, dest) {
-  if (kind === 'kick') { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(120, t0); o.frequency.exponentialRampToValueAtTime(40, t0 + 0.15); g.gain.setValueAtTime(0.35, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2); o.connect(g).connect(dest); o.start(t0); o.stop(t0 + 0.25); return; }
-  const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = noise();
-  f.type = kind === 'hat' ? 'highpass' : 'bandpass'; f.frequency.value = kind === 'hat' ? 7000 : 1800;
-  const d = kind === 'hat' ? 0.04 : 0.14; g.gain.setValueAtTime(kind === 'hat' ? 0.06 : 0.16, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + d);
-  s.connect(f).connect(g).connect(dest); s.start(t0, Math.random()); s.stop(t0 + d + 0.02);
-}
-function schedule() {
-  const t = TRACKS[cur]; if (!t) return;
-  const e8 = 60 / t.bpm / 2; // eighth-note length
-  while (nextT < ctx.currentTime + 0.25) {
-    const bar = Math.floor(step / 8), i = step % 8;
-    if (t.once && bar >= t.bars.length) { const d = onDone; stopMusic(1.2); if (d) setTimeout(d, 600); return; }
-    const chord = t.bars[bar % t.bars.length];
-    if (i === 0) for (const d of [0, 2, 4]) voice(t.pad, N(deg(t, chord + d)), nextT, e8 * 8.2, t.padVol, trackGain, 0.25);
-    if (i % (t.bassEighths ? 1 : 4) === 0) voice('triangle', N(deg(t, chord) - 12), nextT, e8 * (t.bassEighths ? 0.9 : 3.8), 0.16, trackGain);
-    const ln = t.lead[(i + (bar % 2 ? 1 : 0) * (t.drums ? 0 : 3)) % 8];
-    if (ln !== null && ln !== undefined && (t.drums || Math.random() < 0.85)) voice(t.lw, N(deg(t, ln + (bar % 4 === 3 && t.drums ? 1 : 0))), nextT, e8 * 1.6, t.lw === 'sine' ? 0.07 : 0.035, trackGain);
-    if (t.drums) {
-      if (i % 4 === 0 || (t.drums >= 2 && i === 6)) hit('kick', nextT, trackGain);
-      if (i % 4 === 2 && t.drums >= 1) hit(t.drums >= 2 ? 'snare' : 'hat', nextT, trackGain);
-      if (t.drums >= 2) hit('hat', nextT, trackGain);
-    }
-    nextT += e8; step++;
+async function loadTrack(stem) {
+  if (bufCache.has(stem)) return bufCache.get(stem);
+  const p = (async () => {
+    const url = musicUrl(stem);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`music ${url} ${r.status}`);
+    const ab = await r.arrayBuffer();
+    const c = ac();
+    return await c.decodeAudioData(ab.slice(0));
+  })();
+  bufCache.set(stem, p);
+  try {
+    const buf = await p;
+    bufCache.set(stem, buf);
+    return buf;
+  } catch (e) {
+    bufCache.delete(stem);
+    throw e;
   }
 }
-function stopMusic(fade = 0.8) {
-  clearInterval(timer); timer = null;
-  if (trackGain && ctx) { const g = trackGain; g.gain.setTargetAtTime(0.0001, ctx.currentTime, fade / 4); setTimeout(() => g.disconnect(), fade * 1500); }
-  trackGain = null; cur = null;
+/** Prefetch a track in the background (no play). */
+export function prefetchMusic(name) {
+  const t = TRACKS[name]; if (!t || !ac()) return;
+  loadTrack(t.stem).catch(() => {});
 }
+
+let cur = null, want = null, trackGain = null, trackSrc = null, onDone = null, playGen = 0;
+
+function stopMusic(fade = 0.8) {
+  const g = trackGain, s = trackSrc;
+  trackGain = null; trackSrc = null; cur = null;
+  if (g && ctx) {
+    try { g.gain.cancelScheduledValues(ctx.currentTime); g.gain.setTargetAtTime(0.0001, ctx.currentTime, Math.max(0.05, fade / 4)); } catch { /* ignore */ }
+    setTimeout(() => { try { s?.stop?.(); } catch { /* ignore */ } try { g.disconnect(); } catch { /* ignore */ } }, fade * 1500);
+  }
+}
+
 /** Switch music track (crossfades). name null = silence. then: callback when a one-shot track (victory) ends. */
 export function play(name, force = false, then = null) {
   want = name; onDone = then;
-  if (!ctx || !unlocked || (name === cur && !force)) return;
-  stopMusic();
+  if (!ctx || !unlocked) return;
+  if (name === cur && !force) return;
+  const gen = ++playGen;
+  const prevFade = 1.0;
+  stopMusic(prevFade);
   if (!name || !TRACKS[name]) return;
-  cur = name; step = 0; nextT = ctx.currentTime + 0.1;
-  trackGain = ctx.createGain(); trackGain.gain.setValueAtTime(0.0001, ctx.currentTime); trackGain.gain.linearRampToValueAtTime(1, ctx.currentTime + 1.2); trackGain.connect(bus.music);
-  schedule(); timer = setInterval(schedule, 100);
+  const meta = TRACKS[name];
+  cur = name; // optimistic — cleared if load fails / superseded
+  loadTrack(meta.stem).then((buf) => {
+    if (gen !== playGen || want !== name || !ctx || !unlocked) return;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(1, ctx.currentTime + 1.2);
+    g.connect(bus.music);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = !!meta.loop;
+    src.connect(g);
+    src.onended = () => {
+      if (trackSrc !== src) return;
+      trackSrc = null; trackGain = null; cur = null;
+      const d = onDone; onDone = null;
+      if (d) d();
+    };
+    trackGain = g; trackSrc = src;
+    try { src.start(0); } catch { /* ignore */ }
+  }).catch(() => {
+    if (gen === playGen) cur = null;
+  });
 }
 export function currentTrack() { return cur || want; }
 
 /* ---------------- ambience ---------------- */
+let noiseBuf = null;
+function noise() {
+  if (noiseBuf) return noiseBuf;
+  noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return noiseBuf;
+}
 let ambWant = null, ambCur = null, ambNodes = [], ambTimer = null;
 export function ambience(name, force = false) {
   ambWant = name;

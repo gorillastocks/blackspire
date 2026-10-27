@@ -10,7 +10,8 @@ import * as SC from './rules/spellcasting.js';
 import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
-import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience } from './audio.js';
+import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic } from './audio.js';
+import { playVoiceLine, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume } from './voices/voice.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 // After a redeploy, an old tab's lazy chunks 404: reload once to pick up the new build.
 window.addEventListener('vite:preloadError', (e) => {
@@ -33,6 +34,7 @@ const btn = (label, onclick, attrs = {}) => h('button', { onclick: (e) => { sfx(
 let S = null; // game state
 let R = null; // renderer
 let combat = null; let combatInfo = null; let busy = false; let autoBattle = false;
+for (const ev of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(ev, unlockVoices, { capture: true, passive: true });
 const speed = () => BATTLE_SPEEDS[loadSettings().battleSpeed] || BATTLE_SPEEDS.pause;
 function setSpeed(k) { const st = loadSettings(); st.battleSpeed = k; st.battleSpeedSet = true; saveSettings(st); }
 const modal = $('#modal');
@@ -44,14 +46,15 @@ function showDialogue(scene, { closable = false } = {}) {
     const lines = scene.lines || []; let i = 0;
     const draw = () => {
       const ln = lines[Math.min(i, lines.length - 1)] || { who: 'narrator', text: '' }; const sp = Story.speaker(ln.who); const last = i >= lines.length - 1;
+      playVoiceLine(ln.text, ln.who);
       openModal([h('div', { class: 'dialogue' },
         scene.title ? h('h2', {}, scene.title) : null,
         h('div', { class: 'dlgrow' }, h('span', { class: 'dlgportrait', style: `border-color:${sp.color}` }, sp.icon || (sp.name || '?')[0]),
           h('div', { class: 'dlgtext' }, sp.name ? h('b', { style: `color:${sp.color}` }, sp.name) : null, h('p', { class: ln.who === 'narrator' ? 'lore' : '' }, ln.text))),
         h('div', { class: 'hint' }, `${Math.min(i + 1, lines.length)} / ${lines.length}`),
         h('div', { class: 'menu' }, last
-          ? (scene.choices?.length ? scene.choices : [{ id: 'ok', label: 'Continue ▶' }]).map((c) => btn(c.label, () => { closeModal(); resolve(c.id); }, { class: 'primary', 'data-choice': c.id, id: 'dlg-next' }))
-          : [btn('Next ▶', () => { i++; draw(); }, { class: 'primary', id: 'dlg-next' }), btn('Skip ⏭', () => { i = lines.length - 1; draw(); }, { class: 'small', id: 'dlg-skip' })]))], { closable });
+          ? (scene.choices?.length ? scene.choices : [{ id: 'ok', label: 'Continue ▶' }]).map((c) => btn(c.label, () => { stopVoice(); closeModal(); resolve(c.id); }, { class: 'primary', 'data-choice': c.id, id: 'dlg-next' }))
+          : [btn('Next ▶', () => { stopVoice(); i++; draw(); }, { class: 'primary', id: 'dlg-next' }), btn('Skip ⏭', () => { stopVoice(); i = lines.length - 1; draw(); }, { class: 'small', id: 'dlg-skip' })]))], { closable });
     };
     draw();
   });
@@ -90,7 +93,7 @@ function log(t, cls = '') {
   if (out) { out.hidden = false; out.append(h('div', { class: cls }, t)); while (out.children.length > 8) out.firstChild.remove(); out.scrollTop = out.scrollHeight; out.scrollIntoView({ block: "nearest" }); }
 }
 function say(b) {
-  if (!b) return; const el = h('div', { class: 'bubble' }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
+  if (!b) return; playVoiceLine(b.text, b.who); const el = h('div', { class: 'bubble' }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
   $('#banter').append(el); log(`${b.who}: "${b.text}"`, 'lore'); setTimeout(() => el.remove(), 4200);
   while ($('#banter').children.length > 2) $('#banter').firstChild.remove();
   placeBanter();
@@ -247,7 +250,7 @@ function openModal(content, { closable = true, cls = '' } = {}) {
   if (closable) p.prepend(h('div', { class: 'navbar closebar' }, btn('✕ Close', dismissModal, { class: 'small closebtn', 'aria-label': 'Close' })));
   return p;
 }
-function closeModal() { modal.className = 'hidden'; modal.innerHTML = ''; }
+function closeModal() { stopVoice(); modal.className = 'hidden'; modal.innerHTML = ''; }
 // leaving the title screen removes the title art backdrop
 new MutationObserver(() => { if (S) document.body.classList.remove('titlescreen'); }).observe(modal, { childList: true });
 // Closing a dialog (✕ / Esc) must never strand the player: in town, fall back to the town screen they came from.
@@ -284,7 +287,22 @@ function showHelp() {
 function showCredits() {
   openModal([h('h2', {}, 'Credits'), h('div', { html: `<p>Rules content from the <b>System Reference Document 5.1</b> by Wizards of the Coast LLC, licensed under <a style="color:#22e6ff" href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">CC-BY-4.0</a>. Blackspire is unofficial Fan Content and is not affiliated with Wizards of the Coast.</p>
   <p>3D monster, chest and torch models by <b>Quaternius</b> (quaternius.com), CC0 1.0 — via the Easy Enemy, Animated Dinosaur, Ultimate Animated Animal, Platformer Game Kit, Cyberpunk Game Kit and Modular Dungeon packs.</p>
-  <p>Music, ambience and sound effects are original, generated live in your browser with WebAudio — no third-party audio.</p>
+  <p>Spoken dialogue voices by <a style="color:#22e6ff" href="https://elevenlabs.io" target="_blank" rel="noopener">elevenlabs.io</a>.</p>
+  <p><b>Music</b> by Kevin MacLeod (<a style="color:#22e6ff" href="https://incompetech.com" target="_blank" rel="noopener">incompetech.com</a>), licensed under <a style="color:#22e6ff" href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>:</p>
+  <ul style="text-align:left;font-size:0.92em;line-height:1.45;max-height:40vh;overflow:auto">
+    <li>Title — <i>Darkest Child</i></li>
+    <li>Town — <i>Midnight Tale</i></li>
+    <li>B1 Rat-Warrens — <i>Spider Eyes</i></li>
+    <li>B2 Drowned Grotto — <i>Water Prelude</i></li>
+    <li>B3 Glimmerdeep — <i>Floating Cities</i></li>
+    <li>B4 Ashforge — <i>Industrial Cinematic</i></li>
+    <li>B5 The Blackspire — <i>Halls of the Undead</i></li>
+    <li>Battle — <i>Death and Axes</i></li>
+    <li>Boss — <i>Final Battle of the Dark Wizards</i></li>
+    <li>Victory — <i>Fanfare for Space</i></li>
+    <li>Ending — <i>Despair and Triumph</i></li>
+  </ul>
+  <p>Ambience and sound effects are original WebAudio. Full license text in CREDITS.md.</p>
   <p>Built with three.js (MIT), Vite (MIT) and Capacitor (MIT). Game code MIT.</p>` })]);
 }
 function showCreate(asRecruit = false) {
@@ -418,7 +436,7 @@ function prompt(kind, e = {}) {
     openModal([h('h2', {}, 'A Locked Door'), h('div', { class: 'menu' }, btn('🗝 Pick the lock', () => { closeModal(); handle(G.pickLock(S)); }), btn('💪 Force it (Athletics, noisy)', () => { closeModal(); handle(G.pickLock(S, true)); }), btn('Leave', closeModal))]);
   } else if (kind === 'altar') {
     if (!S.victory) { log('The amulet is sealed while the Tyrant lives.', 'dim'); return; }
-    if (!S.flags.ending) { S.flags.ending = true; autosave(); showDialogue(Story.endingScene(S)).then(() => prompt('altar')); return; }
+    if (!S.flags.ending) { S.flags.ending = true; autosave(); playMusic('ending'); showDialogue(Story.endingScene(S)).then(() => prompt('altar')); return; }
     sfx('victory');
     openModal([h('h1', {}, 'VICTORY!'), h('p', {}, 'The Blackspire is dark. Princess Elowen is home, and Emberhollow is free. Arise, Knight of the Dawn.'),
       h('p', { class: 'lore' }, 'Somewhere far below, a sixth seal stirs. And Malthrax\'s staff was never found…'),
@@ -628,7 +646,7 @@ document.fonts?.addEventListener?.('loadingdone', () => { const el = $('#caption
 window.addEventListener('resize', () => { const el = $('#caption'); if (el.classList.contains('show')) requestAnimationFrame(() => placeCaption(el)); });
 // the 3D view changes height in combat (e.g. the phone-portrait menu steps aside while a caption is up): re-place caption + bubbles
 const replaceOverlays = () => { const el = $('#caption'); if (el.classList.contains('show') && !el._refit) placeCaption(el); else placeBanter(); };
-function hideCaption() { clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); captionDown(); placeBanter(); }
+function hideCaption() { stopVoice(); clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); captionDown(); placeBanter(); }
 /** The caption band (and, on phone portrait, the collapsed menu/log) is released a moment after the last caption, so
  *  back-to-back narration doesn't make the layout and camera pump between captions. */
 let capDownTimer = null, capDownAt = 0, capShownAt = 0;
@@ -678,7 +696,9 @@ async function pumpMessages() {
       el.className = `show msg ${m.cls === 'loot' ? 'loot crit' : m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = ''; capShownAt = performance.now();
       el.append(h('div', { class: 'captxt' }, m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l) => h('div', {}, l))) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
       placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 400);
+      playVoiceLine(m.text, 'narrator');
       await tapToContinue(() => true, m.cls === 'loot' ? 1000 : 220); // a stray tap from the last fight can't skip the victory card unread
+      stopVoice();
       if (m.quip) say(m.quip); // a companion reacts once the card is read
     }
   } finally { msgRunning = null; document.body.classList.remove('msgup'); }
@@ -1010,6 +1030,8 @@ function openMenu(view = 'main', custom = null) {
       h('div', { class: 'menu' }, btn(`🔊 Sound: ${st.sound ? 'On' : 'Off (all muted)'}`, () => { st.sound = !st.sound; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-sound' })),
       h('div', { class: 'menu' }, btn(`💥 Sound effects: ${st.sfxOn !== false ? 'On' : 'Off'}`, () => { st.sfxOn = st.sfxOn === false; saveSettings(st); applyAudioSettings(st); if (st.sfxOn) sfx('slash'); openMenu('settings'); }, { id: 'set-sfx' })),
       slider('music', '🎵 Music'), slider('sfx', '💥 Sound effects volume'), slider('amb', '🌫 Ambience'),
+      h('div', { class: 'menu' }, btn(`🗣 Voices: ${st.voices !== false ? 'On' : 'Off'}`, () => { st.voices = st.voices === false; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-voices' })),
+      slider('voice', '🗣 Voice volume'),
       h('h3', {}, 'Battle speed'),
       h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'pause') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'pause') === k) }))),
       h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action.'),
@@ -1053,7 +1075,7 @@ const DIFF_HELP = { story: 'Story: monsters have 70% HP and deal 60% damage.', n
 
 /* ---------- Audio: music + ambience follow the game ---------- */
 let victoryUntil = 0;
-function applyAudioSettings(st = loadSettings()) { setMuted(!st.sound); setSfxOn(st.sfxOn !== false); setVolumes({ music: st.music, sfx: st.sfx, amb: st.amb }); }
+function applyAudioSettings(st = loadSettings()) { setMuted(!st.sound); setSfxOn(st.sfxOn !== false); setVolumes({ music: st.music, sfx: st.sfx, amb: st.amb }); setVoicesEnabled(st.voices !== false && st.sound); setVoiceVolume(st.voice ?? 0.85); }
 function syncAudio() {
   const amb = !S ? null : S.mode === 'dungeon' ? 'dungeon' : 'town';
   ambience(amb);
@@ -1062,6 +1084,7 @@ function syncAudio() {
   playMusic(track);
 }
 applyAudioSettings();
+for (const k of ['title', 'town', 'combat']) prefetchMusic(k);
 setInterval(syncAudio, 1000);
 
 /* ---------- Companion tactics ---------- */
