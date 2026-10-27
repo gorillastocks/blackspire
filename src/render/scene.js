@@ -225,7 +225,14 @@ export class Renderer {
     for (let i = 0; i < 8; i++) { const ang = Math.PI * (0.1 + 0.8 * i / 7); const p = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 6, 8), new THREE.MeshStandardMaterial({ map: stoneTex(), roughness: 0.9 })); p.position.set(Math.cos(ang) * 8, 3, -2 - Math.sin(ang) * 7); a.add(p); const band = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.03, 6, 24), new THREE.MeshBasicMaterial({ color: i % 2 ? 0xff40d0 : 0x40e0ff, toneMapped: false })); band.rotation.x = Math.PI / 2; band.position.copy(p.position); band.position.y = 2.2; a.add(band); }
     this.monsterGroup = new THREE.Group(); a.add(this.monsterGroup);
     const sp = new THREE.BufferGeometry(); const n = 300; const pos = new Float32Array(n * 3); for (let i = 0; i < n; i++) { pos[i * 3] = (Math.random() - 0.5) * 16; pos[i * 3 + 1] = Math.random() * 6; pos[i * 3 + 2] = -Math.random() * 12 + 2; }
-    sp.setAttribute('position', new THREE.BufferAttribute(pos, 3)); this.sparks = new THREE.Points(sp, new THREE.PointsMaterial({ size: 0.05, color: 0xff80ff, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false })); a.add(this.sparks);
+    sp.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const spm = new THREE.PointsMaterial({ size: 0.05, color: 0xff80ff, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false });
+    // Points are screen-aligned squares whose size grows as 1/distance: a spark drifting past the camera became a big flat pink square.
+    // Make them round, cap their pixel size, and fade out any spark closer than ~1.5 units.
+    spm.onBeforeCompile = (sh) => {
+      sh.vertexShader = sh.vertexShader.replace('#include <fog_vertex>', '#include <fog_vertex>\n gl_PointSize = min(gl_PointSize, 6.0); vNear = smoothstep(0.6, 2.0, -mvPosition.z);').replace('void main() {', 'varying float vNear;\nvoid main() {');
+      sh.fragmentShader = sh.fragmentShader.replace('void main() {', 'varying float vNear;\nvoid main() {\n if (length(gl_PointCoord - 0.5) > 0.5) discard;').replace('#include <opaque_fragment>', '#include <opaque_fragment>\n gl_FragColor.a *= vNear;');
+    };
+    this.sparks = new THREE.Points(sp, spm); a.add(this.sparks);
   }
   async showMonsters(monsters, themeColor = 0x22e6ff) {
     this.clearMonsters(); this.arenaRing.material.color.set(themeColor);

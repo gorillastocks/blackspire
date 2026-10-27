@@ -777,6 +777,11 @@ setInterval(() => {
   if (cap.classList.contains('show') && cap.querySelector('.captap') && performance.now() - capShownAt > 2000) hideCaption(); // a tap-caption nobody is waiting on
   if (!cap.classList.contains('show') && document.body.classList.contains('capup') && !capDownPending()) captionDown(true); // menu/log left collapsed
   if (!tapCatch.classList.contains('hidden')) tapCatch.className = 'hidden'; // catcher left over without a waiter
+  // battle watchdog: the player's menu is owed but missing, or the loop of a running fight died -> put it back
+  if (combat && !combatStarting) {
+    if (curMenu && !curMenu.cm.querySelector('.combatmenu') && !tapPending) { curMenu.draw(); }
+    else if (!looping && combat.state === 'running' && !$('#encounter')) combatLoop();
+  }
 }, 1000);
 
 /* ---------- Encounter banner: bold flash before the battle UI appears ---------- */
@@ -834,7 +839,7 @@ async function startCombat(info) {
   combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss && !info.town, difficulty: S.difficulty || 'normal', story: info.town ? {} : G.combatOpts(S, info) });
   combatStarting = false;
   R.setMode('combat');
-  await R.showMonsters(combat.monsters, theme);
+  try { await R.showMonsters(combat.monsters, theme); } catch (e) { log('Could not draw the monsters: ' + (e && e.message || e), 'bad'); } // a failed model load must not leave the battle without its menu
   const names = {}; for (const m of combat.monsters) names[m.name] = (names[m.name] || 0) + 1;
   log(`⚔ ${Object.entries(names).map(([n, k]) => `${k} ${n}${k > 1 ? 's' : ''}`).join(', ')}!`, 'bad');
   say(banter(S.party, 'combatStart', {}, info.boss ? 1 : 0.7));
@@ -842,11 +847,13 @@ async function startCombat(info) {
   await flushCombat();
   combatLoop();
 }
-let looping = false;
+let looping = false, loopFor = null; // loopFor: the Combat the running loop belongs to
 let loopGen = 0;
 function abandonCombat() { loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
 async function combatLoop() {
-  if (looping || !combat) return; looping = true; const gen = loopGen;
+  // A new fight can begin while the previous fight's loop is still unwinding inside endCombat (town/boss paths await the loot card or a
+  // rebuild there): the stale `looping` flag used to make this call a no-op, so the new battle never got a turn and no menu appeared.
+  if (!combat || (looping && loopFor === combat)) return; looping = true; loopFor = combat; const gen = ++loopGen;
   try {
     while (combat && combat.state === 'running' && gen === loopGen) {
       renderParty(); renderTargets();
@@ -910,19 +917,21 @@ function renderTargets() {
       h('div', {}, m.name), h('div', { class: 'bar' }, h('i', { style: `width:${m.hp / m.maxHp * 100}%` })), conds.length ? h('div', { class: 'conds' }, conds.join(',')) : null));
   }
 }
+let curMenu = null; // the combat menu being waited on (so the watchdog can redraw it if it ever goes missing)
 function chooseFrom(title, options) {
   return new Promise((resolve) => {
     // combat menu docks into the bottom panel (in place of movement controls) so it never covers the log
     const cm = $('#cmenu'); if (modal.classList.contains('combat')) closeModal();
     if (!tapPending) { const cap = $('#caption'); if (cap.querySelector('.captap')) hideCaption(); captionDown(true); } // never ask with the menu collapsed
     document.body.classList.add('incombat');
-    const done = (o) => { modal._options = null; cm.innerHTML = ''; cm.append(h('div', { class: 'who dim' }, '…')); resolve(o); };
-    cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: o.primary ? 'primary' : '', info: o.info || null })))));
+    const done = (o) => { modal._options = null; curMenu = null; cm.innerHTML = ''; cm.append(h('div', { class: 'who dim' }, '…')); resolve(o); };
+    const draw = () => { cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: o.primary ? 'primary' : '', info: o.info || null }))))); document.body.classList.add('incombat'); };
+    draw(); curMenu = { draw, cm };
     cm.scrollTop = 0; requestAnimationFrame(() => { const l = $('#log'); l.scrollTop = l.scrollHeight; });
     modal._resolve = done; modal._options = options;
   });
 }
-function endCombatUI() { captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
+function endCombatUI() { curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
 function combatKey(e) {
   const n = parseInt(e.key, 10); if (!modal._options) return;
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
