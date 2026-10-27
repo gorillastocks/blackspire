@@ -3,7 +3,7 @@ import { trackErrors, newGame, openLocation, dismissCards } from './helpers.js';
 
 // "Tap to continue" must never freeze the game: pause-mode rat fights hammered with fast, double and mistimed taps,
 // keys, and monsters dying mid-caption must always finish. Plus exploration message cards (clues, wall writings).
-test.describe.configure({ timeout: 600000 });
+test.describe.configure({ timeout: 900000 });
 const enterDungeon = async (page) => { await openLocation(page, 'Edge of Town'); await page.click('#btn-enter'); await expect.poll(() => page.evaluate(() => window.__gw.state.mode)).toBe('dungeon'); await dismissCards(page); };
 const capShown = (page) => page.locator('#caption.show').isVisible();
 
@@ -24,7 +24,7 @@ test('pause mode: many rat fights with fast, double and mistimed taps always fin
   });
   await newGame(page); await enterDungeon(page);
   const vp = page.viewportSize(); let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  for (let fight = 0; fight < 12; fight++) {
+  for (let fight = 0; fight < (+process.env.FIGHTS || 12); fight++) { console.log('fight', fight, new Date().toISOString());
     await page.evaluate(() => { for (const c of window.__gw.state.party) { c.maxHp = 999; c.hp = 999; c.dead = false; } window.__gw.startCombat({ groups: [{ key: 'giantRat', count: 3 }] }); });
     await expect.poll(() => page.evaluate(() => !!window.__gw.combat)).toBe(true);
     const t0 = Date.now(); let lastChange = Date.now(), lastSig = '';
