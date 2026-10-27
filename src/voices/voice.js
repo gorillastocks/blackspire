@@ -1,19 +1,31 @@
 // Spoken dialogue clips (ElevenLabs). Lazy-loads MP3s; looks up by speaker+normalized text.
+// Asset URLs must respect Vite base (./ → /blackspire/ on GitHub Pages) — never fetch from "/voice/...".
 import index from './index.json';
-import { ac, out } from '../audio.js';
+import { ac, unlock as unlockAudio } from '../audio.js';
 
 const byText = index.byText || {};
-const cache = new Map(); // file → AudioBuffer | Promise
+const cache = new Map(); // url → AudioBuffer | Promise
 let enabled = true;
 let vol = 0.85;
-let current = null; // { src, gain }
-let unlockedHTML = false;
+let current = null; // { src, gain, file, startedAt }
+let primed = false;
+let missLog = [];
+
+/** Resolve a public asset path against the Vite/deploy base (e.g. "./voice/x.mp3"). */
+export function assetUrl(path) {
+  const clean = String(path).replace(/^\//, '');
+  const base = import.meta.env.BASE_URL || './';
+  try {
+    return new URL(clean, new URL(base, document.baseURI || location.href)).href;
+  } catch {
+    return base + clean;
+  }
+}
 
 function norm(t) {
   if (!t) return '';
   let s = String(t);
-  // strip DM prefix if present ("Dungeon Master: ..." or colored logos)
-  s = s.replace(/^Dungeon Master:\s*/i, '').replace(/^\uD83D\uDD6F\uFE0F?\s*/, '').replace(/^🕯\s*/, '');
+  s = s.replace(/^Dungeon Master:\s*/i, '').replace(/^🕯\s*/, '').replace(/^\uD83D\uDD6F\uFE0F?\s*/, '');
   const repl = {
     '\u2014': '-', '\u2013': '-', '\u2018': "'", '\u2019': "'",
     '\u201c': '"', '\u201d': '"', '\u2026': '...',
@@ -27,114 +39,119 @@ function resolve(text, speaker) {
   if (!n) return null;
   if (speaker) {
     const sp = String(speaker).toLowerCase().replace(/\s+/g, '');
-    // try exact speaker key, then short name matches
-    const keys = [
-      `${sp}|${n}`,
-      ...Object.keys(byText).filter((k) => k.includes('|') && k.endsWith('|' + n)).map((k) => k),
-    ];
-    for (const k of keys) if (byText[k]) return byText[k];
-    // fuzzy speaker: "Ser Aldric" → seraldric vs cast keys
+    const direct = byText[`${sp}|${n}`];
+    if (direct) return direct;
     for (const [k, f] of Object.entries(byText)) {
       if (!k.includes('|')) continue;
       const [who, tx] = k.split('|');
-      if (tx === n && (sp.includes(who) || who.includes(sp))) return f;
+      if (tx === n && (sp === who || sp.includes(who) || who.includes(sp))) return f;
     }
   }
   return byText[n] || null;
 }
 
 async function loadBuf(file) {
-  if (cache.has(file)) return cache.get(file);
+  const url = assetUrl(file);
+  if (cache.has(url)) return cache.get(url);
   const p = (async () => {
-    const r = await fetch('/' + file.replace(/^\//, ''));
-    if (!r.ok) throw new Error(`voice ${file} ${r.status}`);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`voice ${url} ${r.status}`);
     const ab = await r.arrayBuffer();
     const c = ac();
     if (!c) throw new Error('no audio');
+    if (c.state !== 'running') await c.resume().catch(() => {});
     return await c.decodeAudioData(ab.slice(0));
   })();
-  cache.set(file, p);
+  cache.set(url, p);
   try {
     const buf = await p;
-    cache.set(file, buf);
+    cache.set(url, buf);
     return buf;
   } catch (e) {
-    cache.delete(file);
+    cache.delete(url);
     throw e;
   }
 }
 
-/** Unlock HTMLAudio fallback on iOS (first gesture). */
+/** Prime WebAudio + a reusable HTMLAudio element on the first user gesture (iOS). */
 export function unlockVoices() {
-  if (unlockedHTML) return;
-  unlockedHTML = true;
+  unlockAudio();
+  if (primed) return;
+  primed = true;
   try {
-    const a = new Audio();
-    a.src = 'data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA//////////////////////////////////////////////////////////////////8AAAA8TEFNRTMuMTAwBK8AAAAAAAAAABUgJAUHQQAB9gAAAnEAMOQ9AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-    a.play().catch(() => {});
+    const c = ac();
+    if (c && c.state !== 'running') c.resume().catch(() => {});
+    // silent buffer through the shared context — ties voice playback to the unlocked session
+    if (c) {
+      const b = c.createBuffer(1, 1, 22050), s = c.createBufferSource();
+      s.buffer = b; s.connect(c.destination); s.start(0);
+    }
   } catch { /* ignore */ }
 }
 
 export function setVoicesEnabled(on) { enabled = !!on; if (!enabled) stopVoice(); }
-export function setVoiceVolume(v) { vol = Math.max(0, Math.min(1, +v || 0)); if (current?.gain) current.gain.gain.value = vol * vol; }
+export function setVoiceVolume(v) {
+  vol = Math.max(0, Math.min(1, +v || 0));
+  if (current?.gain) {
+    try { current.gain.gain.value = vol * vol; } catch { /* ignore */ }
+  }
+}
 export function voicesEnabled() { return enabled; }
 export function voiceVolume() { return vol; }
+export function voiceMisses() { return missLog.slice(-20); }
+export function currentVoice() { return current; }
 
 export function stopVoice() {
   if (!current) return;
   try { current.src.stop?.(); } catch { /* ignore */ }
-  try { current.src.pause?.(); current.src.src = ''; } catch { /* ignore */ }
+  try { current.src.pause?.(); } catch { /* ignore */ }
   try { current.gain.disconnect(); } catch { /* ignore */ }
   current = null;
 }
 
 /**
- * Play a voiced line if we have a clip. Returns true if playback started.
+ * Play a voiced line if we have a clip. Returns true if a match was found (playback may still be async).
  * speaker: cast key or display name (e.g. 'elowen', 'Marga', 'Dungeon Master').
  */
 export function playVoice(text, speaker = null) {
   if (!enabled || !text) return false;
   const file = resolve(text, speaker);
-  if (!file) return false;
+  if (!file) {
+    const entry = { text: String(text).slice(0, 120), speaker, at: Date.now() };
+    missLog.push(entry);
+    if (missLog.length > 40) missLog.shift();
+    if (typeof console !== 'undefined') console.debug('[voice miss]', speaker, String(text).slice(0, 80));
+    return false;
+  }
   stopVoice();
+  unlockVoices();
   const c = ac();
-  // Prefer WebAudio bus so Voices volume shares the master mute path via a dedicated gain into destination
-  // (voices sit beside sfx, not under music).
   const runWA = async () => {
     try {
+      if (c && c.state !== 'running') await c.resume().catch(() => {});
       const buf = await loadBuf(file);
       if (!enabled) return;
-      const src = c.createBufferSource();
-      const g = c.createGain();
+      const ctx = ac();
+      if (!ctx) throw new Error('no ctx');
+      if (ctx.state !== 'running') await ctx.resume().catch(() => {});
+      const src = ctx.createBufferSource();
+      const g = ctx.createGain();
       g.gain.value = vol * vol;
       src.buffer = buf;
-      src.connect(g).connect(c.destination);
+      // Voice sits on destination (not music bus) so Music volume / ducking never mutes dialogue.
+      src.connect(g).connect(ctx.destination);
       src.onended = () => { if (current?.src === src) current = null; };
-      current = { src, gain: g, file };
+      current = { src, gain: g, file, startedAt: ctx.currentTime, duration: buf.duration };
       src.start(0);
-    } catch {
-      // HTMLAudio fallback
-      const a = new Audio('/' + file.replace(/^\//, ''));
-      a.volume = vol;
-      current = { src: a, gain: null, file };
-      a.onended = () => { if (current?.src === a) current = null; };
-      a.play().catch(() => {});
+    } catch (e) {
+      if (typeof console !== 'undefined') console.warn('[voice play fail]', file, e);
     }
   };
-  if (c) {
-    if (c.state !== 'running') c.resume().catch(() => {});
-    runWA();
-  } else {
-    const a = new Audio('/' + file.replace(/^\//, ''));
-    a.volume = vol;
-    current = { src: a, gain: null, file };
-    a.onended = () => { if (current?.src === a) current = null; };
-    a.play().catch(() => {});
-  }
+  if (c) runWA();
+  else if (typeof console !== 'undefined') console.warn('[voice] no AudioContext');
   return true;
 }
 
-/** Map display who-names to cast keys used in the index. */
 const WHO = {
   elowen: 'elowen', 'princess elowen': 'elowen',
   'dungeon master': 'narrator', narrator: 'narrator', dm: 'narrator',
@@ -158,4 +175,11 @@ export function playVoiceLine(text, who) {
 
 export function hasVoice(text, who) {
   return !!resolve(text, castKey(who));
+}
+
+/** Play a known Elowen clip (Settings → Test voice). */
+export function testVoice() {
+  setVoicesEnabled(true);
+  unlockVoices();
+  return playVoiceLine('Rise, Knight of the Dawn.', 'elowen');
 }

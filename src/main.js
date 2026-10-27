@@ -10,8 +10,8 @@ import * as SC from './rules/spellcasting.js';
 import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
-import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic } from './audio.js';
-import { playVoiceLine, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume } from './voices/voice.js';
+import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic, playVictorySting } from './audio.js';
+import { playVoiceLine, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice } from './voices/voice.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 // After a redeploy, an old tab's lazy chunks 404: reload once to pick up the new build.
 window.addEventListener('vite:preloadError', (e) => {
@@ -929,10 +929,17 @@ function lootCard(ev, info) {
 async function endCombat() {
   await flushCombat(); await wait(500);
   const st = combat.state; const info = combatInfo;
-  if (st === 'won') { victoryUntil = Date.now() + 9000; playMusic('victory', true, () => { victoryUntil = 0; syncAudio(); }); say(banter(S.party, 'victory', {}, 0.8)); }
+  if (st === 'won') say(banter(S.party, 'victory', {}, 0.8));
   const ev = G.afterCombat(S, combat, info);
   combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI(); hideCaption();
-  if (st === 'won') { const card = lootCard(ev, info); log(`${card.text} ${card.lines.join(' · ')}`, 'good'); queueMessage(card); } lootBase = null;
+  if (st === 'won') {
+    // Floor/town bed under a short ducked victory sting as the loot card appears (every win, not just bosses).
+    victoryUntil = Date.now() + 7000;
+    const bed = S.mode === 'dungeon' ? (getLevel(S.level).def.music || 'dungeon0') : 'town';
+    playMusic(bed);
+    playVictorySting(() => { victoryUntil = 0; syncAudio(); });
+    const card = lootCard(ev, info); log(`${card.text} ${card.lines.join(' · ')}`, 'good'); queueMessage(card);
+  } lootBase = null;
   if (info.town) { handle(ev.filter((e) => !e.toTown)); if (st === 'lost') for (const c of S.party) if (!c.dead) c.hp = Math.max(1, c.hp); await messagesDone(); await afterPrologueFight(); return; }
   if (st === 'lost') { handle(ev); return; }
   if (info.boss) await rebuild();
@@ -960,7 +967,7 @@ async function boot() {
   window.__gw = { sfx, SFX_NAMES, applyAudioSettings,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
-    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice }), testVoice, playVictorySting, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
@@ -1032,6 +1039,7 @@ function openMenu(view = 'main', custom = null) {
       slider('music', '🎵 Music'), slider('sfx', '💥 Sound effects volume'), slider('amb', '🌫 Ambience'),
       h('div', { class: 'menu' }, btn(`🗣 Voices: ${st.voices !== false ? 'On' : 'Off'}`, () => { st.voices = st.voices === false; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-voices' })),
       slider('voice', '🗣 Voice volume'),
+      h('div', { class: 'menu' }, btn('🗣 Test voice (Elowen)', () => { st.voices = true; if (!st.sound) { st.sound = true; } saveSettings(st); applyAudioSettings(st); testVoice(); }, { id: 'set-test-voice' })),
       h('h3', {}, 'Battle speed'),
       h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'pause') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'pause') === k) }))),
       h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action.'),
@@ -1075,7 +1083,7 @@ const DIFF_HELP = { story: 'Story: monsters have 70% HP and deal 60% damage.', n
 
 /* ---------- Audio: music + ambience follow the game ---------- */
 let victoryUntil = 0;
-function applyAudioSettings(st = loadSettings()) { setMuted(!st.sound); setSfxOn(st.sfxOn !== false); setVolumes({ music: st.music, sfx: st.sfx, amb: st.amb }); setVoicesEnabled(st.voices !== false && st.sound); setVoiceVolume(st.voice ?? 0.85); }
+function applyAudioSettings(st = loadSettings()) { setMuted(!st.sound); setSfxOn(st.sfxOn !== false); setVolumes({ music: st.music ?? 0.6, sfx: st.sfx ?? 0.8, amb: st.amb ?? 0.6 }); setVoicesEnabled(st.voices !== false && st.sound !== false); setVoiceVolume(st.voice ?? 0.85); }
 function syncAudio() {
   const amb = !S ? null : S.mode === 'dungeon' ? 'dungeon' : 'town';
   ambience(amb);

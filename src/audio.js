@@ -48,12 +48,18 @@ export const TRACKS = {
 };
 
 const bufCache = new Map(); // stem → AudioBuffer | Promise
+function assetUrl(path) {
+  const clean = String(path).replace(/^\//, '');
+  const base = import.meta.env.BASE_URL || './';
+  try { return new URL(clean, new URL(base, typeof document !== 'undefined' ? document.baseURI : 'http://local/')).href; }
+  catch { return base + clean; }
+}
 function musicUrl(stem) {
-  // Prefer m4a (Safari/iOS); ogg as fallback for older Firefox.
-  const a = document.createElement('audio');
-  if (a.canPlayType('audio/mp4; codecs="mp4a.40.2"') || a.canPlayType('audio/aac')) return `/${stem}.m4a`;
-  if (a.canPlayType('audio/ogg; codecs="vorbis"')) return `/${stem}.ogg`;
-  return `/${stem}.m4a`;
+  // Prefer m4a (Safari/iOS); ogg as fallback for older Firefox. Paths are base-relative (./music/…).
+  const a = typeof document !== 'undefined' ? document.createElement('audio') : { canPlayType: () => '' };
+  const ext = (a.canPlayType('audio/mp4; codecs="mp4a.40.2"') || a.canPlayType('audio/aac')) ? 'm4a'
+    : a.canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'm4a';
+  return assetUrl(`${stem}.${ext}`);
 }
 async function loadTrack(stem) {
   if (bufCache.has(stem)) return bufCache.get(stem);
@@ -126,6 +132,64 @@ export function play(name, force = false, then = null) {
   });
 }
 export function currentTrack() { return cur || want; }
+
+/* ---------------- victory sting (ducks bed music, short one-shot) ---------------- */
+let stingSrc = null, stingGain = null, duckSaved = null;
+function unduckBed() {
+  if (duckSaved == null || !trackGain || !ctx) { duckSaved = null; return; }
+  try {
+    const g = trackGain.gain, now = ctx.currentTime;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(duckSaved, now + 0.6);
+  } catch { /* ignore */ }
+  duckSaved = null;
+}
+function stopSting() {
+  try { stingSrc?.stop?.(); } catch { /* ignore */ }
+  try { stingGain?.disconnect(); } catch { /* ignore */ }
+  stingSrc = null; stingGain = null;
+}
+/**
+ * Play the short victory fanfare over the current bed track (ducked), then restore.
+ * Does NOT replace the bed track — floor/town music keeps looping underneath.
+ */
+export function playVictorySting(then = null) {
+  if (!ctx || !unlocked) { if (then) then(); return; }
+  stopSting();
+  const meta = TRACKS.victory;
+  if (!meta) { if (then) then(); return; }
+  // duck bed
+  if (trackGain) {
+    try {
+      const g = trackGain.gain, now = ctx.currentTime;
+      duckSaved = g.value > 0.01 ? g.value : 1;
+      g.cancelScheduledValues(now);
+      g.setValueAtTime(duckSaved, now);
+      g.linearRampToValueAtTime(0.12, now + 0.15);
+    } catch { duckSaved = 1; }
+  }
+  loadTrack(meta.stem).then((buf) => {
+    if (!ctx || !unlocked) { unduckBed(); if (then) then(); return; }
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.05);
+    g.connect(bus.music);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = false;
+    src.connect(g);
+    stingGain = g; stingSrc = src;
+    src.onended = () => {
+      if (stingSrc !== src) return;
+      stingSrc = null; stingGain = null;
+      unduckBed();
+      if (then) then();
+    };
+    try { src.start(0); } catch { unduckBed(); if (then) then(); }
+  }).catch(() => { unduckBed(); if (then) then(); });
+}
+
 
 /* ---------------- ambience ---------------- */
 let noiseBuf = null;
