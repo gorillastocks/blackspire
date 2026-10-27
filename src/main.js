@@ -10,8 +10,8 @@ import * as SC from './rules/spellcasting.js';
 import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
-import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic, playVictorySting, victoryStingState } from './audio.js';
-import { playVoiceLine, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice } from './voices/voice.js';
+import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic, playVictorySting, victoryStingState, duckBed, ac, unlock as unlockAudio, isMuted } from './audio.js';
+import { playVoiceLine, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt } from './voices/voice.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 // After a redeploy, an old tab's lazy chunks 404: reload once to pick up the new build.
 window.addEventListener('vite:preloadError', (e) => {
@@ -675,6 +675,8 @@ function tapToContinue(alive = () => combat && speed().hold === 0, guard = 220) 
       if (ev && ev.type === 'pointerdown') eatNextClick(); // the tap that dismissed the caption must not also press what's under it
       done = true; if (tapPending === fin) { tapPending = null; tapCatch.className = 'hidden'; } // a newer waiter (e.g. the loot card) keeps its catcher
       tapCatch.removeEventListener('pointerdown', fin); window.removeEventListener('pointerdown', fin, true); window.removeEventListener('keydown', fin, true); clearInterval(iv);
+      // iOS: resume inside the gesture that dismisses the last battle caption so endCombat's sting can start.
+      try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
       if (capShownAt === shown) hideCaption(); // a tapped caption goes away (but never a newer card, e.g. the victory loot, that replaced it) (otherwise its stale "Tap to continue" would linger and keep the phone menu collapsed)
       resolve();
     };
@@ -697,6 +699,12 @@ async function pumpMessages() {
       el.append(h('div', { class: 'captxt' }, m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l) => h('div', {}, l))) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
       placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 400);
       playVoiceLine(m.text, 'narrator');
+      if (m.cls === 'loot') {
+        // Same tick as a working voice line — belt-and-suspenders if endCombat sting was suspended.
+        try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
+        duckBed(0.15);
+        playVictoryMusic();
+      }
       await tapToContinue(() => true, m.cls === 'loot' ? 1000 : 220); // a stray tap from the last fight can't skip the victory card unread
       stopVoice();
       if (m.quip) say(m.quip); // a companion reacts once the card is read
@@ -933,11 +941,14 @@ async function endCombat() {
   const ev = G.afterCombat(S, combat, info);
   combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI(); hideCaption();
   if (st === 'won') {
-    // Fanfare on the win itself (not the loot-card hook): pre-decoded sting via WebAudio, then bed crossfade.
+    // Fanfare via the voice WebAudio path (destination) — proven on Sean's iPhone. Duck bed separately.
     victoryUntil = Date.now() + 7000;
     const bed = S.mode === 'dungeon' ? (getLevel(S.level).def.music || 'dungeon0') : 'town';
-    playVictorySting(() => { victoryUntil = 0; syncAudio(); });
-    // Let the sting schedule before swapping combat→floor so stopMusic cannot race src.start.
+    try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
+    duckBed(0.15);
+    setTimeout(() => duckBed(0.15), 200);
+    setTimeout(() => duckBed(0.15), 600);
+    playVictoryMusic(() => { victoryUntil = 0; syncAudio(); });
     setTimeout(() => playMusic(bed), 40);
     const card = lootCard(ev, info); log(`${card.text} ${card.lines.join(' · ')}`, 'good'); queueMessage(card);
   } lootBase = null;
@@ -968,13 +979,23 @@ async function boot() {
   window.__gw = { sfx, SFX_NAMES, applyAudioSettings,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
-    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice }), testVoice, playVictorySting, victoryStingState, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice }), testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
   const where = await initStorage([G.SAVE_KEY, ...SLOT_KEYS]);
   if (where === 'icloud') log('Saves sync with iCloud.', 'dim');
-  if (!isNative() && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+  if (!isNative() && 'serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('./sw.js').then((reg) => { try { reg.update(); } catch { /* ignore */ } }).catch(() => {});
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) navigator.serviceWorker.getRegistration?.().then((r) => r?.update?.()).catch(() => {});
+    });
+  }
+  // Decode victory through the voice loader after first gesture (unlock listeners already attached).
+  for (const ev of ['pointerdown', 'touchend', 'keydown']) {
+    window.addEventListener(ev, () => prefetchVictory(), { once: true, capture: true, passive: true });
+  }
+  if (new URLSearchParams(location.search).has('debug') || location.hash.includes('debug')) installAudioDebug();
   log('Blackspire ready. Press New Game!', 'sys');
   showTitle();
 }
@@ -1041,6 +1062,7 @@ function openMenu(view = 'main', custom = null) {
       h('div', { class: 'menu' }, btn(`🗣 Voices: ${st.voices !== false ? 'On' : 'Off'}`, () => { st.voices = st.voices === false; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-voices' })),
       slider('voice', '🗣 Voice volume'),
       h('div', { class: 'menu' }, btn('🗣 Test voice (Elowen)', () => { st.voices = true; if (!st.sound) { st.sound = true; } saveSettings(st); applyAudioSettings(st); testVoice(); }, { id: 'set-test-voice' })),
+      h('div', { class: 'menu' }, btn('🎺 Test victory music', () => { if (!st.sound) { st.sound = true; saveSettings(st); applyAudioSettings(st); } try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ } testVictoryMusic(); }, { id: 'set-test-victory' })),
       h('h3', {}, 'Battle speed'),
       h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'pause') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'pause') === k) }))),
       h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action.'),

@@ -62,14 +62,14 @@ test('victory sting plays over bed music', async ({ page }) => {
   // Ensure town bed is requested, then fire the same sting endCombat uses
   await page.evaluate(() => { window.__gw.state.mode = 'town'; });
   await page.waitForTimeout(400);
-  await expect.poll(async () => page.evaluate(() => window.__gw.victoryStingState().hasBuf), { timeout: 20000 }).toBe(true);
-  await page.evaluate(() => window.__gw.playVictorySting());
+  await expect.poll(async () => page.evaluate(() => window.__gw.victoryMusicState().hasBuf), { timeout: 20000 }).toBe(true);
+  await page.evaluate(() => window.__gw.playVictoryMusic());
   await expect.poll(async () => {
-    const s = await page.evaluate(() => window.__gw.victoryStingState());
+    const s = await page.evaluate(() => window.__gw.victoryMusicState());
     return s.playing && s.gain > 0.1;
   }, { timeout: 10000 }).toBe(true);
   await page.waitForTimeout(1000);
-  const mid = await page.evaluate(() => window.__gw.victoryStingState());
+  const mid = await page.evaluate(() => window.__gw.victoryMusicState());
   expect(mid.playing).toBe(true);
   expect(mid.gain).toBeGreaterThan(0.1);
 });

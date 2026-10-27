@@ -183,3 +183,102 @@ export function testVoice() {
   unlockVoices();
   return playVoiceLine('Rise, Knight of the Dawn.', 'elowen');
 }
+
+/* ---------------- victory fanfare (same WebAudio path as dialogue) ---------------- */
+const VICTORY_FILE = 'music/victory.mp3';
+let victoryCurrent = null; // { src, gain, file, startedAt, duration }
+let victoryLast = { at: 0, ok: false, error: null, ctxState: null, file: VICTORY_FILE };
+let victoryPrimed = false;
+
+export function victoryMusicState() {
+  let gain = 0;
+  try { gain = victoryCurrent?.gain ? victoryCurrent.gain.gain.value : 0; } catch { /* ignore */ }
+  const playing = !!(victoryCurrent?.src);
+  return {
+    playing,
+    gain,
+    startedAt: victoryCurrent?.startedAt || 0,
+    hasBuf: (() => {
+      try {
+        const url = assetUrl(VICTORY_FILE);
+        const v = cache.get(url);
+        return !!(v && !(v instanceof Promise));
+      } catch { return false; }
+    })(),
+    last: { ...victoryLast },
+    file: VICTORY_FILE,
+  };
+}
+
+export function lastVictoryAttempt() { return { ...victoryLast }; }
+
+/** Prefetch + decode victory.mp3 through the same loader voices use. */
+export function prefetchVictory() {
+  unlockVoices();
+  loadBuf(VICTORY_FILE).then(() => { victoryPrimed = true; }).catch((e) => {
+    victoryLast = { at: Date.now(), ok: false, error: String(e?.message || e), ctxState: ac()?.state || null, file: VICTORY_FILE };
+  });
+}
+
+function stopVictoryMusic() {
+  if (!victoryCurrent) return;
+  try { victoryCurrent.src.stop?.(); } catch { /* ignore */ }
+  try { victoryCurrent.gain.disconnect(); } catch { /* ignore */ }
+  victoryCurrent = null;
+}
+
+/**
+ * Play the victory sting through the EXACT path as playVoice:
+ * fetch → decodeAudioData → BufferSource → gain → ctx.destination (not the music bus).
+ * Not gated by Voices toggle; skipped only when Sound master is off (caller enables for Test).
+ */
+export function playVictoryMusic(then = null) {
+  unlockVoices();
+  const c = ac();
+  victoryLast = { at: Date.now(), ok: false, error: null, ctxState: c?.state || null, file: VICTORY_FILE };
+  if (!c) {
+    victoryLast.error = 'no AudioContext';
+    if (then) setTimeout(then, 0);
+    return false;
+  }
+  stopVictoryMusic();
+  const run = async () => {
+    try {
+      if (c.state !== 'running') await c.resume().catch(() => {});
+      victoryLast.ctxState = c.state;
+      const buf = await loadBuf(VICTORY_FILE);
+      const ctx = ac();
+      if (!ctx) throw new Error('no ctx');
+      if (ctx.state !== 'running') await ctx.resume().catch(() => {});
+      victoryLast.ctxState = ctx.state;
+      const src = ctx.createBufferSource();
+      const g = ctx.createGain();
+      // Same gain curve as voices (vol*vol), but use a dedicated audible level.
+      g.gain.value = 0.85 * 0.85;
+      src.buffer = buf;
+      // Destination — not music bus — so Music slider / bed ducking / stopMusic cannot mute it.
+      src.connect(g).connect(ctx.destination);
+      src.onended = () => {
+        if (victoryCurrent?.src === src) victoryCurrent = null;
+        if (then) then();
+      };
+      victoryCurrent = { src, gain: g, file: VICTORY_FILE, startedAt: ctx.currentTime, duration: buf.duration };
+      src.start(0);
+      victoryLast = { at: Date.now(), ok: true, error: null, ctxState: ctx.state, file: VICTORY_FILE, startedAt: ctx.currentTime };
+      victoryPrimed = true;
+    } catch (e) {
+      victoryLast = { at: Date.now(), ok: false, error: String(e?.message || e), ctxState: ac()?.state || null, file: VICTORY_FILE };
+      if (typeof console !== 'undefined') console.warn('[victory play fail]', VICTORY_FILE, e);
+      if (then) then();
+    }
+  };
+  run();
+  return true;
+}
+
+/** Settings → Test victory music. Forces sound on at the call site. */
+export function testVictoryMusic() {
+  unlockVoices();
+  return playVictoryMusic();
+}
+

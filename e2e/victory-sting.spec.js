@@ -18,7 +18,7 @@ test('victory sting: WebAudio source playing with gain>0 under Pause speed', asy
   await page.locator('body').click({ position: { x: 8, y: 8 } }); // unlock + prefetch victory
 
   // Wait until victory buffer is decoded
-  await expect.poll(async () => page.evaluate(() => window.__gw.victoryStingState().hasBuf), { timeout: 20000 }).toBe(true);
+  await expect.poll(async () => page.evaluate(() => window.__gw.victoryMusicState().hasBuf), { timeout: 20000 }).toBe(true);
 
   // Start a tiny town fight, force a win through endCombat path
   await page.evaluate(() => {
@@ -56,31 +56,50 @@ test('victory sting: WebAudio source playing with gain>0 under Pause speed', asy
   // If combat end didn't fire sting (stuck UI), call the same win helper once as fallback AFTER trying real path —
   // Prefer waiting for sting from real endCombat:
   const started = await page.waitForFunction(() => {
-    const s = window.__gw.victoryStingState();
+    const s = window.__gw.victoryMusicState();
     return s.playing && s.gain > 0.1;
   }, { timeout: 15000 }).then(() => true).catch(() => false);
 
   if (!started) {
     // Force the exact endCombat audio calls (still validates graph, documents fallback)
     await page.evaluate(() => {
-      window.__gw.playVictorySting();
+      window.__gw.playVictoryMusic();
     });
     await expect.poll(async () => {
-      const s = await page.evaluate(() => window.__gw.victoryStingState());
+      const s = await page.evaluate(() => window.__gw.victoryMusicState());
       return s.playing && s.gain > 0.1;
     }, { timeout: 10000 }).toBe(true);
   }
 
-  const at0 = await page.evaluate(() => window.__gw.victoryStingState());
+  const at0 = await page.evaluate(() => window.__gw.victoryMusicState());
   expect(at0.playing).toBe(true);
   expect(at0.gain).toBeGreaterThan(0.1);
 
   // Still playing ~1s later
   await page.waitForTimeout(1000);
-  const at1 = await page.evaluate(() => window.__gw.victoryStingState());
+  const at1 = await page.evaluate(() => window.__gw.victoryMusicState());
   expect(at1.playing, `sting should still be playing at +1s: ${JSON.stringify(at1)}`).toBe(true);
   expect(at1.gain).toBeGreaterThan(0.1);
 
   await page.screenshot({ path: `/workspace/shots/victory-sting-${info.project.name}.png` });
   expect(errors.filter((e) => !/favicon/.test(e))).toEqual([]);
+});
+
+test('Test victory music button path plays sting', async ({ page }, info) => {
+  test.skip(!['iphone', 'desktop'].includes(info.project.name), 'iphone+desktop');
+  test.setTimeout(60000);
+  await page.addInitScript(() => {
+    localStorage.setItem('blackspire.settings', JSON.stringify({
+      sound: true, music: 0.7, sfx: 0.8, amb: 0.6, voices: true, voice: 0.85,
+      tutorialDone: true, battleSpeed: 'pause', battleSpeedSet: true, areaDesc: true,
+    }));
+  });
+  await newGame(page);
+  await page.locator('body').click({ position: { x: 8, y: 8 } });
+  await expect.poll(async () => page.evaluate(() => window.__gw.victoryMusicState().hasBuf), { timeout: 20000 }).toBe(true);
+  await page.evaluate(() => window.__gw.testVictoryMusic());
+  await expect.poll(async () => {
+    const s = await page.evaluate(() => window.__gw.victoryMusicState());
+    return s.playing && s.gain > 0.1 && s.last?.ok === true;
+  }, { timeout: 10000 }).toBe(true);
 });

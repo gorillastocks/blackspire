@@ -141,9 +141,9 @@ export function play(name, force = false, then = null) {
 }
 export function currentTrack() { return cur || want; }
 
-/* ---------------- victory sting (independent of bed crossfade) ---------------- */
+/* ---------------- victory sting (legacy entry; prefer voices/playVictoryMusic) ---------------- */
 let stingSrc = null, stingGain = null, duckSaved = null, stingStartedAt = 0, stingPlaying = false;
-function unduckBed() {
+export function unduckBed() {
   if (duckSaved == null || !trackGain || !ctx) { duckSaved = null; return; }
   try {
     const g = trackGain.gain, now = ctx.currentTime;
@@ -153,11 +153,10 @@ function unduckBed() {
   } catch { /* ignore */ }
   duckSaved = null;
 }
-function duckBed(to = 0.15) {
+export function duckBed(to = 0.15) {
   if (!trackGain || !ctx) return;
   try {
     const g = trackGain.gain, now = ctx.currentTime;
-    // Capture the *target* bed level (1) if a fade-in is still ramping from near-silence.
     const cur = g.value;
     duckSaved = duckSaved != null ? duckSaved : (cur > 0.2 ? cur : 1);
     g.cancelScheduledValues(now);
@@ -170,7 +169,7 @@ function stopSting() {
   try { stingGain?.disconnect(); } catch { /* ignore */ }
   stingSrc = null; stingGain = null; stingPlaying = false;
 }
-/** Probe for tests / debug: is the fanfare audibly scheduled? */
+/** @deprecated use playVictoryMusic from voices/voice.js — kept for duck + tests */
 export function victoryStingState() {
   let gain = 0;
   try { gain = stingGain ? stingGain.gain.value : 0; } catch { /* ignore */ }
@@ -181,29 +180,19 @@ export function victoryStingState() {
     hasBuf: bufCache.has('music/victory#mp3') || bufCache.has('music/victory'),
   };
 }
-/**
- * Play the short victory fanfare. Independent of bed track swaps:
- * connects straight to the master bus (not the fading bed gain), so play(bed)
- * crossfades cannot cancel or silence it. Prefetch via unlock/prefetchMusic.
- */
 export function playVictorySting(then = null) {
+  // Destination path (same as voices), not music-bus — iPhone-proven.
   unlock();
   if (!ctx || !unlocked) { if (then) setTimeout(then, 0); return false; }
   stopSting();
-  const meta = TRACKS.victory;
-  if (!meta) { if (then) setTimeout(then, 0); return false; }
-
+  duckBed(0.15);
+  setTimeout(() => duckBed(0.15), 200);
+  setTimeout(() => duckBed(0.15), 600);
   const startWith = (buf) => {
     if (!ctx || !unlocked) { if (then) then(); return; }
-    duckBed(0.15);
-    // Re-duck shortly after in case play(bed) just installed a new trackGain mid-fade-in.
-    setTimeout(() => duckBed(0.15), 200);
-    setTimeout(() => duckBed(0.15), 600);
     const g = ctx.createGain();
-    // Audible immediately — do not start at near-zero (easy to miss a short sting).
-    g.gain.setValueAtTime(0.85, ctx.currentTime);
-    // Bypass bed trackGain entirely: music bus → master, so stopMusic/crossfade cannot kill us.
-    g.connect(bus.music);
+    g.gain.value = 0.85 * 0.85;
+    g.connect(ctx.destination); // NOT bus.music
     const src = ctx.createBufferSource();
     src.buffer = buf;
     src.loop = false;
@@ -216,27 +205,20 @@ export function playVictorySting(then = null) {
       if (then) then();
     };
     try {
+      if (ctx.state !== 'running') ctx.resume().catch(() => {});
       src.start(0);
     } catch (e) {
       stingPlaying = false;
-      if (typeof console !== 'undefined') console.warn('[victory sting] start failed', e);
       unduckBed();
       if (then) then();
     }
   };
-
   const cached = bufCache.get('music/victory#mp3') || bufCache.get('music/victory');
-  if (cached && !(cached instanceof Promise)) {
-    startWith(cached);
-    return true;
-  }
-  loadTrack(meta.stem).then(startWith).catch((e) => {
-    if (typeof console !== 'undefined') console.warn('[victory sting] load failed', e);
-    unduckBed();
-    if (then) then();
-  });
+  if (cached && !(cached instanceof Promise)) { startWith(cached); return true; }
+  loadTrack(TRACKS.victory.stem).then(startWith).catch(() => { unduckBed(); if (then) then(); });
   return true;
 }
+
 
 
 /* ---------------- ambience ---------------- */
