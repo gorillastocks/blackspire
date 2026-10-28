@@ -15,6 +15,7 @@ const exploreRun = (page) => page.evaluate(() => {
   const { state: S, G } = window.__gw; const seen = new Set([`${S.x},${S.y}`]), q = [[S.x, S.y]], cells = [];
   while (q.length && cells.length < 14) { const [x, y] = q.shift(); cells.push([x, y]); for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) { const k = `${x + dx},${y + dy}`; if (!seen.has(k) && G.tile(S, x + dx, y + dy) === '.') { seen.add(k); q.push([x + dx, y + dy]); } } }
   for (const [x, y] of cells) { const k = `${x},${y}`; if (!S.explored[S.level].includes(k)) S.explored[S.level].push(k); }
+  S.sinceEncounter = -1e6; // random wandering fights (4.5%/step) are not under test here; they would interrupt the walk and make this flaky
   return { far: cells[cells.length - 1], cells };
 });
 const pos = (page) => page.evaluate(() => [window.__gw.state.x, window.__gw.state.y]);
