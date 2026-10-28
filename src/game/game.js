@@ -6,8 +6,9 @@ import { elitePos, LORE } from '../dungeon/extras.js';
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './companions.js';
 import * as Story from './story.js';
-import { randomPortrait, PORTRAIT_COUNT } from '../portraits.js';
-const givePortrait = (c, want = null) => { c.portrait = Number.isInteger(want) && want >= 0 && want < PORTRAIT_COUNT ? want : randomPortrait(c.race, c.cls); return c; };
+import { randomPortrait, PORTRAIT_COUNT, PORTRAIT_TOTAL, LIORA_PORTRAIT } from '../portraits.js';
+const goodPortrait = (c, i) => Number.isInteger(i) && i >= 0 && (i < PORTRAIT_COUNT || (c.companion === 'liora' && i < PORTRAIT_TOTAL));
+const givePortrait = (c, want = null) => { if (c.companion === 'liora') { c.portrait = LIORA_PORTRAIT; return c; } c.portrait = Number.isInteger(want) && want >= 0 && want < PORTRAIT_COUNT ? want : randomPortrait(c.race, c.cls); return c; };
 import * as Narr from './narration.js';
 import * as Prog from './progress.js';
 import { isLevelLocked } from '../entitlements.js';
@@ -448,7 +449,7 @@ export function deserialize(str) {
   // normalise older / odd saves so they always land somewhere playable (never inside a town sub-screen or a stale combat)
   if (s.mode !== 'dungeon') s.mode = 'town';
   s.roster = Array.isArray(s.roster) ? s.roster : [];
-  for (const c of [...s.party, ...s.roster]) if (!Number.isInteger(c.portrait) || c.portrait < 0 || c.portrait >= PORTRAIT_COUNT) givePortrait(c); // old saves: random portrait
+  for (const c of [...s.party, ...s.roster]) if (!goodPortrait(c, c.portrait)) givePortrait(c); // old saves: random portrait
   const N = LEVEL_DEFS.length;
   if (!Array.isArray(s.seeds) || s.seeds.length !== N) { s.seeds = null; s.randomDungeons = false; } setDungeonSeeds(s.seeds); // old saves: fixed classic layouts
   s.mods ||= []; s.explored ||= []; s.bossDead ||= [];
