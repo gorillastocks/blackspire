@@ -380,12 +380,15 @@ span.cport { display: inline-flex; align-items: center; justify-content: center;
 }
 
 /* ---------- Encounter banner ---------- */
-#encounter { position: absolute; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center; padding: 0 12px; box-sizing: border-box; cursor: pointer; touch-action: manipulation; animation: encShake .42s .14s both; }
-#encounter .enc-panel { max-width: min(92%, 440px); box-sizing: border-box; padding: clamp(14px, 3.4vmin, 26px) clamp(18px, 5vmin, 38px); text-align: center; color: var(--gold);
+#encounter { container-type: size; position: absolute; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center; padding: 0 12px; box-sizing: border-box; cursor: pointer; touch-action: manipulation; animation: encShake .42s .14s both; }
+#encounter .enc-panel { max-width: min(94cqw, 640px); box-sizing: border-box; padding: clamp(14px, 3.4vmin, 26px) clamp(18px, 5vmin, 38px); text-align: center; color: var(--gold);
   background: linear-gradient(180deg, #1b0d22f2, #07040cf5); border: 3px solid var(--gold); border-radius: 10px;
   box-shadow: 0 0 0 2px #05030b, 0 0 0 4px #8a6a1d, 0 0 34px #ff002a99, inset 0 0 22px #ff002a44; animation: encPop .34s cubic-bezier(.2,1.6,.4,1) both; }
-#encounter .enc-title { font-family: Georgia, 'Times New Roman', serif; font-weight: 900; font-size: clamp(26px, 8.4vmin, 56px); line-height: 1.12; letter-spacing: .06em; text-transform: uppercase; overflow-wrap: anywhere; text-shadow: 0 2px 0 #5a3a00, 0 0 18px #ff9a1f99, 0 0 2px #000; }
-#encounter.boss .enc-title { font-size: clamp(20px, 6.2vmin, 40px); letter-spacing: .04em; }
+/* Words are never broken or hyphenated. Single-word titles ('Encounter!', 'Ambush!') stay on one line and the font scales with the
+   banner's own width (cqw) so the panel always fits its text; boss titles may wrap only between whole words. */
+#encounter .enc-title { font-family: Georgia, 'Times New Roman', serif; font-weight: 900; font-size: clamp(20px, min(8.4vmin, 8.2cqw), 60px); line-height: 1.12; letter-spacing: .06em; text-transform: uppercase;
+  word-break: normal; overflow-wrap: normal; hyphens: none; -webkit-hyphens: none; white-space: nowrap; text-shadow: 0 2px 0 #5a3a00, 0 0 18px #ff9a1f99, 0 0 2px #000; }
+#encounter.boss .enc-title { font-size: clamp(16px, min(6.2vmin, 6.6cqw), 42px); letter-spacing: .04em; white-space: normal; text-wrap: balance; }
 #encounter.ambush .enc-panel { border-color: #ff5a6e; color: #ffd0d5; }
 #encounter .enc-rule { height: 3px; margin: 10px auto 0; width: 70%; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
 #encounter.out { opacity: 0; transition: opacity .12s; pointer-events: none; }
