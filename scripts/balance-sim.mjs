@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Balance sim CLI.  node scripts/balance-sim.mjs [--runs 100] [--label before] [--out scripts/balance-results] [--no-grind] [--difficulty normal] [--seed0 1]
+// Balance sim CLI.  node scripts/balance-sim.mjs [--runs 100] [--label before] [--out scripts/balance-results] [--no-grind] [--difficulty normal] [--seed0 1] [--comps standard,rush]
 // Runs `runs` seeded campaigns for each party (standard 4-hero, no healer, with Liora), spread over worker threads,
 // (--tune '<json>' overrides TUNING in src/rules/data.js for an experiment without editing it)
 // and writes <out>/<label>.json (aggregates + run summaries) and <out>/<label>.md (the per-floor report).
@@ -13,7 +13,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 if (!isMainThread) {
   const { simulateCampaign } = await import('../src/sim/balance.js');
   const { TUNING } = await import('../src/rules/data.js');
-  if (workerData.tune) { Object.assign(TUNING.bossHp, workerData.tune.bossHp || {}); if (workerData.tune.eliteFloorHp) TUNING.eliteFloorHp.splice(0, 5, ...workerData.tune.eliteFloorHp); }
+  if (workerData.tune) for (const [k, v] of Object.entries(workerData.tune)) { if (Array.isArray(v)) TUNING[k].splice(0, 5, ...v); else Object.assign(TUNING[k], v); }
   const out = workerData.jobs.map(({ seed, comp }) => { try { return simulateCampaign(seed, { comp, ...workerData.opts }); } catch (e) { return { seed, comp, error: String(e && e.stack || e), floors: [], fights: [], steps: 0, wipes: 0, result: 'error' }; } });
   parentPort.postMessage(out);
 } else {
@@ -22,7 +22,8 @@ if (!isMainThread) {
   const opts = { grind: !process.argv.includes('--no-grind'), difficulty: String(arg('difficulty', 'normal')) };
   const seed0 = +arg('seed0', 1);
   const tune = arg('tune', null) ? JSON.parse(String(arg('tune'))) : null; // experiment: --tune '{"bossHp":{"glasshide":1.5},"eliteFloorHp":[1,1,1.2,1.3,1.4]}'
-  const { COMPOSITIONS, summarize, renderMarkdown } = await import('../src/sim/balance.js');
+  const { COMPOSITIONS: ALL_COMPS, summarize, renderMarkdown } = await import('../src/sim/balance.js');
+  const COMPOSITIONS = arg('comps', null) ? String(arg('comps')).split(',') : ALL_COMPS; // --comps standard,liora : only those parties
   const jobs = []; for (const comp of COMPOSITIONS) for (let i = 0; i < runs; i++) jobs.push({ seed: seed0 + i, comp });
   const nw = Math.max(1, Math.min(cpus().length, 8)); const shards = Array.from({ length: nw }, () => []); jobs.forEach((j, i) => shards[i % nw].push(j));
   const t0 = Date.now();

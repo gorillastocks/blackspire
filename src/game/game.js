@@ -401,7 +401,7 @@ export function innRest(s) {
   return [{ log: cost ? 'You rent rooms at the Boar & Spoon Inn and sleep soundly. (−10 gp)' : 'Marga waves you upstairs. "On the house, love." You sleep soundly.', cls: 'good' }, ...(lifted ? [{ log: '☾ A night of safe sleep lifts the curse upon you.', cls: 'good' }] : []), ...Story.onLongRest(s)];
 }
 /** Combat options derived from story state (lieutenant/boss set-pieces). */
-export function combatOpts(s, info = {}) { return { ...Story.storyCombat(s, info, s.level), xpAward: (share) => Prog.awardCombatXp(s, Math.round(share * PC.fightXpMult(s)), info) }; }
+export function combatOpts(s, info = {}) { return { floor: s.level, ...Story.storyCombat(s, info, s.level), xpAward: (share) => Prog.awardCombatXp(s, Math.round(share * PC.fightXpMult(s)), info) }; }
 export function templeCost(c) { return c.dead ? 100 * c.level : c.conditions.poisoned ? 20 : c.hp < c.maxHp ? 5 * c.level : 0; }
 export function templeHeal(s, c) {
   let cost = templeCost(c); if (!cost) return [{ log: `${c.name} needs no healing.`, cls: 'dim' }];

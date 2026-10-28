@@ -322,7 +322,7 @@ export function floorStats(runs, L) {
   const bossAtt = fs.reduce((t, f) => t + f.boss.attempts, 0), bossWin = fs.reduce((t, f) => t + f.boss.wins, 0);
   const first = fs.filter((f) => f.boss.firstTry !== null); const p2 = fs.filter((f) => f.boss.p2First !== null);
   const fights = sum('fights');
-  const rows = (kind) => { let nn = 0, w = 0, d = 0, dt = 0, os = 0; for (const f of fs) { const r = f.byKind[kind]; if (r) { nn += r.n; w += r.wins; d += r.downs; dt += r.deaths; os += r.oneShots; } } return { n: nn, win: pct(w, nn), downs: nn ? d / nn : null, deaths: nn ? dt / nn : null, oneShots: os }; };
+  const rows = (kind) => { let nn = 0, w = 0, d = 0, dt = 0, os = 0, wp = 0; for (const f of fs) { const r = f.byKind[kind]; if (r) { nn += r.n; w += r.wins; d += r.downs; dt += r.deaths; os += r.oneShots; wp += r.wipes || 0; } } return { n: nn, win: pct(w, nn), downs: nn ? d / nn : null, deaths: nn ? dt / nn : null, oneShots: os, wipes: n ? wp / n : 0 }; };
   const grinders = fs.filter((f) => f.grind.fights > 0 || f.grind.steps > 0);
   return {
     floor: L + 1, runs: n, expArrival: EXPECTED_ARRIVAL[L], expBoss: EXPECTED_BOSS[L],

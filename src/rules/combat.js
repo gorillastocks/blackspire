@@ -35,7 +35,7 @@ export class Combat {
     this.party = party; this.inventory = inventory; this.canFlee = canFlee; this.boss = boss; this.story = story || {};
     this.diff = DIFFICULTY[difficulty] || DIFFICULTY.normal;
     this.monsters = [];
-    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1) * (TUNING.bossHp[g.key] || 1) * (elite ? (this.monsters.length === 0 ? 1.7 : 1.25) * (TUNING.eliteFloorHp[elite.floor] || 1) : 1))); if (elite) { m.elite = true; if (this.monsters.length === 0) { m.ac += 1; if (elite.title) m.name = elite.title; } } this.monsters.push(m); }
+    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1) * (TUNING.bossHp[g.key] || 1) * (TUNING.floorHp[this.story.floor] || 1) * (this.story.floor > 0 ? TUNING.foeHp[g.key] || 1 : 1) * (elite ? (this.monsters.length === 0 ? 1.7 : 1.25) * (TUNING.eliteFloorHp[elite.floor] || 1) : 1))); if (elite) { m.elite = true; if (this.monsters.length === 0) { m.ac += 1; if (elite.title) m.name = elite.title; } } this.monsters.push(m); }
     for (const m of this.monsters) { const l = this.lore[m.key]; m.known = { types: { ...(l?.types || {}) }, studied: !!l?.studied }; m.studyTried = new Set(); }
     this.log = []; this.events = []; this.round = 0; this.state = 'running'; this.turnIdx = -1; this.xp = 0; this.gold = 0;
     for (const c of party) { c.reaction = true; for (const k of ['dodging', 'hidden', 'raging', 'reckless', 'invisible', 'sacredWeapon']) delete c.conditions[k]; c.side = 'party'; if (c.tempHp == null) c.tempHp = 0; }
@@ -110,7 +110,7 @@ export class Combat {
     if (this.checkEnd()) return;
     for (let guard = 0; guard < 100; guard++) {
       this.turnIdx++;
-      if (this.turnIdx >= this.order.length) { this.turnIdx = 0; this.round++; this.say(`— Round ${this.round + 1} —`, 'dim'); this.storyRound(); if (this.checkEnd()) return; }
+      if (this.turnIdx >= this.order.length) { this.turnIdx = 0; this.round++; this.say(`— Round ${this.round + 1} —`, 'dim'); this.storyRound(); if (this.checkEnd()) return; this.legendaryActions(); if (this.checkEnd()) return; }
       const c = this.current();
       if (!c) continue;
       if (c.side === 'monster' && c.hp <= 0) continue;
@@ -166,7 +166,7 @@ export class Combat {
 
   /* ---------- Damage & concentration ---------- */
   damage(target, amt, type, src, { crit = false, attack = false } = {}) {
-    if (src && src.side === 'monster' && target.side === 'party' && this.diff && this.diff.dmg !== 1 && amt > 0) amt = Math.max(1, Math.round(amt * this.diff.dmg));
+    if (src && src.side === 'monster' && target.side === 'party' && this.diff && amt > 0) { const dm = this.diff.dmg * (TUNING.floorDmg[this.story.floor] || 1) * (this.story.floor > 0 ? TUNING.foeDmg[src.key] || 1 : 1); if (dm !== 1) amt = Math.max(1, Math.round(amt * dm)); }
     if (target.side === 'monster') {
       if (target.hp <= 0) return 0;
       const tk = traitFor(target.T, type);
@@ -652,6 +652,20 @@ export class Combat {
     if (this.guest) { const p = this.party.filter((x) => !x.dead).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]; if (p && p.hp < p.maxHp) { const h = heal(p, roll('2d8+4')); this.say(`Elowen calls down the dawn on ${p.name}: +${h} HP.`, 'good'); this.emit({ type: 'heal', who: p, amt: h }); } }
     if (this.story.guards) { const m = this.pickEnemy(); if (m) { const d = roll('1d8+2'); this.say(`A town guard from Rowan's patrol stabs ${m.name} for ${d}.`, 'good'); this.damage(m, d, 'piercing', null); } }
   }
+  /** Legendary-style actions (SRD spirit): at the top of each round the floor bosses named in TUNING.legendary make that many extra basic attacks. B2-B5 only. */
+  legendaryActions() {
+    if (!(this.story.floor > 0)) return;
+    for (const m of this.livingMonsters()) {
+      const n = TUNING.legendary[m.key] || 0; if (!n || m.conditions.unconscious || m.conditions.paralyzed) continue;
+      for (let i = 0; i < n; i++) {
+        const live = this.conscious(); if (!live.length) return;
+        const tg = pickWeighted(targetWeights(this.frontRow(), live, m.T), rand()); const A = m.T.attacks[0];
+        this.say(`${m.name} lashes out again (legendary action)!`, 'bad'); this.emit({ type: 'monsterAttack', who: m, tgt: tg });
+        this.attack(m, tg, { bonus: A.bonus + (TUNING.floorAtk[this.story.floor] || 0), dmg: A.dmg, type: A.type, label: A.name.toLowerCase(), rider: A.rider, extra: A.extra });
+        if (this.checkEnd()) return;
+      }
+    }
+  }
   strikeStaff(c) {
     const st = this.story.staff; const w = c.equip.weapon && this.inFront(c) ? weaponStats(c, 'weapon') : c.equip.ranged ? weaponStats(c, 'ranged') : null;
     const bonus = w ? w.bonus : spellAttack(c); const r = d20() + bonus;
@@ -693,7 +707,7 @@ export class Combat {
     for (let i = 0; i < n; i++) {
       const A = T.attacks[i % T.attacks.length]; const tg = choose(); if (!tg) return;
       this.emit({ type: 'monsterAttack', who: m, tgt: tg });
-      const r = this.attack(m, tg, { bonus: A.bonus, dmg: A.dmg, type: A.type, label: A.name.toLowerCase(), rider: A.rider, extra: A.extra });
+      const r = this.attack(m, tg, { bonus: A.bonus + (TUNING.floorAtk[this.story.floor] || 0), dmg: A.dmg, type: A.type, label: A.name.toLowerCase(), rider: A.rider, extra: A.extra });
       if (r.hit && A.grapple && tg.hp > 0) { tg.conditions.grappled = { src: m.id }; }
       if (this.checkEnd()) return;
     }

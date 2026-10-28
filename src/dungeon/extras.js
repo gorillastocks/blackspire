@@ -8,10 +8,10 @@ import { EVENTS } from '../game/phaseC_events.js';
 /** Elite roster per floor: [title, monster groups]. The first monster of the first group carries the title and the tougher stats. */
 export const ELITES = [
   [['Fangmother', [['direWolf', 1]]], ['Webspinner Vessa', [['giantWolfSpider', 1], ['giantRat', 2]]]],
-  [['Carapace King', [['giantToad', 1], ['giantCrab', 2]]], ['Stormblade', [['flyingSword', 3]]], ['The Pale Hound', [['direWolf', 2]]]],
-  [['The Glass Warden', [['ochreJelly', 1]]], ['Sporelord Mul', [['violetFungus', 2], ['shrieker', 1]]], ['Dusk Mantle', [['darkmantle', 3]]]],
-  [['Ironbound Captain', [['animatedArmor', 2]]], ['Cinder Brute', [['hellHound', 2]]], ['Ashen Zealot', [['cultFanatic', 1], ['cultist', 2]]]],
-  [['Rex-Eater', [['allosaurus', 2]]], ['Vault Champion', [['animatedArmor', 3]]], ['Horned Terror', [['triceratops', 1], ['allosaurus', 1]]]],
+  [['Carapace King', [['giantToad', 1], ['giantCrab', 3]]], ['Stormblade', [['flyingSword', 4]]], ['The Pale Hound', [['direWolf', 2]]]],
+  [['The Glass Warden', [['ochreJelly', 2]]], ['Sporelord Mul', [['violetFungus', 4], ['shrieker', 2]]], ['Dusk Mantle', [['darkmantle', 4]]]],
+  [['Ironbound Captain', [['animatedArmor', 3]]], ['Cinder Brute', [['hellHound', 2]]], ['Ashen Zealot', [['cultFanatic', 2], ['cultist', 2]]]],
+  [['Rex-Eater', [['allosaurus', 3]]], ['Vault Champion', [['animatedArmor', 4]]], ['Horned Terror', [['triceratops', 1], ['allosaurus', 2]]]],
 ];
 /** Lore tablets found in hidden nooks (safe, self-contained: no clue is needed from elsewhere). */
 export const LORE = [

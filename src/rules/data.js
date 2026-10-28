@@ -408,8 +408,19 @@ const MONSTER_TRAITS = {
 for (const [k, t] of Object.entries(MONSTER_TRAITS)) if (MONSTERS[k]) Object.assign(MONSTERS[k], t);
 
 /** Balance-pass tuning (see scripts/balance-results). Plain multipliers on top of the SRD stat lines, so the numbers stay auditable.
+ *  B1 is deliberately untouched (every B1 entry is 1 / 0 / absent): the floor-1 balance is signed off.
  *  bossHp: floor-boss and lieutenant hit points. eliteFloorHp: extra elite hit points by floor (B1..B5), on top of the 1.7x leader / 1.25x escort elite bonus. */
 export const TUNING = {
-  bossHp: { giantSpider: 1.5, skarn: 1, ankylosaurus: 1.5, glasshide: 2, brakk: 1.5, cindermaw: 1.75, malthrax: 1.75, tyrannosaurus: 2 },
+  bossHp: { giantSpider: 1.5, skarn: 1, ankylosaurus: 1.8, glasshide: 4, brakk: 1.5, cindermaw: 1.75, malthrax: 2.5, tyrannosaurus: 2 },
   eliteFloorHp: [1, 1.15, 1.4, 1.5, 1.6],
+  /** B2-B5 pass: every monster on the floor (B1..B5) gets this HP multiplier / this damage multiplier against the party, on top of difficulty. */
+  floorHp: [1, 1.2, 1.3, 1.3, 1.3],
+  floorDmg: [1, 1.15, 1.3, 1.2, 1.25],
+  /** Flat attack-roll bonus per floor (deeper monsters fight like higher-CR creatures: a bigger proficiency bonus). */
+  floorAtk: [0, 1, 3, 2, 2],
+  /** Legendary-style actions (SRD spirit): extra basic attacks a boss makes at the top of every round (B2-B5 only). */
+  legendary: { glasshide: 1, malthrax: 2, cindermaw: 1, tyrannosaurus: 1 },
+  /** Per-monster-kind HP and damage multipliers, used on B2-B5 only (a kind may also appear on B1, which must stay as it is). */
+  foeHp: { ochreJelly: 1.5, darkmantle: 1.3, violetFungus: 1.5, animatedArmor: 1.5, cultFanatic: 1.3 },
+  foeDmg: { ochreJelly: 1.4, darkmantle: 1.5, violetFungus: 2, glasshide: 2, animatedArmor: 2, cultFanatic: 1.5, malthrax: 1.7, ankylosaurus: 1.3, brakk: 1.6, cindermaw: 1.5, tyrannosaurus: 1.2 },
 };
