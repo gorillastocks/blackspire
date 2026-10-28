@@ -43,8 +43,12 @@ test('automap: tap a tile to walk there, pins and notes survive a save/load', as
   const s = await pos(page); const start = cells.find(([x, y]) => Math.max(Math.abs(x - s[0]), Math.abs(y - s[1])) >= 3 && Math.max(Math.abs(x - s[0]), Math.abs(y - s[1])) <= 6); expect(start, 'a tile inside the minimap window').toBeTruthy();
   const mm = await page.locator('#minimap').boundingBox();
   await page.mouse.click(mm.x + ((start[0] - s[0] + 6 + 0.5) / 13) * mm.width, mm.y + ((start[1] - s[1] + 6 + 0.5) / 13) * mm.height);
-  await page.waitForTimeout(3500); await dismissCards(page);
-  if ((await pos(page)).join() !== start.join()) { const s2 = await pos(page); await page.mouse.click(mm.x + ((start[0] - s2[0] + 6 + 0.5) / 13) * mm.width, mm.y + ((start[1] - s2[1] + 6 + 0.5) / 13) * mm.height); }
+  // the walk stops for any new-area card: read it and tap again (like a player would)
+  for (let i = 0; i < 5; i++) {
+    await page.waitForTimeout(3000); await dismissCards(page); const s2 = await pos(page); if (s2.join() === start.join()) break;
+    if (Math.max(Math.abs(start[0] - s2[0]), Math.abs(start[1] - s2[1])) > 6) { await page.locator('#controls button', { hasText: 'Map' }).click(); const b4 = await page.locator('#bigmap').boundingBox(); await page.mouse.click(b4.x + ((start[0] + 0.5) / 21) * b4.width, b4.y + ((start[1] + 0.5) / 21) * b4.height); continue; }
+    await page.mouse.click(mm.x + ((start[0] - s2[0] + 6 + 0.5) / 13) * mm.width, mm.y + ((start[1] - s2[1] + 6 + 0.5) / 13) * mm.height);
+  }
   await expect.poll(() => pos(page), { timeout: 20000 }).toEqual(start);
   await shot(page, { path: `/workspace/shots/phaseA-walk-${info.project.name}.png` });
   expect(errors.filter((e) => !/favicon|WebGL|GPU/.test(e))).toEqual([]);
