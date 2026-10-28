@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { newGame, trackErrors } from './helpers.js';
-const shot = async (page, o) => { for (let i = 0; i < 3; i++) { try { await page.screenshot({ ...o, timeout: 8000 }); return; } catch { await page.mouse.move(1, 1); } } };
+const shot = async (page, o) => { for (let i = 0; i < 6; i++) { try { await page.screenshot({ ...o, timeout: 12000 }); return; } catch { await page.mouse.move(1, 1); await page.waitForTimeout(700); } } console.log('SHOT FAILED', o.path); };
 const okErr = (errors) => errors.filter((e) => !/favicon|Failed to load resource|net::/.test(e));
 const setSpeed = (page, k) => page.evaluate((k) => localStorage.setItem('blackspire.settings', JSON.stringify({ battleSpeed: k, battleSpeedSet: true })), k);
 const start = (page, groups, prep) => page.evaluate(async ([groups, prep]) => { const g = window.__gw; for (const c of g.state.party) { c.maxHp = 999; c.hp = 999; } if (prep) new Function('S', prep)(g.state); g.hideCaption?.(); g.startCombat({ groups }); await new Promise((r) => { const t = setInterval(() => { if (g.combat) { clearInterval(t); for (const m of g.combat.monsters) m.hp = m.maxHp = 999; r(); } }, 2); }); }, [groups, prep || '']);
@@ -92,8 +92,7 @@ test('outdoor: automap, secrets, elites, events and fights all still work in the
   await look(page, 12, 'rain', 0); await shot(page, { path: `/workspace/shots/phaseE-elite-${info.project.name}.png` });
   await page.evaluate(() => { const g = window.__gw; g.R.syncEvents([]); g.refresh(); });
   // 4) a fight started inside the window runs in the arena and returns to the open sky
-  await page.evaluate(() => { const g = window.__gw; for (const c of g.state.party) { c.maxHp = 999; c.hp = 999; } g.hideCaption?.(); g.startCombat({ groups: [{ key: 'giantRat', count: 1 }] }); });
-  await expect.poll(() => page.evaluate(() => !!window.__gw.combat), { timeout: 20000 }).toBe(true);
+  await start(page, [{ key: 'giantRat', count: 2 }, { key: 'wolf', count: 1 }], 'for (const c of S.party) c.ai = true; S.party[0].ai = false;');
   await expect(page.locator('#cmenu .combatmenu, #combat-skip, .skipchip').first()).toBeVisible({ timeout: 60000 });
   await shot(page, { path: `/workspace/shots/phaseE-fight-${info.project.name}.png` });
   await page.evaluate(() => { for (const m of window.__gw.combat.monsters) m.hp = 1; });
@@ -116,5 +115,22 @@ test('outdoor: walking the grid through the window works; entry toast, HUD and a
   expect(route).toBeTruthy();
   await page.evaluate(async (rt) => { const g = window.__gw, S = g.state; S.x = rt.x; S.y = rt.y; S.dir = 1; g.R.setView(S.x, S.y, S.dir, true); g.refresh(); }, route);
   await page.keyboard.press('s'); await page.waitForTimeout(300); await page.keyboard.press('w'); await page.waitForTimeout(1000);
+  expect(okErr(errors)).toEqual([]);
+});
+
+test('outdoor: shots of the arch entrance and the combat menu on this device', async ({ page }, info) => {
+  test.setTimeout(300000); const errors = trackErrors(page); const P = info.project.name;
+  await newGame(page); await setSpeed(page, 'normal'); await goOut(page, { explore: true });
+  // stand just outside the window, looking in through the ruined arch
+  const spot = await page.evaluate(() => { const g = window.__gw, S = g.state, r = g.outdoorInfo().reg; const T = (x, y) => g.G.tile(S, x, y); const free = (x, y) => x >= 0 && y >= 0 && x < 21 && y < 21 && T(x, y) !== '#' && T(x, y) !== 'S';
+    const inW = (x, y) => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1;
+    for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) { if (!free(x, y)) continue; for (const [d, [dx, dy]] of [[0, [0, -1]], [1, [1, 0]], [2, [0, 1]], [3, [-1, 0]]]) { const ox = x - dx, oy = y - dy; if (free(ox, oy) && !inW(ox, oy) && free(x + dx, y + dy)) return { x: ox, y: oy, dir: d }; } } return null; });
+  console.log('arch spot', JSON.stringify(spot));
+  if (spot) { await page.evaluate(async (sp) => { const g = window.__gw, S = g.state; S.x = sp.x; S.y = sp.y; S.dir = sp.dir; g.R.setView(S.x, S.y, S.dir, true); g.setHour(11); g.setWeather('rain'); g.look(0.12); g.refresh(); await new Promise((r) => setTimeout(r, 2500)); }, spot); await shot(page, { path: `/workspace/shots/phaseE-arch-${P}.png` }); await page.keyboard.press('w'); await page.waitForTimeout(2500); await shot(page, { path: `/workspace/shots/phaseE-arch-inside-${P}.png` }); }
+  await page.evaluate(() => window.__gw.look(0));
+  await start(page, [{ key: 'giantRat', count: 2 }, { key: 'wolf', count: 1 }], 'for (const c of S.party) c.ai = true; S.party[0].ai = false;');
+  await expect(page.locator('#cmenu .combatmenu')).toBeVisible({ timeout: 60000 }); await page.waitForTimeout(800);
+  const m = await fits(page); expect(m.scroll).toBeLessThanOrEqual(m.client + 1); await shot(page, { path: `/workspace/shots/phaseE-menu-${P}.png` });
+  await page.locator('#cmenu .combatmenu button', { hasText: 'More' }).click(); await page.waitForTimeout(400); await shot(page, { path: `/workspace/shots/phaseE-menu-more-${P}.png` });
   expect(okErr(errors)).toEqual([]);
 });
