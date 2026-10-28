@@ -208,7 +208,7 @@ export class Renderer {
   /* ---------- Phase B: wall shimmers and telegraphed elites ---------- */
   clearDynamic() {
     for (const o of this.eliteObjs?.values() || []) { if (o.mixer) this.mixers = this.mixers.filter((m) => m !== o.mixer); }
-    this.dyn?.clear(); this.eliteObjs = new Map(); this.shimmerObjs = new Map();
+    this.dyn?.clear(); this.eliteObjs = new Map(); this.shimmerObjs = new Map(); this.evObjs = new Map();
   }
   shimmerTex() {
     if (this._shTex) return this._shTex;
@@ -223,6 +223,15 @@ export class Renderer {
     const c = document.createElement('canvas'); c.width = c.height = 96; const g = c.getContext('2d');
     g.shadowColor = color; g.shadowBlur = 18; g.fillStyle = color; g.font = '64px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ch, 48, 52);
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, fog: false, toneMapped: false })); sp.scale.set(size, size, 1); return sp;
+  }
+  /** Phase C: a floating, softly pulsing glyph over each open story event ({id,x,y,icon,color}). */
+  syncEvents(list = []) {
+    if (!this.dyn) return; const m = (this.evObjs ||= new Map()); const want = new Set(list.map((e) => e.id));
+    for (const [id, o] of m) if (!want.has(id)) { this.dyn.remove(o.sp); m.delete(id); }
+    for (const e of list) {
+      if (m.has(e.id)) continue; const sp = this.iconSprite(e.icon || '✦', e.color || '#ffd77a', 0.8);
+      sp.position.set(e.x * CELL, 1.15, e.y * CELL); this.dyn.add(sp); m.set(e.id, { sp });
+    }
   }
   /** Sync flagged secret walls ({x,y} cells still solid) and live elites ({id,kind,title,key,x,y}). */
   async syncDynamic(tileFn, suspects = [], elites = []) {
@@ -481,6 +490,7 @@ export class Renderer {
     for (const [i, l] of (this.torches || []).entries()) l.intensity = 5 + Math.sin(t * 9 + i) * 1.2;
     for (const a of this.animated || []) { a.obj.rotation[a.bob ? 'y' : 'z'] += dt * a.spin; if (a.bob) a.obj.position.y += Math.sin(t * 2) * 0.002; }
     this.dust.rotation.y = Math.sin(t * 0.05) * 0.02;
+    for (const o of this.evObjs?.values() || []) { o.sp.position.y = 1.15 + Math.sin(t * 2.1 + o.sp.position.x) * 0.1; o.sp.material.opacity = 0.75 + Math.sin(t * 3) * 0.25; }
     for (const o of this.shimmerObjs?.values() || []) { o.mat.opacity = 0.3 + Math.sin(t * 2.4) * 0.14; this._shTex.offset.y = (t * 0.15) % 1; }
     for (const o of this.eliteObjs?.values() || []) {
       const hp = o.holder.position; o.prev.copy(hp); hp.lerp(o.target, 1 - Math.pow(0.04, dt));

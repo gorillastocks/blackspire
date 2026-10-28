@@ -81,9 +81,30 @@ function showJournal(back) {
   const qs = Story.questList(S);
   openModal([h('div', { class: 'navbar' }, h('h2', {}, '📖 Journal'), btn('Close', () => (back ? back() : closeModal()), { id: 'btn-journal-close' })),
     h('p', { class: 'hint' }, `Moon ${Math.min(5, (S.moon | 0) + 1)} of 5 · Seals broken: ${Story.sealsBroken(S)}/5${Story.empowered(S) ? ' · ⚠ Malthrax is EMPOWERED' : ''}`),
+    bondsPanel(),
     h('h3', {}, 'Quests'), h('div', { class: 'menu' }, qs.map((q) => h('p', {}, h('b', {}, `${q.status === 'done' ? '✔' : q.status === 'ready' ? '❗' : '•'} ${q.title || q.id}`), q.progress ? ` (${q.progress})` : '', q.desc ? h('br') : null, q.desc ? h('span', { class: 'hint' }, q.desc) : null))),
     h('h3', {}, `Elowen's notes (${(S.notes || []).length}/10)`), ...(S.notes || []).map((n) => h('p', { class: 'lore' }, typeof n === 'string' ? n : Story.NOTES[n - 1] || '')),
-    h('h3', {}, 'Entries'), ...(S.journal || []).slice().reverse().map((j) => h('p', { class: 'hint' }, j))], { closable: true });
+    h('h3', {}, 'Entries'), ...(S.journal || []).slice().reverse().map((j) => h('p', { class: 'hint' }, typeof j === 'string' ? j : j.text))], { closable: true });
+}
+/** Journal: companion bonds (hearts), Liora's story, curses and blessings, and what Emberhollow remembers. */
+function bondsPanel() {
+  const P = G.PC, kids = [h('h3', {}, 'Bonds & Omens')];
+  const who = [...S.party, ...(S.roster || [])].filter((c) => c.companion);
+  if (who.length) kids.push(h('div', { class: 'bonds' }, who.map((c) => h('div', { class: 'bondrow' }, h('b', { style: `color:${COMPANIONS[c.companion].color}` }, COMPANIONS[c.companion].short), ' ', h('span', { class: 'heart' }, P.hearts(S, c.companion)),
+    c.companion === 'liora' ? h('span', { class: 'hint' }, ` ${P.BOND_LABEL[P.bond(S)]}`) : null))));
+  const th = P.threadsHeard(S); if (th) kids.push(h('p', { class: 'hint' }, `Personal stories heard: ${th}`));
+  for (const b of P.buffs(S)) kids.push(h('p', { class: P.BUFFS[b.id].kind === 'curse' ? 'bad' : 'good' }, `${P.BUFFS[b.id].kind === 'curse' ? '☾' : '✦'} ${P.BUFFS[b.id].label}: ${P.BUFFS[b.id].desc}`));
+  const mem = P.knownMemories(S); if (mem.length) kids.push(h('p', { class: 'hint' }, `Emberhollow remembers: ${mem.map((m) => m.name).filter((v, i, a) => a.indexOf(v) === i).join(', ')}.`));
+  const open = P.EVENT_LIST.filter((e) => !P.eventDone(S, e.id) && e.id === 'b1-liora' && !G.Story.hasComp(S, 'liora')); if (open.length) kids.push(h('p', { class: 'hint' }, 'A ranger is rumoured to be waiting near the entrance of the Warrens…'));
+  return h('div', {}, ...kids);
+}
+/** Camp / tavern talk: Liora's next conversation (hearts rise with your choices, nothing is ever lost), else a campfire remark. */
+async function campTalk(back) {
+  const r = G.campTalk(S); if (r.line) { log(r.line, 'lore'); return; }
+  const id = await showDialogue(r.scene);
+  const res = G.lioraMoment(S, r.moment, id);
+  await showDialogue({ title: r.scene.title, lines: res.lines });
+  handle(res.out); autosave(); if (back) back();
 }
 function showTownFolk() {
   openModal([h('h2', {}, 'Emberhollow Folk'), h('div', { class: 'menu' }, Story.TOWNFOLK.map((k) => { const sp = Story.speaker(k);
@@ -99,8 +120,10 @@ function log(t, cls = '') {
   if (out) { out.hidden = false; out.append(h('div', { class: cls }, t)); while (out.children.length > 8) out.firstChild.remove(); out.scrollTop = out.scrollHeight; out.scrollIntoView({ block: "nearest" }); }
 }
 function say(b) {
-  if (!b) return; playVoiceLine(b.text, b.who, { kind: 'battle' }); const el = h('div', { class: 'bubble' }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
-  $('#banter').append(el); log(`${b.who}: "${b.text}"`, 'lore'); setTimeout(() => el.remove(), 4200);
+  if (!b) return;
+  if (Array.isArray(b)) { b.filter(Boolean).forEach((x, i) => (i ? setTimeout(() => S && say(x), 2600 * i) : say(x))); return; } // a personal thread beat: lines follow one another
+  playVoiceLine(b.text, b.who, { kind: 'battle' }); const el = h('div', { class: `bubble${b.thread ? ' thread' : ''}` }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
+  $('#banter').append(el); log(`${b.who}: "${b.text}"`, b.thread ? 'good' : 'lore'); setTimeout(() => el.remove(), b.thread ? 6500 : 5200);
   while ($('#banter').children.length > 2) $('#banter').firstChild.remove();
   placeBanter();
 }
@@ -137,6 +160,7 @@ function handle(events) {
     }
     if (e.banter) say(e.banter); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
     if (e.sfx) sfx(e.sfx);
+    if (e.toast) toast(e.toast);
     if (e.rare && !combat && !willCombat && S?.mode === 'dungeon') revealRare(e.rare);
     if (e.suspect) toast('❓ Something about that wall is off — try 🔍 Search');
     if (e.reveal || e.sfx === 'door' || e.sfx === 'chest') rebuild();
@@ -208,6 +232,7 @@ function syncWorld() {
   const sus = (S.suspect?.[S.level] || []).map((c) => c.split(',').map(Number)).filter(([x, y]) => G.tile(S, x, y) === 'S');
   const el = G.liveElites(S).map((e) => { const [x, y] = G.elitePosNow(S, e); return { id: e.id, kind: e.kind, title: e.title, key: e.groups[0].key, x, y }; });
   R.syncDynamic((x, y) => G.tile(S, x, y), sus, el).catch(() => {});
+  R.syncEvents(G.PC.openEvents(S, getLevel(S.level)).map((e) => { const E = G.PC.eventById(e.id); return { id: e.id, x: e.x, y: e.y, color: E.color, icon: '✦' }; }));
 }
 function renderHud() {
   const el = $('#hud'); if (!S) { el.innerHTML = ''; return; }
@@ -235,6 +260,12 @@ function drawMinimap(cv, big = false) {
     g.fillStyle = col; g.fillRect(X + 0.5, Y + 0.5, cs - 1, cs - 1);
   }
   g.textAlign = 'center'; g.font = `${Math.round(cs * 0.85)}px serif`; for (const p of S.pins?.[S.level] || []) { const X = (p.x - ox + 0.5) * cs, Y = (p.y - oy + 0.85) * cs; if (X > 0 && Y > 0 && X < cv.width && Y < cv.height) g.fillText(p.icon, X, Y); } g.textAlign = 'start';
+  // Phase C: open story events glow gold on the map once their tile has been seen
+  for (const e of G.PC.openEvents(S, getLevel(S.level))) {
+    if (!ex.has(`${e.x},${e.y}`)) continue; const X = (e.x - ox + 0.5) * cs, Y = (e.y - oy + 0.5) * cs; if (X < 0 || Y < 0 || X > cv.width || Y > cv.height) continue;
+    g.fillStyle = `rgba(255,215,122,${0.5 + 0.3 * Math.sin(performance.now() / 300)})`; g.beginPath(); g.arc(X, Y, cs * 0.5, 0, 7); g.fill();
+    g.fillStyle = '#2a1a00'; g.textAlign = 'center'; g.font = `bold ${Math.round(cs * 0.8)}px sans-serif`; g.fillText('!', X, Y + cs * 0.3); g.textAlign = 'start';
+  }
   // elites: pulsing red marker where they stand now, plus a faint dotted patrol line once their ground is known
   const tm = performance.now() / 1000;
   for (const e of G.liveElites(S)) {
@@ -411,19 +442,19 @@ function showTown(sub = null) {
       btn('💾 Save Game', () => { autosave(); log('Game saved.', 'sys'); }),
       btn('📂 Load Game', () => loadGame()),
       btn('⏏ Title Screen', () => { closeModal(); showTitle(); })));
-    handle(G.Narr.townIntro(S, null));
+    handle(G.Narr.townIntro(S, null)); handle(G.PC.townArrive(S)); // Phase C: a companion remark, and what the town remembers
     return;
   }
   if (sub === 'tavern') {
     P([h('h3', {}, 'The Boar & Spoon — your party'), partyOrderList(() => showTown('tavern')), btn('🧠 Companion Tactics', () => showTactics(null, () => showTown('tavern')), { id: 'btn-tavern-tactics', class: 'small' }),
       h('h3', {}, 'Chatter at the bar'), ...S.party.filter((c) => c.companion).map((c) => h('p', {}, h('b', { style: `color:${COMPANIONS[c.companion].color}` }, c.name + ': '), COMPANIONS[c.companion].blurb)),
-      btn('🗣 Listen in', () => log(G.campDialogue(S), 'lore')),
+      btn(G.PC.pendingMoment(S) != null ? '💬 Talk with Liora' : '🗣 Listen in', () => campTalk(() => showTown('tavern')), { id: 'btn-listen' }),
       h('h3', {}, `Roster — waiting at the bar (party ${S.party.length}/4)`),
       S.roster.length ? h('div', { class: 'menu', id: 'roster' }, S.roster.map((c) => h('div', { class: 'row' }, portrait(c), h('span', { style: 'flex:1' }, `${c.name} — L${c.level} ${CLASSES[c.cls].name}${c.dead ? ' (DEAD — raise at the Temple)' : ''}`),
         btn('Join party', () => { handle(G.rejoin(S, c)); autosave(); showTown('tavern'); }, { class: 'small', disabled: S.party.length >= 4 })))) : h('p', { class: 'hint' }, 'Nobody is waiting. Dismissed members stay here, so you can bring them back (or raise them at the Temple) later.'),
       h('h3', {}, `Adventurers for hire (join at level ${G.partyLevel(S)})`),
       h('div', { class: 'menu', id: 'hire' }, G.availableCompanions(S).map((k) => { const C = COMPANIONS[k]; return h('div', { class: 'hirecard' }, Number.isInteger(C.portrait) ? h('img', { class: 'hirepic', src: portraitURL(C.portrait), alt: `${C.name} portrait` }) : null, h('p', {}, h('b', { style: `color:${C.color}` }, `${C.name} — ${RACES[C.race].name} ${CLASSES[C.cls].name}: `), C.blurb),
-        btn(`Recruit ${C.short}${S.party.length >= 4 ? ' (to roster)' : ''}`, () => { handle(G.recruitCompanion(S, k)); autosave(); showTown('tavern'); }, { class: 'small', 'data-recruit': k })); })),
+        btn(`Recruit ${C.short}${S.party.length >= 4 ? ' (to roster)' : ''}`, async () => { handle(G.recruitCompanion(S, k)); autosave(); if (k === 'liora') { G.PC.ensure(S); S.flags.lioraMet = true; await showDialogue(G.PC.lioraIntro(S), { closable: true }); } showTown('tavern'); }, { class: 'small', 'data-recruit': k })); })),
       btn('✍ Create a new recruit (full creator)', () => showCreate(true), { id: 'btn-new-recruit' })]);
   } else if (sub === 'temple') {
     P([h('h3', {}, 'Temple of Cant — "Healing by donation (mandatory)"'), h('div', { class: 'menu' }, [...S.party, ...S.roster].map((c) => { const cost = G.templeCost(c); return btn(`${c.name}: ${c.dead ? 'Raise Dead' : c.conditions.poisoned ? 'Cure poison' : c.hp < c.maxHp ? 'Heal wounds' : 'Healthy'} ${cost ? `(${cost} gp)` : ''}`, () => { handle(G.templeHeal(S, c)); showTown('temple'); }, { disabled: !cost }); }))]);
@@ -463,6 +494,26 @@ function partyOrderList(redraw) {
 }
 
 /* ---------- Prompts in the dungeon ---------- */
+/** A branching story event: portrait + text + 2-3 choices (plus Not now, which keeps it for later); then a result card. */
+function showEvent(card) {
+  const sp = { img: card.portrait, icon: card.icon, name: card.who, color: card.color };
+  const later = () => { G.deferEvent(S, card.id); closeModal(); refresh(); };
+  sfx('chime');
+  openModal([h('div', { class: 'evcard', 'data-event': card.id },
+    h('h2', {}, card.title),
+    h('div', { class: 'dlgrow' }, speakerPortrait(sp), h('div', { class: 'dlgtext' }, h('b', { style: `color:${card.color}` }, card.who), h('p', { class: 'lore' }, card.text))),
+    h('div', { class: 'menu' }, ...card.choices.map((c) => btn(`${c.label}${c.check ? `  [${c.check}]` : ''}${c.note ? `  (${c.note})` : ''}`, () => resolveEvent(card, c), { class: 'primary', 'data-choice': c.id })),
+      btn('Not now (it will wait)', later, { id: 'ev-later', class: 'small' })))], { closable: false });
+}
+function resolveEvent(card, c) {
+  const r = G.chooseEvent(S, card.id, c.id); autosave();
+  sfx(r.result.fx.some((f) => f.cls === 'bad') ? 'hurt' : 'victory');
+  openModal([h('div', { class: 'evcard', 'data-event-result': card.id },
+    h('h2', {}, card.title), r.result.roll ? h('p', { class: 'hint' }, r.result.roll) : null,
+    h('p', { class: 'lore evres' }, r.result.text),
+    h('div', { class: 'fxlist' }, r.result.fx.map((f) => h('div', { class: `fx ${f.cls}` }, f.t))),
+    h('div', { class: 'menu' }, btn('Continue ▶', () => { closeModal(); handle(r.events); rebuild(); }, { class: 'primary', id: 'ev-continue' })))], { closable: false });
+}
 function prompt(kind, e = {}) {
   if (kind === 'poi') {
     openModal([h('h2', {}, e.title), h('p', { class: 'lore' }, e.text), h('div', { class: 'menu' }, e.choices.map((c) => btn(c.label, () => {
@@ -482,6 +533,7 @@ function prompt(kind, e = {}) {
         btn('Not now', closeModal, { id: 'btn-notnow' }))], { closable: false });
     return;
   }
+  if (kind === 'event') { showEvent(e.event); return; }
   if (kind === 'chest') {
     openModal([h('h2', {}, 'A Treasure Chest'), h('p', { class: 'hint' }, 'It might be trapped. A rogue is best at inspecting and disarming.'),
       h('div', { class: 'menu' }, btn('🔎 Inspect (Investigation)', () => chestStep(G.inspectChest)), btn('🗝 Disarm (Thieves\' Tools)', () => chestStep(G.disarmChest)),
@@ -542,7 +594,7 @@ function showCamp() {
   const p = openModal([h('h2', {}, '⛺ Camp'), h('div', { class: 'menu grid' },
     btn('☕ Short Rest (1 hr: hit dice, 2nd wind, arcane recovery)', () => { closeModal(); handle(G.rest(S, 'short')); }),
     btn('🌙 Long Rest (8 hrs, full recovery, risky)', () => { closeModal(); handle(G.rest(S, 'long')); }),
-    btn('🗣 Talk with companions', () => { log(G.campDialogue(S), 'lore'); }, { id: 'btn-talk' }),
+    btn(G.PC.pendingMoment(S) != null ? '💬 Talk with Liora' : '🗣 Talk with companions', () => campTalk(showCamp), { id: 'btn-talk' }),
     btn('✨ Cast Mage Armor on wizard', () => { const w = S.party.find((c) => c.cls === 'wizard' && !c.equip.armor && !c.dead && c.slots[0] > 0 && knownSpells(c).includes('mageArmor')); if (!w) { log('No wizard with a free slot and Mage Armor prepared needs it.', 'dim'); return; } w.slots[0]--; w.conditions.mageArmor = true; log(`${w.name} casts Mage Armor (AC ${armorClass(w)}).`, 'spell'); refresh(); }),
     btn('🧠 Companion Tactics', () => showTactics(null, showCamp), { id: 'btn-camp-tactics' }),
     btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }), btn('📂 Load', () => loadGame())),
