@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Record Blackspire dialogue via ElevenLabs.
- * Usage: node scripts/voice.mjs [--only speaker] [--force] [--dry]
+ * Usage: node scripts/voice.mjs [--only speaker] [--ids id1,id2] [--spare N] [--force] [--dry]
+ * Clips are recorded highest priority first. --spare keeps that many characters unspent (default 500).
  * Skips clips whose text+voice hash already matches the manifest.
  * Never prints the API key.
  */
@@ -25,7 +26,8 @@ const args = process.argv.slice(2);
 const only = args.includes('--only') ? args[args.indexOf('--only') + 1] : null;
 const force = args.includes('--force');
 const dry = args.includes('--dry');
-const SPARE = 500;
+const ids = args.includes('--ids') ? new Set(args[args.indexOf('--ids') + 1].split(',')) : null;
+const SPARE = args.includes('--spare') ? +args[args.indexOf('--spare') + 1] : 500;
 
 const hash = (voiceId, text) => createHash('sha1').update(`${voiceId}|${text}`).digest('hex').slice(0, 16);
 
@@ -59,8 +61,9 @@ const remaining = (sub.character_limit || 0) - (sub.character_count || 0);
 console.log(`ElevenLabs free plan: ${remaining} chars remaining (leave ${SPARE} spare)`);
 let budget = Math.max(0, remaining - SPARE);
 
-const jobs = queue.filter((L) => {
+const jobs = queue.map((L, i) => ({ L, i })).sort((a, b) => (b.L.priority || 0) - (a.L.priority || 0) || a.i - b.i).map((x) => x.L).filter((L) => {
   if (only && L.speaker !== only) return false;
+  if (ids && !ids.has(L.id)) return false;
   const v = cast[L.speaker];
   if (!v) { console.warn(`skip ${L.id}: no cast voice for ${L.speaker}`); return false; }
   const h = hash(v.id, L.text);
@@ -93,11 +96,12 @@ for (const L of jobs) {
 }
 
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-// also emit a slim runtime index: text-hash → file (for lookup by spoken line)
-const byText = {};
-for (const [id, c] of Object.entries(manifest.clips)) {
-  byText[`${c.speaker}:${c.hash}`] = c.file;
-  byText[c.hash] = c.file;
+// slim runtime index (same normalisation as src/voices/voice.js): "speaker|text" and "text" -> file
+const norm = (t) => String(t || '').replace(/^Dungeon Master:\s*/i, '').replace(/^🕯\s*/, '').replace(/[—–]/g, '-').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/…/g, '...').replace(/\s+/g, ' ').trim().toLowerCase();
+const byText = {}; const byHash = {};
+for (const c of Object.values(manifest.clips)) {
+  byText[`${c.speaker.toLowerCase()}|${norm(c.text)}`] = c.file; byText[norm(c.text)] = c.file;
+  byHash[`${c.speaker}:${c.hash}`] = c.file; byHash[c.hash] = c.file;
 }
-writeFileSync(join(root, 'src/voices/index.json'), JSON.stringify({ clips: manifest.clips, byHash: byText }, null, 2));
+writeFileSync(join(root, 'src/voices/index.json'), JSON.stringify({ clips: manifest.clips, byHash, byText }, null, 2));
 console.log(`done: recorded ${done}, failed ${failed}, chars used this run ${used}, clips in manifest ${Object.keys(manifest.clips).length}`);

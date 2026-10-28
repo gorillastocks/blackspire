@@ -12,7 +12,7 @@
     "elowen-3a67bbfa5e0f": {
       "speaker": "elowen",
       "voice": "hpp4J3VqNfWAUOO0d1Us",
-      "text": "Take it! Follow me down \u2014 I'll leave you a trail!",
+      "text": "Take it! Follow me down — I'll leave you a trail!",
       "chars": 51,
       "hash": "a7208d1dfb4e68af",
       "file": "voice/elowen-3a67bbfa5e0f.mp3",
@@ -21,7 +21,7 @@
     "elowen-e85e02b05dee": {
       "speaker": "elowen",
       "voice": "hpp4J3VqNfWAUOO0d1Us",
-      "text": "To Emberhollow \u2014 and to whoever finally finishes Marga's pie!",
+      "text": "To Emberhollow — and to whoever finally finishes Marga's pie!",
       "chars": 63,
       "hash": "68c2a16008dc209a",
       "file": "voice/elowen-e85e02b05dee.mp3",
@@ -57,7 +57,7 @@
     "elowen-note-4fb1c440b527": {
       "speaker": "elowen",
       "voice": "hpp4J3VqNfWAUOO0d1Us",
-      "text": "Note 10: \"His staff is the anchor. Break it and I am free. I will be ready. \u2014 Your friend, E.\"",
+      "text": "Note 10: \"His staff is the anchor. Break it and I am free. I will be ready. — Your friend, E.\"",
       "chars": 96,
       "hash": "ee75b08379992ebe",
       "file": "voice/elowen-note-4fb1c440b527.mp3",
@@ -66,7 +66,7 @@
     "elowen-note-018a8ba075a7": {
       "speaker": "elowen",
       "voice": "hpp4J3VqNfWAUOO0d1Us",
-      "text": "Note 1: \"If you are reading this, you followed. Good. They tied my hands but not my pencil. \u2014 E.\"",
+      "text": "Note 1: \"If you are reading this, you followed. Good. They tied my hands but not my pencil. — E.\"",
       "chars": 99,
       "hash": "d5a3bf389860f142",
       "file": "voice/elowen-note-018a8ba075a7.mp3",
@@ -102,7 +102,7 @@
     "elowen-note-429f5944c7f7": {
       "speaker": "elowen",
       "voice": "hpp4J3VqNfWAUOO0d1Us",
-      "text": "Note 7: \"Ashforge. They chain smiths to the anvils. The chimera wears a collar \u2014 Brakk is afraid of it.\"",
+      "text": "Note 7: \"Ashforge. They chain smiths to the anvils. The chimera wears a collar — Brakk is afraid of it.\"",
       "chars": 106,
       "hash": "fa7a53d0bee86c99",
       "file": "voice/elowen-note-429f5944c7f7.mp3",
@@ -255,7 +255,7 @@
     "osric-6cebf0a6e34b": {
       "speaker": "osric",
       "voice": "pqHfZKP75CvOlQylNhV4",
-      "text": "Her relics! The Temple owes you a life \u2014 one Raise Dead, free. And take these.",
+      "text": "Her relics! The Temple owes you a life — one Raise Dead, free. And take these.",
       "chars": 80,
       "hash": "80266c58e805d9a0",
       "file": "voice/osric-6cebf0a6e34b.mp3",
@@ -327,7 +327,7 @@
     "rowan-offer-c1bd42b8e8ab": {
       "speaker": "rowan",
       "voice": "pNInz6obpgDQGcFmaJgB",
-      "text": "Four of my guards chased the cultists into the Rat-Warrens and never came back. Bring them home and I'll see you paid \u2014 and they'll fight at your side.",
+      "text": "Four of my guards chased the cultists into the Rat-Warrens and never came back. Bring them home and I'll see you paid — and they'll fight at your side.",
       "chars": 153,
       "hash": "625805c133de5609",
       "file": "voice/rowan-offer-c1bd42b8e8ab.mp3",
@@ -345,7 +345,7 @@
     "rowan-484442cb68e1": {
       "speaker": "rowan",
       "voice": "pNInz6obpgDQGcFmaJgB",
-      "text": "You. You fought like the Dawn's own knight. Take this writ \u2014 it gives you the Crown's authority below. Bring her back. I'll have work for you in town, too.",
+      "text": "You. You fought like the Dawn's own knight. Take this writ — it gives you the Crown's authority below. Bring her back. I'll have work for you in town, too.",
       "chars": 157,
       "hash": "6620912170267cd4",
       "file": "voice/rowan-484442cb68e1.mp3",
@@ -354,7 +354,7 @@
     "tamsin-offer-7ae34b57ccc9": {
       "speaker": "tamsin",
       "voice": "Xb7hH8MSUJpSbSDYk0k2",
-      "text": "When I was a girl, the Warden kept a horn that woke the whole valley. It's down in the vault still. Sound it when the big lizard wakes \u2014 trust an old woman.",
+      "text": "When I was a girl, the Warden kept a horn that woke the whole valley. It's down in the vault still. Sound it when the big lizard wakes — trust an old woman.",
       "chars": 158,
       "hash": "a51abb0673d62c51",
       "file": "voice/tamsin-offer-7ae34b57ccc9.mp3",
@@ -498,7 +498,7 @@
     "grumsh-victory-c9424bdee50c": {
       "speaker": "grumsh",
       "voice": "SOYHLrjzK2X1ezoPC6cr",
-      "text": "We won. And yet\u2026 did we?",
+      "text": "We won. And yet… did we?",
       "chars": 26,
       "hash": "5a8086919926f2d6",
       "file": "voice/grumsh-victory-c9424bdee50c.mp3",
@@ -665,6 +665,42 @@
       "hash": "daff930a5040e6aa",
       "file": "voice/brambur-combatStart-8ff17d5a016b.mp3",
       "bytes": 29509
+    },
+    "liora-81771bb4eba2": {
+      "speaker": "liora",
+      "voice": "EXAVITQu4vr4xnSDxMaL",
+      "text": "Liora Wardenfall, Warden's Watch. My father went down into the Blackspire twenty years ago. I'm done waiting at the door. Mind if I join you?",
+      "chars": 141,
+      "hash": "05d110afffff2248",
+      "file": "voice/liora-81771bb4eba2.mp3",
+      "bytes": 68170
+    },
+    "liora-6623c7aceded": {
+      "speaker": "liora",
+      "voice": "EXAVITQu4vr4xnSDxMaL",
+      "text": "This clasp was my father's. Aldous Wardenfall, last Warden of the Watch. He took the horn and went down to reseal the vault. I was nine.",
+      "chars": 136,
+      "hash": "9491f54e8a8f732e",
+      "file": "voice/liora-6623c7aceded.mp3",
+      "bytes": 67752
+    },
+    "liora-7507b8558444": {
+      "speaker": "liora",
+      "voice": "EXAVITQu4vr4xnSDxMaL",
+      "text": "Tomorrow this ends, one way or the other. I found his boots at the stair. Only the boots.",
+      "chars": 89,
+      "hash": "fc3a390b6c57ea97",
+      "file": "voice/liora-7507b8558444.mp3",
+      "bytes": 45600
+    },
+    "liora-339e364b8c4d": {
+      "speaker": "liora",
+      "voice": "EXAVITQu4vr4xnSDxMaL",
+      "text": "He kept something burning down here for twenty years. Whatever that last light is, I will be the one to find it.",
+      "chars": 112,
+      "hash": "692ecafa12b9332b",
+      "file": "voice/liora-339e364b8c4d.mp3",
+      "bytes": 54377
     }
   },
   "byHash": {
@@ -815,7 +851,15 @@
     "brambur:654f7d8e44f44d67": "voice/brambur-rest-d3450c4068f4.mp3",
     "654f7d8e44f44d67": "voice/brambur-rest-d3450c4068f4.mp3",
     "brambur:daff930a5040e6aa": "voice/brambur-combatStart-8ff17d5a016b.mp3",
-    "daff930a5040e6aa": "voice/brambur-combatStart-8ff17d5a016b.mp3"
+    "daff930a5040e6aa": "voice/brambur-combatStart-8ff17d5a016b.mp3",
+    "liora:05d110afffff2248": "voice/liora-81771bb4eba2.mp3",
+    "05d110afffff2248": "voice/liora-81771bb4eba2.mp3",
+    "liora:9491f54e8a8f732e": "voice/liora-6623c7aceded.mp3",
+    "9491f54e8a8f732e": "voice/liora-6623c7aceded.mp3",
+    "liora:fc3a390b6c57ea97": "voice/liora-7507b8558444.mp3",
+    "fc3a390b6c57ea97": "voice/liora-7507b8558444.mp3",
+    "liora:692ecafa12b9332b": "voice/liora-339e364b8c4d.mp3",
+    "692ecafa12b9332b": "voice/liora-339e364b8c4d.mp3"
   },
   "byText": {
     "elowen|rise, knight of the dawn.": "voice/elowen-591217990d9f.mp3",
@@ -965,6 +1009,14 @@
     "brambur|ll take first watch. i won": "voice/brambur-rest-d3450c4068f4.mp3",
     "ll take first watch. i won": "voice/brambur-rest-d3450c4068f4.mp3",
     "brambur|m terribly sorry about what": "voice/brambur-combatStart-8ff17d5a016b.mp3",
-    "m terribly sorry about what": "voice/brambur-combatStart-8ff17d5a016b.mp3"
+    "m terribly sorry about what": "voice/brambur-combatStart-8ff17d5a016b.mp3",
+    "liora|liora wardenfall, warden's watch. my father went down into the blackspire twenty years ago. i'm done waiting at the door. mind if i join you?": "voice/liora-81771bb4eba2.mp3",
+    "liora wardenfall, warden's watch. my father went down into the blackspire twenty years ago. i'm done waiting at the door. mind if i join you?": "voice/liora-81771bb4eba2.mp3",
+    "liora|this clasp was my father's. aldous wardenfall, last warden of the watch. he took the horn and went down to reseal the vault. i was nine.": "voice/liora-6623c7aceded.mp3",
+    "this clasp was my father's. aldous wardenfall, last warden of the watch. he took the horn and went down to reseal the vault. i was nine.": "voice/liora-6623c7aceded.mp3",
+    "liora|tomorrow this ends, one way or the other. i found his boots at the stair. only the boots.": "voice/liora-7507b8558444.mp3",
+    "tomorrow this ends, one way or the other. i found his boots at the stair. only the boots.": "voice/liora-7507b8558444.mp3",
+    "liora|he kept something burning down here for twenty years. whatever that last light is, i will be the one to find it.": "voice/liora-339e364b8c4d.mp3",
+    "he kept something burning down here for twenty years. whatever that last light is, i will be the one to find it.": "voice/liora-339e364b8c4d.mp3"
   }
 }

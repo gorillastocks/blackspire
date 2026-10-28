@@ -197,6 +197,7 @@ const WHO = {
   'dungeon master': 'narrator', narrator: 'narrator', dm: 'narrator',
   malthrax: 'malthrax', 'malthrax the dread': 'malthrax',
   grumsh: 'grumsh', vexrath: 'vexrath', brambur: 'brambur', pip: 'pip', fizzwick: 'fizzwick',
+  liora: 'liora', 'liora wardenfall': 'liora', zizzy: 'zizzy', nettle: 'nettle',
   marga: 'marga', rowan: 'rowan', 'captain rowan': 'rowan',
   osric: 'osric', wren: 'wren', dobbin: 'dobbin', tamsin: 'tamsin',
   'ser aldric': 'serAldric', aldric: 'serAldric',
