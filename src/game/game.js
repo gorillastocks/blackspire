@@ -8,7 +8,10 @@ import * as Story from './story.js';
 import { randomPortrait, PORTRAIT_COUNT } from '../portraits.js';
 const givePortrait = (c, want = null) => { c.portrait = Number.isInteger(want) && want >= 0 && want < PORTRAIT_COUNT ? want : randomPortrait(c.race, c.cls); return c; };
 import * as Narr from './narration.js';
-export { Narr };
+import * as Prog from './progress.js';
+import { isLevelLocked } from '../entitlements.js';
+import { Combat } from '../rules/combat.js';
+export { Narr, Prog };
 export { Story };
 export const NLEVELS = LEVEL_DEFS.length;
 
@@ -24,13 +27,13 @@ export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base =
   const order = { fighter: 0, cleric: 1, rogue: 2, wizard: 3 };
   party.sort((a, b) => order[a.cls] - order[b.cls]);
   if (!party.slice(0, 2).includes(hero) && hero.cls !== 'wizard') { /* hero rogue goes 3rd; ok */ }
-  return {
-    version: 2, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
+  return Prog.initProgress({
+    version: 3, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
     mode: 'town', level: 0, x: 1, y: 1, dir: 1, mods: LEVEL_DEFS.map(() => ({})), explored: LEVEL_DEFS.map(() => []), maxDepth: 0,
     bossDead: LEVEL_DEFS.map(() => false), victory: false, steps: 0, sinceEncounter: 0, keys: [], playTime: 0,
     seeds: dseeds, randomDungeons: !!dseeds,
     flags: {}, journal: [], notes: [], moon: 0, rests: 0, quests: { main: 'active' }, pois: {},
-  };
+  });
 }
 export const isHero = (c) => !c.companion && !c.recruit;
 export function heroOf(s) { return s.party.find(isHero) || s.party[0]; }
@@ -106,7 +109,8 @@ export function markExplored(s) {
 }
 
 export function enterDungeon(s, lvl = 0) {
-  s.mode = 'dungeon'; s.level = lvl;
+  if (isLevelLocked(lvl)) return [{ paywall: true, log: 'That way is sealed until the full game is unlocked.', cls: 'dim' }];
+  s.mode = 'dungeon'; s.level = lvl; Prog.sessionStart(s);
   const L = getLevel(lvl);
   if (lvl === 0 || !s.arriveAtDown) { s.x = L.start[0]; s.y = L.start[1]; s.dir = L.start[2]; }
   s.sinceEncounter = 0; markExplored(s);
@@ -117,6 +121,9 @@ function encounterGroups(table) {
   return pick(table).map((g) => ({ key: g.key, count: g.count[0] + Math.floor(rand() * (g.count[1] - g.count[0] + 1)) }));
 }
 export function randomEncounter(s) { return encounterGroups(getLevel(s.level).def.table); }
+/** Random-encounter chance multiplier for where the party stands: explored / cleared areas get quiet. */
+export const quiet = (s) => Prog.encounterScale(s);
+const RAND = (s, groups = randomEncounter(s)) => ({ groups, random: true });
 const bestBy = (s, f) => s.party.filter((c) => !isDown(c)).reduce((b, c) => (f(c) > f(b) ? c : b), s.party.find((c) => !isDown(c)) || s.party[0]);
 const guidance = (s) => s.party.some((c) => c.cls === 'cleric' && !isDown(c));
 
@@ -155,12 +162,13 @@ function suppressAmbientForCombat(out) {
 
 export function enterTile(s) {
   const ch = tile(s, s.x, s.y); const L = getLevel(s.level); const def = L.def; const out = [...Narr.areaAt(s, L, s.x, s.y)];
+  if (out.length) out.push(...Prog.discover(s, 'room', `${s.x},${s.y}`, 'new area explored'));
   const passivePerc = Math.max(...s.party.filter((c) => !isDown(c)).map((c) => passive(c, 'perception')));
   // Passive notice of adjacent secret doors
-  for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'S' && passivePerc >= def.secretDC + 3) { setTile(s, s.x + dx, s.y + dy, 'D'); out.push({ log: 'Your keen eyes notice a hidden door!', cls: 'good', card: true, banter: banter(s.party, 'secret', {}, 0.9), reveal: true }); }
+  for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'S' && passivePerc >= def.secretDC + 3) { setTile(s, s.x + dx, s.y + dy, 'D'); out.push({ log: 'Your keen eyes notice a hidden door!', cls: 'good', card: true, banter: banter(s.party, 'secret', {}, 0.9), reveal: true }, ...Prog.discover(s, 'secret', `${s.x + dx},${s.y + dy}`, 'hidden door found')); }
   switch (ch) {
     case 'T': {
-      if (passivePerc >= def.trapDC) { setTile(s, s.x, s.y, 't'); out.push({ log: `You spot a hidden ${def.trapKind === 'pit' ? 'pit' : 'dart trap'} (passive Perception ${passivePerc}) and step around it.`, card: true, cls: 'good' }); break; }
+      if (passivePerc >= def.trapDC) { setTile(s, s.x, s.y, 't'); out.push({ log: `You spot a hidden ${def.trapKind === 'pit' ? 'pit' : 'dart trap'} (passive Perception ${passivePerc}) and step around it.`, card: true, cls: 'good' }, ...Prog.discover(s, 'trap', `${s.x},${s.y}`, 'trap spotted')); break; }
       setTile(s, s.x, s.y, 't');
       if (def.trapKind === 'pit') {
         const v = s.party.find((c) => !isDown(c)); const dc = 15;
@@ -182,7 +190,7 @@ export function enterTile(s) {
     case 'C': out.push({ prompt: 'chest' }); break;
     case 'K': {
       setTile(s, s.x, s.y, '.'); s.keys.push(def.key); s.inventory.push(def.key);
-      out.push({ log: `You found the ${ITEMS[def.key].name}!`, cls: 'good', banter: banter(s.party, 'loot', {}, 0.7) }); break;
+      out.push({ log: `You found the ${ITEMS[def.key].name}!`, cls: 'good', banter: banter(s.party, 'loot', {}, 0.7) }, ...Prog.discover(s, 'key', `${s.x},${s.y}`, 'key found')); break;
     }
     case 'Q': {
       const id = Story.poiAt(s.level, tileOrdinal(L, s.x, s.y));
@@ -191,9 +199,9 @@ export function enterTile(s) {
       if (ev.some((e) => e.prompt)) return out;
       break;
     }
-    case 'M': out.push({ log: def.messages[tileOrdinal(L, s.x, s.y) % def.messages.length], cls: 'lore', card: true }); break;
+    case 'M': out.push({ log: def.messages[tileOrdinal(L, s.x, s.y) % def.messages.length], cls: 'lore', card: true }, ...Prog.discover(s, 'lore', `${s.x},${s.y}`, 'lore found')); break;
     case 'F': {
-      out.push({ log: 'A glowing fountain. You drink: the party is healed and refreshed.', cls: 'good' });
+      out.push({ log: 'A glowing fountain. You drink: the party is healed and refreshed.', cls: 'good' }, ...Prog.discover(s, 'fountain', `${s.x},${s.y}`, 'fountain found'));
       for (const c of s.party) if (!c.dead) { c.hp = c.maxHp; delete c.conditions.poisoned; }
       setTile(s, s.x, s.y, 'f'); break;
     }
@@ -214,8 +222,8 @@ export function enterTile(s) {
     case 'A': out.push({ prompt: 'altar' }); break;
   }
   // Random encounters
-  if (!out.some((o) => o.combat || o.prompt) && s.sinceEncounter > 6 && rand() < 0.045) {
-    s.sinceEncounter = 0; out.push({ log: 'Monsters appear!', cls: 'bad', combat: { groups: randomEncounter(s) } });
+  if (!out.some((o) => o.combat || o.prompt) && s.sinceEncounter > 6 && rand() < 0.045 * quiet(s)) {
+    s.sinceEncounter = 0; out.push({ log: 'Monsters appear!', cls: 'bad', combat: RAND(s) });
   }
   return suppressAmbientForCombat(out);
 }
@@ -223,7 +231,7 @@ export function enterTile(s) {
 export function afterCombat(s, combat, info = {}) {
   const out = [];
   if (combat.state === 'won') {
-    s.gold += combat.gold;
+    s.gold += combat.gold; Prog.noteFightWon(s, info);
     const def = getLevel(s.level).def;
     const chain = info.boss && def.phase2 && !info.phase2;
     if (info.boss && !chain) { s.bossDead[s.level] = true; setTile(s, s.x, s.y, '.'); const q = [600, 3000, 9000, 22000, 0][s.level] || 0; if (q) for (const c of s.party) if (!c.dead) c.xp += q; out.push({ log: `The guardian is defeated! The way onward is open.${q ? ` Quest bonus: ${q} XP each.` : ''}`, cls: 'good' }); }
@@ -260,12 +268,12 @@ export function search(s) {
   let found = false;
   for (const [dx, dy] of DIRS) {
     const x = s.x + dx, y = s.y + dy;
-    if (tile(s, x, y) === 'S' && r.total >= def.secretDC) { setTile(s, x, y, 'D'); found = true; }
-    if (tile(s, x, y) === 'T' && r.total >= def.trapDC) { setTile(s, x, y, 't'); out.push({ log: `${who.name} finds a hidden trap and disarms it.`, cls: 'good', card: true }); }
+    if (tile(s, x, y) === 'S' && r.total >= def.secretDC) { setTile(s, x, y, 'D'); found = true; out.push(...Prog.discover(s, 'secret', `${x},${y}`, 'hidden door found')); }
+    if (tile(s, x, y) === 'T' && r.total >= def.trapDC) { setTile(s, x, y, 't'); out.push({ log: `${who.name} finds a hidden trap and disarms it.`, cls: 'good', card: true }, ...Prog.discover(s, 'trap', `${x},${y}`, 'trap found')); }
   }
   out.unshift({ log: `${who.name} searches (Perception ${r.total})… ${found ? 'a secret door!' : 'nothing obvious.'}`, cls: found ? 'good' : 'dim', reveal: found });
   if (found) out.push({ banter: banter(s.party, 'secret', {}, 0.9) });
-  if (rand() < 0.08) out.push({ log: 'Your searching made noise…', cls: 'bad', combat: { groups: randomEncounter(s), ambush: true } });
+  if (rand() < 0.08 * quiet(s)) out.push({ log: 'Your searching made noise…', cls: 'bad', combat: { ...RAND(s), ambush: true } });
   return out;
 }
 export function lockAt(s) { for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'L') return [s.x + dx, s.y + dy]; return null; }
@@ -275,7 +283,7 @@ export function pickLock(s, force = false) {
   if (force) {
     const who = bestBy(s, (c) => abilityMod(c, 'str')); const r = check(who, 'athletics');
     if (r.total >= def.lockDC + 2) { setTile(s, p[0], p[1], 'd'); return [{ log: `${who.name} shoulders the door open! (Athletics ${r.total})`, cls: 'good', sfx: 'door' }]; }
-    return [{ log: `${who.name} bounces off the door. (Athletics ${r.total})`, cls: 'dim' }, ...(rand() < 0.35 ? [{ log: 'The racket attracts attention!', cls: 'bad', combat: { groups: randomEncounter(s), ambush: true } }] : [])];
+    return [{ log: `${who.name} bounces off the door. (Athletics ${r.total})`, cls: 'dim' }, ...(rand() < 0.35 * quiet(s) ? [{ log: 'The racket attracts attention!', cls: 'bad', combat: { ...RAND(s), ambush: true } }] : [])];
   }
   const who = bestBy(s, thievesTools); const r = d20({}) + thievesTools(who);
   if (r >= def.lockDC) { setTile(s, p[0], p[1], 'd'); return [{ log: `${who.name} picks the lock! (${r})`, cls: 'good', sfx: 'door' }]; }
@@ -313,7 +321,7 @@ export function openChest(s, skipTrap = false) {
   const n = 1 + (rand() < 0.5 ? 1 : 0); const items = [];
   for (let i = 0; i < n; i++) { const it = pick(def.loot.items); s.inventory.push(it); items.push(it); if (ITEMS[it].spoon) s.spoons++; }
   setTile(s, s.x, s.y, 'o');
-  out.push({ log: `The chest holds ${gold} gold and: ${items.map((i) => ITEMS[i].name).join(', ')}.`, cls: 'good', sfx: 'chest' });
+  out.push({ log: `The chest holds ${gold} gold and: ${items.map((i) => ITEMS[i].name).join(', ')}.`, cls: 'good', sfx: 'chest' }, ...Prog.discover(s, 'chest', `${s.x},${s.y}`, 'chest opened'));
   const spoon = items.some((i) => ITEMS[i].spoon);
   out.push({ banter: banter(s.party, spoon ? 'spoon' : 'loot', {}, spoon ? 1 : 0.7) });
   return out;
@@ -322,10 +330,11 @@ export function openChest(s, skipTrap = false) {
 /* ---------- Stairs ---------- */
 export function goDown(s) {
   if (s.level >= LEVEL_DEFS.length - 1) return [];
+  if (isLevelLocked(s.level + 1)) return [{ paywall: true, cliffhanger: true }];
   s.level++; s.maxDepth = Math.max(s.maxDepth, s.level);
   const L = getLevel(s.level); s.x = L.start[0]; s.y = L.start[1]; s.dir = L.start[2]; markExplored(s);
   const intro = Narr.floorIntro(s, s.level);
-  return [{ log: `You descend to ${L.def.name}.`, cls: 'sys', banter: intro.some((e) => e.card) ? null : banter(s.party, 'stairs', {}, 0.9) }, ...intro];
+  return [{ log: `You descend to ${L.def.name}.`, cls: 'sys', banter: intro.some((e) => e.card) ? null : banter(s.party, 'stairs', {}, 0.9) }, ...intro, ...Prog.discover(s, 'stairs', 'down', 'a new depth reached')];
 }
 export function goUp(s) {
   if (s.level === 0) { s.mode = 'town'; return [{ log: 'You climb back to the town of Emberhollow.', cls: 'sys', toTown: true }]; }
@@ -340,11 +349,11 @@ export function goUp(s) {
 /* ---------- Rest ---------- */
 export function rest(s, kind) {
   const out = [];
-  if (s.mode === 'dungeon' && rand() < (kind === 'long' ? 0.3 : 0.12)) {
-    out.push({ log: 'Your rest is interrupted by monsters!', cls: 'bad', combat: { groups: randomEncounter(s), ambush: true } }); return out;
+  if (s.mode === 'dungeon' && rand() < (kind === 'long' ? 0.3 : 0.12) * quiet(s)) {
+    out.push({ log: 'Your rest is interrupted by monsters!', cls: 'bad', combat: { ...RAND(s), ambush: true } }); return out;
   }
   if (kind === 'short') { for (const c of s.party) for (const l of shortRest(c)) out.push({ log: l }); out.push({ log: 'The party takes a short rest (1 hour).', cls: 'good' }); }
-  else { for (const c of s.party) longRest(c); out.push({ log: 'The party takes a long rest. HP, spell slots and abilities restored.', cls: 'good' }); out.push(...Story.onLongRest(s)); }
+  else { for (const c of s.party) longRest(c); out.push({ log: 'The party takes a long rest. HP, spell slots and abilities restored.', cls: 'good' }); if (Prog.addRested(s, 'camp') > 0) out.push({ log: '☾ Rested: bonus XP on your next finds.', cls: 'dim' }); out.push(...Story.onLongRest(s)); }
   out.push({ banter: banter(s.party, 'rest', {}, 0.9) });
   return out;
 }
@@ -352,11 +361,11 @@ export function rest(s, kind) {
 /* ---------- Town ---------- */
 export function innRest(s) {
   const cost = s.flags?.freeInn ? 0 : 10; if (s.gold < cost) return [{ log: 'Not enough gold for a room (10 gp).', cls: 'bad' }];
-  s.gold -= cost; for (const c of s.party) longRest(c);
+  s.gold -= cost; for (const c of s.party) longRest(c); Prog.addRested(s, 'inn');
   return [{ log: cost ? 'You rent rooms at the Boar & Spoon Inn and sleep soundly. (−10 gp)' : 'Marga waves you upstairs. "On the house, love." You sleep soundly.', cls: 'good' }, ...Story.onLongRest(s)];
 }
 /** Combat options derived from story state (lieutenant/boss set-pieces). */
-export function combatOpts(s, info = {}) { return Story.storyCombat(s, info, s.level); }
+export function combatOpts(s, info = {}) { return { ...Story.storyCombat(s, info, s.level), xpAward: (share) => Prog.awardCombatXp(s, share, info) }; }
 export function templeCost(c) { return c.dead ? 100 * c.level : c.conditions.poisoned ? 20 : c.hp < c.maxHp ? 5 * c.level : 0; }
 export function templeHeal(s, c) {
   let cost = templeCost(c); if (!cost) return [{ log: `${c.name} needs no healing.`, cls: 'dim' }];
@@ -438,6 +447,7 @@ export function deserialize(str) {
   Story.initStory(s);
   for (const c of [...s.party, ...s.roster]) { c.equip ||= {}; if (!('helm' in c.equip)) c.equip.helm = null; }
   s.level = Math.min(N - 1, Math.max(0, s.level | 0)); s.maxDepth = Math.max(s.maxDepth | 0, s.level);
+  const old = (s.version | 0) < 3; Prog.initProgress(s); if (old) Prog.sweepQuests(s, true); // v3: XP system, pins, cleared zones, session recap
   if (s.mode === 'dungeon' && !(Number.isInteger(s.x) && Number.isInteger(s.y))) s.mode = 'town';
   return s;
 }
@@ -447,6 +457,16 @@ export function campDialogue(s) {
   const c = pick(alive); return pick(COMPANIONS[c.companion].camp);
 }
 export { die };
+
+export const sweepQuests = (s) => Prog.sweepQuests(s);
+/** Fight a trivial encounter headlessly (everyone on AI); returns the afterCombat events. Party state is updated like a real fight. */
+export function autoResolve(s, info) {
+  const flags = s.party.map((c) => c.ai); for (const c of s.party) c.ai = true;
+  const cb = new Combat(s.party, info.groups, { inventory: s.inventory, canFlee: false, difficulty: s.difficulty || 'normal', story: combatOpts(s, info) });
+  try { cb.runAuto(); } finally { s.party.forEach((c, i) => { c.ai = flags[i]; }); }
+  s.stats.trivial++; return { combat: cb, events: afterCombat(s, cb, info) };
+}
+export const isTrivial = (s, info) => Prog.isTrivial(s, info.groups || [], info);
 
 /** Best living party member attempts a skill check. */
 export function partyCheck(s, skill, dc) {

@@ -395,3 +395,20 @@ span.cport { display: inline-flex; align-items: center; justify-content: center;
 @keyframes encPop { 0% { transform: scale(.3); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
 @keyframes encShake { 0%,100% { transform: translate(0); } 15% { transform: translate(-7px, 3px); } 30% { transform: translate(6px, -4px); } 45% { transform: translate(-5px, -2px); } 60% { transform: translate(4px, 3px); } 80% { transform: translate(-2px, 1px); } }
 body.reducemotion #encounter, body.reducemotion #encounter .enc-panel { animation: none; }
+
+/* ---------- Phase A: skip / speed chips, toast, automap, paywall ---------- */
+#combatchips { position: absolute; right: 8px; bottom: 8px; z-index: 6; display: none; gap: 6px; }
+body.incombat #combatchips { display: flex; }
+#combatchips button { min-height: 40px; min-width: 44px; padding: 4px 10px; font-size: 14px; font-weight: bold; border-radius: 20px; background: #2a1f52cc; color: #fff; border: 2px solid #6b4fd0; touch-action: manipulation; }
+#combatchips button:active { background: #7a2fb0; }
+#toast { position: absolute; left: 50%; top: 44px; transform: translate(-50%, -8px); z-index: 7; padding: 6px 14px; border-radius: 16px; background: #1b1238ee; border: 1px solid var(--gold, #ffd34d); color: #ffe9a0; font-size: 14px; font-weight: bold; pointer-events: none; opacity: 0; transition: opacity .25s, transform .25s; max-width: 90%; text-align: center; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+#minimap { cursor: pointer; }
+.bigmap { cursor: pointer; touch-action: manipulation; }
+.goal { margin: 2px 0 6px; font-size: 14px; color: #ffe9a0; }
+.pinbar .pinnote { width: 100%; box-sizing: border-box; padding: 8px; font-size: 16px; margin: 4px 0; background: #120b26; color: #fff; border: 1px solid #5a43a8; border-radius: 6px; }
+.pinbar .seg button { min-width: 44px; font-size: 18px; }
+.pinlist { max-height: 120px; overflow: auto; margin-top: 6px; }
+.pinrow { font-size: 13px; align-items: center; }
+.paywall { border: 1px solid var(--gold, #ffd34d); border-radius: 10px; padding: 8px 12px; margin: 8px 0; background: #1b123866; }
+.paywall h3 { margin: 0 0 4px; } .paywall .price { color: #ffe9a0; font-weight: bold; }

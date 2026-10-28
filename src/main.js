@@ -13,6 +13,7 @@ import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic, playVictorySting, victoryStingState, duckBed, ac, unlock as unlockAudio, isMuted } from './audio.js';
 import { playVoiceLine, playAmbientNarration, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt, invalidateAmbientVoices, setAmbientVoiceGate, voiceGeneration } from './voices/voice.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
+import * as ENT from './entitlements.js';
 // After a redeploy, an old tab's lazy chunks 404: reload once to pick up the new build.
 window.addEventListener('vite:preloadError', (e) => {
   try { if (sessionStorage.getItem('gw-chunk-reload')) return; sessionStorage.setItem('gw-chunk-reload', '1'); } catch { return; }
@@ -132,10 +133,13 @@ function handle(events) {
     if (e.banter) say(e.banter); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
     if (e.sfx) sfx(e.sfx);
     if (e.reveal || e.sfx === 'door' || e.sfx === 'chest') rebuild();
-    if (e.toTown) { autosave(); showTown(); return; }
+    if (e.xp) toast(`✦ +${e.xp} XP each`);
+    if (e.paywall) { prompt('paywall', e); return; }
+    if (e.toTown) { const rc = G.Prog.sessionRecap(S); if (rc) queueMessage(rc); autosave(); showTown(); return; }
     if (e.combat) { startCombat(e.combat); return; }
     if (e.prompt) { if (msgRunning) messagesDone().then(() => S && !combat && prompt(e.prompt, e)); else prompt(e.prompt, e); } // read the card first
   }
+  if (S) for (const q of G.sweepQuests(S)) { log(q.log, q.cls); toast(`✦ +${q.xp} XP each — quest complete`); }
   refresh();
 }
 function flashRed(crit = false) { const f = $('#flash'); f.classList.toggle('crit', !!crit); f.style.opacity = 1; setTimeout(() => (f.style.opacity = 0), crit ? 380 : 250); }
@@ -210,6 +214,7 @@ function drawMinimap(cv, big = false) {
     let col = MAPCOL[ch] || '#2a2448'; if (ch === 'B' && S.bossDead[S.level]) col = '#2a2448';
     g.fillStyle = col; g.fillRect(X + 0.5, Y + 0.5, cs - 1, cs - 1);
   }
+  g.textAlign = 'center'; g.font = `${Math.round(cs * 0.85)}px serif`; for (const p of S.pins?.[S.level] || []) { const X = (p.x - ox + 0.5) * cs, Y = (p.y - oy + 0.85) * cs; if (X > 0 && Y > 0 && X < cv.width && Y < cv.height) g.fillText(p.icon, X, Y); } g.textAlign = 'start';
   const px = (S.x - ox + 0.5) * cs, py = (S.y - oy + 0.5) * cs; const [dx, dy] = DIRS[S.dir];
   g.fillStyle = '#6dffa8'; g.beginPath(); g.moveTo(px + dx * cs * 0.5, py + dy * cs * 0.5); g.lineTo(px - dy * cs * 0.4 - dx * cs * 0.3, py + dx * cs * 0.4 - dy * cs * 0.3); g.lineTo(px + dy * cs * 0.4 - dx * cs * 0.3, py - dx * cs * 0.4 - dy * cs * 0.3); g.fill();
   if (!big) { g.fillStyle = '#9a8fd0'; g.font = '11px monospace'; g.fillText(`${S.x},${S.y}`, 4, cv.height - 5); }
@@ -226,7 +231,8 @@ function setControls(kind) {
     b('📜 Sheet', () => showSheet(S.party[0]), 'act', 'Character sheet (I)'); b('🎒 Items', showInventory, 'act', 'Inventory (B)'); b('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, 'act', 'Save (P)');
   }
 }
-function act(f) { ambientMoveToken++; const ev = f(); R.setView(S.x, S.y, S.dir); if (ev.some?.((e) => !e.bump)) sfx('step'); handle(ev); }
+function act(f) { ambientMoveToken++; const ev = f(); R.setView(S.x, S.y, S.dir); if (ev.some?.((e) => !e.bump)) sfx('step'); handle(ev); if (S && !combat && S.steps % 8 === 0 && S.steps !== lastAutoStep) { lastAutoStep = S.steps; autosave(true); } }
+let lastAutoStep = -1;
 function doSearch() {
   const ev = G.search(S);
   if (G.lockAt(S)) ev.push({ prompt: 'lock' });
@@ -413,7 +419,7 @@ function showTown(sub = null) {
   }
   if (sub) handle(G.Narr.townIntro(S, sub));
 }
-function enter(l) { closeModal(); handle(G.enterDungeon(S, l)); startDungeon(); say(banter(S.party, 'stairs', {}, 1)); autosave(); }
+function enter(l) { closeModal(); const ev = G.enterDungeon(S, l); if (ev.some((e) => e.paywall)) { prompt('paywall', { then: () => enter(l) }); return; } handle(ev); startDungeon(); say(banter(S.party, 'stairs', {}, 1)); autosave(); }
 async function startDungeon() {
   R.setMode('dungeon'); setControls('dungeon'); await rebuild(); R.setView(S.x, S.y, S.dir, true); refresh();
 }
@@ -434,6 +440,17 @@ function prompt(kind, e = {}) {
       closeModal(); const ev = Story.choosePoi(S, e.poi, c.id, (sk, dc) => G.partyCheck(S, sk, dc));
       if (ev.consumed) G.setTile(S, S.x, S.y, '.'); handle(ev); rebuild();
     })))], { closable: false });
+    return;
+  }
+  if (kind === 'paywall') {
+    const go = async () => { if (e.then) return e.then(); handle(G.goDown(S)); await startDungeon(); autosave(); };
+    openModal([h('h2', {}, e.cliffhanger ? 'The Stairs Go Deeper…' : 'The Way Is Sealed'),
+      h('p', { class: 'lore' }, e.cliffhanger ? 'Torchlight gutters on the stair below. Something vast breathes in the dark, and it says your names. Skarn was only the doorman.' : 'The deeper levels of the Blackspire are part of the full game.'),
+      h('div', { class: 'paywall' }, h('h3', {}, ENT.PRODUCT.title), h('p', {}, ENT.PRODUCT.blurb), h('p', { class: 'price' }, `${ENT.PRODUCT.price} — no real purchase yet`)),
+      h('div', { class: 'menu' },
+        btn('🔓 Unlock (placeholder)', async () => { ENT.purchase(); closeModal(); log('Full game unlocked (placeholder purchase).', 'sys'); await go(); }, { id: 'btn-unlock', class: 'primary' }),
+        btn('♻ Restore Purchases', async () => { if (ENT.restore()) { closeModal(); log('Purchases restored.', 'sys'); await go(); } else toast('No purchase found on this device'); }, { id: 'btn-restore' }),
+        btn('Not now', closeModal, { id: 'btn-notnow' }))], { closable: false });
     return;
   }
   if (kind === 'chest') {
@@ -564,8 +581,77 @@ function showSpellPicker(c, mode, prev, done) {
   draw();
 }
 
-/* ---------- Map ---------- */
-function showMap() { const cv = h('canvas', { class: 'bigmap', width: 420, height: 420 }); openModal([h('h2', {}, getLevel(S.level).def.name), cv, h('p', { class: 'hint' }, 'Gold: chests · Cyan: stairs down · Red: locked/boss · Purple: messages · Blue: fountain')]); drawMinimap(cv, true); }
+/* ---------- Automap: tap a tile to walk there, drop pins & notes ---------- */
+let mapMode = 'walk', mapIcon = G.Prog.PINS[0], mapNote = '';
+function showMap() {
+  const cv = h('canvas', { class: 'bigmap', id: 'bigmap', width: 420, height: 420 }); const goal = G.Prog.nextGoal(S);
+  const pins = S.pins?.[S.level] || []; const note = h('input', { id: 'pin-note', class: 'pinnote', type: 'text', maxlength: '80', placeholder: 'Note for the pin (optional)', value: mapNote, oninput: (e) => { mapNote = e.target.value; } });
+  const tileAt = (e) => { const r = cv.getBoundingClientRect(); return [Math.floor(((e.clientX - r.left) / r.width) * W), Math.floor(((e.clientY - r.top) / r.height) * H)]; };
+  cv.addEventListener('click', (e) => {
+    const [x, y] = tileAt(e); if (x < 0 || y < 0 || x >= W || y >= H) return;
+    if (mapMode === 'pin') {
+      if (!S.explored[S.level].includes(`${x},${y}`)) { toast('Pins go on explored tiles'); return; }
+      const ex = G.Prog.pinAt(S, x, y); if (ex && ex.icon === mapIcon && ex.note === mapNote.trim()) G.Prog.removePin(S, x, y); else G.Prog.addPin(S, x, y, mapIcon, mapNote.trim());
+      autosave(true); showMap(); return;
+    }
+    const path = G.Prog.findPath(S, x, y, (a, b) => G.tile(S, a, b));
+    if (!path) { toast(x === S.x && y === S.y ? 'You are here' : 'No known route there'); return; }
+    closeModal(); autoWalk(path);
+  });
+  openModal([h('h2', {}, getLevel(S.level).def.name),
+    h('p', { class: 'goal', id: 'map-goal' }, `🎯 ${goal.text}`),
+    cv,
+    h('div', { class: 'seg mapmode', role: 'radiogroup' }, btn('👣 Tap to walk', () => { mapMode = 'walk'; showMap(); }, { id: 'map-walk', class: mapMode === 'walk' ? 'on' : '' }), btn('📍 Pin & notes', () => { mapMode = 'pin'; showMap(); }, { id: 'map-pin', class: mapMode === 'pin' ? 'on' : '' })),
+    mapMode === 'pin' ? h('div', { class: 'pinbar' }, h('div', { class: 'seg' }, G.Prog.PINS.map((p) => btn(p, () => { mapIcon = p; showMap(); }, { class: 'small ' + (p === mapIcon ? 'on' : ''), 'data-pin': p }))), note, h('p', { class: 'hint' }, 'Tap an explored tile to drop a pin (tap it again with the same icon and note to remove).')) : h('p', { class: 'hint' }, 'Tap any explored tile to auto-walk there. The walk stops for anything interesting. Gold: chests · Cyan: stairs down · Red: locked/boss · Purple: messages · Blue: fountain'),
+    pins.length ? h('div', { class: 'pinlist' }, pins.map((p) => h('div', { class: 'row pinrow' }, h('span', { style: 'flex:1' }, `${p.icon} (${p.x},${p.y}) ${p.note || ''}`), btn('Go', () => { const path = G.Prog.findPath(S, p.x, p.y, (a, b) => G.tile(S, a, b)); if (path) { closeModal(); autoWalk(path); } else toast('No known route there'); }, { class: 'small' }), btn('✕', () => { G.Prog.removePin(S, p.x, p.y); autosave(true); showMap(); }, { class: 'small', 'aria-label': 'Remove pin' })))) : null]);
+  drawMinimap(cv, true);
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let walkTok = 0, walking = false;
+async function autoWalk(path) {
+  const tok = ++walkTok; walking = true;
+  try {
+    for (const [nx, ny] of path) {
+      if (tok !== walkTok || !S || S.mode !== 'dungeon' || combat || busy || msgRunning || !modal.classList.contains('hidden')) break;
+      const want = DIRS.findIndex(([dx, dy]) => S.x + dx === nx && S.y + dy === ny); if (want < 0) break;
+      for (let g = 0; S.dir !== want && g < 3; g++) { act(() => G.turn(S, (want - S.dir + 4) % 4 === 3 ? -1 : 1)); await sleep(70); }
+      const px = S.x, py = S.y; act(() => G.move(S, 0)); await sleep(140);
+      if (S.x === px && S.y === py) break;
+    }
+  } finally { if (tok === walkTok) walking = false; }
+}
+for (const t of ['keydown', 'pointerdown']) window.addEventListener(t, () => { if (walking) walkTok++; }, true);
+let toastT = null;
+function toast(msg) { const el = $('#toast'); if (!el) return; el.textContent = msg; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2400); }
+$('#minimap').addEventListener('click', (e) => {
+  if (!S || S.mode !== 'dungeon' || combat || busy || msgRunning || !modal.classList.contains('hidden')) return;
+  const r = e.currentTarget.getBoundingClientRect(); const x = S.x - 6 + Math.floor(((e.clientX - r.left) / r.width) * 13), y = S.y - 6 + Math.floor(((e.clientY - r.top) / r.height) * 13);
+  if (x === S.x && y === S.y) { showMap(); return; }
+  const path = G.Prog.findPath(S, x, y, (a, b) => G.tile(S, a, b)); if (!path) { toast('No known route there'); return; } autoWalk(path);
+});
+$('#minimap').title = 'Tap an explored tile to walk there · tap yourself for the full map';
+$('#skipbtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); skipNow(); });
+$('#speedbtn').addEventListener('click', cycleSpeed);
+
+/* ---------- Easy fights: offer to auto-resolve ---------- */
+const groupNames = (info) => info.groups.map((g) => `${g.count} ${MONSTERS[g.key].name}${g.count > 1 ? 's' : ''}`).join(', ');
+function askTrivial(info) {
+  return new Promise((res) => {
+    openModal([h('h2', {}, 'Easy Pickings'), h('p', { class: 'lore' }, `${groupNames(info)} — hardly a threat to heroes of your strength.`),
+      h('div', { class: 'menu' },
+        btn('⚡ Auto-resolve', () => { closeModal(); res(true); }, { id: 'btn-autores', class: 'primary' }),
+        btn('⚔ Fight it out', () => { closeModal(); res(false); }, { id: 'btn-fightit' }),
+        btn('Always auto-resolve easy fights', () => { const st = loadSettings(); st.trivialFights = 'auto'; saveSettings(st); closeModal(); res(true); }, { id: 'btn-autoalways', class: 'small' }))], { closable: false });
+  });
+}
+async function maybeAutoResolve(info) {
+  if (info.town || !S || S.mode !== 'dungeon' || !G.isTrivial(S, info)) return false;
+  const mode = loadSettings().trivialFights || 'ask'; if (mode === 'off') return false;
+  let go = mode === 'auto'; if (!go) { busy = true; go = await askTrivial(info); busy = false; } if (!go) return false;
+  lootBase = snapLoot(); const r = G.autoResolve(S, info); const ev = r.events; combatStarting = false;
+  if (r.combat.state === 'won') { sfx('chime'); say(banter(S.party, 'victory', {}, 0.5)); const card = lootCard(ev, info); card.text = `⚡ Easy fight — ${groupNames(info)} fall before you.`; log(`${card.text} ${card.lines.join(' · ')}`, 'good'); queueMessage(card); }
+  lootBase = null; renderParty(); handle(ev); autosave(); return true;
+}
 
 /* ---------- Inventory ---------- */
 function inventoryList(redraw, shop = false) {
@@ -617,7 +703,11 @@ function showSheet(c) {
 }
 
 /* ---------- Combat ---------- */
-const wait = (ms) => new Promise((r) => setTimeout(r, ms * speed().f));
+let skipping = false; // the player tapped ⏭ Skip: animations and captions collapse until the next menu / fight
+const wait = (ms) => new Promise((r) => setTimeout(r, skipping ? 0 : ms * speed().f));
+function skipNow() { skipping = true; tapPending?.(); }
+function cycleSpeed() { const ks = Object.keys(BATTLE_SPEEDS); const cur = loadSettings().battleSpeed || 'pause'; setSpeed(ks[(ks.indexOf(cur) + 1) % ks.length]); syncFxSettings(); syncCombatChips(); }
+function syncCombatChips() { const b = $('#speedbtn'); if (b) b.textContent = `⏩ ${speed().short}`; }
 /* ---------- Action captions (large, centered narration of each action) ---------- */
 let capTimer = null;
 function showCaption(e, tapHint = false) {
@@ -825,9 +915,11 @@ async function startCombat(info) {
   if (combat || combatStarting) return;
   combatStarting = true;
   clearAmbientNarration(); // stop delayed DM/area voice and drop pending lore cards
+  takeSuspendSnap(info); skipping = false; syncCombatChips();
   try {
     await messagesDone(); if (combat) { combatStarting = false; return; }
     clearAmbientNarration();
+    if (await maybeAutoResolve(info)) { combatStarting = false; busy = false; suspendSnap = null; return; }
     busy = true;
     await showEncounterBanner(info);
     clearAmbientNarration();
@@ -849,7 +941,7 @@ async function startCombat(info) {
 }
 let looping = false, loopFor = null; // loopFor: the Combat the running loop belongs to
 let loopGen = 0;
-function abandonCombat() { loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
+function abandonCombat() { suspendSnap = null; skipping = false; loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
 async function combatLoop() {
   // A new fight can begin while the previous fight's loop is still unwinding inside endCombat (town/boss paths await the loot card or a
   // rebuild there): the stale `looping` flag used to make this call a no-op, so the new battle never got a turn and no menu appeared.
@@ -874,10 +966,10 @@ async function flushCombat() {
   syncFxSettings(); let pending = null; const wpn = new Map();
   const dmgSfx = (e, sp) => sfx(sp === 'magicMissile' ? 'ping' : SPELL_SFX[e.dtype] || (sp ? 'arcane' : 'hit'));
   const idx = (c) => Math.max(0, S.party.indexOf(c));
-  const fxDur = () => Math.round(420 * ANIM_SLOW * Math.max(0.4, speed().f)); // bolts / bursts / strikes ≈1.5x longer; scales with battle speed
+  const fxDur = () => skipping ? 40 : Math.round(420 * ANIM_SLOW * Math.max(0.4, speed().f)); // bolts / bursts / strikes ≈1.5x longer; scales with battle speed
   for (const e of events) {
     if (!combat || !S) return;
-    if (e.type === 'caption') { pending = null; renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0); if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
+    if (e.type === 'caption') { pending = null; renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0 && !skipping); if (skipping) await new Promise((r) => setTimeout(r, 120)); else if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
     if (e.type === 'monsterAttack') { pending = null; R.monsterAttack(e.who.id); sfx('swing'); await wait(560 * ANIM_SLOW); }
     else if (e.type === 'partyAttack') { pending = null; const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait((k === 'bow' || k === 'crossbow' ? 60 : 150) * ANIM_SLOW); }
     else if (e.type === 'hit' && e.tgt.side === 'monster') {
@@ -931,7 +1023,7 @@ function chooseFrom(title, options) {
     modal._resolve = done; modal._options = options;
   });
 }
-function endCombatUI() { curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
+function endCombatUI() { skipping = false; curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
 function combatKey(e) {
   const n = parseInt(e.key, 10); if (!modal._options) return;
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
@@ -969,7 +1061,7 @@ async function pickTarget(kind, c) {
   return true;
 }
 async function playerTurn() {
-  const c = combat.current();
+  const c = combat.current(); if (!autoBattle) skipping = false;
   while (combat && combat.state === 'running' && combat.current() === c && !combat.turn.done) {
     renderParty();
     const acts = combat.actionsFor(c);
@@ -1068,6 +1160,7 @@ async function endCombat() {
     const card = lootCard(ev, info); log(`${card.text} ${card.lines.join(' · ')}`, 'good'); queueMessage(card);
   } lootBase = null;
   if (info.town) { handle(ev.filter((e) => !e.toTown)); if (st === 'lost') for (const c of S.party) if (!c.dead) c.hp = Math.max(1, c.hp); await messagesDone(); await afterPrologueFight(); return; }
+  suspendSnap = null;
   if (st === 'lost') { handle(ev); return; }
   if (info.boss) await rebuild();
   if (!combat) R.setMode('dungeon'); // a fight that began during the rebuild keeps its arena on screen
@@ -1077,13 +1170,22 @@ async function endCombat() {
 }
 
 /* ---------- Save/load ---------- */
-function autosave() { if (!S || combat) return; try { S.savedAt = Date.now(); writeSave(G.SAVE_KEY, G.serialize(S)); } catch (e) { log('Save failed: ' + e.message, 'bad'); } }
+function autosave(quiet = false) { if (!S || combat) return; try { S.savedAt = Date.now(); writeSave(G.SAVE_KEY, G.serialize(S)); } catch (e) { if (!quiet) log('Save failed: ' + e.message, 'bad'); } }
+/** Suspend anywhere: when the app is hidden or closed, save now. Mid-fight the pre-fight snapshot is saved, flagged to resume that fight. */
+let suspendSnap = null;
+function suspendSave() { if (!S) return; if (combat) { if (suspendSnap) { try { writeSave(G.SAVE_KEY, suspendSnap); } catch { /* ignore */ } } return; } if (!busy) autosave(true); }
+function takeSuspendSnap(info) { suspendSnap = null; if (!S || info.town) return; try { const snap = JSON.parse(G.serialize(S)); snap.savedAt = Date.now(); snap.resumeCombat = info; suspendSnap = JSON.stringify(snap); } catch { /* ignore */ } }
+document.addEventListener('visibilitychange', () => { if (document.hidden) suspendSave(); });
+window.addEventListener('pagehide', suspendSave);
 async function loadGame(key = G.SAVE_KEY) {
   const got = readSave(key); if (!got) { log('No saved game.', 'bad'); return; }
   try { S = G.deserialize(got.raw); } catch { log('Save is corrupted and no backup could be read.', 'bad'); return; }
   if (got.recovered) log('⚠ That save was damaged — restored it from its automatic backup copy.', 'crit');
   abandonCombat(); closeModal(); closeMenu(); updateMenuBtn(); log('Game loaded.', 'sys');
+  const resume = S.resumeCombat; delete S.resumeCombat;
+  if (S.mode === 'dungeon' && G.Prog && ENT.isLevelLocked(S.level)) { S.mode = 'town'; S.level = 0; }
   if (S.mode === 'dungeon') await startDungeon(); else showTown();
+  if (resume && S.mode === 'dungeon') { log('You pick up right where you left off — the fight resumes.', 'sys'); startCombat(resume); }
 }
 
 
@@ -1096,7 +1198,7 @@ async function boot() {
   window.__gw = { sfx, SFX_NAMES, applyAudioSettings,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
-    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
@@ -1184,7 +1286,10 @@ function openMenu(view = 'main', custom = null) {
       h('div', { class: 'menu' }, btn('🎺 Test victory music', () => { if (!st.sound) { st.sound = true; saveSettings(st); applyAudioSettings(st); } try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ } testVictoryMusic(); }, { id: 'set-test-victory' })),
       h('h3', {}, 'Battle speed'),
       h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'pause') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'pause') === k) }))),
-      h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action.'),
+      h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action. In a fight, ⏩ cycles the speed and ⏭ Skip fast-forwards the animations.'),
+      h('h3', {}, 'Easy fights'),
+      h('div', { class: 'seg', role: 'radiogroup' }, [['ask', 'Ask me'], ['auto', 'Auto-resolve'], ['off', 'Always fight']].map(([k, l]) => btn(l, () => { st.trivialFights = k; saveSettings(st); openMenu('settings'); }, { class: (st.trivialFights || 'ask') === k ? 'on' : '', 'data-trivial': k, role: 'radio' }))),
+      h('p', { class: 'hint' }, 'When the party is far stronger than the foes, you can resolve the fight instantly (it still pays XP and loot).'),
       S ? h('h3', {}, 'Difficulty') : null,
       S ? h('div', { class: 'seg', role: 'radiogroup' }, Object.keys(DIFFICULTY).map((k) => btn(DIFF_LABEL[k], () => { S.difficulty = k; if (combat) combat.setDifficulty?.(k); autosave(); log(`Difficulty: ${DIFF_LABEL[k]}.`, 'sys'); openMenu('settings'); }, { class: (S.difficulty || 'normal') === k ? 'on' : '', 'data-diff': k, role: 'radio', 'aria-checked': String((S.difficulty || 'normal') === k) }))) : null,
       S ? h('p', { class: 'hint' }, DIFF_HELP[S.difficulty || 'normal']) : null,
@@ -1192,6 +1297,10 @@ function openMenu(view = 'main', custom = null) {
       h('div', { class: 'menu' }, btn(`🕯 Area descriptions: ${st.areaDesc !== false ? 'On' : 'Off'}`, () => { st.areaDesc = st.areaDesc === false; saveSettings(st); openMenu('settings'); }, { id: 'set-areadesc' }),
         btn(`🌀 Reduce motion: ${reduceMotion() ? 'On' : 'Off'}`, () => { st.reduceMotion = !reduceMotion(); saveSettings(st); syncFxSettings(); openMenu('settings'); }, { id: 'set-reducemotion' })),
       h('p', { class: 'hint' }, 'A Dungeon Master reads out each new floor, room and town spot the first time you arrive. Off: they only go to the log.'),
+      h('h3', {}, 'Full game'),
+      h('div', { class: 'menu' }, btn('♻ Restore Purchases', () => { log(ENT.restore() ? 'Purchases restored.' : (ENT.paywallActive() ? 'No purchase found on this device.' : 'Nothing to restore — this build is fully unlocked.'), 'sys'); }, { id: 'set-restore' }),
+        btn(`🧪 Dev: free-version paywall ${ENT.paywallActive() ? 'On' : 'Off'}`, () => { ENT.setPaywallDev(!ENT.paywallActive()); if (!ENT.paywallActive()) ENT.resetEntitlement(); openMenu('settings'); }, { id: 'set-paywall' })),
+      h('p', { class: 'hint' }, 'The web build is unlocked. The paywall switch simulates the free version (B1 free, B2–B5 behind one unlock) for testing.'),
       h('h3', {}, 'Help'),
       h('div', { class: 'menu' }, btn('💡 Show the tutorial tips again', () => { st.tutorialDone = false; saveSettings(st); closeMenu(); startTutorial(); }, { id: 'set-tutorial' }),
         btn('← Back', () => openMenu('main'), { class: 'menuback' }))];

@@ -63,8 +63,9 @@ export class Combat {
       this.state = 'won';
       const alive = this.party.filter((c) => !c.dead);
       const share = Math.floor(this.xp / Math.max(1, alive.length));
-      for (const c of alive) c.xp += share;
-      this.say(`Victory! Each survivor earns ${share} XP. Found ${this.gold} gold.`, 'good');
+      let xpText = `Each survivor earns ${share} XP.`;
+      if (this.story.xpAward) xpText = this.story.xpAward(share, alive).text; else for (const c of alive) c.xp += share;
+      this.say(`Victory! ${xpText} Found ${this.gold} gold.`, 'good');
       this.emit({ type: 'victory' });
       this.endCleanup();
       return true;
