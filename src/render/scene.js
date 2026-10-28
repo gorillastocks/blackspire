@@ -213,10 +213,10 @@ export class Renderer {
   shimmerTex() {
     if (this._shTex) return this._shTex;
     const c = document.createElement('canvas'); c.width = 64; c.height = 128; const g = c.getContext('2d');
-    const gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, 'rgba(255,226,122,0)'); gr.addColorStop(0.5, 'rgba(255,226,122,0.55)'); gr.addColorStop(1, 'rgba(255,226,122,0)');
+    const gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, 'rgba(255,226,122,0)'); gr.addColorStop(0.5, 'rgba(255,190,80,0.4)'); gr.addColorStop(1, 'rgba(255,226,122,0)');
     g.fillStyle = gr; g.fillRect(0, 0, 64, 128);
-    g.strokeStyle = 'rgba(255,240,170,0.9)'; g.lineWidth = 2; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(4 + i * 13, 128); g.lineTo(14 + i * 13, 0); g.stroke(); }
-    g.fillStyle = 'rgba(255,248,200,0.95)'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center'; g.fillText('?', 32, 76);
+    g.strokeStyle = 'rgba(255,215,130,0.7)'; g.lineWidth = 2; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(4 + i * 13, 128); g.lineTo(14 + i * 13, 0); g.stroke(); }
+    g.fillStyle = 'rgba(255,240,190,0.85)'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center'; g.fillText('?', 32, 76);
     const tx = new THREE.CanvasTexture(c); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; this._shTex = tx; return tx;
   }
   iconSprite(ch, color, size = 0.75) {
@@ -232,7 +232,7 @@ export class Renderer {
     for (const [x, y] of suspects) {
       const k = `${x},${y}`; if (this.shimmerObjs.has(k)) continue;
       const grp = new THREE.Group(); grp.position.set(x * CELL, 0, y * CELL);
-      const mat = new THREE.MeshBasicMaterial({ map: this.shimmerTex(), transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
+      const mat = new THREE.MeshBasicMaterial({ map: this.shimmerTex(), transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
       for (const [d, [dx, dy]] of DIRS.entries()) {
         const n = tileFn(x + dx, y + dy); if (n === '#' || n === 'S' || x + dx < 0 || y + dy < 0 || x + dx >= W || y + dy >= H) continue;
         const pl = new THREE.Mesh(new THREE.PlaneGeometry(CELL * 0.96, WALL_H * 0.96), mat); pl.position.set(dx * (CELL / 2 + 0.03), WALL_H / 2, dy * (CELL / 2 + 0.03)); pl.rotation.y = Math.atan2(dx, dy); grp.add(pl);
@@ -481,7 +481,7 @@ export class Renderer {
     for (const [i, l] of (this.torches || []).entries()) l.intensity = 5 + Math.sin(t * 9 + i) * 1.2;
     for (const a of this.animated || []) { a.obj.rotation[a.bob ? 'y' : 'z'] += dt * a.spin; if (a.bob) a.obj.position.y += Math.sin(t * 2) * 0.002; }
     this.dust.rotation.y = Math.sin(t * 0.05) * 0.02;
-    for (const o of this.shimmerObjs?.values() || []) { o.mat.opacity = 0.45 + Math.sin(t * 2.4) * 0.22; this._shTex.offset.y = (t * 0.15) % 1; }
+    for (const o of this.shimmerObjs?.values() || []) { o.mat.opacity = 0.3 + Math.sin(t * 2.4) * 0.14; this._shTex.offset.y = (t * 0.15) % 1; }
     for (const o of this.eliteObjs?.values() || []) {
       const hp = o.holder.position; o.prev.copy(hp); hp.lerp(o.target, 1 - Math.pow(0.04, dt));
       const mx = hp.x - o.prev.x, mz = hp.z - o.prev.z; if (mx * mx + mz * mz > 1e-6) { const yaw = Math.atan2(mx, mz); let d = yaw - o.heading; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; o.heading += d * Math.min(1, dt * 8); o.holder.rotation.y = o.heading; }
