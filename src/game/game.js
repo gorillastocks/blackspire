@@ -334,10 +334,10 @@ export function openChest(s, skipTrap = false) {
   const n = 1 + (rand() < 0.5 ? 1 : 0); const items = [];
   for (let i = 0; i < n; i++) { const it = pick(def.loot.items); s.inventory.push(it); items.push(it); if (ITEMS[it].spoon) s.spoons++; }
   setTile(s, s.x, s.y, 'o');
-  if (rand() < 0.07 + 0.03 * s.level) out.push(...grantRare(s, rollTier(s.level, 'chest'), 'chest'));
   out.push({ log: `The chest holds ${gold} gold and: ${items.map((i) => ITEMS[i].name).join(', ')}.`, cls: 'good', sfx: 'chest' }, ...Prog.discover(s, 'chest', `${s.x},${s.y}`, 'chest opened'));
   const spoon = items.some((i) => ITEMS[i].spoon);
   out.push({ banter: banter(s.party, spoon ? 'spoon' : 'loot', {}, spoon ? 1 : 0.7) });
+  if (rand() < 0.07 + 0.03 * s.level) out.push(...grantRare(s, rollTier(s.level, 'chest'), 'chest')); // after the chest card, so the reveal follows it
   return out;
 }
 
