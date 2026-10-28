@@ -91,7 +91,7 @@ export function decorate(L) {
   // 3) Elites: guards stand at the mouth of a treasure dead end; patrols pace a straight corridor.
   const want = ELITES[idx].slice(0, idx < 2 ? 2 : 3);
   const blockedOk = (cells) => {
-    const u = [...t]; for (const [x, y] of cells) set(u, x, y, '#');
+    const u = [...t]; for (const [x, y] of cells) set(u, x, y, '#'); for (const e of elites) for (const [x, y] of e.path) set(u, x, y, '#'); // every elite at once, so no combination can seal the way
     const d = bfs(u, start[0], start[1], (c) => c !== '#' && c !== 'B');
     const d2 = bfs(u, start[0], start[1], (c) => c !== '#');
     return d[keyCell[1]][keyCell[0]] > 0 && d2[boss[1]][boss[0]] > 0 && d2[exit[1]][exit[0]] > 0;
