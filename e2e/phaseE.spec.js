@@ -134,3 +134,61 @@ test('outdoor: shots of the arch entrance and the combat menu on this device', a
   await page.locator('#cmenu .combatmenu button', { hasText: 'More' }).click(); await page.waitForTimeout(400); await shot(page, { path: `/workspace/shots/phaseE-menu-more-${P}.png` });
   expect(okErr(errors)).toEqual([]);
 });
+
+/* ---------------- Part 3: the hero's turn portrait persists for the whole turn ---------------- */
+test('turn portrait: shows when the hero\'s turn starts, stays through menu, strike and result, never covers monsters or the menu, survives Skip', async ({ page }, info) => {
+  test.setTimeout(400000); const errors = trackErrors(page); const P = info.project.name;
+  await newGame(page); await setSpeed(page, 'slow');
+  await start(page, [{ key: 'giantRat', count: 2 }, { key: 'wolf', count: 1 }], 'for (const c of S.party) c.ai = true; S.party[0].ai = false;');
+  await expect(page.locator('#cmenu .combatmenu')).toBeVisible({ timeout: 90000 });
+  await page.waitForFunction(() => window.__gw.combat.current() === window.__gw.state.party[0], null, { timeout: 90000 });
+  const hero = await page.evaluate(() => window.__gw.state.party[0].name);
+  // 1) while the player is choosing, the portrait is up with the hero's name
+  const tp = page.locator('#turnport'); await expect(tp).toHaveClass(/\bon\b/); await expect(tp).toHaveClass(/\bin\b/); await expect(tp).toHaveAttribute('data-who', hero);
+  await expect(tp.locator('.tp-name b')).toHaveText(hero); await expect(tp.locator('.tp-img')).toBeVisible();
+  await page.waitForFunction(() => { const t = document.querySelector('#turnport'); return getComputedStyle(t).transform === 'none' && !t.getAnimations().some((a) => a.transitionProperty); }, null, { timeout: 30000 }); // the slide-in has finished, even on a slow software-GL run
+  const geo = await page.evaluate(() => { const g = window.__gw, r = (e) => { const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height }; };
+    const view = document.querySelector('#view').getBoundingClientRect(), port = r(document.querySelector('#turnport .tp-port')), nm = r(document.querySelector('#turnport .tp-name'));
+    const menu = document.querySelector('#cmenu').getBoundingClientRect(), side = document.querySelector('#side').getBoundingClientRect(); const party = document.querySelector('#party').getBoundingClientRect();
+    const mons = g.combat.monsters.filter((m) => m.hp > 0).map((m) => { const p = g.R.screenPos(m.id); return p ? { id: m.id, x: view.x + p.x / 100 * view.width, y: view.y + p.y / 100 * view.height } : null; }).filter(Boolean);
+    return { view: { x: view.x, y: view.y, w: view.width, h: view.height, b: view.bottom }, port, nm, menu: { x: menu.x, y: menu.y, r: menu.right, b: menu.bottom }, partyTop: Math.min(side.top, party.top), mons }; });
+  console.log(P, 'turn portrait geo', JSON.stringify({ port: geo.port, view: geo.view, menu: geo.menu, partyTop: geo.partyTop, mons: geo.mons.length }));
+  expect(geo.port.x).toBeGreaterThanOrEqual(geo.view.x); expect(geo.port.x + geo.port.w).toBeLessThanOrEqual(geo.view.x + geo.view.w * 0.4);
+  expect(geo.port.y + geo.port.h).toBeLessThanOrEqual(geo.view.b + 1); expect(geo.port.y).toBeGreaterThan(geo.view.y + geo.view.h * 0.35); // anchored low in the arena
+  expect(geo.nm.x).toBeGreaterThanOrEqual(0); expect(geo.nm.x + geo.nm.w).toBeLessThanOrEqual(geo.view.x + geo.view.w);
+  expect(geo.port.y + geo.port.h, 'above the party cards or at the view edge').toBeLessThanOrEqual(Math.max(geo.partyTop, geo.view.b) + 1);
+  const hitsMenu = !(geo.port.x + geo.port.w <= geo.menu.x || geo.port.x >= geo.menu.r || geo.port.y + geo.port.h <= geo.menu.y || geo.port.y >= geo.menu.b); expect(hitsMenu, 'portrait does not cover the action menu').toBe(false);
+  for (const m of geo.mons) { const inside = m.x >= geo.port.x - 4 && m.x <= geo.port.x + geo.port.w + 4 && m.y >= geo.port.y - 4 && m.y <= geo.port.y + geo.port.h + 4; expect(inside, `monster ${m.id} is not under the portrait`).toBe(false); }
+  await shot(page, { path: `/workspace/shots/phaseE-turn-portrait-menu-${P}.png` });
+  // 2) sample the portrait through the action
+  await page.evaluate(() => { window.__samples = []; window.__sampler = setInterval(() => { const e = document.querySelector('#turnport'); window.__samples.push({ t: performance.now(), on: e.classList.contains('on') && !e.classList.contains('out'), who: e.dataset.who || '', strike: e.classList.contains('strike'), menu: !!document.querySelector('#cmenu .combatmenu') }); }, 25); });
+  await page.locator('#cmenu .combatmenu button', { hasText: /^1\. Attack|^1\. Shoot|^1\. Cast/ }).first().click();
+  const pick = page.locator('#targets .mtag.pick').first(); if (await pick.waitFor({ timeout: 4000 }).then(() => true).catch(() => false)) await pick.click();
+  await expect(tp).toHaveClass(/\bstrike\b/, { timeout: 30000 });
+  await page.evaluate(() => { window.__paused = []; for (const a of document.getAnimations()) { if (!a.effect?.target?.closest?.('#turnport')) continue; const t = a.effect.getComputedTiming(); if (a.animationName === 'tpGlow') continue; a.pause(); a.currentTime = (t.delay || 0) + t.duration * 0.45; window.__paused.push(a); } });
+  await shot(page, { path: `/workspace/shots/phaseE-turn-portrait-strike-${P}.png` });
+  await page.evaluate(() => { for (const a of window.__paused) a.play(); });
+  // the strike is over but it is still the hero's turn (End Turn is on the menu): the portrait stays
+  const endBtn = page.locator('#cmenu .combatmenu button', { hasText: 'End Turn' }); await expect(endBtn).toBeVisible({ timeout: 120000 }); await page.waitForTimeout(600);
+  await expect(tp).toHaveAttribute('data-who', hero); await expect(tp).toHaveClass(/\bon\b/); await expect(tp).not.toHaveClass(/\bstrike\b/);
+  await shot(page, { path: `/workspace/shots/phaseE-turn-portrait-result-${P}.png` });
+  await endBtn.click(); // the next actor's turn begins -> the portrait slides away or changes
+  await expect.poll(() => page.evaluate(() => { const s = window.__samples; const l = s[s.length - 1]; return !(l.on && l.who === window.__gw.state.party[0].name); }), { timeout: 120000 }).toBe(true);
+  const rep = await page.evaluate((hero) => { clearInterval(window.__sampler); const s = window.__samples; const lastStrike = s.map((x) => x.strike).lastIndexOf(true); const gone = s.findIndex((x, i) => i > lastStrike && !(x.on && x.who === hero));
+    return { n: s.length, menuOn: s.some((x) => x.menu && x.on && x.who === hero), strikeOn: s.some((x) => x.strike && x.on && x.who === hero), lastStrike, gone, offBeforeStrikeEnd: s.slice(0, lastStrike + 1).some((x) => !(x.on && x.who === hero)) }; }, hero);
+  console.log(P, 'turn portrait samples', JSON.stringify(rep));
+  expect(rep.menuOn).toBe(true); expect(rep.strikeOn).toBe(true); expect(rep.offBeforeStrikeEnd, 'portrait never drops before the strike ends').toBe(false); expect(rep.gone).toBeGreaterThan(rep.lastStrike);
+  // 3) Skip and 2x: effects shorten, the portrait still shows for the whole turn
+  await setSpeed(page, 'double');
+  await page.waitForFunction(() => window.__gw.combat.current() === window.__gw.state.party[0] && window.__gw.combat.needsInput(), null, { timeout: 120000 });
+  await expect(tp).toHaveAttribute('data-who', hero); await expect(page.locator('#cmenu .combatmenu')).toBeVisible();
+  await page.evaluate(() => { window.__s2 = []; window.__sam2 = setInterval(() => { const e = document.querySelector('#turnport'); window.__s2.push({ on: e.classList.contains('on') && !e.classList.contains('out'), who: e.dataset.who || '', cur: window.__gw.combat?.current() === window.__gw.state.party[0] }); }, 25); });
+  await page.locator('#cmenu .combatmenu button', { hasText: /^1\. Attack|^1\. Shoot|^1\. Cast/ }).first().click();
+  if (await pick.waitFor({ timeout: 3000 }).then(() => true).catch(() => false)) await pick.click();
+  await page.locator('#skipbtn').click({ timeout: 5000 }).catch(() => {});
+  await expect(endBtn).toBeVisible({ timeout: 120000 }); await page.waitForTimeout(400); await expect(tp).toHaveClass(/\bon\b/); await endBtn.click();
+  await expect.poll(() => page.evaluate(() => { const s = window.__s2; return s.length > 5 && !s[s.length - 1].cur; }), { timeout: 120000 }).toBe(true);
+  const sk = await page.evaluate((hero) => { clearInterval(window.__sam2); const s = window.__s2.filter((x) => x.cur); return { n: s.length, allOn: s.every((x) => x.on && x.who === hero) }; }, hero);
+  console.log(P, 'skip samples', JSON.stringify(sk)); expect(sk.n).toBeGreaterThan(3); expect(sk.allOn, 'portrait shows for the whole turn with Skip / 2x').toBe(true);
+  expect(okErr(errors)).toEqual([]);
+});

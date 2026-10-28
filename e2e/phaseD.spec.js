@@ -15,16 +15,16 @@ test('cut-ins: four variants, readable, finish on their own, and 2x is faster th
   ];
   for (const [kind, extra, who] of variants) {
     await page.evaluate(([kind, extra, who]) => { const g = window.__gw; window.__cut = g.playCutin({ kind, who: g.state.party[who], hold: 6000, ...extra }); }, [kind, extra, who]);
-    await expect(page.locator('#cutin.on.strike')).toBeAttached({ timeout: 5000 });
+    await expect(page.locator('#turnport.on.strike')).toBeAttached({ timeout: 5000 });
     // freeze the strike effect halfway so the screenshot shows the slash / arrow / rings / plus signs mid-flight
-    await expect.poll(() => page.locator('#cutin .ci-band').boundingBox().then((b) => b.width), { timeout: 5000 }).toBeGreaterThan(page.viewportSize().width * 0.8);
-    await page.evaluate(() => { for (const a of document.getAnimations()) { if (!a.effect?.target?.closest?.('#cutin')) continue; const t = a.effect.getComputedTiming(); a.pause(); a.currentTime = (t.delay || 0) + t.duration * 0.45; } });
-    await expect(page.locator(`#cutin[data-kind="${kind}"] .ci-txt b`)).toBeVisible();
-    const box = await page.locator('#cutin .ci-band').boundingBox(); const vp = page.viewportSize();
-    expect(box.height).toBeGreaterThan(40); expect(box.width).toBeGreaterThan(vp.width * 0.8);
-    const txt = await page.locator('#cutin .ci-txt').boundingBox(); expect(txt.x).toBeGreaterThanOrEqual(0); expect(txt.x + txt.width).toBeLessThanOrEqual(vp.width);
+    await expect.poll(() => page.locator('#turnport .tp-port').boundingBox().then((b) => b.width), { timeout: 5000 }).toBeGreaterThan(40);
+    await page.evaluate(() => { for (const a of document.getAnimations()) { if (!a.effect?.target?.closest?.('#turnport')) continue; const t = a.effect.getComputedTiming(); a.pause(); a.currentTime = (t.delay || 0) + t.duration * 0.45; } });
+    await expect(page.locator(`#turnport[data-kind="${kind}"] .tp-name b`)).toBeVisible();
+    const box = await page.locator('#turnport .tp-port').boundingBox(); const vp = page.viewportSize(); const nm = await page.locator('#turnport .tp-name').boundingBox();
+    expect(box.height).toBeGreaterThan(40); expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(vp.width * 0.4);
+    expect(nm.x).toBeGreaterThanOrEqual(0); expect(nm.x + nm.width).toBeLessThanOrEqual(vp.width);
     await shot(page, { path: `/workspace/shots/phaseD-cutin-${kind}-${info.project.name}.png` });
-    await page.evaluate(() => { window.__gw.endCutinPhase(); return window.__cut; }); await expect(page.locator('#cutin.on')).toHaveCount(0);
+    await page.evaluate(() => { window.__gw.endCutinPhase(); return window.__cut; }); await expect(page.locator('#turnport.strike')).toHaveCount(0); await expect(page.locator('#turnport.on')).toHaveCount(1); // effects end, the portrait stays
   }
   // timing follows battle speed
   const time = async (k) => { await setSpeed(page, k); return page.evaluate(async () => { const g = window.__gw; const t0 = performance.now(); await g.playCutin({ kind: 'melee', who: g.state.party[0], id: 'attack', weapon: 'longsword' }); return performance.now() - t0; }); };
@@ -33,7 +33,7 @@ test('cut-ins: four variants, readable, finish on their own, and 2x is faster th
   // Skip cancels a running cut-in at once
   await setSpeed(page, 'slow');
   const skipped = await page.evaluate(async () => { const g = window.__gw; const t0 = performance.now(); const p = g.playCutin({ kind: 'spell', who: g.state.party[0], id: 'cast', spell: 'fireBolt' }); await new Promise((r) => setTimeout(r, 120)); document.querySelector('#skipbtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); await p; return performance.now() - t0; });
-  expect(skipped).toBeLessThan(500); await expect(page.locator('#cutin.on')).toHaveCount(0);
+  expect(skipped).toBeLessThan(500); await expect(page.locator('#turnport.strike')).toHaveCount(0); await expect(page.locator('#turnport.on')).toHaveCount(1);
   expect(okErr(errors)).toEqual([]);
 });
 
@@ -43,11 +43,11 @@ test('a real attack plays the cut-in before the hit, and Skip leaves none behind
   await start(page, [{ key: 'giantRat', count: 1 }], 'for (const c of S.party) c.ai = true; S.party[0].ai = false;');
   await expect(page.locator('#cmenu .combatmenu')).toBeVisible({ timeout: 60000 });
   // watch for the overlay appearing from now on
-  await page.evaluate(() => { window.__seen = []; new MutationObserver(() => { const e = document.querySelector('#cutin'); if (e.classList.contains('on') && !window.__seen.includes(e.dataset.kind + ':' + e.dataset.who)) window.__seen.push(e.dataset.kind + ':' + e.dataset.who); }).observe(document.querySelector('#cutin'), { attributes: true }); });
+  await page.evaluate(() => { window.__seen = []; new MutationObserver(() => { const e = document.querySelector('#turnport'); if (e.classList.contains('strike') && !window.__seen.includes(e.dataset.kind + ':' + e.dataset.who)) window.__seen.push(e.dataset.kind + ':' + e.dataset.who); }).observe(document.querySelector('#turnport'), { attributes: true }); });
   await page.locator('#cmenu .combatmenu button', { hasText: /^1\. Attack|^1\. Shoot|^1\. Cast/ }).first().click();
   await expect.poll(() => page.evaluate(() => window.__seen.length), { timeout: 20000 }).toBeGreaterThan(0);
   const who = await page.evaluate(() => window.__gw.state.party[0].name); expect((await page.evaluate(() => window.__seen)).some((s) => s.endsWith(':' + who))).toBe(true);
-  await page.locator('#skipbtn').click(); await page.waitForTimeout(400); await expect(page.locator('#cutin.on')).toHaveCount(0);
+  await page.locator('#skipbtn').click(); await page.waitForTimeout(400); await expect(page.locator('#turnport.strike')).toHaveCount(0);
   expect(okErr(errors)).toEqual([]);
 });
 
@@ -84,9 +84,9 @@ test('condition icons with tooltips on heroes and monsters, weakness chips after
   await page.evaluate(() => { const cb = window.__gw.combat; const P = window.__gw.state.party; P[0].conditions.poisoned = true; P[1].conditions.frightened = true; P[1].conditions.blessed = {}; P[2].conditions.restrained = { dc: 12, src: 'x' }; P[3].conditions.prone = true; cb.monsters[0].conditions.prone = true; cb.monsters[1].conditions.restrained = { dc: 12, src: 'x' }; cb.learn(cb.monsters[0], 'fire'); cb.learn(cb.monsters[1], 'poison'); window.__gw.renderCombatUI(); });
   for (const k of ['poisoned', 'frightened', 'restrained', 'prone']) { const chip = page.locator(`#party .cchip[data-cond="${k}"]`).first(); await expect(chip).toBeVisible(); const t = await chip.getAttribute('title'); expect(t.length).toBeGreaterThan(20); await expect(chip).toHaveAttribute('aria-label', /\w+/); }
   await expect(page.locator('#party .cchip.good[data-cond="blessed"]').first()).toBeVisible();
-  await expect(page.locator('#targets .cchip[data-cond="prone"]')).toBeVisible();
-  await expect(page.locator('#targets .wchip.vuln[data-trait="vuln:fire"]')).toBeVisible();
-  await expect(page.locator('#targets .wchip.resist[data-trait="resist:poison"]')).toBeVisible();
+  await expect(page.locator('#targets .cchip[data-cond="prone"]').first()).toBeVisible();
+  await expect(page.locator('#targets .wchip.vuln[data-trait="vuln:fire"]').first()).toBeVisible();
+  await expect(page.locator('#targets .wchip.resist[data-trait="resist:poison"]').first()).toBeVisible();
   const wt = await page.locator('#targets .wchip.vuln').first().getAttribute('title'); expect(wt).toMatch(/Weak to fire.*double/i);
   await shot(page, { path: `/workspace/shots/phaseD-conditions-${info.project.name}.png` });
   // Study: the menu offers it, and it reveals the rest
