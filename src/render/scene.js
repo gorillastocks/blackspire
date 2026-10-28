@@ -1,7 +1,7 @@
 // Three.js renderer: neon-wireframe-era dungeon in modern PBR 3D, plus a combat arena with animated glTF monsters.
-import { ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, TorusGeometry, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, HalfFloatType } from 'three';
+import { ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, Sprite, SpriteMaterial, TorusGeometry, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, HalfFloatType } from 'three';
 import { FX, SPELL_FX, IMPACT } from './fx.js';
-const THREE = { WebGLRenderTarget, HalfFloatType, ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, TorusGeometry, Vector2, Vector3, WebGLRenderer };
+const THREE = { WebGLRenderTarget, HalfFloatType, ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, Sprite, SpriteMaterial, TorusGeometry, Vector2, Vector3, WebGLRenderer };
 // three.js addons are lazy-loaded (separate chunks) so the first paint only needs three core.
 let SkeletonUtils = null;
 let loaderP = null;
@@ -60,6 +60,7 @@ export class Renderer {
     this.torch = new THREE.PointLight(0xffb36b, 30, 14, 1.6); this.torch.position.set(0.25, 0.2, 0.1); this.camera.add(this.torch);
     this.scene.add(new THREE.HemisphereLight(0x6c7cff, 0x221122, 0.35));
     this.levelGroup = new THREE.Group(); this.scene.add(this.levelGroup);
+    this.dyn = new THREE.Group(); this.scene.add(this.dyn); this.eliteObjs = new Map(); this.shimmerObjs = new Map(); // Phase B: moving elites and wall shimmers live outside the static level
     this.wallMat = new THREE.MeshStandardMaterial({ map: stoneTex(), roughness: 0.85, metalness: 0.05, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
     this.floorMat = new THREE.MeshStandardMaterial({ map: floorTex(), roughness: 0.7, metalness: 0.1 });
     this.ceilMat = new THREE.MeshStandardMaterial({ map: stoneTex(), roughness: 0.95, color: 0x5a5470 });
@@ -104,7 +105,7 @@ export class Renderer {
 
   /* ---------- Dungeon ---------- */
   async buildLevel(s, tileFn, def) {
-    const grp = this.levelGroup; grp.clear(); this.torches = []; this.animated = [];
+    const grp = this.levelGroup; grp.clear(); this.torches = []; this.animated = []; this.clearDynamic();
     const color = new THREE.Color(def.color);
     this.scene.fog = new THREE.FogExp2(def.fog, 0.075); this.scene.background = new THREE.Color(def.fog);
     this.edgeMat = new THREE.LineBasicMaterial({ color: color.clone().multiplyScalar(0.8), toneMapped: false, fog: false }); // steady: opaque, no fog fade, kept under the bloom threshold so it doesn't pump
@@ -183,6 +184,11 @@ export class Renderer {
         const rune = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.3, 5), glow(0xb060ff, 2.5)); rune.rotation.x = -Math.PI / 2; add(rune, 0.03); this.animated.push({ obj: rune, spin: 0.6 });
       } else if (ch === 'Q') {
         const orb = new THREE.Mesh(new THREE.OctahedronGeometry(0.16), glow(0xffd77a, 3.5)); add(orb, 1.1); this.animated.push({ obj: orb, spin: 1.2, bob: true });
+      } else if (ch === 'N') {
+        const slab = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.2, 0.18), this.wallMat); add(slab, 0.6);
+        const rune = new THREE.Mesh(new THREE.RingGeometry(0.18, 0.28, 6), glow(0xffd77a, 3)); rune.position.set(0, 0.8, 0.1); slab.add(rune); this.animated.push({ obj: rune, spin: 0.9 });
+        const pl = new THREE.PointLight(0xffd77a, 3, 4, 2); pl.position.set(0, 1.2, 0.4); slab.add(pl);
+        const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.7, 24), glow(0xffd77a, 2)); ring.rotation.x = -Math.PI / 2; add(ring, 0.03); this.animated.push({ obj: ring, spin: 0.4 });
       } else if (ch === 't') {
         const xg = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.12), glow(0xff3030, 1.5)); xg.rotation.set(-Math.PI / 2, 0, Math.PI / 4); add(xg, 0.02);
         const xg2 = xg.clone(); xg2.rotation.z = -Math.PI / 4; add(xg2, 0.02);
@@ -198,6 +204,68 @@ export class Renderer {
         }
       }
     }
+  }
+  /* ---------- Phase B: wall shimmers and telegraphed elites ---------- */
+  clearDynamic() {
+    for (const o of this.eliteObjs?.values() || []) { if (o.mixer) this.mixers = this.mixers.filter((m) => m !== o.mixer); }
+    this.dyn?.clear(); this.eliteObjs = new Map(); this.shimmerObjs = new Map();
+  }
+  shimmerTex() {
+    if (this._shTex) return this._shTex;
+    const c = document.createElement('canvas'); c.width = 64; c.height = 128; const g = c.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, 'rgba(255,226,122,0)'); gr.addColorStop(0.5, 'rgba(255,226,122,0.55)'); gr.addColorStop(1, 'rgba(255,226,122,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 128);
+    g.strokeStyle = 'rgba(255,240,170,0.9)'; g.lineWidth = 2; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(4 + i * 13, 128); g.lineTo(14 + i * 13, 0); g.stroke(); }
+    g.fillStyle = 'rgba(255,248,200,0.95)'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center'; g.fillText('?', 32, 76);
+    const tx = new THREE.CanvasTexture(c); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; this._shTex = tx; return tx;
+  }
+  iconSprite(ch, color, size = 0.75) {
+    const c = document.createElement('canvas'); c.width = c.height = 96; const g = c.getContext('2d');
+    g.shadowColor = color; g.shadowBlur = 18; g.fillStyle = color; g.font = '64px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ch, 48, 52);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, fog: false, toneMapped: false })); sp.scale.set(size, size, 1); return sp;
+  }
+  /** Sync flagged secret walls ({x,y} cells still solid) and live elites ({id,kind,title,key,x,y}). */
+  async syncDynamic(tileFn, suspects = [], elites = []) {
+    if (!this.dyn) return;
+    const want = new Set(suspects.map(([x, y]) => `${x},${y}`));
+    for (const [k, o] of this.shimmerObjs) if (!want.has(k)) { this.dyn.remove(o.grp); this.shimmerObjs.delete(k); }
+    for (const [x, y] of suspects) {
+      const k = `${x},${y}`; if (this.shimmerObjs.has(k)) continue;
+      const grp = new THREE.Group(); grp.position.set(x * CELL, 0, y * CELL);
+      const mat = new THREE.MeshBasicMaterial({ map: this.shimmerTex(), transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
+      for (const [d, [dx, dy]] of DIRS.entries()) {
+        const n = tileFn(x + dx, y + dy); if (n === '#' || n === 'S' || x + dx < 0 || y + dy < 0 || x + dx >= W || y + dy >= H) continue;
+        const pl = new THREE.Mesh(new THREE.PlaneGeometry(CELL * 0.96, WALL_H * 0.96), mat); pl.position.set(dx * (CELL / 2 + 0.03), WALL_H / 2, dy * (CELL / 2 + 0.03)); pl.rotation.y = Math.atan2(dx, dy); grp.add(pl);
+      }
+      this.dyn.add(grp); this.shimmerObjs.set(k, { grp, mat });
+    }
+    const alive = new Set(elites.map((e) => e.id));
+    for (const [id, o] of this.eliteObjs) if (!alive.has(id)) { this.dyn.remove(o.holder); if (o.mixer) this.mixers = this.mixers.filter((m) => m !== o.mixer); this.eliteObjs.delete(id); }
+    for (const e of elites) {
+      let o = this.eliteObjs.get(e.id);
+      if (!o) { if (this._eliteLoading?.has(e.id)) continue; (this._eliteLoading ||= new Set()).add(e.id); o = await this.makeElite(e); this._eliteLoading.delete(e.id); if (!o) continue; this.eliteObjs.set(e.id, o); this.dyn.add(o.holder); o.holder.position.set(e.x * CELL, 0, e.y * CELL); }
+      o.target.set(e.x * CELL, 0, e.y * CELL);
+    }
+  }
+  async makeElite(e) {
+    const T = MONSTERS[e.key]; const g = T ? await loadModel(T.model) : null; const holder = new THREE.Group(); const target = new THREE.Vector3();
+    let mixer = null, h = 1.6;
+    if (g) {
+      const o = SkeletonUtils.clone(g.scene); const mats = [];
+      o.traverse((ch) => { if (ch.isMesh) { ch.material = ch.material.clone(); ch.frustumCulled = false; if (T.tint) ch.material.color.lerp(new THREE.Color(T.tint), 0.4); if (ch.material.emissive) { ch.material.emissive.set(0xff3010); ch.material.emissiveIntensity = 0.28; } mats.push(ch.material); } });
+      o.updateMatrixWorld(true); const bb = new THREE.Box3(); const v = new THREE.Vector3();
+      o.traverse((ch) => { if (!ch.isMesh) return; if (ch.isSkinnedMesh) ch.skeleton.update(); const pos = ch.geometry.attributes.position; const step = Math.max(1, Math.floor(pos.count / 1500)); for (let k = 0; k < pos.count; k += step) { if (ch.isSkinnedMesh) ch.getVertexPosition(k, v); else v.fromBufferAttribute(pos, k); v.applyMatrix4(ch.matrixWorld); if (Number.isFinite(v.x + v.y + v.z)) bb.expandByPoint(v); } if (ch.isSkinnedMesh) { ch.boundingBox = null; ch.boundingSphere = null; } });
+      const size = bb.getSize(new THREE.Vector3()); h = Math.min(1.9, Math.max(1.0, (T.size || 1.5) * 0.8));
+      const sc = h / Math.max(size.y, size.x * 0.7, size.z * 0.6, 0.01); o.scale.setScalar(sc); o.position.y = -bb.min.y * sc; if (T.flying) o.position.y += 0.6;
+      holder.add(o); mixer = new THREE.AnimationMixer(o); this.mixers.push(mixer);
+      const idle = g.animations.find((a) => /Idle$|Idle(?!_2)|Flying|Swim/i.test(a.name)) || g.animations[0]; if (idle) { const a = mixer.clipAction(idle); a.time = Math.random() * 2; a.play(); }
+    }
+    const aura = new THREE.Mesh(new THREE.RingGeometry(0.75, 0.95, 40), new THREE.MeshBasicMaterial({ color: 0xff3a1a, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, toneMapped: false, side: THREE.DoubleSide }));
+    aura.rotation.x = -Math.PI / 2; aura.position.y = 0.04; holder.add(aura);
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.8, WALL_H, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xff4020, transparent: true, opacity: 0.1, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); beam.position.y = WALL_H / 2; holder.add(beam);
+    const light = new THREE.PointLight(0xff4020, 7, 7, 2); light.position.y = 1.2; holder.add(light);
+    const icon = this.iconSprite('☠', '#ff5a3a', 0.8); icon.position.y = h + 0.55; holder.add(icon);
+    return { holder, target, mixer, aura, icon, light, h, heading: 0, prev: new THREE.Vector3() };
   }
   faceOpen(tileFn, x, y) { for (const [d, [dx, dy]] of DIRS.entries()) if (!['#', 'S'].includes(tileFn(x + dx, y + dy))) return [Math.PI, Math.PI / 2, 0, -Math.PI / 2][d]; return 0; }
   openChestAnim(x, y) { const c = this.chestMixers?.[`${x},${y}`]; if (c?.clip) { const a = c.mx.clipAction(c.clip); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.reset().play(); } }
@@ -413,6 +481,12 @@ export class Renderer {
     for (const [i, l] of (this.torches || []).entries()) l.intensity = 5 + Math.sin(t * 9 + i) * 1.2;
     for (const a of this.animated || []) { a.obj.rotation[a.bob ? 'y' : 'z'] += dt * a.spin; if (a.bob) a.obj.position.y += Math.sin(t * 2) * 0.002; }
     this.dust.rotation.y = Math.sin(t * 0.05) * 0.02;
+    for (const o of this.shimmerObjs?.values() || []) { o.mat.opacity = 0.45 + Math.sin(t * 2.4) * 0.22; this._shTex.offset.y = (t * 0.15) % 1; }
+    for (const o of this.eliteObjs?.values() || []) {
+      const hp = o.holder.position; o.prev.copy(hp); hp.lerp(o.target, 1 - Math.pow(0.04, dt));
+      const mx = hp.x - o.prev.x, mz = hp.z - o.prev.z; if (mx * mx + mz * mz > 1e-6) { const yaw = Math.atan2(mx, mz); let d = yaw - o.heading; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; o.heading += d * Math.min(1, dt * 8); o.holder.rotation.y = o.heading; }
+      o.aura.rotation.z += dt * 1.2; o.aura.material.opacity = 0.65 + Math.sin(t * 3) * 0.3; o.icon.position.y = o.h + 0.55 + Math.sin(t * 2.2) * 0.07; o.light.intensity = 6 + Math.sin(t * 5) * 1.5;
+    }
     // arena
     if (this.mode === 'combat') {
       this.sparks.rotation.y += dt * 0.03; this.arenaRing.rotation.z += dt * 0.2;

@@ -412,3 +412,20 @@ body.incombat #combatchips { display: flex; }
 .pinrow { font-size: 13px; align-items: center; }
 .paywall { border: 1px solid var(--gold, #ffd34d); border-radius: 10px; padding: 8px 12px; margin: 8px 0; background: #1b123866; }
 .paywall h3 { margin: 0 0 4px; } .paywall .price { color: #ffe9a0; font-weight: bold; }
+
+/* ---------- Phase B: item tiers, rare reveals, secrets ---------- */
+:root { --t-uncommon: #5cdc6e; --t-rare: #4aa3ff; --t-epic: #b66bff; --t-legendary: #ffc83a; }
+.tier-uncommon { color: var(--t-uncommon); } .tier-rare { color: var(--t-rare); } .tier-epic { color: var(--t-epic); } .tier-legendary { color: var(--t-legendary); }
+.itemname.tier-rare, .itemname.tier-epic, .itemname.tier-legendary { font-weight: 700; }
+#caption .caploot .tl.tier-uncommon, #caption .caploot .tl.tier-rare, #caption .caploot .tl.tier-epic, #caption .caploot .tl.tier-legendary { font-weight: 700; text-shadow: 0 0 8px currentColor; }
+#caption.msg.rare .captxt { font-weight: 700; letter-spacing: .04em; }
+#caption.msg.rare.tier-uncommon { --tc: var(--t-uncommon); } #caption.msg.rare.tier-rare, #caption.msg.loot.tier-rare { --tc: var(--t-rare); }
+#caption.msg.rare.tier-epic, #caption.msg.loot.tier-epic { --tc: var(--t-epic); } #caption.msg.rare.tier-legendary, #caption.msg.loot.tier-legendary { --tc: var(--t-legendary); }
+#caption.msg.rare, #caption.msg.loot.tier-rare, #caption.msg.loot.tier-epic, #caption.msg.loot.tier-legendary { border-color: var(--tc, var(--gold)); box-shadow: 0 0 22px var(--tc, var(--gold)), inset 0 0 28px color-mix(in srgb, var(--tc, var(--gold)) 30%, transparent); animation: tierglow 1.6s ease-in-out infinite alternate; }
+#caption.msg.rare .captxt, #caption.msg.loot.tier-rare .captxt, #caption.msg.loot.tier-epic .captxt, #caption.msg.loot.tier-legendary .captxt { color: var(--tc); text-shadow: 0 0 12px var(--tc); }
+#caption.msg.rare .caploot { text-align: center; display: block; } #caption.msg.rare .caploot div:first-child { font-size: 1.25em; }
+#caption.msg.rare .caploot div:not(:first-child) { color: var(--dim); font-size: .8em; }
+@keyframes tierglow { from { filter: brightness(1); } to { filter: brightness(1.25); } }
+body.reducemotion #caption.msg.rare, body.reducemotion #caption.msg.loot { animation: none; }
+#hud .secrets { color: #ffe27a; font-weight: 700; }
+.mapstats { margin: 4px 0; font-size: 13px; color: #ffe9a8; }

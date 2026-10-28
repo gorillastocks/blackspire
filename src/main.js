@@ -4,7 +4,7 @@ import * as G from './game/game.js';
 import { SLOT_KEYS, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS, ANIM_SLOW } from './menu.js';
 import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js';
 import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
-import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
+import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, TIER_COLOR, TIER_LABEL, tierOf, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
 import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
 import * as SC from './rules/spellcasting.js';
 import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
@@ -132,6 +132,8 @@ function handle(events) {
     }
     if (e.banter) say(e.banter); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
     if (e.sfx) sfx(e.sfx);
+    if (e.rare && !combat && !willCombat && S?.mode === 'dungeon') revealRare(e.rare);
+    if (e.suspect) toast('❓ Something about that wall is off — try 🔍 Search');
     if (e.reveal || e.sfx === 'door' || e.sfx === 'chest') rebuild();
     if (e.xp) toast(`✦ +${e.xp} XP each`);
     if (e.paywall) { prompt('paywall', e); return; }
@@ -142,6 +144,12 @@ function handle(events) {
   if (S) for (const q of G.sweepQuests(S)) { log(q.log, q.cls); toast(`✦ +${q.xp} XP each — quest complete`); }
   refresh();
 }
+/** A glowing drop-reveal card for a named or tiered item found outside a fight. */
+function revealRare(r) {
+  const k = r.key, t = r.tier || tierOf(k), I = ITEMS[k];
+  queueMessage({ text: `✨ ${TIER_LABEL[t]} find!`, cls: 'rare', tier: t, lines: [G.nameOf(k), I?.desc || ''].filter(Boolean), lineTiers: [t], rareSfx: t, from: r.from });
+}
+const tierStyle = (k) => { const t = tierOf(k); return t === 'common' ? '' : `color:${TIER_COLOR[t]};text-shadow:0 0 6px ${TIER_COLOR[t]}66`; };
 function flashRed(crit = false) { const f = $('#flash'); f.classList.toggle('crit', !!crit); f.style.opacity = 1; setTimeout(() => (f.style.opacity = 0), crit ? 380 : 250); }
 function reduceMotion() { const st = loadSettings(); return st.reduceMotion ?? (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false); }
 function syncFxSettings() { if (!R) return; R.speedF = speed().f; R.reduceMotion = reduceMotion(); document.body.classList.toggle('reducemotion', R.reduceMotion); }
@@ -188,15 +196,22 @@ function checkReady() {
   if (!S) return;
   for (const c of G.newlyReady(S)) { log(`⬆ ${c.name} is ready to level up! Make camp or visit the Training Grounds.`, 'crit'); say({ who: c.name, color: '#ffd34d', text: 'Ready to level up! Make camp or visit the Training Grounds.' }); }
 }
-function refresh() { checkReady(); renderParty(); drawMinimap($('#minimap')); renderHud(); syncAudio(); }
+function refresh() { checkReady(); renderParty(); drawMinimap($('#minimap')); renderHud(); syncAudio(); syncWorld(); }
+/** Phase B: push flagged walls and live elites into the 3D view. */
+function syncWorld() {
+  if (!R || !S || S.mode !== 'dungeon' || S.level !== lastBuiltLevel) return;
+  const sus = (S.suspect?.[S.level] || []).map((c) => c.split(',').map(Number)).filter(([x, y]) => G.tile(S, x, y) === 'S');
+  const el = G.liveElites(S).map((e) => { const [x, y] = G.elitePosNow(S, e); return { id: e.id, kind: e.kind, title: e.title, key: e.groups[0].key, x, y }; });
+  R.syncDynamic((x, y) => G.tile(S, x, y), sus, el).catch(() => {});
+}
 function renderHud() {
   const el = $('#hud'); if (!S) { el.innerHTML = ''; return; }
-  if (S.mode === 'dungeon') el.innerHTML = `<span>${getLevel(S.level).def.name}</span><span>⌖ ${S.x},${S.y} · ${DIR_NAMES[S.dir]} · ${S.gold} gp</span>`;
+  if (S.mode === 'dungeon') { const sc = G.Prog.secretCount(S, S.level); el.innerHTML = `<span>${getLevel(S.level).def.name} · <b class="secrets" title="Secrets found on this floor">🔍 ${sc.found}/${sc.total}</b></span><span>⌖ ${S.x},${S.y} · ${DIR_NAMES[S.dir]} · ${S.gold} gp</span>`; }
   else el.innerHTML = `<span>Emberhollow</span><span>${S.gold} gp · 🥄 ${S.spoons}</span>`;
 }
 
 /* ---------- Minimap ---------- */
-const MAPCOL = { Q: '#ffd77a', '#': null, '.': '#2a2448', D: '#c08040', d: '#6b4a2a', L: '#ff3050', '<': '#80a0ff', '>': '#40ffd0', C: '#ffc040', o: '#665522', T: '#2a2448', t: '#ff3030', K: '#ffd040', E: '#2a2448', B: '#ff2040', M: '#b060ff', F: '#30a0ff', f: '#203040', A: '#ffd040', S: null };
+const MAPCOL = { Q: '#ffd77a', '#': null, '.': '#2a2448', D: '#c08040', d: '#6b4a2a', L: '#ff3050', '<': '#80a0ff', '>': '#40ffd0', C: '#ffc040', o: '#665522', T: '#2a2448', t: '#ff3030', K: '#ffd040', E: '#2a2448', B: '#ff2040', M: '#b060ff', F: '#30a0ff', f: '#203040', A: '#ffd040', S: null, N: '#8a6ad0' };
 function drawMinimap(cv, big = false) {
   const g = cv.getContext('2d'); g.fillStyle = '#05030b'; g.fillRect(0, 0, cv.width, cv.height);
   if (!S || S.mode !== 'dungeon') { g.fillStyle = '#3b2d6b'; g.font = '14px monospace'; g.fillText('Town', 10, 20); return; }
@@ -210,11 +225,20 @@ function drawMinimap(cv, big = false) {
     if (x < 0 || y < 0 || x >= W || y >= H) continue;
     if (!ex.has(`${x},${y}`)) { g.strokeStyle = '#1a1430'; g.lineWidth = 1; g.strokeRect(X + 0.5, Y + 0.5, cs - 1, cs - 1); continue; }
     const ch = G.tile(S, x, y);
-    if (ch === '#' || ch === 'S') { g.fillStyle = theme + '66'; g.fillRect(X, Y, cs, cs); continue; }
+    if (ch === '#' || ch === 'S') { g.fillStyle = theme + '66'; g.fillRect(X, Y, cs, cs); if (ch === 'S' && S.suspect?.[S.level]?.includes(`${x},${y}`)) { g.fillStyle = '#ffe27a'; g.font = `bold ${Math.round(cs * 0.8)}px sans-serif`; g.textAlign = 'center'; g.fillText('?', X + cs / 2, Y + cs * 0.8); g.textAlign = 'start'; } continue; }
     let col = MAPCOL[ch] || '#2a2448'; if (ch === 'B' && S.bossDead[S.level]) col = '#2a2448';
     g.fillStyle = col; g.fillRect(X + 0.5, Y + 0.5, cs - 1, cs - 1);
   }
   g.textAlign = 'center'; g.font = `${Math.round(cs * 0.85)}px serif`; for (const p of S.pins?.[S.level] || []) { const X = (p.x - ox + 0.5) * cs, Y = (p.y - oy + 0.85) * cs; if (X > 0 && Y > 0 && X < cv.width && Y < cv.height) g.fillText(p.icon, X, Y); } g.textAlign = 'start';
+  // elites: pulsing red marker where they stand now, plus a faint dotted patrol line once their ground is known
+  const tm = performance.now() / 1000;
+  for (const e of G.liveElites(S)) {
+    const [ex0, ey0] = G.elitePosNow(S, e); const seen = S.eliteSeen?.[`${S.level}:${e.id}`] || ex.has(`${ex0},${ey0}`); if (!seen) continue;
+    if (e.kind === 'patrol') { g.fillStyle = '#ff5a3a55'; for (const [qx, qy] of e.path) g.fillRect((qx - ox + 0.4) * cs, (qy - oy + 0.4) * cs, cs * 0.2, cs * 0.2); }
+    const X = (ex0 - ox + 0.5) * cs, Y = (ey0 - oy + 0.5) * cs; if (X < 0 || Y < 0 || X > cv.width || Y > cv.height) continue;
+    g.fillStyle = `rgba(255,70,40,${0.55 + 0.3 * Math.sin(tm * 4)})`; g.beginPath(); g.arc(X, Y, cs * 0.55, 0, 7); g.fill();
+    g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = `${Math.round(cs * 0.8)}px serif`; g.fillText('☠', X, Y + cs * 0.3); g.textAlign = 'start';
+  }
   const px = (S.x - ox + 0.5) * cs, py = (S.y - oy + 0.5) * cs; const [dx, dy] = DIRS[S.dir];
   g.fillStyle = '#6dffa8'; g.beginPath(); g.moveTo(px + dx * cs * 0.5, py + dy * cs * 0.5); g.lineTo(px - dy * cs * 0.4 - dx * cs * 0.3, py + dx * cs * 0.4 - dy * cs * 0.3); g.lineTo(px + dy * cs * 0.4 - dx * cs * 0.3, py - dx * cs * 0.4 - dy * cs * 0.3); g.fill();
   if (!big) { g.fillStyle = '#9a8fd0'; g.font = '11px monospace'; g.fillText(`${S.x},${S.y}`, 4, cv.height - 5); }
@@ -424,7 +448,7 @@ async function startDungeon() {
   R.setMode('dungeon'); setControls('dungeon'); await rebuild(); R.setView(S.x, S.y, S.dir, true); refresh();
 }
 let lastBuiltLevel = -1;
-async function rebuild() { if (!S || S.mode !== 'dungeon') return; await R.buildLevel(S, (x, y) => G.tile(S, x, y), getLevel(S.level).def); lastBuiltLevel = S.level; }
+async function rebuild() { if (!S || S.mode !== 'dungeon') return; await R.buildLevel(S, (x, y) => G.tile(S, x, y), getLevel(S.level).def); lastBuiltLevel = S.level; syncWorld(); }
 function partyOrderList(redraw) {
   return h('div', { class: 'menu' }, S.party.map((c, i) => h('div', { class: 'row' }, portrait(c), h('span', { style: 'flex:1' }, `${i + 1}. ${c.name} (${CLASSES[c.cls].name}) ${i < 2 ? '— front row' : '— back row'}`),
     btn('▲', () => { if (i > 0) { [S.party[i - 1], S.party[i]] = [S.party[i], S.party[i - 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === 0 }),
@@ -585,6 +609,7 @@ function showSpellPicker(c, mode, prev, done) {
 let mapMode = 'walk', mapIcon = G.Prog.PINS[0], mapNote = '';
 function showMap() {
   const cv = h('canvas', { class: 'bigmap', id: 'bigmap', width: 420, height: 420 }); const goal = G.Prog.nextGoal(S);
+  const sc = G.Prog.secretCount(S, S.level), el = G.liveElites(S);
   const pins = S.pins?.[S.level] || []; const note = h('input', { id: 'pin-note', class: 'pinnote', type: 'text', maxlength: '80', placeholder: 'Note for the pin (optional)', value: mapNote, oninput: (e) => { mapNote = e.target.value; } });
   const tileAt = (e) => { const r = cv.getBoundingClientRect(); return [Math.floor(((e.clientX - r.left) / r.width) * W), Math.floor(((e.clientY - r.top) / r.height) * H)]; };
   cv.addEventListener('click', (e) => {
@@ -600,6 +625,7 @@ function showMap() {
   });
   openModal([h('h2', {}, getLevel(S.level).def.name),
     h('p', { class: 'goal', id: 'map-goal' }, `🎯 ${goal.text}`),
+    h('p', { class: 'mapstats', id: 'map-secrets' }, `🔍 Secrets ${sc.found}/${sc.total}`, '  ·  ', `☠ Elites ${el.length} on this floor`, '  ·  ', h('span', { class: 'hint' }, '❓ = suspicious wall')),
     cv,
     h('div', { class: 'seg mapmode', role: 'radiogroup' }, btn('👣 Tap to walk', () => { mapMode = 'walk'; showMap(); }, { id: 'map-walk', class: mapMode === 'walk' ? 'on' : '' }), btn('📍 Pin & notes', () => { mapMode = 'pin'; showMap(); }, { id: 'map-pin', class: mapMode === 'pin' ? 'on' : '' })),
     mapMode === 'pin' ? h('div', { class: 'pinbar' }, h('div', { class: 'seg' }, G.Prog.PINS.map((p) => btn(p, () => { mapIcon = p; showMap(); }, { class: 'small ' + (p === mapIcon ? 'on' : ''), 'data-pin': p }))), note, h('p', { class: 'hint' }, 'Tap an explored tile to drop a pin (tap it again with the same icon and note to remove).')) : h('p', { class: 'hint' }, 'Tap any explored tile to auto-walk there. The walk stops for anything interesting. Gold: chests · Cyan: stairs down · Red: locked/boss · Purple: messages · Blue: fountain'),
@@ -659,9 +685,9 @@ function inventoryList(redraw, shop = false) {
   if (!inv.length) return h('p', { class: 'hint' }, 'Empty.');
   return h('div', { class: 'menu' }, inv.map((k, i) => {
     const I = ITEMS[k]; const kind = I?.kind || (k.startsWith('w:') ? 'weapon' : k.startsWith('a:') || k === 'shield' ? 'armor' : '');
-    return h('div', { class: 'row' }, h('span', { style: 'flex:1', class: 'itemname', info: () => itemInfo(k), tabindex: 0 }, G.nameOf(k)),
+    return h('div', { class: 'row' }, h('span', { style: 'flex:1;' + tierStyle(k), class: 'itemname tier-' + tierOf(k), info: () => itemInfo(k), tabindex: 0 }, G.nameOf(k)),
       kind === 'potion' ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.usePotion(S, i, c)); redraw(); } }, h('option', {}, 'Use on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
-      ['weapon', 'armor', 'ring', 'cloak'].includes(kind) ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.equip(S, c, i)); redraw(); } }, h('option', {}, 'Equip on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
+      ['weapon', 'armor', 'ring', 'cloak', 'helm'].includes(kind) ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.equip(S, c, i)); redraw(); } }, h('option', {}, 'Equip on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
       shop && kind !== 'key' ? btn(`Sell ${Math.floor(G.priceOf(k) / 2)}gp`, () => { handle(G.sell(S, i)); redraw(); }, { class: 'small' }) : null);
   }));
 }
@@ -688,7 +714,7 @@ function showSheet(c) {
           ['XP', `${c.xp} / ${xpForNext(c) === Infinity ? 'MAX' : xpForNext(c)}`], ['Passive Perception', passive(c, 'perception')],
           ['Melee', w ? `${w.name} ${fmtMod(w.bonus)} · ${w.dmg}${fmtMod(w.dmgBonus)} ${w.type}` : '—'], ['Ranged', r ? `${r.name} ${fmtMod(r.bonus)} · ${r.dmg}${fmtMod(r.dmgBonus)}` : '—'],
           ['Armor', `${c.equip.armor ? ARMOR[c.equip.armor.base].name + (c.equip.armor.magic ? ' +' + c.equip.armor.magic : '') : c.conditions.mageArmor ? 'Mage Armor' : 'None'}${c.equip.shield ? ' + Shield' : ''}`],
-          ['Magic', [c.equip.ring, c.equip.cloak].filter(Boolean).map((k) => ITEMS[k].name).join(', ') || '—'],
+          ['Magic', [c.equip.ring, c.equip.cloak, c.equip.helm].filter(Boolean).map((k) => ITEMS[k].name).join(', ') || '—'],
           ['Death Saves', `${c.deathSaves.s} ✓  ${c.deathSaves.f} ✗`],
           ...(C.caster ? [['Spell DC / Attack', `${spellDC(c)} / ${fmtMod(spellAttack(c))}`], ['Spell Slots', c.slots.map((n, i) => `L${i + 1}: ${n}/${c.maxSlots[i]}`).join('  ')]] : []),
           ['Conditions', Object.keys(c.conditions).join(', ') || 'none']].map(([k, v]) => h('tr', {}, h('th', {}, k), h('td', {}, String(v)))))),
@@ -833,10 +859,12 @@ async function pumpMessages() {
         continue; // stale area description
       }
       const el = $('#caption'); clearTimeout(capTimer);
-      el.className = `show msg ${m.cls === 'loot' ? 'loot crit' : m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = ''; capShownAt = performance.now();
-      el.append(h('div', { class: 'captxt' }, m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l) => h('div', {}, l))) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
+      el.className = `show msg ${m.cls === 'rare' ? 'rare tier-' + m.tier : m.cls === 'loot' ? 'loot crit' + (m.tier ? ' tier-' + m.tier : '') : m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = ''; capShownAt = performance.now();
+      el.append(h('div', { class: 'captxt' }, m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l, i) => { const lt = m.cls === 'rare' ? (i === 0 ? m.lineTiers[0] : null) : m.lineTiers?.[i]; return h('div', { class: lt ? 'tl tier-' + lt : '' }, l); })) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
       placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 400);
-      if (m.cls === 'loot') {
+      if (m.cls === 'rare') { sfx('reveal_' + (m.rareSfx === 'common' ? 'uncommon' : m.rareSfx)); duckBed(0.3); playVoiceLine(m.text.replace('✨ ', ''), 'narrator', { kind: 'other' }); }
+      else if (m.cls === 'loot') {
+        if (m.tier && m.tier !== 'common') later_sfx('reveal_' + m.tier);
         playVoiceLine(m.text, 'narrator', { kind: 'other' });
         try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
         duckBed(0.15);
@@ -851,7 +879,7 @@ async function pumpMessages() {
       } else {
         playVoiceLine(m.text, 'narrator', { kind: 'other' });
       }
-      await tapToContinue(() => true, m.cls === 'loot' ? 1000 : 220); // a stray tap from the last fight can't skip the victory card unread
+      await tapToContinue(() => true, m.cls === 'loot' ? 1000 : m.cls === 'rare' ? 700 : 220); // a stray tap from the last fight can't skip the victory card unread
       stopVoice();
       if (m.ambient || m.cls === 'lore') invalidateAmbientVoices();
       if (combat && (m.ambient || m.cls === 'lore')) break;
@@ -860,6 +888,7 @@ async function pumpMessages() {
   } finally { msgRunning = null; document.body.classList.remove('msgup'); }
 }
 /** Resolves once every queued message card has been read (combat waits for them). */
+const later_sfx = (n) => setTimeout(() => sfx(n), 450);
 const messagesDone = () => msgRunning || Promise.resolve();
 /** Combat watchdog: whatever happens, the caption layer can never leave combat stalled. */
 setInterval(() => {
@@ -1133,13 +1162,14 @@ function lootCard(ev, info) {
   if (gains.length) lines.push(Math.min(...gains) === Math.max(...gains) ? `✦ +${gains[0]} XP each` : `✦ +${Math.min(...gains)}–${Math.max(...gains)} XP`);
   const gold = S.gold - b.gold; if (gold > 0) lines.push(`💰 +${gold} gold`);
   const left = [...b.inv], got = {}; for (const k of S.inventory) { const i = left.indexOf(k); if (i >= 0) left.splice(i, 1); else got[k] = (got[k] || 0) + 1; }
-  for (const [k, n] of Object.entries(got)) lines.push(`🎒 ${n > 1 ? n + '× ' : ''}${ITEMS[k]?.name || k}`);
+  const order = ['common', 'uncommon', 'rare', 'epic', 'legendary']; let best = 'common'; const lineTiers = {};
+  for (const [k, n] of Object.entries(got)) { const t = tierOf(k); lineTiers[lines.length] = t; if (order.indexOf(t) > order.indexOf(best)) best = t; lines.push(`${t === 'common' ? '🎒' : '✨'} ${n > 1 ? n + '× ' : ''}${ITEMS[k]?.name || k}`); }
   for (const e of ev) if (e.log && !e.card && e.cls !== 'lore' && !/^Found /.test(e.log) && !e.combat && (e.cls === 'good' || e.cls === 'crit')) lines.push(`📜 ${e.log}`);
   for (const c of S.party) if (!c.dead && canLevelUp(c) && !b.ready.has(c)) lines.push(`⬆ ${c.name} is ready for level ${c.level + 1}!`);
   if (S.victory && info.boss) lines.push('👑 Gorvax the Tyrant falls! The Blackspire\'s lights go dark.');
   if (!lines.length) lines.push('Nothing of value this time.');
   const MAX = 8; if (lines.length > MAX) { const more = lines.length - (MAX - 1); lines.splice(MAX - 1, lines.length, `…and ${more} more — see the log.`); }
-  return { text: `⚔ ${VICTORY_LINES[Math.floor(Math.random() * VICTORY_LINES.length)]}`, cls: 'loot', lines };
+  return { text: `⚔ ${VICTORY_LINES[Math.floor(Math.random() * VICTORY_LINES.length)]}`, cls: 'loot', lines, lineTiers, tier: best === 'uncommon' ? null : best, elite: !!info.elite };
 }
 async function endCombat() {
   await flushCombat(); await wait(500);
@@ -1402,7 +1432,7 @@ function monsterInfo(m) {
 function spellInfo(k) { const s = SPELLS[k]; return s ? [`${s.name} — ${s.level ? 'Level ' + s.level : 'Cantrip'}${s.conc ? ' · Concentration' : ''}`, s.desc || ''] : []; }
 function itemInfo(k) {
   const I = ITEMS[k]; const w = k.startsWith('w:') ? WEAPONS[k.slice(2)] : null; const a = k.startsWith('a:') ? ARMOR[k.slice(2)] : null;
-  return [G.nameOf(k), I?.heal ? `Heals ${I.heal} HP` : I?.cure ? `Cures ${I.cure}` : w ? `${w.dmg} ${w.type} · ${w.cat}${w.props?.length ? ' · ' + w.props.join(', ') : ''}` : a ? `AC ${a.base} (${a.type} armor)` : k === 'shield' ? '+2 AC' : I?.desc || I?.kind || '', `Value ${G.priceOf(k)} gp`].filter(Boolean);
+  return [G.nameOf(k) + (tierOf(k) !== 'common' ? ` — ${TIER_LABEL[tierOf(k)]}` : ''), I?.heal ? `Heals ${I.heal} HP` : I?.cure ? `Cures ${I.cure}` : w ? `${w.dmg} ${w.type} · ${w.cat}${w.props?.length ? ' · ' + w.props.join(', ') : ''}` : a ? `AC ${a.base} (${a.type} armor)` : k === 'shield' ? '+2 AC' : I?.desc || I?.kind || '', `Value ${G.priceOf(k)} gp`].filter(Boolean);
 }
 
 /* ---------- First-run tutorial ---------- */
