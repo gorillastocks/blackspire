@@ -7,6 +7,7 @@ import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, TIER_COLOR, TIER_LABEL, tierOf, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
 import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
 import * as SC from './rules/spellcasting.js';
+import * as D from './rules/phaseD.js';
 import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
@@ -202,21 +203,60 @@ function showPortraitPicker(c, back) {
   openModal([h('h2', {}, `Portrait — ${c.name}`), portraitGrid(c.portrait, (i) => { c.portrait = i === null ? randomPortrait(c.race, c.cls) : i; autosave(); refresh(); back(); }),
     h('div', { class: 'row', style: 'justify-content:flex-end;margin-top:8px' }, btn('Cancel', back))], { closable: true });
 }
+/* ---------- Phase D: condition icons, weakness chips, rows ---------- */
+function condChips(conds, cls = '') {
+  const ks = D.visibleConds(conds); if (!ks.length) return null;
+  return h('div', { class: 'cicons ' + cls }, ks.map((k) => { const i = D.condInfo(k); return h('span', { class: `cchip ${i.tone}`, 'data-cond': k, title: `${i.name}: ${i.desc}`, 'aria-label': i.name, role: 'img', info: () => [`${i.icon} ${i.name}`, i.desc] }, i.icon); }));
+}
+function traitChips(m) {
+  const kn = D.knownTraits(m), hid = D.hiddenTraitCount(m); if (!kn.length && !hid) return null;
+  const chips = kn.map((t) => { const d = D.dtype(t.type), k = D.TRAIT_KINDS[t.kind]; return h('span', { class: `wchip ${k.cls}`, 'data-trait': `${t.kind}:${t.type}`, title: `${k.word} ${d.name.toLowerCase()}: ${k.rule}.`, 'aria-label': `${k.word} ${d.name}`, role: 'img', info: () => [`${d.icon} ${k.word} ${d.name}`, `${m.name} ${k.rule} from ${d.name.toLowerCase()}.`] }, d.icon, h('b', {}, k.mark)); });
+  if (hid > 0) chips.push(h('span', { class: 'wchip unk', 'data-trait': 'unknown', title: 'Unknown weaknesses. Hit it with different damage types, or use the Study action.', 'aria-label': 'Unknown weaknesses', info: () => ['❔ Not yet discovered', `${hid} weakness${hid > 1 ? 'es or resistances' : ' or resistance'} still hidden. Hit it with different kinds of damage, or Study it (bonus action Knowledge check).`] }, '❔'));
+  return h('div', { class: 'wchips' }, chips);
+}
+/** Is this hero in the front row right now? (In a fight, downed heroes step aside.) */
+function inFrontRow(c) { const i = S.party.indexOf(c); return combat && combat.state === 'running' && combat.party === S.party && !isDown(c) ? combat.inFront(c) : i < 2; }
+function roleOf(c) {
+  const w = c.equip.weapon && WEAPONS[c.equip.weapon.base]; const reach = !!w?.props.includes('reach');
+  const parts = [];
+  if (CLASSES[c.cls].caster) parts.push('spells');
+  if (c.equip.weapon) parts.push(reach ? 'melee (reach)' : 'melee'); else if (!CLASSES[c.cls].caster) parts.push('unarmed');
+  if (c.equip.ranged) parts.push('ranged');
+  return parts.join(' + ');
+}
+/** Formation board: tap a hero, then a hero in the other row, to trade places. */
+function formationBoard(redraw) {
+  let sel = null;
+  const root = h('div', { class: 'formation', id: 'formation' });
+  const draw = () => {
+    root.innerHTML = '';
+    const col = (title, hint, from, to, id) => h('div', { class: 'fcol', id }, h('div', { class: 'fhead' }, h('b', {}, title), h('small', {}, hint)),
+      S.party.slice(from, to).map((c, k) => { const i = from + k; return h('button', { type: 'button', class: `fhero ${sel === c ? 'sel' : ''} ${c.hp <= 0 ? 'down' : ''}`, 'data-hero': c.id, title: `${c.name}: ${roleOf(c)}. Tap, then tap a hero in the other row to swap.`,
+        onclick: () => {
+          if (sel === c) { sel = null; draw(); return; }
+          if (!sel) { sel = c; draw(); return; }
+          const a = S.party.indexOf(sel), b = i; if (a >= 0 && (a < 2) !== (b < 2)) { [S.party[a], S.party[b]] = [S.party[b], S.party[a]]; log(`${sel.name} and ${c.name} trade rows.`, 'sys'); sel = null; autosave(); refresh(); redraw ? redraw() : draw(); } else { sel = c; draw(); }
+        } }, portrait(c, 'cport'), h('span', { class: 'fnm' }, c.name), h('small', {}, `${CLASSES[c.cls].name} · ${roleOf(c)}`)); }));
+    root.append(col('⚔ Front row', 'melee · hit first', 0, 2, 'frow-front'), col('🏹 Back row', 'ranged, spells, reach', 2, S.party.length, 'frow-back'),
+      h('div', { class: 'fnote' }, 'Only the front row can melee (unless wielding a glaive, halberd, pike or whip). Monsters pick the front row about 9 times in 10. In a fight, swapping costs a bonus action.'));
+  };
+  draw(); return root;
+}
 function renderParty() {
   const el = $('#party'); el.innerHTML = '';
   if (!S) return;
   const cur = combat && combat.state === 'running' ? combat.current() : null;
   S.party.forEach((c, i) => {
     const pct = Math.max(0, c.hp) / c.maxHp * 100;
-    const conds = Object.keys(c.conditions).filter((k) => !['mageArmor', 'aid'].includes(k));
+    const front = inFrontRow(c);
     const card = h('div', { class: `card ${cur === c ? 'active' : ''} ${c.dead ? 'dead' : c.hp <= 0 ? 'down' : ''}`, id: 'card-' + c.id, onclick: () => showSheet(c), info: () => memberInfo(c) },
-      h('div', { class: 'nm' }, h('span', { class: 'nmw' }, portrait(c, 'cport'), h('span', { class: 'cnm', title: c.name }, `${i < 2 ? '⚔' : '🏹'} ${c.name}`), canLevelUp(c) ? h('span', { class: 'lvchip', title: 'Ready to level up! Make camp or visit the Training Grounds', 'aria-label': 'Ready to level up' }, '⬆') : null),
+      h('div', { class: 'nm' }, h('span', { class: 'nmw' }, portrait(c, 'cport'), h('span', { class: 'cnm', title: c.name }, h('span', { class: 'rowic', title: front ? 'Front row: can melee, draws most attacks' : 'Back row: ranged attacks and spells (or a reach weapon); monsters rarely target it' }, front ? '⚔' : '🏹'), ` ${c.name}`), canLevelUp(c) ? h('span', { class: 'lvchip', title: 'Ready to level up! Make camp or visit the Training Grounds', 'aria-label': 'Ready to level up' }, '⬆') : null),
         !G.isHero(c) ? h('button', { class: `aitog small ${c.ai ? 'on' : ''}`, title: 'Toggle AI / player control', onclick: (e) => { e.stopPropagation(); c.ai = !c.ai; log(`${c.name} is now ${c.ai ? 'AI-controlled' : 'player-controlled'}.`, 'sys'); refresh(); if (combat) combatLoop(); } }, c.ai ? 'AI' : 'YOU') : h('span', { class: 'tag' }, 'YOU')),
       h('div', { class: 'sub' }, `L${c.level} ${RACES[c.race].name} ${CLASSES[c.cls].name} · AC ${armorClass(c)}`),
       h('div', { class: `bar hp ${pct < 30 ? 'low' : ''}` }, h('i', { style: `width:${pct}%` })),
       h('div', { class: 'row', style: 'justify-content:space-between;font-size:11px' }, h('span', {}, c.dead ? 'DEAD' : c.hp <= 0 ? `DOWN ${c.deathSaves.s}✓${c.deathSaves.f}✗` : `HP ${c.hp}/${c.maxHp}`),
         c.slots.length ? h('span', { class: 'slots' }, 'Slots ' + c.slots.map((n, l) => `${l + 1}:${n}`).join(' ')) : null),
-      conds.length ? h('div', { class: 'conds' }, conds.join(', ')) : null,
+      condChips(c.conditions),
       null);
     el.append(card);
   });
@@ -360,7 +400,15 @@ function showHelp() {
   <tr><th>Search</th><td>F / Space — find secret doors & traps, pick or force locks</td></tr>
   <tr><th>Camp</th><td>C — short/long rest, party talk, reorder, save/load</td></tr>
   <tr><th>Map / Sheet / Items</th><td>M / I / B</td></tr>
-  <tr><th>Combat</th><td>Number keys pick menu entries; click monster tags to target. Front two party slots fight in melee; back row uses ranged weapons and spells.</td></tr></table>
+  <tr><th>Combat</th><td>Number keys pick menu entries; click monster tags to target. Each hero acts on their turn with a short cut-in; <b>⏭ Skip</b> cuts every animation and <b>⏩</b> changes battle speed (cut-ins follow it).</td></tr></table>
+  <h3>Rows: front and back</h3>
+  <p>Your party order is your formation. The <b>first two heroes are the front row</b> (⚔); everyone else is the <b>back row</b> (🏹). Only the front row can attack in melee. A back-row hero needs a <b>ranged weapon, a spell</b> or a <b>reach weapon</b> (glaive, halberd, pike, whip). Monsters aim at the front row about <b>9 times in 10</b>, but fliers and archers pick anyone. A downed front-row hero is replaced by the next hero in line.</p>
+  <p>Change rows in <b>Camp → Formation</b> (or the Tavern): tap a hero, then tap a hero in the other row to swap them. In a fight, <b>Swap rows</b> costs a <b>bonus action</b>.</p>
+  <h3>Conditions (hold an icon for details)</h3>
+  <p>🤢 <b>Poisoned</b>: disadvantage on attacks · 🙇 <b>Prone</b>: melee hits it with advantage, ranged with disadvantage · 😱 <b>Frightened</b>: disadvantage on attacks · 🕸️ <b>Restrained</b>: disadvantage on attacks and Dex saves, attacks against it have advantage · ✊ <b>Grappled</b>: cannot flee · 🔒 <b>Paralyzed</b> and 💤 <b>Unconscious</b>: cannot act, melee hits are critical · 😵 <b>Rattled</b>: disadvantage on the next attack. Green-rimmed icons are good effects (🙏 Blessed, 🛡️ Dodging, 😡 Raging, 🌫️ Hidden…).</p>
+  <h3>Weaknesses and resistances</h3>
+  <p>Damage types have icons (🔥 fire, ❄️ cold, ⚡ lightning, 🔊 thunder, ☠️ poison, 🧪 acid, 💀 necrotic, ✨ radiant, 🧠 psychic, 💥 force, and 🔨 🗡️ ⚔️ for bludgeoning, piercing and slashing). A monster that is <b>weak</b> (<b>×2</b>) takes double damage, one that <b>resists</b> (<b>½</b>) takes half, and an <b>immune</b> one (<b>✕</b>) takes none. A <b>❔</b> on a monster means it still hides something. You <b>discover</b> a trait the first time you hit it with that damage type, or all at once with the <b>Study</b> bonus action, a Knowledge check (Arcana, Nature, Religion or History, by creature type) against a DC of 10 plus its challenge. What you learn is remembered for every future fight with that kind of monster.</p>
+  <p>There is only one layer of defense: <b>Armor Class (AC)</b>. Attacks must roll at least a target's AC to hit; no extra armor or damage reduction on top.</p>
   <p>Companions can be AI- or player-controlled — tap the <b>AI/YOU</b> toggle on their card. Level up at the Training Grounds in town, or with Level Up in the Camp menu.</p>` })]);
 }
 function showCredits() {
@@ -486,7 +534,7 @@ async function startDungeon() {
 let lastBuiltLevel = -1;
 async function rebuild() { if (!S || S.mode !== 'dungeon') return; await R.buildLevel(S, (x, y) => G.tile(S, x, y), getLevel(S.level).def); lastBuiltLevel = S.level; syncWorld(); }
 function partyOrderList(redraw) {
-  return h('div', { class: 'menu' }, S.party.map((c, i) => h('div', { class: 'row' }, portrait(c), h('span', { style: 'flex:1' }, `${i + 1}. ${c.name} (${CLASSES[c.cls].name}) ${i < 2 ? '— front row' : '— back row'}`),
+  return h('div', { class: 'menu' }, formationBoard(redraw), S.party.map((c, i) => h('div', { class: 'row' }, portrait(c), h('span', { style: 'flex:1' }, `${i + 1}. ${c.name} (${CLASSES[c.cls].name}) ${i < 2 ? '— front row' : '— back row'}`),
     btn('▲', () => { if (i > 0) { [S.party[i - 1], S.party[i]] = [S.party[i], S.party[i - 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === 0 }),
     btn('▼', () => { if (i < S.party.length - 1) { [S.party[i + 1], S.party[i]] = [S.party[i], S.party[i + 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === S.party.length - 1 }),
     !G.isHero(c) ? btn(c.ai ? 'AI' : 'YOU', () => { c.ai = !c.ai; redraw(); refresh(); }, { class: 'small aitog ' + (c.ai ? 'on' : '') }) : null,
@@ -607,7 +655,7 @@ function showCamp() {
   (() => { const preps = S.party.filter((c) => !c.dead && SC.preparedMax(c)); return preps.length
     ? h('div', { class: 'menu' }, preps.map((c) => btn(`📖 ${c.name} — ${SC.casterType(c.cls) === 'book' ? 'from spellbook' : 'from the ' + CLASSES[c.cls].name + ' list'} (${SC.preparedMax(c)} prepared)`, () => showSpellPicker(c, 'prepare', null, showCamp), { 'data-prepare': c.id })))
     : h('p', { class: 'hint' }, 'Nobody in the party prepares spells.'); })(),
-  h('h3', {}, 'Marching order'), partyOrderList(showCamp)]);
+  h('h3', {}, 'Formation & marching order'), partyOrderList(showCamp)]);
   void p;
 }
 
@@ -788,7 +836,7 @@ function showSheet(c) {
 /* ---------- Combat ---------- */
 let skipping = false; // the player tapped ⏭ Skip: animations and captions collapse until the next menu / fight
 const wait = (ms) => new Promise((r) => setTimeout(r, skipping ? 0 : ms * speed().f));
-function skipNow() { skipping = true; tapPending?.(); }
+function skipNow() { skipping = true; tapPending?.(); cutinStop?.(); hideCutin(); }
 function cycleSpeed() { const ks = Object.keys(BATTLE_SPEEDS); const cur = loadSettings().battleSpeed || 'pause'; setSpeed(ks[(ks.indexOf(cur) + 1) % ks.length]); syncFxSettings(); syncCombatChips(); }
 function syncCombatChips() { const b = $('#speedbtn'); if (b) b.textContent = `⏩ ${speed().short}`; }
 /* ---------- Action captions (large, centered narration of each action) ---------- */
@@ -1046,6 +1094,40 @@ async function combatLoop() {
     if (combat && gen === loopGen) await endCombat();
   } finally { if (gen === loopGen) looping = false; }
 }
+/* ---------- Phase D: hero cut-ins (portrait slides in, strike, hit flash). Honors battle speed, Reduce motion and Skip. ---------- */
+let cutinStop = null, cutinBusy = false;
+function hideCutin() { const el = $('#cutin'), fl = $('#cutflash'); if (el) { el.className = ''; el.innerHTML = ''; } if (fl) fl.className = ''; }
+const CUTIN_GLYPH = { melee: '⚔', ranged: '🏹', spell: '✦', heal: '✚' };
+const CUTIN_NAMES = { shoot: 'Shot', throw: 'Throw', layOnHands: 'Lay on Hands', secondWind: 'Second Wind', preserveLife: 'Preserve Life', smite: 'Divine Smite', item: 'Potion', breath: 'Breath Weapon', frenzy: 'Frenzy', martialArts: 'Martial Arts', flurry: 'Flurry of Blows', strikeStaff: 'Staff Strike', breakCollar: 'Break the Collar' };
+function cutinLabel(e) {
+  if (e.spell) return SPELLS[e.spell]?.name || e.spell;
+  if (e.id === 'attack') return WEAPONS[e.weapon]?.name || 'Unarmed strike';
+  if (e.id === 'shoot') return WEAPONS[e.weapon]?.name || 'Shot';
+  return CUTIN_NAMES[e.id] || 'Action';
+}
+async function playCutin(e) {
+  const el = $('#cutin'); if (!el || skipping || cutinBusy) return;
+  const T = D.cutinTimes(speed().f, { skipping, reduce: reduceMotion() }); if (!T.total) return;
+  cutinBusy = true;
+  const sleepC = (ms) => new Promise((r) => { if (ms <= 0) return r(); const t = setTimeout(r, ms); cutinStop = () => { clearTimeout(t); r(); }; });
+  const sp = e.spell ? SPELLS[e.spell] : null; const col = sp?.type && DTYPE_CSS(sp.type);
+  const fx = { melee: [h('i', { class: 'sl s1' }), h('i', { class: 'sl s2' })], ranged: [h('i', { class: 'trail' }), h('i', { class: 'arrow' })],
+    spell: [h('i', { class: 'ring r1' }), h('i', { class: 'ring r2' }), ...[0, 1, 2, 3, 4, 5].map((i) => h('i', { class: 'spk', style: `--i:${i}` }))],
+    heal: [h('i', { class: 'glow' }), ...[0, 1, 2, 3, 4].map((i) => h('i', { class: 'plus', style: `--i:${i}` }, '✚'))] }[e.kind];
+  el.innerHTML = ''; el.className = '';
+  el.style.cssText = `--sl:${T.slide}ms;--st:${T.strike}ms;--fl:${T.flash}ms;${col ? `--acc:${col};` : ''}`;
+  el.dataset.kind = e.kind; el.dataset.who = e.who.name;
+  el.append(h('div', { class: 'ci-band' }), h('div', { class: 'ci-port' }, portrait(e.who, 'ci-img')), h('div', { class: 'ci-txt' }, h('b', {}, e.who.name), h('span', {}, `${CUTIN_GLYPH[e.kind]} ${cutinLabel(e)}`)), h('div', { class: 'ci-fx' }, ...fx), h('div', { class: 'ci-flash' }));
+  el.className = `cutin ${e.kind} on`; void el.offsetWidth; el.classList.add('in');
+  try {
+    await sleepC(T.slide); if (skipping) return;
+    el.classList.add('strike');
+    await sleepC(T.strike + (e.hold || 0)); if (skipping) return; // hold: test hook only, freezes the strike phase for a screenshot
+    el.classList.add('flash'); const fl = $('#cutflash'); fl.style.cssText = `--acc:${col || ''}`; fl.className = 'on ' + e.kind;
+    await sleepC(T.flash); if (skipping) return;
+    el.classList.add('out'); await sleepC(Math.round(110 * Math.max(0.3, speed().f)));
+  } finally { cutinStop = null; cutinBusy = false; hideCutin(); }
+}
 async function flushCombat() {
   const { log: lines, events } = combat.drain();
   for (const l of lines) log(l.t, l.cls);
@@ -1056,6 +1138,10 @@ async function flushCombat() {
   for (const e of events) {
     if (!combat || !S) return;
     if (e.type === 'caption') { pending = null; renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0 && !skipping); if (skipping) await new Promise((r) => setTimeout(r, 120)); else if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
+    if (e.type === 'cutin') { pending = null; await playCutin(e); continue; }
+    if (e.type === 'trait') { const d = D.dtype(e.dtype), k = D.TRAIT_KINDS[e.kind]; floater(e.who.id, `${d.icon} ${k.mark}`, false, e.dtype); renderTargets(); if (e.first) toast(`${d.icon} Discovered: ${e.who.name} ${k.word.toLowerCase()} ${d.name.toLowerCase()} (${k.mark})`); await wait(e.kind === 'immune' ? 220 : 140); continue; }
+    if (e.type === 'rows') { renderParty(); continue; }
+    if (e.type === 'study') { renderTargets(); sfx(e.ok ? 'chime' : 'miss'); if (e.ok) await wait(200); continue; }
     if (e.type === 'monsterAttack') { pending = null; R.monsterAttack(e.who.id); sfx('swing'); await wait(560 * ANIM_SLOW); }
     else if (e.type === 'partyAttack') { pending = null; const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait((k === 'bow' || k === 'crossbow' ? 60 : 150) * ANIM_SLOW); }
     else if (e.type === 'hit' && e.tgt.side === 'monster') {
@@ -1090,9 +1176,8 @@ function renderTargets() {
   const el = $('#targets'); el.innerHTML = ''; if (!combat || combat.state !== 'running') return;
   for (const m of combat.monsters) {
     if (m.hp <= 0) continue; const p = R.screenPos(m.id); if (!p) continue;
-    const conds = Object.keys(m.conditions);
     el.append(h('div', { class: `mtag ${targetPick ? 'pick' : ''} ${combat.current() === m ? 'sel' : ''}`, style: `left:${Math.min(86, Math.max(14, p.x))}%;top:${Math.max(8, p.y)}%`, onclick: () => targetPick && targetPick(m), info: () => monsterInfo(m) },
-      h('div', {}, m.name), h('div', { class: 'bar' }, h('i', { style: `width:${m.hp / m.maxHp * 100}%` })), conds.length ? h('div', { class: 'conds' }, conds.join(',')) : null));
+      h('div', {}, m.name), h('div', { class: 'bar' }, h('i', { style: `width:${m.hp / m.maxHp * 100}%` })), traitChips(m), condChips(m.conditions)));
   }
 }
 let curMenu = null; // the combat menu being waited on (so the watchdog can redraw it if it ever goes missing)
@@ -1131,13 +1216,20 @@ async function pickTarget(kind, c) {
   if (kind === 'enemy') {
     const live = combat.livingMonsters();
     if (live.length === 1) return live[0];
-    const opts = live.map((m) => ({ info: () => monsterInfo(m), label: `${m.name} (${m.hp}/${m.maxHp})${Object.keys(m.conditions).length ? ' [' + Object.keys(m.conditions).join(',') + ']' : ''}`, m }));
+    const opts = live.map((m) => ({ info: () => monsterInfo(m), label: `${m.name} (${m.hp}/${m.maxHp})${D.visibleConds(m.conditions).map((k) => ' ' + D.condInfo(k).icon).join('')}${D.knownTraits(m).map((t) => ' ' + D.dtype(t.type).icon + D.TRAIT_KINDS[t.kind].mark).join('')}`, m }));
     opts.push({ label: '← Back', back: true });
     let resolveTap; const tap = new Promise((r) => (resolveTap = r));
     targetPick = (m) => resolveTap({ m }); renderTargets();
     const o = await Promise.race([chooseFrom(`${c.name}: choose a target (or tap a monster)`, opts), tap]);
     targetPick = null; renderTargets();
     return o.back ? null : o.m;
+  }
+  if (kind === 'rowmate') {
+    const mine = combat.inFront(c);
+    const opts = combat.conscious().filter((p) => p !== c && combat.inFront(p) !== mine).map((p) => ({ label: `${p.name} (${CLASSES[p.cls].name}, ${roleOf(p)}) — now ${mine ? 'back' : 'front'} ↔ ${mine ? 'front' : 'back'}`, p }));
+    if (!opts.length) { toast('Nobody to swap with.'); return null; }
+    opts.push({ label: '← Back', back: true });
+    const o = await chooseFrom(`${c.name}: trade places with…`, opts); return o.back ? null : o.p;
   }
   if (kind === 'ally' || kind === 'downedAlly' || kind === 'deadAlly') {
     const opts = S.party.filter((p) => (kind === 'deadAlly' ? p.dead : kind === 'downedAlly' ? p.hp <= 0 && !p.dead : !p.dead)).map((p) => ({ label: `${p.name} (${Math.max(0, p.hp)}/${p.maxHp})`, p }));
@@ -1160,7 +1252,7 @@ async function playerTurn() {
     if (o.id === 'speed') { const ks = Object.keys(BATTLE_SPEEDS); setSpeed(ks[(ks.indexOf(loadSettings().battleSpeed) + 1) % ks.length]); log(`Battle speed: ${speed().label}`, 'sys'); continue; }
     let args = {};
     if (o.target === 'enemy') { const m = await pickTarget('enemy', c); if (!m) continue; args.target = m; }
-    if (o.target === 'ally') { const p = await pickTarget('ally', c); if (!p) continue; args.target = p; }
+    if (o.target === 'ally' || o.target === 'rowmate') { const p = await pickTarget(o.target, c); if (!p) continue; args.target = p; }
     if (o.id === 'cast') {
       const list = combat.castable(c).map(({ k, s }) => ({ info: () => spellInfo(k), label: `${s.name}${s.level ? ` (L${s.level})` : ' (cantrip)'}${s.bonus ? ' [bonus]' : ''}${s.conc ? ' [conc]' : ''}`, k, s }));
       list.push({ label: '← Back', back: true });
@@ -1282,7 +1374,7 @@ async function boot() {
   log('Loading the 3D engine…', 'dim');
   const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
   R = new Renderer($('#view')); R.onResize = () => { if (combat) { replaceOverlays(); renderTargets(); } else if ($('#caption').classList.contains('show')) replaceOverlays(); };
-  window.__gw = { sfx, SFX_NAMES, applyAudioSettings,
+  window.__gw = { sfx, SFX_NAMES, applyAudioSettings, playCutin, endCutinPhase() { cutinStop?.(); }, closeModal, renderCombatUI() { renderParty(); renderTargets(); }, showHelp,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
     showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, getLevel, refresh, showInventory, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
@@ -1477,14 +1569,17 @@ function memberInfo(c) {
   const t = tacticsOf(c);
   return [`${c.name} — L${c.level} ${RACES[c.race].name} ${CLASSES[c.cls].name}`, `HP ${Math.max(0, c.hp)}/${c.maxHp} · AC ${armorClass(c)} · XP ${c.xp}`,
     c.slots.length ? 'Spell slots ' + c.slots.map((n, l) => `L${l + 1}:${n}`).join(' ') : 'No spell slots',
-    Object.keys(c.conditions).length ? 'Conditions: ' + Object.keys(c.conditions).join(', ') : 'No conditions',
+    D.visibleConds(c.conditions).length ? 'Conditions: ' + D.visibleConds(c.conditions).map((k) => `${D.condInfo(k).icon} ${D.condInfo(k).name}`).join(', ') : 'No conditions',
+    `${D.rowName(inFrontRow(c))} · ${roleOf(c)}`,
     G.isHero(c) ? 'Your hero' : `${c.ai ? 'AI' : 'Player'}-controlled · Tactics: ${TACTIC_STYLES[t.style].name}, heal below ${t.healAt}%`];
 }
 function monsterInfo(m) {
   const M = MONSTERS[m.key] || {};
   return [`${m.name}${M.cr != null ? ` (CR ${M.cr < 1 ? '1/' + Math.round(1 / M.cr) : M.cr})` : ''}`, `HP ${m.hp}/${m.maxHp} · AC ${m.ac ?? M.ac}`,
     ...(M.attacks || []).map((a) => `${a.name}: ${a.bonus != null ? fmtMod(a.bonus) + ' to hit, ' : ''}${a.dmg || ''} ${a.type || ''}`.trim()),
-    Object.keys(m.conditions || {}).length ? 'Conditions: ' + Object.keys(m.conditions).join(', ') : null].filter(Boolean);
+    D.knownTraits(m).length ? D.knownTraits(m).map((t) => `${D.dtype(t.type).icon} ${D.TRAIT_KINDS[t.kind].word} ${D.dtype(t.type).name} (${D.TRAIT_KINDS[t.kind].mark})`).join(' · ') : null,
+    D.hiddenTraitCount(m) > 0 ? '❔ Weaknesses not yet discovered — hit it with different damage, or Study it (bonus action).' : null,
+    D.visibleConds(m.conditions || {}).length ? 'Conditions: ' + D.visibleConds(m.conditions).map((k) => `${D.condInfo(k).icon} ${D.condInfo(k).name}`).join(', ') : null].filter(Boolean);
 }
 function spellInfo(k) { const s = SPELLS[k]; return s ? [`${s.name} — ${s.level ? 'Level ' + s.level : 'Cantrip'}${s.conc ? ' · Concentration' : ''}`, s.desc || ''] : []; }
 function itemInfo(k) {
