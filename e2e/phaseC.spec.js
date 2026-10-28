@@ -86,6 +86,6 @@ test('Liora conversation: choices raise hearts, journal shows bonds, save round-
   await page.evaluate(() => window.__gw.showTown());
   await page.locator('#btn-journal').click(); await expect(page.locator('.bonds .heart').first()).toBeVisible();
   await shot(page, { path: `/workspace/shots/phaseC-journal-${info.project.name}.png` });
-  const ok = await page.evaluate(() => { const { G, state } = window.__gw; const d = G.deserialize(G.serialize(state)); return d.version === 5 && d.pc.moments[0] !== undefined; }); expect(ok).toBe(true);
+  const ok = await page.evaluate(() => { const { G, state } = window.__gw; const d = G.deserialize(G.serialize(state)); return d.version === 6 && d.pc.moments[0] !== undefined; }); expect(ok).toBe(true);
   expect(okErr(errors)).toEqual([]);
 });

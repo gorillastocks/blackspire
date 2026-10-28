@@ -9,7 +9,7 @@ export default defineConfig({
     { name: 'iphone', use: { ...devices['iPhone 14 Pro'], browserName: 'chromium', launchOptions: { args: gl } } },
     { name: 'webkit-iphone', testMatch: /ios-voice\.spec/, use: { ...devices['iPhone 14 Pro'], browserName: 'webkit' } },
     { name: 'iphone-landscape', use: { ...devices['iPhone 14 Pro landscape'], browserName: 'chromium', launchOptions: { args: gl } } },
-    { name: 'ipad-portrait', testMatch: /(smoke|appstore|text|caption|taps|dm|levelup-layout|chest|campheal|fx|navrows|partyfit|portraits)\.spec/, use: { browserName: 'chromium', viewport: { width: 1024, height: 1366 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1, launchOptions: { args: gl } } },
-    { name: 'ipad-landscape', testMatch: /(smoke|appstore|text|caption|taps|dm|levelup-layout|chest|campheal|fx|navrows|partyfit|portraits)\.spec/, use: { browserName: 'chromium', viewport: { width: 1366, height: 1024 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1, launchOptions: { args: gl } } },
+    { name: 'ipad-portrait', testMatch: /(phaseD|smoke|appstore|text|caption|taps|dm|levelup-layout|chest|campheal|fx|navrows|partyfit|portraits)\.spec/, use: { browserName: 'chromium', viewport: { width: 1024, height: 1366 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1, launchOptions: { args: gl } } },
+    { name: 'ipad-landscape', testMatch: /(phaseD|smoke|appstore|text|caption|taps|dm|levelup-layout|chest|campheal|fx|navrows|partyfit|portraits)\.spec/, use: { browserName: 'chromium', viewport: { width: 1366, height: 1024 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1, launchOptions: { args: gl } } },
   ],
 });
