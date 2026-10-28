@@ -27,7 +27,7 @@ export const LEVEL_DEFS = [
     loot: { gold: [40, 160], items: ['potionHealing', 'potionGreater', 'goldSpoon', 'longsword1', 'mace1', 'quarterstaff1', 'chainMail1', 'rapier1'] },
   },
   {
-    name: 'B3: The Glimmerdeep', seed: 3131, color: 0x40ffd0, fog: 0x021410, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '3d8', trapKind: 'pit', key: 'key3', rooms: 3, loops: 9, secrets: 2, fountain: true, music: 'dungeon2',
+    name: 'B3: The Glimmerdeep', seed: 3131, color: 0x40ffd0, fog: 0x021410, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '3d8', trapKind: 'pit', key: 'key3', rooms: 3, loops: 9, secrets: 2, fountain: true, music: 'dungeon2', outdoor: true,
     table: [[{ key: 'violetFungus', count: [2, 2] }, { key: 'shrieker', count: [1, 1] }], [{ key: 'ochreJelly', count: [1, 1] }], [{ key: 'darkmantle', count: [2, 3] }], [{ key: 'giantCentipede', count: [2, 4] }], [{ key: 'gelatinousCube', count: [0, 0] }], [{ key: 'darkmantle', count: [1, 2] }, { key: 'giantCentipede', count: [2, 2] }]],
     fixed: [[{ key: 'gelatinousCube', count: [1, 1] }, { key: 'ochreJelly', count: [1, 1] }], [{ key: 'violetFungus', count: [3, 3] }, { key: 'shrieker', count: [2, 2] }], [{ key: 'darkmantle', count: [4, 4] }]],
     boss: [{ key: 'glasshide', count: [1, 1] }, { key: 'darkmantle', count: [2, 2] }], bossName: 'Glasshide the Basilisk',

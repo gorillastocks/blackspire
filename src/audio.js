@@ -218,6 +218,7 @@ export function ambience(name, force = false) {
   if (!ctx || !unlocked || (name === ambCur && !force)) return;
   for (const n of ambNodes) { try { n.stop?.(); n.disconnect(); } catch { /* ignore */ } } ambNodes = []; clearTimeout(ambTimer); ambCur = name;
   if (!name) return;
+  if (name.startsWith('outdoor')) { outdoorBed(name); return; }
   // wind / room tone: looping noise through a slowly swept low-pass
   const s = ctx.createBufferSource(); s.buffer = noise(); s.loop = true;
   const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = name === 'town' ? 900 : 380; f.Q.value = name === 'town' ? 0.3 : 4;
@@ -237,3 +238,31 @@ export function ambience(name, force = false) {
   ambTimer = setTimeout(tick, 800);
 }
 export function currentAmbience() { return ambCur || ambWant; }
+
+/** Phase E: synthesised open-air bed. name = 'outdoor:<rain|mist|clear>:<day|night>' — wind swells, a rain hiss or soft mist, birds by day, crickets at night. */
+function outdoorBed(name) {
+  const [, wx = 'rain', tod = 'day'] = name.split(':'); const t = ctx.currentTime;
+  const wind = ctx.createBufferSource(); wind.buffer = noise(); wind.loop = true; wind.playbackRate.value = 0.6;
+  const wf = ctx.createBiquadFilter(); wf.type = 'bandpass'; wf.frequency.value = 520; wf.Q.value = 0.9;
+  const wg = ctx.createGain(); wg.gain.value = wx === 'mist' ? 0.075 : 0.06;
+  const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.11; lg.gain.value = 260; lfo.connect(lg).connect(wf.frequency);
+  const lfo2 = ctx.createOscillator(), lg2 = ctx.createGain(); lfo2.frequency.value = 0.19; lg2.gain.value = 0.03; lfo2.connect(lg2).connect(wg.gain); // gusts
+  wind.connect(wf).connect(wg).connect(bus.amb); wind.start(t); lfo.start(t); lfo2.start(t); ambNodes.push(wind, lfo, lfo2, wf, wg, lg, lg2);
+  if (wx === 'rain') {
+    const rn = ctx.createBufferSource(); rn.buffer = noise(); rn.loop = true; rn.playbackRate.value = 1.3;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2400; const rg = ctx.createGain(); rg.gain.value = 0.05;
+    rn.connect(hp).connect(rg).connect(bus.amb); rn.start(t); ambNodes.push(rn, hp, rg);
+  }
+  const tick = () => {
+    if (ambCur !== name || !ctx) return; const t0 = ctx.currentTime; let next = 1200 + Math.random() * 3000;
+    if (tod === 'night') { // crickets: a short train of high pulses
+      const f = 3900 + Math.random() * 500; for (let k = 0; k < 5; k++) { const o = ctx.createOscillator(), gg = ctx.createGain(); o.type = 'sine'; o.frequency.value = f; gg.gain.setValueAtTime(0.0001, t0 + k * 0.07); gg.gain.linearRampToValueAtTime(0.012, t0 + k * 0.07 + 0.015); gg.gain.exponentialRampToValueAtTime(0.0001, t0 + k * 0.07 + 0.05); o.connect(gg).connect(bus.amb); o.start(t0 + k * 0.07); o.stop(t0 + k * 0.07 + 0.06); }
+      next = 700 + Math.random() * 1800;
+    } else if (wx !== 'rain' || Math.random() < 0.35) { // birds, fewer in the rain
+      const b = 2300 + Math.random() * 1500; for (let k = 0; k < 2 + (Math.random() * 3 | 0); k++) { const o = ctx.createOscillator(), gg = ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(b, t0 + k * 0.1); o.frequency.exponentialRampToValueAtTime(b * 1.35, t0 + k * 0.1 + 0.06); gg.gain.setValueAtTime(0.0001, t0 + k * 0.1); gg.gain.linearRampToValueAtTime(0.02, t0 + k * 0.1 + 0.01); gg.gain.exponentialRampToValueAtTime(0.0001, t0 + k * 0.1 + 0.08); o.connect(gg).connect(bus.amb); o.start(t0 + k * 0.1); o.stop(t0 + k * 0.1 + 0.1); }
+      next = 2200 + Math.random() * 4200;
+    }
+    ambTimer = setTimeout(tick, next);
+  };
+  ambTimer = setTimeout(tick, 600);
+}

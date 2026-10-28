@@ -3,6 +3,7 @@ import './style.css';
 import * as G from './game/game.js';
 import { SLOT_KEYS, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS, ANIM_SLOW } from './menu.js';
 import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js';
+import { outdoorRegion, inRegion, hourAt, todName, WEATHER_INFO } from './dungeon/outdoor.js';
 import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, TIER_COLOR, TIER_LABEL, tierOf, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
 import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
@@ -265,7 +266,18 @@ function checkReady() {
   if (!S) return;
   for (const c of G.newlyReady(S)) { log(`⬆ ${c.name} is ready to level up! Make camp or visit the Training Grounds.`, 'crit'); say({ who: c.name, color: '#ffd34d', text: 'Ready to level up! Make camp or visit the Training Grounds.' }); }
 }
-function refresh() { checkReady(); renderParty(); drawMinimap($('#minimap')); renderHud(); syncAudio(); syncWorld(); }
+/* ---------- Phase E: the open-air window on this floor (render-only; the tiles are unchanged) ---------- */
+const _regCache = new WeakMap();
+function outReg() { if (!S || S.mode !== 'dungeon') return null; const L = getLevel(S.level); if (!_regCache.has(L)) _regCache.set(L, outdoorRegion(L)); return _regCache.get(L); }
+const outNear = () => { const r = outReg(); return !!r && S.x >= r.x0 - 1 && S.x <= r.x1 + 1 && S.y >= r.y0 - 1 && S.y <= r.y1 + 1; };
+const outHour = () => R?.outdoor?.forceHour ?? hourAt(S?.steps || 0);
+let wasOutdoors = false;
+function outdoorEntry() {
+  const r = outReg(), now = !!r && inRegion(r, S.x, S.y);
+  if (now && !wasOutdoors) { const t = todName(outHour()), w = WEATHER_INFO[r.weather]; toast(`${r.name} — open sky · ${t.icon} ${t.name} · ${w.icon} ${w.name}`); log(`🌳 ${r.name}: the roof has fallen in and the sky shows through. It is ${t.name}; ${r.weather === 'rain' ? 'rain patters on the grass' : 'a thin mist hangs over the ground'}.`, 'note'); }
+  wasOutdoors = now;
+}
+function refresh() { checkReady(); renderParty(); drawMinimap($('#minimap')); renderHud(); if (R) R.steps = S?.steps || 0; outdoorEntry(); syncAudio(); syncWorld(); }
 /** Phase B: push flagged walls and live elites into the 3D view. */
 function syncWorld() {
   if (!R || !S || S.mode !== 'dungeon' || S.level !== lastBuiltLevel) return;
@@ -276,7 +288,7 @@ function syncWorld() {
 }
 function renderHud() {
   const el = $('#hud'); if (!S) { el.innerHTML = ''; return; }
-  if (S.mode === 'dungeon') { const sc = G.Prog.secretCount(S, S.level); el.innerHTML = `<span>${getLevel(S.level).def.name} · <b class="secrets" title="Secrets found on this floor">🔍 ${sc.found}/${sc.total}</b></span><span>⌖ ${S.x},${S.y} · ${DIR_NAMES[S.dir]} · ${S.gold} gp</span>`; }
+  if (S.mode === 'dungeon') { const sc = G.Prog.secretCount(S, S.level); const oreg = outNear() ? outReg() : null, otod = oreg ? todName(outHour()) : null; el.innerHTML = `<span>${getLevel(S.level).def.name}${oreg ? ` · <b class="outdoor" title="${oreg.name}: ${otod.name}, ${oreg.weather}">${otod.icon}${WEATHER_INFO[oreg.weather].icon}</b>` : ''} · <b class="secrets" title="Secrets found on this floor">🔍 ${sc.found}/${sc.total}</b></span><span>⌖ ${S.x},${S.y} · ${DIR_NAMES[S.dir]} · ${S.gold} gp</span>`; }
   else el.innerHTML = `<span>Emberhollow</span><span>${S.gold} gp · 🥄 ${S.spoons}</span>`;
 }
 
@@ -289,14 +301,15 @@ function drawMinimap(cv, big = false) {
   const span = big ? W : 13; const cs = cv.width / span;
   const ox = big ? 0 : S.x - (span >> 1), oy = big ? 0 : S.y - (span >> 1);
   const ex = new Set(S.explored[S.level]);
-  const theme = '#' + getLevel(S.level).def.color.toString(16).padStart(6, '0');
+  const theme = '#' + getLevel(S.level).def.color.toString(16).padStart(6, '0'); const oreg = outReg();
   for (let sy = 0; sy < span; sy++) for (let sx = 0; sx < span; sx++) {
     const x = ox + sx, y = oy + sy; const X = sx * cs, Y = sy * cs;
     if (x < 0 || y < 0 || x >= W || y >= H) continue;
     if (!ex.has(`${x},${y}`)) { g.strokeStyle = '#1a1430'; g.lineWidth = 1; g.strokeRect(X + 0.5, Y + 0.5, cs - 1, cs - 1); continue; }
     const ch = G.tile(S, x, y);
-    if (ch === '#' || ch === 'S') { g.fillStyle = theme + '66'; g.fillRect(X, Y, cs, cs); if (ch === 'S' && S.suspect?.[S.level]?.includes(`${x},${y}`)) { g.fillStyle = '#ffe27a'; g.font = `bold ${Math.round(cs * 0.8)}px sans-serif`; g.textAlign = 'center'; g.fillText('?', X + cs / 2, Y + cs * 0.8); g.textAlign = 'start'; } continue; }
+    if (ch === '#' || ch === 'S') { g.fillStyle = oreg && inRegion(oreg, x, y) ? '#2f6a3a99' : theme + '66'; g.fillRect(X, Y, cs, cs); if (ch === 'S' && S.suspect?.[S.level]?.includes(`${x},${y}`)) { g.fillStyle = '#ffe27a'; g.font = `bold ${Math.round(cs * 0.8)}px sans-serif`; g.textAlign = 'center'; g.fillText('?', X + cs / 2, Y + cs * 0.8); g.textAlign = 'start'; } continue; }
     let col = MAPCOL[ch] || '#2a2448'; if (ch === 'B' && S.bossDead[S.level]) col = '#2a2448';
+    if (oreg && ch === '.' && inRegion(oreg, x, y)) col = '#2f5a35'; // the open-air window reads green on the automap
     g.fillStyle = col; g.fillRect(X + 0.5, Y + 0.5, cs - 1, cs - 1);
   }
   g.textAlign = 'center'; g.font = `${Math.round(cs * 0.85)}px serif`; for (const p of S.pins?.[S.level] || []) { const X = (p.x - ox + 0.5) * cs, Y = (p.y - oy + 0.85) * cs; if (X > 0 && Y > 0 && X < cv.width && Y < cv.height) g.fillText(p.icon, X, Y); } g.textAlign = 'start';
@@ -409,6 +422,8 @@ function showHelp() {
   <h3>Weaknesses and resistances</h3>
   <p>Damage types have icons (🔥 fire, ❄️ cold, ⚡ lightning, 🔊 thunder, ☠️ poison, 🧪 acid, 💀 necrotic, ✨ radiant, 🧠 psychic, 💥 force, and 🔨 🗡️ ⚔️ for bludgeoning, piercing and slashing). A monster that is <b>weak</b> (<b>×2</b>) takes double damage, one that <b>resists</b> (<b>½</b>) takes half, and an <b>immune</b> one (<b>✕</b>) takes none. A <b>❔</b> on a monster means it still hides something. You <b>discover</b> a trait the first time you hit it with that damage type, or all at once with the <b>Study</b> bonus action, a Knowledge check (Arcana, Nature, Religion or History, by creature type) against a DC of 10 plus its challenge. What you learn is remembered for every future fight with that kind of monster.</p>
   <p>There is only one layer of defense: <b>Armor Class (AC)</b>. Attacks must roll at least a target's AC to hit; no extra armor or damage reduction on top.</p>
+  <h3>Open sky</h3>
+  <p>On <b>B3</b> part of the cavern roof has fallen in: the <b>Sunken Orchard</b>. It is the same grid — the same automap (shown <b>green</b>), secrets, patrols, events and fights — but with sky, trees, rocks and cliffs for walls, ruined arches and grass underfoot. Light <b>rain</b> or <b>mist</b> falls there, and the sky follows the time of day (<b>🌅 dawn · ☀️ day · 🌇 dusk · 🌙 night</b>); one day passes every 360 steps. Your torch matters less in daylight and more at night. Fights outdoors still happen in the arena.</p>
   <p>Companions can be AI- or player-controlled — tap the <b>AI/YOU</b> toggle on their card. Level up at the Training Grounds in town, or with Level Up in the Camp menu.</p>` })]);
 }
 function showCredits() {
@@ -532,7 +547,7 @@ async function startDungeon() {
   R.setMode('dungeon'); setControls('dungeon'); await rebuild(); R.setView(S.x, S.y, S.dir, true); refresh();
 }
 let lastBuiltLevel = -1;
-async function rebuild() { if (!S || S.mode !== 'dungeon') return; await R.buildLevel(S, (x, y) => G.tile(S, x, y), getLevel(S.level).def); lastBuiltLevel = S.level; syncWorld(); }
+async function rebuild() { if (!S || S.mode !== 'dungeon') return; await R.buildLevel(S, (x, y) => G.tile(S, x, y), getLevel(S.level).def, outReg()); lastBuiltLevel = S.level; syncWorld(); }
 function partyOrderList(redraw) {
   return h('div', { class: 'menu' }, formationBoard(redraw), S.party.map((c, i) => h('div', { class: 'row' }, portrait(c), h('span', { style: 'flex:1' }, `${i + 1}. ${c.name} (${CLASSES[c.cls].name}) ${i < 2 ? '— front row' : '— back row'}`),
     btn('▲', () => { if (i > 0) { [S.party[i - 1], S.party[i]] = [S.party[i], S.party[i - 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === 0 }),
@@ -1392,6 +1407,7 @@ async function boot() {
   window.__gw = { sfx, SFX_NAMES, applyAudioSettings, playCutin, endCutinPhase() { cutinStop?.(); }, closeModal, renderCombatUI() { renderParty(); renderTargets(); }, showHelp,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
+    outdoorInfo: () => ({ reg: outReg(), near: S ? outNear() : false, hour: S ? outHour() : null, tod: S ? todName(outHour()) : null, weather: R?.outdoor?.weather || null, state: R?.outState || null, counts: R?.outdoor?.counts || null }), look(p) { if (R) R.pitch = p; }, setHour(h) { if (R?.outdoor) R.outdoor.forceHour = h; refresh(); }, setWeather(k) { R?.outdoor?.setWeather(k); refresh(); },
     showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, getLevel, refresh, showInventory, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
@@ -1530,7 +1546,7 @@ const DIFF_HELP = { story: 'Story: monsters have 70% HP and deal 60% damage.', n
 let victoryUntil = 0;
 function applyAudioSettings(st = loadSettings()) { setMuted(!st.sound); setSfxOn(st.sfxOn !== false); setVolumes({ music: st.music ?? 0.6, sfx: st.sfx ?? 0.8, amb: st.amb ?? 0.6 }); setVoicesEnabled(st.voices !== false && st.sound !== false); setVoiceVolume(st.voice ?? 0.85); }
 function syncAudio() {
-  const amb = !S ? null : S.mode === 'dungeon' ? 'dungeon' : 'town';
+  const amb = !S ? null : S.mode === 'dungeon' ? (outNear() && !combat ? `outdoor:${outReg().weather}:${todName(outHour()).name === 'night' ? 'night' : 'day'}` : 'dungeon') : 'town';
   ambience(amb);
   if (victoryUntil > Date.now()) return;
   const track = !S ? 'title' : combat ? (combatInfo?.boss ? 'boss' : 'combat') : S.mode === 'dungeon' ? (getLevel(S.level).def.music || 'dungeon0') : 'town';

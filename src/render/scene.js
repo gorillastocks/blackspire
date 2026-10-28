@@ -1,7 +1,7 @@
 // Three.js renderer: neon-wireframe-era dungeon in modern PBR 3D, plus a combat arena with animated glTF monsters.
-import { ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, Sprite, SpriteMaterial, TorusGeometry, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, HalfFloatType } from 'three';
+import { Shape, Path, ShapeGeometry, ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, Sprite, SpriteMaterial, TorusGeometry, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, HalfFloatType } from 'three';
 import { FX, SPELL_FX, IMPACT } from './fx.js';
-const THREE = { WebGLRenderTarget, HalfFloatType, ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, Sprite, SpriteMaterial, TorusGeometry, Vector2, Vector3, WebGLRenderer };
+const THREE = { Shape, Path, ShapeGeometry, WebGLRenderTarget, HalfFloatType, ACESFilmicToneMapping, AdditiveBlending, AnimationMixer, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry, Float32BufferAttribute, Fog, FogExp2, GridHelper, Group, HemisphereLight, InstancedMesh, LineBasicMaterial, LineSegments, LoopOnce, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PMREMGenerator, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, PolarGridHelper, RepeatWrapping, RingGeometry, SRGBColorSpace, Scene, SphereGeometry, SpotLight, Sprite, SpriteMaterial, TorusGeometry, Vector2, Vector3, WebGLRenderer };
 // three.js addons are lazy-loaded (separate chunks) so the first paint only needs three core.
 let SkeletonUtils = null;
 let loaderP = null;
@@ -11,6 +11,8 @@ function getLoader() {
   return loaderP;
 }
 import { W, H, DIRS } from '../dungeon/levels.js';
+import { inRegion } from '../dungeon/outdoor.js';
+import { Outdoor } from './outdoor.js';
 import { ANIM_SLOW } from '../menu.js';
 import { MONSTERS } from '../rules/data.js';
 
@@ -58,7 +60,7 @@ export class Renderer {
     this.camera = new THREE.PerspectiveCamera(72, 1, 0.05, 60);
     this.scene.add(this.camera);
     this.torch = new THREE.PointLight(0xffb36b, 30, 14, 1.6); this.torch.position.set(0.25, 0.2, 0.1); this.camera.add(this.torch);
-    this.scene.add(new THREE.HemisphereLight(0x6c7cff, 0x221122, 0.35));
+    this.hemi = new THREE.HemisphereLight(0x6c7cff, 0x221122, 0.35); this.scene.add(this.hemi); this.torchK = 1; this.steps = 0; this.outdoor = null;
     this.levelGroup = new THREE.Group(); this.scene.add(this.levelGroup);
     this.dyn = new THREE.Group(); this.scene.add(this.dyn); this.eliteObjs = new Map(); this.shimmerObjs = new Map(); // Phase B: moving elites and wall shimmers live outside the static level
     this.wallMat = new THREE.MeshStandardMaterial({ map: stoneTex(), roughness: 0.85, metalness: 0.05, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
@@ -104,8 +106,8 @@ export class Renderer {
   }
 
   /* ---------- Dungeon ---------- */
-  async buildLevel(s, tileFn, def) {
-    const grp = this.levelGroup; grp.clear(); this.torches = []; this.animated = []; this.clearDynamic();
+  async buildLevel(s, tileFn, def, reg = null) {
+    const grp = this.levelGroup; grp.clear(); this.outdoor = null; this.torchK = 1; this.scene.environmentIntensity = 0.25; this.hemi.color.set(0x6c7cff); this.hemi.groundColor.set(0x221122); this.hemi.intensity = 0.35; this.torches = []; this.animated = []; this.clearDynamic();
     const color = new THREE.Color(def.color);
     this.scene.fog = new THREE.FogExp2(def.fog, 0.075); this.scene.background = new THREE.Color(def.fog);
     this.edgeMat = new THREE.LineBasicMaterial({ color: color.clone().multiplyScalar(0.8), toneMapped: false, fog: false }); // steady: opaque, no fog fade, kept under the bloom threshold so it doesn't pump
@@ -115,6 +117,7 @@ export class Renderer {
       if (ch === '#' || ch === 'S') {
         // only walls touching open space
         if (!DIRS.some(([dx, dy]) => { const n = tileFn(x + dx, y + dy); return n !== '#' && n !== 'S' && x + dx >= 0 && y + dy >= 0 && x + dx < W && y + dy < H; })) continue;
+        if (reg && inRegion(reg, x, y)) continue; // Phase E: the open-air window draws its own trees, rocks and cliffs
         walls.push([x, y]);
       }
     }
@@ -127,8 +130,18 @@ export class Renderer {
     // floor & ceiling with neon grid
     const fl = new THREE.Mesh(new THREE.PlaneGeometry(W * CELL, H * CELL), this.floorMat); fl.material.map.repeat.set(W / 2, H / 2);
     fl.rotation.x = -Math.PI / 2; fl.position.set((W - 1) * CELL / 2, 0, (H - 1) * CELL / 2); grp.add(fl);
-    const ce = new THREE.Mesh(new THREE.PlaneGeometry(W * CELL, H * CELL), this.ceilMat); ce.material.map.repeat.set(W / 2, H / 2);
-    ce.rotation.x = Math.PI / 2; ce.position.set((W - 1) * CELL / 2, WALL_H, (H - 1) * CELL / 2); grp.add(ce);
+    let ce;
+    if (reg) { // Phase E: same ceiling, with a rectangular hole where the roof has fallen in
+      const x0 = -CELL / 2 - 1, x1 = W * CELL - CELL / 2 + 1, z0 = -CELL / 2 - 1, z1 = H * CELL - CELL / 2 + 1;
+      const hx0 = reg.x0 * CELL - CELL / 2, hx1 = (reg.x1 + 1) * CELL - CELL / 2, hz0 = reg.y0 * CELL - CELL / 2, hz1 = (reg.y1 + 1) * CELL - CELL / 2;
+      const sh = new THREE.Shape([new THREE.Vector2(x0, z0), new THREE.Vector2(x1, z0), new THREE.Vector2(x1, z1), new THREE.Vector2(x0, z1)]);
+      sh.holes.push(new THREE.Path([new THREE.Vector2(hx0, hz0), new THREE.Vector2(hx0, hz1), new THREE.Vector2(hx1, hz1), new THREE.Vector2(hx1, hz0)]));
+      const g = new THREE.ShapeGeometry(sh); const p = g.attributes.position, uv = g.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) + CELL / 2) / (W * CELL), (p.getY(i) + CELL / 2) / (H * CELL));
+      g.rotateX(Math.PI / 2); ce = new THREE.Mesh(g, this.ceilMat); ce.material.map.repeat.set(W / 2, H / 2); ce.position.set(0, WALL_H, 0); grp.add(ce);
+    } else {
+      ce = new THREE.Mesh(new THREE.PlaneGeometry(W * CELL, H * CELL), this.ceilMat); ce.material.map.repeat.set(W / 2, H / 2);
+      ce.rotation.x = Math.PI / 2; ce.position.set((W - 1) * CELL / 2, WALL_H, (H - 1) * CELL / 2); grp.add(ce);
+    }
     const grid = new THREE.GridHelper(W * CELL, W, color, color); grid.material.transparent = true; grid.material.opacity = 0.18; grid.material.toneMapped = false;
     grid.position.set((W - 1) * CELL / 2, 0.005, (H - 1) * CELL / 2); grid.position.x -= 0; grp.add(grid);
     grid.position.x = (W * CELL) / 2 - CELL / 2; grid.position.z = (H * CELL) / 2 - CELL / 2;
@@ -194,7 +207,7 @@ export class Renderer {
         const xg2 = xg.clone(); xg2.rotation.z = -Math.PI / 4; add(xg2, 0.02);
       }
       // wall torches on some corridor walls
-      if (torch && ch !== '#' && ch !== 'S' && (x * 7 + y * 13) % 11 === 0 && torchCount < 14) {
+      if (torch && ch !== '#' && ch !== 'S' && !(reg && inRegion(reg, x, y)) && (x * 7 + y * 13) % 11 === 0 && torchCount < 14) {
         for (const [d, [dx, dy]] of DIRS.entries()) {
           if (tileFn(x + dx, y + dy) !== '#') continue;
           const t = torch.scene.clone(); t.scale.setScalar(0.8); t.position.set(px + dx * (CELL / 2 - 0.05), 1.4, pz + dy * (CELL / 2 - 0.05)); t.rotation.y = [Math.PI, -Math.PI / 2, 0, Math.PI / 2][d] + Math.PI; grp.add(t);
@@ -204,6 +217,7 @@ export class Renderer {
         }
       }
     }
+    if (reg) { this.outdoor = new Outdoor({ reg, tileFn, CELL, WALL_H, W, H, wallMat: this.wallMat, indoorFog: def.fog }); this.outdoor.reduce = this.reduceMotion; grp.add(this.outdoor.group); }
   }
   /* ---------- Phase B: wall shimmers and telegraphed elites ---------- */
   clearDynamic() {
@@ -482,11 +496,12 @@ export class Renderer {
     // camera easing
     this.camPos.lerp(this.targetPos, 1 - Math.pow(0.0005, dt));
     this.camYaw += (this.targetYaw - this.camYaw) * (1 - Math.pow(0.0005, dt));
-    this.camera.position.copy(this.camPos); this.camera.rotation.set(0, this.camYaw, 0);
+    this.camera.position.copy(this.camPos); this.camera.rotation.order = 'YXZ'; this.camera.rotation.set(this.pitch || 0, this.camYaw, 0);
     if (this.bumpT > 0) { this.bumpT -= dt; this.camera.translateZ(-Math.sin(this.bumpT * 12) * 0.08); }
     if (this.shakeT > 0) { this.shakeT -= dt; this.camera.position.x += (Math.random() - 0.5) * 0.08; this.camera.position.y += (Math.random() - 0.5) * 0.08; }
     this.camera.position.y += Math.sin(t * 1.7) * 0.01;
-    this.torch.intensity = 26 + Math.sin(t * 11) * 2 + Math.sin(t * 23.3) * 1.5;
+    this.torch.intensity = (26 + Math.sin(t * 11) * 2 + Math.sin(t * 23.3) * 1.5) * this.torchK;
+    if (this.outdoor && this.mode !== 'combat') this.outState = this.outdoor.update(dt, t, this, this.steps);
     for (const [i, l] of (this.torches || []).entries()) l.intensity = 5 + Math.sin(t * 9 + i) * 1.2;
     for (const a of this.animated || []) { a.obj.rotation[a.bob ? 'y' : 'z'] += dt * a.spin; if (a.bob) a.obj.position.y += Math.sin(t * 2) * 0.002; }
     this.dust.rotation.y = Math.sin(t * 0.05) * 0.02;
