@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LEVEL_POIS } from '../src/game/story.js';
-import { generateLevel, bfs, LEVEL_DEFS, W, H } from '../src/dungeon/levels.js';
+import { generateLevel, getLevel, bfs, LEVEL_DEFS, W, H } from '../src/dungeon/levels.js';
 
 const find = (L, ch) => { const o = []; L.tiles.forEach((r, y) => [...r].forEach((c, x) => { if (c === ch) o.push([x, y]); })); return o; };
 describe('dungeon levels are solvable', () => {
@@ -29,4 +29,15 @@ describe('dungeon levels are solvable', () => {
   }
   it('has five floors, each with its own music', () => { expect(LEVEL_DEFS.length).toBe(5); expect(new Set(LEVEL_DEFS.map((d) => d.music)).size).toBe(5); expect(LEVEL_DEFS[4].phase2).toBeTruthy(); });
   it('is deterministic', () => { expect(generateLevel(0).tiles).toEqual(generateLevel(0).tiles); });
+});
+
+describe('the party starts facing the way into the floor (regression: it used to start facing a wall)', () => {
+  const open = (L, x, y) => { const c = L.tiles[y][x]; return c !== '#' && c !== 'S' && c !== 'L'; };
+  const D = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+  it('classic floors: the start tile looks at an open tile', () => {
+    for (let i = 0; i < LEVEL_DEFS.length; i++) { const L = getLevel(i); const [sx, sy, d] = L.start; expect(open(L, sx + D[d][0], sy + D[d][1]), `floor ${i + 1} dir ${d}`).toBe(true); }
+  });
+  it('random-dungeon seeds: every floor looks at an open tile', () => {
+    for (let seed = 1; seed <= 60; seed++) for (let i = 0; i < LEVEL_DEFS.length; i++) { const L = generateLevel(i, seed * 977 + i); const [sx, sy, d] = L.start; expect(open(L, sx + D[d][0], sy + D[d][1]), `seed ${seed} floor ${i + 1}`).toBe(true); }
+  });
 });

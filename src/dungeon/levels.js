@@ -166,7 +166,9 @@ function buildLevel(idx, seed) {
   }
   // Assign indices for messages/fixed encounters (in scan order)
   const tiles = g.map((r) => r.join(''));
-  return { idx, def, tiles, start: [1, 1, 1], seed };
+  // Face the way in: East if (2,1) is open, else South. (Was always East, which left some floors starting nose-to-wall.)
+  const startDir = g[1][2] !== '#' ? 1 : 2;
+  return { idx, def, tiles, start: [1, 1, startDir], seed };
 }
 
 /** Connectivity validator: every required feature exists and is reachable in the right order. Returns a list of problems. */
