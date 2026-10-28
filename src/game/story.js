@@ -2,6 +2,7 @@
 // DOM-free so it can be unit-tested and driven by the balance sim.
 import { ITEMS } from '../rules/data.js';
 import { COMPANIONS } from './companions.js';
+import { memoryLines, liftCurses, lioraEnding } from './phaseC.js';
 
 /* ---------- Cast (portraits are emoji on a coloured disc) ---------- */
 export const NPCS = {
@@ -268,6 +269,9 @@ export function talkTo(s, npc) {
   } else {
     lines.push(L(npc, `${QUESTS[q].desc} (${prog(s, q)}/${QUESTS[q].need || 1})`));
   }
+  // Phase C: the town remembers what you did below, and Brother Osric lifts curses.
+  const mem = memoryLines(s, npc).map((t) => L(npc, t)); lines.unshift(...mem);
+  if (npc === 'osric') { const n = liftCurses(s); if (n) { lines.push(L('osric', 'You carry shadows, child. Hold still... There. The Temple has lifted what clung to you.')); out.push({ log: 'Brother Osric lifts the curse upon you.', cls: 'good' }); } }
   return { scene: { lines }, out };
 }
 export function townfolkStatus(s, npc) { const st = s.quests?.[OFFERS[npc]]; return st === 'ready' ? '❗ quest ready' : st === 'done' ? '✔' : st ? '…' : '❓ new quest'; }
@@ -327,6 +331,7 @@ export function endingScene(s) {
     ...comp('zizzy', s.flags.gateBlown ? 'Best. Explosion. Ever.' : 'Next time, more explosions.'),
     ...comp('vexrath', s.quests.decree === 'done' ? 'My clan returns to Emberhollow with honour. Thanks to you.' : 'Honour is earned. Today, we earned it.'),
     ...comp('nettle', s.flags.weakPoint ? 'The tale of the cracked staff. I\'ll be telling it for years. Badly. With improvements.' : 'I\'ll make this sound even better than it was.'),
+    ...(hasComp(s, 'liora') ? lioraEnding(s) : []),
     L('rowan', 'One more thing, Knight. The Sovereign\'s staff... we never found it among the rubble.'),
     L('narrator', 'Far below, in the dark of the empty vault, a sixth seal nobody knew about begins to glow.'),
   ];

@@ -90,6 +90,6 @@ describe('v3 saves', () => {
     const s = fresh(); const L = getLevel(0); const cell = L.secretCells.find((c) => !L.illusions.includes(c));
     s.mods[0][cell] = 'D'; delete s.suspect; delete s.eliteSeen; delete s.rareFound; s.version = 3;
     const d = G.deserialize(G.serialize(s));
-    expect(d.version).toBe(4); expect(d.suspect.length).toBe(5); expect(d.eliteSeen).toEqual({}); expect(d.disc[`secret:0:${cell}`]).toBe(1);
+    expect(d.version).toBe(5); expect(d.suspect.length).toBe(5); expect(d.eliteSeen).toEqual({}); expect(d.disc[`secret:0:${cell}`]).toBe(1);
   });
 });

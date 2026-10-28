@@ -10,15 +10,17 @@ import { randomPortrait, PORTRAIT_COUNT, PORTRAIT_TOTAL, LIORA_PORTRAIT } from '
 const goodPortrait = (c, i) => Number.isInteger(i) && i >= 0 && (i < PORTRAIT_COUNT || (c.companion === 'liora' && i < PORTRAIT_TOTAL));
 const givePortrait = (c, want = null) => { if (c.companion === 'liora') { c.portrait = LIORA_PORTRAIT; return c; } c.portrait = Number.isInteger(want) && want >= 0 && want < PORTRAIT_COUNT ? want : randomPortrait(c.race, c.cls); return c; };
 import * as Narr from './narration.js';
+import * as PC from './phaseC.js';
 import * as Prog from './progress.js';
 import { isLevelLocked } from '../entitlements.js';
 import { Combat } from '../rules/combat.js';
-export { Narr, Prog };
+export { Narr, Prog, PC };
 export { Story };
 export const NLEVELS = LEVEL_DEFS.length;
 
 export const SAVE_KEY = 'blackspire.save.v1';
 
+const withPC = (s) => { PC.ensure(s); return s; };
 export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base = null, randomDungeons = false, seeds = null, portrait = null } = {}) {
   const dseeds = seeds || (randomDungeons ? randomSeeds() : null); setDungeonSeeds(dseeds);
   const hero = createCharacter({ name, race, cls, base: base || assignByPriority(cls) });
@@ -29,13 +31,13 @@ export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base =
   const order = { fighter: 0, cleric: 1, rogue: 2, wizard: 3 };
   party.sort((a, b) => order[a.cls] - order[b.cls]);
   if (!party.slice(0, 2).includes(hero) && hero.cls !== 'wizard') { /* hero rogue goes 3rd; ok */ }
-  return Prog.initProgress({
-    version: 4, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
+  return withPC(Prog.initProgress({
+    version: 5, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
     mode: 'town', level: 0, x: 1, y: 1, dir: 1, mods: LEVEL_DEFS.map(() => ({})), explored: LEVEL_DEFS.map(() => []), maxDepth: 0,
     bossDead: LEVEL_DEFS.map(() => false), victory: false, steps: 0, sinceEncounter: 0, keys: [], playTime: 0,
     seeds: dseeds, randomDungeons: !!dseeds,
     flags: {}, journal: [], notes: [], moon: 0, rests: 0, quests: { main: 'active' }, pois: {},
-  });
+  }));
 }
 export const isHero = (c) => !c.companion && !c.recruit;
 export function heroOf(s) { return s.party.find(isHero) || s.party[0]; }
@@ -113,7 +115,7 @@ export function markExplored(s) {
 
 export function enterDungeon(s, lvl = 0) {
   if (isLevelLocked(lvl)) return [{ paywall: true, log: 'That way is sealed until the full game is unlocked.', cls: 'dim' }];
-  s.mode = 'dungeon'; s.level = lvl; Prog.sessionStart(s);
+  s.mode = 'dungeon'; s.level = lvl; Prog.sessionStart(s); PC.leftTown(s);
   const L = getLevel(lvl);
   if (lvl === 0 || !s.arriveAtDown) { s.x = L.start[0]; s.y = L.start[1]; s.dir = L.start[2]; }
   s.sinceEncounter = 0; markExplored(s);
@@ -141,7 +143,7 @@ export function move(s, rel = 0) {
   if (ch === '#') return [{ log: 'Ouch! A wall.', cls: 'dim', bump: true }];
   if (ch === 'S') {
     if (!isIllusion(s.level, nx, ny)) return [{ log: 'Ouch! A wall.', cls: 'dim', bump: true }];
-    setTile(s, nx, ny, '.'); out.push({ log: 'You lean on the wall and your hand passes straight through: an illusion! A hidden passage opens.', cls: 'good', card: true, sfx: 'chime', reveal: true, banter: banter(s.party, 'secret', {}, 0.9) }, ...foundSecret(s, nx, ny, 'illusory wall', 'Illusory wall'));
+    setTile(s, nx, ny, '.'); out.push({ log: 'You lean on the wall and your hand passes straight through: an illusion! A hidden passage opens.', cls: 'good', card: true, sfx: 'chime', reveal: true, banter: secretLine(s) }, ...foundSecret(s, nx, ny, 'illusory wall', 'Illusory wall'));
   }
   if (ch === 'L') {
     const def = getLevel(s.level).def;
@@ -152,7 +154,7 @@ export function move(s, rel = 0) {
   const ox = s.x, oy = s.y;
   s.x = nx; s.y = ny; s.steps++; s.sinceEncounter++;
   for (const c of s.party) if (c.conditions.poisoned && c.conditions.poisoned.steps && --c.conditions.poisoned.steps <= 0) { delete c.conditions.poisoned; out.push({ log: `${c.name} is no longer poisoned.` }); }
-  markExplored(s);
+  markExplored(s); out.push(...PC.tickStep(s));
   const elite = eliteContact(s, ox, oy);
   if (elite) { s.sinceEncounter = 0; out.push(eliteFight(s, elite)); return out; }
   out.push(...Narr.secretAt(s, getLevel(s.level), nx, ny));
@@ -171,12 +173,14 @@ function suppressAmbientForCombat(out) {
   return out;
 }
 
+const secretLine = (s) => PC.react(s, 'secret', () => banter(s.party, 'secret', {}, 0.25));
+
 export function enterTile(s) {
   const ch = tile(s, s.x, s.y); const L = getLevel(s.level); const def = L.def; const out = [...Narr.areaAt(s, L, s.x, s.y)];
-  if (out.length) out.push(...Prog.discover(s, 'room', `${s.x},${s.y}`, 'new area explored'));
+  if (out.length) { for (const e of out) if (e.dm) e.quip = PC.onNewArea(s); out.push(...Prog.discover(s, 'room', `${s.x},${s.y}`, 'new area explored')); }
   const passivePerc = Math.max(...s.party.filter((c) => !isDown(c)).map((c) => passive(c, 'perception')));
   // Passive notice of adjacent secret doors
-  for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'S' && !isIllusion(s.level, s.x + dx, s.y + dy) && passivePerc >= def.secretDC + 3) { setTile(s, s.x + dx, s.y + dy, 'D'); out.push({ log: 'Your keen eyes notice a hidden door!', cls: 'good', card: true, banter: banter(s.party, 'secret', {}, 0.9), reveal: true }, ...foundSecret(s, s.x + dx, s.y + dy, 'hidden door found', 'Hidden door')); }
+  for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'S' && !isIllusion(s.level, s.x + dx, s.y + dy) && passivePerc >= def.secretDC + 3) { setTile(s, s.x + dx, s.y + dy, 'D'); out.push({ log: 'Your keen eyes notice a hidden door!', cls: 'good', card: true, banter: secretLine(s), reveal: true }, ...foundSecret(s, s.x + dx, s.y + dy, 'hidden door found', 'Hidden door')); }
   out.push(...perceiveSecrets(s, passivePerc));
   switch (ch) {
     case 'N': out.push(...visitNook(s)); break;
@@ -234,8 +238,11 @@ export function enterTile(s) {
     case '<': out.push({ prompt: 'up' }); break;
     case 'A': out.push({ prompt: 'altar' }); break;
   }
+  // Phase C: a story event waiting on this tile (a card with choices; walking on never locks it out)
+  const evh = PC.eventHere(s, L);
+  if (evh && !out.some((o) => o.combat || o.prompt)) { out.push({ prompt: 'event', event: PC.cardFor(s, evh.id), eventId: evh.id, sfx: 'chime' }); return out; }
   // Random encounters
-  if (!out.some((o) => o.combat || o.prompt) && s.sinceEncounter > 6 && rand() < 0.045 * quiet(s)) {
+  if (!out.some((o) => o.combat || o.prompt) && s.sinceEncounter > 6 && rand() < 0.045 * quiet(s) * PC.encounterMult(s)) {
     s.sinceEncounter = 0; out.push({ log: 'Monsters appear!', cls: 'bad', combat: RAND(s) });
   }
   return suppressAmbientForCombat(out);
@@ -244,7 +251,7 @@ export function enterTile(s) {
 export function afterCombat(s, combat, info = {}) {
   const out = [];
   if (combat.state === 'won') {
-    s.gold += combat.gold; Prog.noteFightWon(s, info);
+    const af = PC.afterFight(s, combat.gold); s.gold += af.gold; out.push(...af.out); Prog.noteFightWon(s, info);
     const def = getLevel(s.level).def;
     const chain = info.boss && def.phase2 && !info.phase2;
     if (info.boss && !chain) { s.bossDead[s.level] = true; setTile(s, s.x, s.y, '.'); const q = [600, 3000, 9000, 22000, 0][s.level] || 0; if (q) for (const c of s.party) if (!c.dead) c.xp += q; out.push({ log: `The guardian is defeated! The way onward is open.${q ? ` Quest bonus: ${q} XP each.` : ''}`, cls: 'good' }); }
@@ -271,6 +278,17 @@ export function afterCombat(s, combat, info = {}) {
     // step back
     const [dx, dy] = DIRS[(s.dir + 2) % 4]; if (!isSolid(tile(s, s.x + dx, s.y + dy))) { s.x += dx; s.y += dy; }
   }
+  out.push(...mourn(s));
+  return out;
+}
+/** A companion reacts, once, when a friend has died. */
+function mourn(s) {
+  const p = PC.ensure(s), out = [];
+  for (const c of s.party) {
+    if (!c.dead) { delete p.mourned[c.id]; continue; }
+    if (p.mourned[c.id]) continue; p.mourned[c.id] = 1;
+    const b = PC.reactive(s, 'death', { p: c.name }, 1); if (b) out.push({ banter: b });
+  }
   return out;
 }
 
@@ -287,7 +305,7 @@ export function search(s) {
   }
   if (found) s.searchMiss = 0; else if (near) s.searchMiss = (s.searchMiss | 0) + 1;
   out.unshift({ log: `${who.name} searches (Perception ${r.total})… ${found ? 'a secret door!' : near && s.searchMiss >= 2 ? 'something is definitely off about this wall. Search once more.' : 'nothing obvious.'}`, cls: found ? 'good' : 'dim', reveal: found });
-  if (found) out.push({ banter: banter(s.party, 'secret', {}, 0.9) });
+  if (found) out.push({ banter: secretLine(s) });
   if (rand() < 0.08 * quiet(s)) out.push({ log: 'Your searching made noise…', cls: 'bad', combat: { ...RAND(s), ambush: true } });
   return out;
 }
@@ -331,15 +349,16 @@ function springNeedle(s, who) {
 export function openChest(s, skipTrap = false) {
   const st = chestState(s); const def = getLevel(s.level).def; const out = [];
   if (st.trapped && !skipTrap) out.push(...springNeedle(s, s.party.find((c) => !isDown(c))));
-  const gold = def.loot.gold[0] + Math.floor(rand() * (def.loot.gold[1] - def.loot.gold[0]));
+  const lucky = PC.chestBuff(s);
+  const gold = (def.loot.gold[0] + Math.floor(rand() * (def.loot.gold[1] - def.loot.gold[0]))) * lucky;
   s.gold += gold;
   const n = 1 + (rand() < 0.5 ? 1 : 0); const items = [];
   for (let i = 0; i < n; i++) { const it = pick(def.loot.items); s.inventory.push(it); items.push(it); if (ITEMS[it].spoon) s.spoons++; }
   setTile(s, s.x, s.y, 'o');
   out.push({ log: `The chest holds ${gold} gold and: ${items.map((i) => ITEMS[i].name).join(', ')}.`, cls: 'good', sfx: 'chest' }, ...Prog.discover(s, 'chest', `${s.x},${s.y}`, 'chest opened'));
   const spoon = items.some((i) => ITEMS[i].spoon);
-  out.push({ banter: banter(s.party, spoon ? 'spoon' : 'loot', {}, spoon ? 1 : 0.7) });
-  if (rand() < 0.07 + 0.03 * s.level) out.push(...grantRare(s, rollTier(s.level, 'chest'), 'chest')); // after the chest card, so the reveal follows it
+  out.push({ banter: spoon ? banter(s.party, 'spoon', {}, 1) : PC.react(s, 'loot', () => banter(s.party, 'loot', {}, 0.25), 0.8) });
+  if (rand() < 0.07 + 0.03 * s.level + (lucky > 1 ? 0.3 : 0)) out.push(...grantRare(s, rollTier(s.level, 'chest'), 'chest')); // after the chest card, so the reveal follows it
   return out;
 }
 
@@ -378,10 +397,11 @@ export function rest(s, kind) {
 export function innRest(s) {
   const cost = s.flags?.freeInn ? 0 : 10; if (s.gold < cost) return [{ log: 'Not enough gold for a room (10 gp).', cls: 'bad' }];
   s.gold -= cost; for (const c of s.party) longRest(c); Prog.addRested(s, 'inn');
-  return [{ log: cost ? 'You rent rooms at the Boar & Spoon Inn and sleep soundly. (−10 gp)' : 'Marga waves you upstairs. "On the house, love." You sleep soundly.', cls: 'good' }, ...Story.onLongRest(s)];
+  const lifted = PC.liftCurses(s);
+  return [{ log: cost ? 'You rent rooms at the Boar & Spoon Inn and sleep soundly. (−10 gp)' : 'Marga waves you upstairs. "On the house, love." You sleep soundly.', cls: 'good' }, ...(lifted ? [{ log: '☾ A night of safe sleep lifts the curse upon you.', cls: 'good' }] : []), ...Story.onLongRest(s)];
 }
 /** Combat options derived from story state (lieutenant/boss set-pieces). */
-export function combatOpts(s, info = {}) { return { ...Story.storyCombat(s, info, s.level), xpAward: (share) => Prog.awardCombatXp(s, share, info) }; }
+export function combatOpts(s, info = {}) { return { ...Story.storyCombat(s, info, s.level), xpAward: (share) => Prog.awardCombatXp(s, Math.round(share * PC.fightXpMult(s)), info) }; }
 export function templeCost(c) { return c.dead ? 100 * c.level : c.conditions.poisoned ? 20 : c.hp < c.maxHp ? 5 * c.level : 0; }
 export function templeHeal(s, c) {
   let cost = templeCost(c); if (!cost) return [{ log: `${c.name} needs no healing.`, cls: 'dim' }];
@@ -465,6 +485,7 @@ export function deserialize(str) {
   s.level = Math.min(N - 1, Math.max(0, s.level | 0)); s.maxDepth = Math.max(s.maxDepth | 0, s.level);
   const old = (s.version | 0) < 3, old3 = (s.version | 0) < 4; Prog.initProgress(s); if (old) Prog.sweepQuests(s, true); // v3: XP system, pins, cleared zones, session recap
   if (old3) migrateV4(s); // v4: secrets, elites, rare loot
+  PC.ensure(s); s.version = Math.max(s.version | 0, 5); // v5: companion threads, Liora, events, curses and blessings, town memory (all additive)
   if (s.mode === 'dungeon' && !(Number.isInteger(s.x) && Number.isInteger(s.y))) s.mode = 'town';
   return s;
 }
@@ -608,7 +629,7 @@ function eliteSpotted(s) {
     if (!seen) continue;
     s.eliteSeen[id] = 1; const p0 = e.path[0];
     Prog.addPin(s, p0[0], p0[1], '☠', `Elite: ${e.title}${e.kind === 'patrol' ? ' (patrols here)' : ' (guards here)'}`);
-    out.push({ log: `⚠ ELITE: ${e.title} ${e.kind === 'guard' ? 'stands guard ahead' : 'paces this corridor'}. Fight it, sneak around it, or come back later. Its drops are the best on the floor.`, cls: 'crit', card: true, sfx: 'encounter', elite: e.id });
+    out.push({ log: `⚠ ELITE: ${e.title} ${e.kind === 'guard' ? 'stands guard ahead' : 'paces this corridor'}. Fight it, sneak around it, or come back later. Its drops are the best on the floor.`, cls: 'crit', card: true, sfx: 'encounter', elite: e.id, banter: PC.reactive(s, 'elite') });
   }
   return out;
 }
@@ -629,3 +650,65 @@ function migrateV4(s) {
   }
   if (s.mode === 'dungeon' && tile(s, s.x, s.y) === 'S') setTile(s, s.x, s.y, '.');
 }
+
+/* ---------- Phase C: events, Liora, camp talk ---------- */
+/** Bring Liora into the party (from the roster, or fresh); if the party is full the last companion steps out to the Tavern, loudly. */
+export function joinLiora(s) {
+  if (s.party.some((c) => c.companion === 'liora')) return [];
+  const out = [];
+  if (s.party.length >= MAX_PARTY) {
+    const swap = [...s.party].reverse().find((c) => c.companion && c.companion !== 'liora') || [...s.party].reverse().find((c) => !isHero(c));
+    if (!swap) return [{ log: 'The party is full.', cls: 'bad' }]; out.push(...dismiss(s, swap));
+  }
+  const waiting = s.roster.find((c) => c.companion === 'liora');
+  out.push(...(waiting ? rejoin(s, waiting) : recruitCompanion(s, 'liora'))); s.flags.lioraMet = true; return out;
+}
+const fxLine = (t, cls = 'good') => ({ t, cls });
+/** Apply one set of event effects; returns display lines and game events. */
+function applyFx(s, fx = {}, evs, lines) {
+  const tier = s.level + 1;
+  if (fx.gold) {
+    if (fx.gold > 0) { const g = fx.gold * tier; s.gold += g; lines.push(fxLine(`+${g} gp`)); }
+    else { const g = Math.min(s.gold, -fx.gold); s.gold -= g; lines.push(fxLine(`−${g} gp`, 'bad')); }
+  }
+  if (fx.xp) { const r = Prog.giveXp(s, fx.xp * tier); lines.push(fxLine(`+${r.base} XP each`)); }
+  if (fx.item) { s.inventory.push(fx.item); lines.push(fxLine(`Received: ${nameOf(fx.item)}`)); }
+  if (fx.rare) { const ev = grantRare(s, fx.rare, 'event'); const r = ev[0].rare; lines.push(fxLine(`Found: ${nameOf(r.key)} (${r.tier})`)); evs.push(...ev); }
+  if (fx.heal) { for (const c of s.party) if (!c.dead) { c.hp = c.maxHp; delete c.conditions.unconscious; } lines.push(fxLine('The party is fully healed')); }
+  if (fx.hurt) { for (const c of s.party) if (!c.dead) c.hp = Math.max(1, c.hp - fx.hurt); lines.push(fxLine(`Everyone takes ${fx.hurt} damage`, 'bad')); }
+  if (fx.aff) for (const [k, n] of Object.entries(fx.aff)) {
+    const comp = k === 'party' ? null : COMPANIONS[k]; PC.addAff(s, k, n);
+    if (k === 'party') { if (n > 0) lines.push(fxLine('The party grows closer')); }
+    else if (s.party.some((c) => c.companion === k)) lines.push(n > 0 ? fxLine(`${comp.short} warms to you${k === 'liora' ? `  ${PC.hearts(s, 'liora')}` : ''}`) : fxLine(`${comp.short} is quiet`, 'bad'));
+  }
+  if (fx.mem) { PC.remember(s, fx.mem[0], fx.mem[1]); lines.push(fxLine(`${PC.NPC_NAME[fx.mem[0]]} will remember this`, 'dim')); }
+  if (fx.bless) { const B = PC.addBuff(s, fx.bless); lines.push(fxLine(`Blessing: ${B.label}. ${B.desc}`)); }
+  if (fx.curse) { const B = PC.addBuff(s, fx.curse); lines.push(fxLine(`Curse: ${B.label}. ${B.desc}`, 'bad')); }
+  if (fx.flag) s.flags[fx.flag] = true;
+  if (fx.recruit === 'liora') { const ev = joinLiora(s); for (const e of ev) if (e.log) lines.push(fxLine(e.log, e.cls === 'bad' ? 'bad' : 'good')); }
+}
+/** Resolve a choice on an event card. `check(skill, dc)` rolls the party's best modifier. Returns { result, events } */
+export function chooseEvent(s, eventId, choiceId, check = (sk, dc) => partyCheck(s, sk, dc)) {
+  const ch = PC.findChoice(s, eventId, choiceId), E = PC.eventById(eventId); const evs = [], lines = [];
+  if (!ch || !E) return { result: { text: 'Nothing happens.', fx: [] }, events: [] };
+  const p = PC.ensure(s); p.ev[eventId] = choiceId; s.pc = p;
+  let res = ch.res, fx = ch.fx, rollNote = '';
+  if (ch.check) {
+    const ok = check(ch.check.skill, ch.check.dc); const side = ok ? ch.check.pass : ch.check.fail;
+    res = side.res; fx = side.fx; rollNote = `${ok ? '✔' : '✘'} ${ch.check.skill} (DC ${ch.check.dc})`;
+  }
+  applyFx(s, fx, evs, lines);
+  const title = E.card(s).title || E.title;
+  Story.addJournal(s, `${title}: ${ch.label}${rollNote ? ` (${rollNote})` : ''}.`);
+  evs.unshift({ log: `✦ ${title}: ${res}`, cls: 'lore' });
+  const sp = s.mode === 'dungeon' ? PC.reactive(s, 'loot', {}, 0) : null; void sp;
+  return { result: { title, text: res, roll: rollNote, fx: lines }, events: evs };
+}
+export function deferEvent(s, eventId) { const p = PC.ensure(s); if (!p.ev[eventId]) p.ev[eventId] = 'later'; return []; }
+/** Camp / Tavern conversation: Liora's pending talk first, otherwise a campfire line. */
+export function campTalk(s) {
+  const m = PC.pendingMoment(s);
+  if (m != null) return { moment: m, scene: PC.momentScene(s, m) };
+  return { line: campDialogue(s) };
+}
+export function lioraMoment(s, i, choiceId) { const r = PC.resolveMoment(s, i, choiceId); return r; }

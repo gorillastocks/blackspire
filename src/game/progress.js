@@ -3,7 +3,7 @@
 import { getLevel, W, H, DIRS, LEVEL_DEFS } from '../dungeon/levels.js';
 import { CR_XP, MONSTERS, ITEMS } from '../rules/data.js';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 /** Base XP for non-combat finds, multiplied by the dungeon tier (B1 = 1 ... B5 = 5). */
 export const DISCOVERY_XP = { secret: 60, trap: 15, lore: 25, room: 12, key: 40, chest: 25, fountain: 20, stairs: 30, quest: 150, elite: 120, poi: 40 };
 export const CATCHUP_PER_LEVEL = 0.3, CATCHUP_MAX_LEVELS = 3, RESTED_BONUS = 0.5, BENCH_RATIO = 0.5;

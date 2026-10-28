@@ -3,6 +3,7 @@
 // ordinals and old saves are untouched. New secret cells are 'S' (solid until found); nooks are 'N' (floor with a lore tablet).
 import { seeded } from '../rules/dice.js';
 import { W, H, DIRS, bfs } from './levels.js';
+import { EVENTS } from '../game/phaseC_events.js';
 
 /** Elite roster per floor: [title, monster groups]. The first monster of the first group carries the title and the tougher stats. */
 export const ELITES = [
@@ -129,5 +130,24 @@ export function decorate(L) {
   for (const r of runs) { if (elites.length >= want.length) break; if (farFromOthers(r) && blockedOk(r)) mk(elites.length, 'patrol', r); }
   for (const g of guards) { if (elites.length >= want.length) break; if (!elites.some((e) => e.path[0][0] === g[0] && e.path[0][1] === g[1]) && farFromOthers([g]) && blockedOk([g])) mk(elites.length, 'guard', [g]); }
 
-  return { L: { ...L, tiles: t, nooks, illusions: illusions.map(([x, y]) => key(x, y)), elites, secretCells: [...secrets] } };
+  // 4) Phase C story events: standing spots (the tile stays plain floor) in open rooms, away from stairs, bosses, nooks and elite ground.
+  const events = [];
+  const eliteCells = elites.flatMap((e) => e.path);
+  const clear = (x, y) => eliteCells.every(([a, b]) => Math.abs(a - x) + Math.abs(b - y) > 2) && nooks.every((n) => Math.abs(n.x - x) + Math.abs(n.y - y) > 2);
+  const rooms = [], corridors = [], any = [];
+  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+    if (t[y][x] !== '.' || dist[y][x] < 4 || near.has(key(x, y)) || !clear(x, y)) continue;
+    if (DIRS.concat([[1, 1], [1, -1], [-1, 1], [-1, -1]]).every(([dx, dy]) => PLAIN.has(t[y + dy][x + dx]))) rooms.push([x, y]); else if (degree(t, x, y) === 2) corridors.push([x, y]); else any.push([x, y]);
+  }
+  const wantEv = (EVENTS[idx] || []).length;
+  const ordered = (a) => (idx === 0 ? [...a].sort((p, q) => dist[p[1]][p[0]] - dist[q[1]][q[0]]) : [...a].sort(() => rng() - 0.5));
+  for (const [pool, gap] of [[ordered(rooms), 7], [ordered(corridors), 5], [ordered(any), 4], [ordered(rooms.concat(corridors, any)), 2]]) {
+    for (const [x, y] of pool) {
+      if (events.length >= wantEv) break;
+      if (events.some((e) => Math.abs(e.x - x) + Math.abs(e.y - y) < gap)) continue;
+      events.push({ id: EVENTS[idx][events.length].id, x, y });
+    }
+  }
+
+  return { L: { ...L, tiles: t, nooks, events, illusions: illusions.map(([x, y]) => key(x, y)), elites, secretCells: [...secrets] } };
 }

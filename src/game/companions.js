@@ -195,9 +195,9 @@ export const COMPANIONS = {
   liora: {
     name: 'Liora Wardenfall', short: 'Liora', race: 'halfElf', cls: 'ranger', color: '#ffb866', portrait: 36, romance: true,
     base: { str: 11, dex: 16, con: 13, int: 10, wis: 14, cha: 14 }, skills: ['perception', 'survival', 'stealth', 'animalHandling'],
-    blurb: 'A sunny, dry-witted half-elf ranger of the Warden\'s Watch. Her father walked into the Blackspire thirty years ago, and she has stopped waiting at the door.',
+    blurb: 'A sunny, dry-witted half-elf ranger of the Warden\'s Watch. Her father walked into the Blackspire twenty years ago, and she has stopped waiting at the door.',
     lines: {
-      recruit: ["Liora Wardenfall, Warden's Watch. My father went down into the Blackspire thirty years ago. I'm done waiting at the door. Mind if I join you?"],
+      recruit: ["Liora Wardenfall, Warden's Watch. My father went down into the Blackspire twenty years ago. I'm done waiting at the door. Mind if I join you?"],
       combatStart: ['Arrows nocked. Let us make this quick.', "Stay behind me. Or in front. Honestly, I'll shoot around you.", 'Right. Time to earn the sun on my clasp.'],
       kill: ['One less thing in the dark.', "That's the {m} dealt with.", "Clean shot. Don't tell the others I'm pleased."],
       crit: ['Straight through the eye. I do love a bright day.', 'Oh, that felt good.'],
