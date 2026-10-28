@@ -77,14 +77,14 @@ export function decorate(L) {
     if (nooks.some((n) => Math.abs(n.x - x) + Math.abs(n.y - y) < 3)) continue;
     const a = h ? [x - 1, y] : [x, y - 1], b = h ? [x + 1, y] : [x, y + 1];
     if (!FLOOR.has(t[a[1]][a[0]]) || !FLOOR.has(t[b[1]][b[0]])) continue;
-    // worth it only as a real shortcut: the two sides are far apart by walking
-    const d = bfs(t, a[0], a[1], (c) => c !== '#' && c !== 'S'); if (d[b[1]][b[0]] < 10 && d[b[1]][b[0]] !== -1) continue;
-    walls.push([x, y]);
+    walls.push([x, y, a, b]);
   }
   walls.sort(() => rng() - 0.5);
-  for (const [x, y] of walls) {
+  for (const [x, y, a, b] of walls) {
     if (illusions.length >= wantIll) break;
-    if (illusions.some(([a, b]) => Math.abs(a - x) + Math.abs(b - y) < 4)) continue;
+    if (illusions.some(([p, q]) => Math.abs(p - x) + Math.abs(q - y) < 4)) continue;
+    // worth it only as a real shortcut: the two sides are far apart by walking
+    const d = bfs(t, a[0], a[1], (c) => c !== '#' && c !== 'S'); if (d[b[1]][b[0]] < 10 && d[b[1]][b[0]] !== -1) continue;
     set(t, x, y, 'S'); secrets.add(key(x, y)); illusions.push([x, y]);
   }
 

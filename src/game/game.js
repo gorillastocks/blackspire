@@ -1,7 +1,8 @@
 // Core game state & exploration logic (DOM-free, so it can be unit tested and simulated).
 import { getLevel, DIRS, W, H, tileOrdinal, LEVEL_DEFS, setDungeonSeeds, randomSeeds } from '../dungeon/levels.js';
 import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor, skillMod, knownSpells, spellMod, heal } from '../rules/character.js';
-import { ITEMS, WEAPONS, ARMOR, CLASSES, XP_LEVELS, SPELLS } from '../rules/data.js';
+import { ITEMS, WEAPONS, ARMOR, CLASSES, XP_LEVELS, SPELLS, DROP_POOL, tierOf } from '../rules/data.js';
+import { elitePos, LORE } from '../dungeon/extras.js';
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './companions.js';
 import * as Story from './story.js';
@@ -28,7 +29,7 @@ export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base =
   party.sort((a, b) => order[a.cls] - order[b.cls]);
   if (!party.slice(0, 2).includes(hero) && hero.cls !== 'wizard') { /* hero rogue goes 3rd; ok */ }
   return Prog.initProgress({
-    version: 3, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
+    version: 4, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
     mode: 'town', level: 0, x: 1, y: 1, dir: 1, mods: LEVEL_DEFS.map(() => ({})), explored: LEVEL_DEFS.map(() => []), maxDepth: 0,
     bossDead: LEVEL_DEFS.map(() => false), victory: false, steps: 0, sinceEncounter: 0, keys: [], playTime: 0,
     seeds: dseeds, randomDungeons: !!dseeds,
@@ -135,18 +136,26 @@ export function move(s, rel = 0) {
   const d = (s.dir + rel) % 4; const [dx, dy] = DIRS[d];
   const nx = s.x + dx, ny = s.y + dy; const ch = tile(s, nx, ny);
   const out = [];
-  if (ch === '#' || ch === 'S') return [{ log: 'Ouch! A wall.', cls: 'dim', bump: true }];
+  if (ch === '#') return [{ log: 'Ouch! A wall.', cls: 'dim', bump: true }];
+  if (ch === 'S') {
+    if (!isIllusion(s.level, nx, ny)) return [{ log: 'Ouch! A wall.', cls: 'dim', bump: true }];
+    setTile(s, nx, ny, '.'); out.push({ log: 'You lean on the wall and your hand passes straight through: an illusion! A hidden passage opens.', cls: 'good', card: true, sfx: 'chime', reveal: true, banter: banter(s.party, 'secret', {}, 0.9) }, ...foundSecret(s, nx, ny, 'illusory wall', 'Illusory wall'));
+  }
   if (ch === 'L') {
     const def = getLevel(s.level).def;
     if (s.keys.includes(def.key)) { setTile(s, nx, ny, 'd'); out.push({ log: `You unlock the door with the ${ITEMS[def.key].name}.`, cls: 'good', sfx: 'door' }); }
     else return [{ log: 'A heavy locked door. (Find the key, or use Pick Lock / Force from the Search menu.)', cls: 'dim', bump: true, locked: { x: nx, y: ny } }];
   }
   if (ch === 'D') { setTile(s, nx, ny, 'd'); out.push({ log: 'The door creaks open.', sfx: 'door' }); }
+  const ox = s.x, oy = s.y;
   s.x = nx; s.y = ny; s.steps++; s.sinceEncounter++;
   for (const c of s.party) if (c.conditions.poisoned && c.conditions.poisoned.steps && --c.conditions.poisoned.steps <= 0) { delete c.conditions.poisoned; out.push({ log: `${c.name} is no longer poisoned.` }); }
   markExplored(s);
+  const elite = eliteContact(s, ox, oy);
+  if (elite) { s.sinceEncounter = 0; out.push(eliteFight(s, elite)); return out; }
   out.push(...Narr.secretAt(s, getLevel(s.level), nx, ny));
   out.push(...enterTile(s));
+  out.push(...eliteSpotted(s));
   return out;
 }
 
@@ -165,8 +174,10 @@ export function enterTile(s) {
   if (out.length) out.push(...Prog.discover(s, 'room', `${s.x},${s.y}`, 'new area explored'));
   const passivePerc = Math.max(...s.party.filter((c) => !isDown(c)).map((c) => passive(c, 'perception')));
   // Passive notice of adjacent secret doors
-  for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'S' && passivePerc >= def.secretDC + 3) { setTile(s, s.x + dx, s.y + dy, 'D'); out.push({ log: 'Your keen eyes notice a hidden door!', cls: 'good', card: true, banter: banter(s.party, 'secret', {}, 0.9), reveal: true }, ...Prog.discover(s, 'secret', `${s.x + dx},${s.y + dy}`, 'hidden door found')); }
+  for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'S' && !isIllusion(s.level, s.x + dx, s.y + dy) && passivePerc >= def.secretDC + 3) { setTile(s, s.x + dx, s.y + dy, 'D'); out.push({ log: 'Your keen eyes notice a hidden door!', cls: 'good', card: true, banter: banter(s.party, 'secret', {}, 0.9), reveal: true }, ...foundSecret(s, s.x + dx, s.y + dy, 'hidden door found', 'Hidden door')); }
+  out.push(...perceiveSecrets(s, passivePerc));
   switch (ch) {
+    case 'N': out.push(...visitNook(s)); break;
     case 'T': {
       if (passivePerc >= def.trapDC) { setTile(s, s.x, s.y, 't'); out.push({ log: `You spot a hidden ${def.trapKind === 'pit' ? 'pit' : 'dart trap'} (passive Perception ${passivePerc}) and step around it.`, card: true, cls: 'good' }, ...Prog.discover(s, 'trap', `${s.x},${s.y}`, 'trap spotted')); break; }
       setTile(s, s.x, s.y, 't');
@@ -237,6 +248,7 @@ export function afterCombat(s, combat, info = {}) {
     if (info.boss && !chain) { s.bossDead[s.level] = true; setTile(s, s.x, s.y, '.'); const q = [600, 3000, 9000, 22000, 0][s.level] || 0; if (q) for (const c of s.party) if (!c.dead) c.xp += q; out.push({ log: `The guardian is defeated! The way onward is open.${q ? ` Quest bonus: ${q} XP each.` : ''}`, cls: 'good' }); }
     if (info.poi && tile(s, s.x, s.y) === 'Q') setTile(s, s.x, s.y, '.');
     out.push(...Story.onCombatWon(s, info, s.level));
+    if (info.elite) out.push(...eliteSlain(s, info.elite));
     if (rand() < 0.2) { s.inventory.push('potionHealing'); out.push({ log: 'Found a Potion of Healing among the remains.', cls: 'good' }); }
     if (rand() < 0.06) { s.inventory.push('spoon'); s.spoons++; out.push({ log: 'Found a Silver Spoon!', cls: 'good', banter: banter(s.party, 'spoon', {}, 1) }); }
     if (info.boss && def.final && !chain) { s.victory = true; s.quests.main = 'done'; s.flags.elowenRescued = true; if (s.notes?.length >= 10 && s.quests.notes) s.quests.notes = 'done'; }
@@ -265,13 +277,14 @@ export function search(s) {
   const def = getLevel(s.level).def; const out = [];
   const who = bestBy(s, (c) => c.skills.includes('perception') ? passive(c, 'perception') : passive(c, 'perception') - 1);
   const r = check(who, 'perception', { guidance: guidance(s) });
-  let found = false;
+  let found = false, near = false;
   for (const [dx, dy] of DIRS) {
     const x = s.x + dx, y = s.y + dy;
-    if (tile(s, x, y) === 'S' && r.total >= def.secretDC) { setTile(s, x, y, 'D'); found = true; out.push(...Prog.discover(s, 'secret', `${x},${y}`, 'hidden door found')); }
+    if (tile(s, x, y) === 'S') { near = true; if (r.total >= def.secretDC || isSuspect(s, x, y) || (s.searchMiss | 0) >= 2) { setTile(s, x, y, isIllusion(s.level, x, y) ? '.' : 'D'); found = true; out.push(...foundSecret(s, x, y, isIllusion(s.level, x, y) ? 'illusory wall' : 'hidden door found', isIllusion(s.level, x, y) ? 'Illusory wall' : 'Hidden door')); } }
     if (tile(s, x, y) === 'T' && r.total >= def.trapDC) { setTile(s, x, y, 't'); out.push({ log: `${who.name} finds a hidden trap and disarms it.`, cls: 'good', card: true }, ...Prog.discover(s, 'trap', `${x},${y}`, 'trap found')); }
   }
-  out.unshift({ log: `${who.name} searches (Perception ${r.total})… ${found ? 'a secret door!' : 'nothing obvious.'}`, cls: found ? 'good' : 'dim', reveal: found });
+  if (found) s.searchMiss = 0; else if (near) s.searchMiss = (s.searchMiss | 0) + 1;
+  out.unshift({ log: `${who.name} searches (Perception ${r.total})… ${found ? 'a secret door!' : near && s.searchMiss >= 2 ? 'something is definitely off about this wall. Search once more.' : 'nothing obvious.'}`, cls: found ? 'good' : 'dim', reveal: found });
   if (found) out.push({ banter: banter(s.party, 'secret', {}, 0.9) });
   if (rand() < 0.08 * quiet(s)) out.push({ log: 'Your searching made noise…', cls: 'bad', combat: { ...RAND(s), ambush: true } });
   return out;
@@ -321,6 +334,7 @@ export function openChest(s, skipTrap = false) {
   const n = 1 + (rand() < 0.5 ? 1 : 0); const items = [];
   for (let i = 0; i < n; i++) { const it = pick(def.loot.items); s.inventory.push(it); items.push(it); if (ITEMS[it].spoon) s.spoons++; }
   setTile(s, s.x, s.y, 'o');
+  if (rand() < 0.07 + 0.03 * s.level) out.push(...grantRare(s, rollTier(s.level, 'chest'), 'chest'));
   out.push({ log: `The chest holds ${gold} gold and: ${items.map((i) => ITEMS[i].name).join(', ')}.`, cls: 'good', sfx: 'chest' }, ...Prog.discover(s, 'chest', `${s.x},${s.y}`, 'chest opened'));
   const spoon = items.some((i) => ITEMS[i].spoon);
   out.push({ banter: banter(s.party, spoon ? 'spoon' : 'loot', {}, spoon ? 1 : 0.7) });
@@ -447,7 +461,8 @@ export function deserialize(str) {
   Story.initStory(s);
   for (const c of [...s.party, ...s.roster]) { c.equip ||= {}; if (!('helm' in c.equip)) c.equip.helm = null; }
   s.level = Math.min(N - 1, Math.max(0, s.level | 0)); s.maxDepth = Math.max(s.maxDepth | 0, s.level);
-  const old = (s.version | 0) < 3; Prog.initProgress(s); if (old) Prog.sweepQuests(s, true); // v3: XP system, pins, cleared zones, session recap
+  const old = (s.version | 0) < 3, old3 = (s.version | 0) < 4; Prog.initProgress(s); if (old) Prog.sweepQuests(s, true); // v3: XP system, pins, cleared zones, session recap
+  if (old3) migrateV4(s); // v4: secrets, elites, rare loot
   if (s.mode === 'dungeon' && !(Number.isInteger(s.x) && Number.isInteger(s.y))) s.mode = 'town';
   return s;
 }
@@ -514,4 +529,101 @@ export function campPotion(s, target) {
   s.inventory.splice(i, 1); const before = Math.max(0, target.hp); heal(target, roll(ITEMS.potionHealing.heal)); const left = s.inventory.filter((x) => x === 'potionHealing').length;
   const lines = [`❤ ${target.name}: HP ${before} → ${target.hp}/${target.maxHp}${before === 0 && target.hp > 0 ? ' — back on their feet!' : ''}`, `🧪 ${left} Potion${left === 1 ? '' : 's'} of Healing left`];
   return { ev: [{ log: `${target.name} drinks a Potion of Healing (HP ${before} → ${target.hp}).`, cls: 'good' }], card: { text: `🧪 ${fill('potion', { t: target.name })}`, cls: 'loot', lines } };
+}
+
+/* ---------- Phase B: secrets, elites and rare loot ---------- */
+const keyOf = (x, y) => `${x},${y}`;
+export const isIllusion = (lvl, x, y) => (getLevel(lvl).illusions || []).includes(keyOf(x, y));
+export const isSuspect = (s, x, y, lvl = s.level) => !!s.suspect?.[lvl]?.includes(keyOf(x, y));
+/** Record a found secret: XP once, an auto pin with a note, and drop the suspicion mark. */
+function foundSecret(s, x, y, label, note) {
+  const sus = s.suspect?.[s.level]; if (sus) { const i = sus.indexOf(keyOf(x, y)); if (i >= 0) sus.splice(i, 1); }
+  Prog.addPin(s, x, y, '🚪', `${note} (found)`);
+  return Prog.discover(s, 'secret', keyOf(x, y), label);
+}
+/** Passive Perception: walls within two steps that look wrong get flagged (a shimmer on the wall and a "?" pin on the map). */
+function perceiveSecrets(s, passivePerc) {
+  const L = getLevel(s.level), def = L.def, out = []; s.suspect ||= []; const sus = (s.suspect[s.level] ||= []);
+  for (const c of L.secretCells || []) {
+    const [x, y] = c.split(',').map(Number);
+    if (Math.abs(x - s.x) + Math.abs(y - s.y) > 2 || tile(s, x, y) !== 'S' || sus.includes(c)) continue;
+    if (passivePerc < def.secretDC - 4) continue;
+    sus.push(c); Prog.addPin(s, x, y, '❓', 'Suspicious wall: search here');
+    out.push({ log: '🔎 That wall looks wrong. It shimmers faintly (marked on your map). Search next to it, or walk straight into it.', cls: 'good', sfx: 'ping', suspect: true });
+  }
+  return out;
+}
+/** Lore nook: tablet, journal line, a once-only cache with a rare chance. */
+function visitNook(s) {
+  const L = getLevel(s.level); const nk = (L.nooks || []).find((n) => n.x === s.x && n.y === s.y); const out = [];
+  const lore = LORE[s.level]?.[nk?.lore ?? 0] || LORE[0][0];
+  out.push({ log: `📜 ${lore}`, cls: 'lore', card: true });
+  const id = keyOf(s.x, s.y);
+  if (!s.disc[`lore:${s.level}:${id}`]) {
+    Story.addJournal(s, `A hidden lore room on ${L.def.name}: ${lore}`);
+    out.push(...Prog.discover(s, 'lore', id, 'lore room found'));
+    const gold = Math.floor((40 + rand() * 40) * (s.level + 1)); s.gold += gold; out.push({ log: `A forgotten cache holds ${gold} gold.`, cls: 'good', sfx: 'chest' });
+    out.push(...grantRare(s, rand() < 0.3 ? 'rare' : 'uncommon', 'cache'));
+    Prog.addPin(s, s.x, s.y, '📜', 'Lore room');
+  }
+  return out;
+}
+/** Roll a loot tier: elites favour rare and up; deeper floors can reach epic and legendary. */
+export function rollTier(level, source = 'elite') {
+  const W = { elite: [[85, 15, 0], [75, 22, 3], [65, 29, 6], [55, 35, 10], [45, 40, 15]], chest: [[100, 0, 0], [97, 3, 0], [93, 6, 1], [90, 8, 2], [86, 11, 3]] }[source][Math.min(4, Math.max(0, level))];
+  const r = rand() * 100; return r < W[0] ? 'rare' : r < W[0] + W[1] ? 'epic' : 'legendary';
+}
+/** Give one item of a tier (avoiding ones already found) and say so with a rare-drop event. */
+export function grantRare(s, tier, from = 'elite') {
+  const pool = DROP_POOL[tier] || DROP_POOL.rare; s.rareFound ||= [];
+  const fresh = pool.filter((k) => !s.rareFound.includes(k)); const key = pick(fresh.length ? fresh : pool);
+  if (tier !== 'uncommon' || key !== 'potionGreater') s.rareFound.push(key);
+  s.inventory.push(key);
+  return [{ log: `✦ ${tierOf(key) === 'common' ? '' : tierOf(key).toUpperCase() + ' DROP: '}${ITEMS[key].name}! ${ITEMS[key].desc || ''}`.trim(), cls: tier === 'uncommon' ? 'good' : 'crit', rare: { key, tier: tierOf(key), from } }];
+}
+/** Elites still standing on the current floor, with their position at the current step count. */
+export function liveElites(s, lvl = s.level) { return (getLevel(lvl).elites || []).filter((e) => !s.disc?.[`elite:${lvl}:${e.id}`]); }
+export function elitePosNow(s, e, steps = s.steps) { return elitePos(e, steps | 0); }
+function eliteContact(s, ox, oy) {
+  for (const e of liveElites(s)) {
+    const p = elitePos(e, s.steps), q = elitePos(e, s.steps - 1);
+    if (p[0] === s.x && p[1] === s.y) return e;
+    if (q[0] === s.x && q[1] === s.y && p[0] === ox && p[1] === oy) return e; // walked straight through each other
+  }
+  return null;
+}
+function eliteFight(s, e) {
+  return { log: `⚔ ${e.title} ${e.kind === 'guard' ? 'rears up to defend this spot' : 'catches you on its patrol'}!`, cls: 'bad', shake: true, combat: { groups: e.groups.map((g) => ({ ...g })), elite: { id: e.id, title: e.title, kind: e.kind }, fixed: true } };
+}
+/** A telegraph the first time an elite comes into view along a straight, open line (or within two tiles). */
+function eliteSpotted(s) {
+  const out = [];
+  for (const e of liveElites(s)) {
+    const id = `${s.level}:${e.id}`; if (s.eliteSeen[id]) continue;
+    const [ex, ey] = elitePos(e, s.steps); const dx = ex - s.x, dy = ey - s.y; const dist = Math.abs(dx) + Math.abs(dy);
+    let seen = dist <= 2;
+    if (!seen && (dx === 0 || dy === 0) && dist <= 6) { seen = true; const sx = Math.sign(dx), sy = Math.sign(dy); for (let i = 1; i < dist; i++) if (isSolid(tile(s, s.x + sx * i, s.y + sy * i))) seen = false; }
+    if (!seen) continue;
+    s.eliteSeen[id] = 1; const p0 = e.path[0];
+    Prog.addPin(s, p0[0], p0[1], '☠', `Elite: ${e.title}${e.kind === 'patrol' ? ' (patrols here)' : ' (guards here)'}`);
+    out.push({ log: `⚠ ELITE: ${e.title} ${e.kind === 'guard' ? 'stands guard ahead' : 'paces this corridor'}. Fight it, sneak around it, or come back later. Its drops are the best on the floor.`, cls: 'crit', card: true, sfx: 'encounter', elite: e.id });
+  }
+  return out;
+}
+function eliteSlain(s, el) {
+  const out = []; const lvl = s.level; const e = (getLevel(lvl).elites || []).find((x) => x.id === el.id);
+  out.push({ log: `${el.title} falls!`, cls: 'good' }, ...Prog.discover(s, 'elite', el.id, `${el.title} defeated`));
+  out.push(...grantRare(s, rollTier(lvl, 'elite'), 'elite'));
+  if (rand() < 0.4) out.push(...grantRare(s, 'uncommon', 'elite'));
+  const gold = Math.floor((60 + rand() * 60) * (lvl + 1)); s.gold += gold; out.push({ log: `The elite's hoard holds ${gold} gold.`, cls: 'good' });
+  if (e) Prog.removePin(s, e.path[0][0], e.path[0][1]);
+  return out;
+}
+/** v3 -> v4: backfill discoveries for secrets that older saves already opened, and never leave the party inside a new hidden door. */
+function migrateV4(s) {
+  for (let l = 0; l < LEVEL_DEFS.length; l++) {
+    const L = getLevel(l);
+    for (const c of L.secretCells || []) { const m = s.mods?.[l]?.[c]; if (m && m !== 'S' && !s.disc[`secret:${l}:${c}`]) s.disc[`secret:${l}:${c}`] = 1; }
+  }
+  if (s.mode === 'dungeon' && tile(s, s.x, s.y) === 'S') setTile(s, s.x, s.y, '.');
 }

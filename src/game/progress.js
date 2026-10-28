@@ -3,17 +3,18 @@
 import { getLevel, W, H, DIRS, LEVEL_DEFS } from '../dungeon/levels.js';
 import { CR_XP, MONSTERS, ITEMS } from '../rules/data.js';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 /** Base XP for non-combat finds, multiplied by the dungeon tier (B1 = 1 ... B5 = 5). */
 export const DISCOVERY_XP = { secret: 60, trap: 15, lore: 25, room: 12, key: 40, chest: 25, fountain: 20, stairs: 30, quest: 150, elite: 120, poi: 40 };
 export const CATCHUP_PER_LEVEL = 0.3, CATCHUP_MAX_LEVELS = 3, RESTED_BONUS = 0.5, BENCH_RATIO = 0.5;
-export const PINS = ['📍', '❗', '❓', '💰', '🚪', '☠'];
+export const PINS = ['📍', '❗', '❓', '💰', '🚪', '☠', '📜', '✨'];
 
 /** Make sure a (possibly old) state has every Phase-A field. Safe to call repeatedly. */
 export function initProgress(s) {
   const N = LEVEL_DEFS.length;
   s.disc ||= {}; s.rested = s.rested | 0; s.fightsWon ||= []; s.cleared ||= []; s.pins ||= []; s.session ||= null; s.stats ||= { secrets: 0, discoveries: 0, trivial: 0 };
   while (s.fightsWon.length < N) s.fightsWon.push(0); while (s.cleared.length < N) s.cleared.push([]); while (s.pins.length < N) s.pins.push([]);
+  s.suspect ||= []; while (s.suspect.length < N) s.suspect.push([]); s.eliteSeen ||= {}; s.rareFound ||= []; s.searchMiss = s.searchMiss | 0; // v4: secrets, elites, rare loot
   s.version = Math.max(s.version | 0, SAVE_VERSION);
   return s;
 }
@@ -139,4 +140,10 @@ export function sweepQuests(s, silent = false) {
     if (silent) s.disc[`quest:${q}`] = 1; else out.push(...discover(s, 'quest', q, 'quest complete'));
   }
   return out;
+}
+
+/** Per-floor secret tally: { found, total }. Every 'S' cell the floor was built with counts once; it is found when its discovery is recorded. */
+export function secretCount(s, lvl = s.level) {
+  const L = getLevel(lvl); const cells = L.secretCells || [];
+  return { found: cells.filter((c) => s.disc?.[`secret:${lvl}:${c}`]).length, total: cells.length };
 }

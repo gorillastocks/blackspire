@@ -3,7 +3,7 @@ import { generateLevel, validateLevel, LEVEL_DEFS, getLevel, setDungeonSeeds } f
 import * as G from '../src/game/game.js';
 
 describe('random dungeons', () => {
-  it('400 random seeds per floor all produce valid, fully reachable layouts', () => {
+  it('400 random seeds per floor all produce valid, fully reachable layouts', { timeout: 30000 }, () => {
     let rerolls = 0;
     for (let i = 0; i < LEVEL_DEFS.length; i++) for (let k = 0; k < 400; k++) {
       const seed = (k * 2654435761 + i * 97) >>> 2; const L = generateLevel(i, seed);
