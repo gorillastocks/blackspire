@@ -620,7 +620,7 @@ function eliteContact(s, ox, oy) {
   return null;
 }
 function eliteFight(s, e) {
-  return { log: `⚔ ${e.title} ${e.kind === 'guard' ? 'rears up to defend this spot' : 'catches you on its patrol'}!`, cls: 'bad', shake: true, combat: { groups: e.groups.map((g) => ({ ...g })), elite: { id: e.id, title: e.title, kind: e.kind }, fixed: true } };
+  return { log: `⚔ ${e.title} ${e.kind === 'guard' ? 'rears up to defend this spot' : 'catches you on its patrol'}!`, cls: 'bad', shake: true, combat: { groups: e.groups.map((g) => ({ ...g })), elite: { id: e.id, title: e.title, kind: e.kind, floor: s.level }, fixed: true } };
 }
 /** Walking distance (through open ground only: no walls, secret walls, locked or closed doors) from the party to a tile, capped. */
 function walkDist(s, tx, ty, cap = 2) {

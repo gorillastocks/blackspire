@@ -411,5 +411,5 @@ for (const [k, t] of Object.entries(MONSTER_TRAITS)) if (MONSTERS[k]) Object.ass
  *  bossHp: floor-boss and lieutenant hit points. eliteFloorHp: extra elite hit points by floor (B1..B5), on top of the 1.7x leader / 1.25x escort elite bonus. */
 export const TUNING = {
   bossHp: { giantSpider: 1.5, skarn: 1, ankylosaurus: 1.5, glasshide: 2, brakk: 1.5, cindermaw: 1.75, malthrax: 1.75, tyrannosaurus: 2 },
-  eliteFloorHp: [1, 1, 1, 1, 1],
+  eliteFloorHp: [1, 1.15, 1.4, 1.5, 1.6],
 };
