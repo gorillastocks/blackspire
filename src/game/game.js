@@ -32,11 +32,11 @@ export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base =
   party.sort((a, b) => order[a.cls] - order[b.cls]);
   if (!party.slice(0, 2).includes(hero) && hero.cls !== 'wizard') { /* hero rogue goes 3rd; ok */ }
   return withPC(Prog.initProgress({
-    version: 5, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
+    version: 6, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
     mode: 'town', level: 0, x: 1, y: 1, dir: 1, mods: LEVEL_DEFS.map(() => ({})), explored: LEVEL_DEFS.map(() => []), maxDepth: 0,
     bossDead: LEVEL_DEFS.map(() => false), victory: false, steps: 0, sinceEncounter: 0, keys: [], playTime: 0,
     seeds: dseeds, randomDungeons: !!dseeds,
-    flags: {}, journal: [], notes: [], moon: 0, rests: 0, quests: { main: 'active' }, pois: {},
+    flags: {}, lore: {}, journal: [], notes: [], moon: 0, rests: 0, quests: { main: 'active' }, pois: {},
   }));
 }
 export const isHero = (c) => !c.companion && !c.recruit;
@@ -486,6 +486,7 @@ export function deserialize(str) {
   const old = (s.version | 0) < 3, old3 = (s.version | 0) < 4; Prog.initProgress(s); if (old) Prog.sweepQuests(s, true); // v3: XP system, pins, cleared zones, session recap
   if (old3) migrateV4(s); // v4: secrets, elites, rare loot
   PC.ensure(s); s.version = Math.max(s.version | 0, 5); // v5: companion threads, Liora, events, curses and blessings, town memory (all additive)
+  if (!s.lore || typeof s.lore !== 'object' || Array.isArray(s.lore)) s.lore = {}; s.version = Math.max(s.version | 0, 6); // v6: monster lore (weaknesses the party has discovered); rows stay as party order
   if (s.mode === 'dungeon' && !(Number.isInteger(s.x) && Number.isInteger(s.y))) s.mode = 'town';
   return s;
 }
@@ -500,7 +501,7 @@ export const sweepQuests = (s) => Prog.sweepQuests(s);
 /** Fight a trivial encounter headlessly (everyone on AI); returns the afterCombat events. Party state is updated like a real fight. */
 export function autoResolve(s, info) {
   const flags = s.party.map((c) => c.ai); for (const c of s.party) c.ai = true;
-  const cb = new Combat(s.party, info.groups, { inventory: s.inventory, canFlee: false, difficulty: s.difficulty || 'normal', story: combatOpts(s, info), elite: info.elite || null });
+  const cb = new Combat(s.party, info.groups, { inventory: s.inventory, canFlee: false, difficulty: s.difficulty || 'normal', story: combatOpts(s, info), elite: info.elite || null, lore: s.lore });
   try { cb.runAuto(); } finally { s.party.forEach((c, i) => { c.ai = flags[i]; }); }
   s.stats.trivial++; return { combat: cb, events: afterCombat(s, cb, info) };
 }

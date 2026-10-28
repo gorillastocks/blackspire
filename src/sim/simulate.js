@@ -22,7 +22,7 @@ export function simulateRun(seed, { heroCls = 'fighter', encountersPerLevel = [1
   const stats = { seed, fights: 0, wins: 0, losses: 0, bossAttempts: LEVEL_DEFS.map(() => 0), levels: [], deaths: 0, rounds: 0 };
   const town = () => { for (const c of s.party) { if (c.dead) { c.dead = false; c.hp = 1; stats.deaths++; } while (canLevelUp(c)) levelUp(c); longRest(c); } equipRegalia(s); };
   const fight = (info) => {
-    const cb = new Combat(s.party, info.groups, { inventory: s.inventory, boss: !!info.boss, canFlee: !info.boss, difficulty, story: combatOpts(s, info) });
+    const cb = new Combat(s.party, info.groups, { inventory: s.inventory, boss: !!info.boss, canFlee: !info.boss, difficulty, story: combatOpts(s, info), lore: s.lore });
     cb.runAuto(); stats.rounds += cb.round + 1;
     const ev = afterCombat(s, cb, info); return { cb, ev };
   };

@@ -1,11 +1,12 @@
 // Turn-based combat engine implementing SRD 5.1 combat rules (condensed to a Wizardry-style party-vs-groups view).
-import { MONSTERS, SPELLS, CR_XP, WEAPONS, ITEMS } from './data.js';
+import { MONSTERS, SPELLS, CR_XP, WEAPONS, ITEMS, CLASSES } from './data.js';
 import { roll, d20, die, pick, rand } from './dice.js';
 import { narrateAttack, line as narr } from './narrate.js';
 import {
   mod, abilityMod, saveMod, armorClass, weaponStats, spellDC, spellAttack, spellMod, sneakDice, cantripDice, attacksPerAction,
   critRange, prof, isDown, canAct, heal, hasTrait, skillMod, knownSpells, rageDamage, inspirationDie, unarmedStats, setCount, fxSum,
 } from './character.js';
+import { traitFor, applyTrait, traitsOf, dtype, TRAIT_KINDS, studySkill, studyDC, targetWeights, pickWeighted, cutinKindFor } from './phaseD.js';
 const BPS = ['bludgeoning', 'piercing', 'slashing'];
 
 let mid = 1;
@@ -29,12 +30,13 @@ const monsterSave = (m, ab) => mod(m.T.stats[ab]);
 export class Combat {
   /** Change difficulty mid-fight: affects damage from now on (monster HP was set when the fight began). */
   setDifficulty(k) { this.diff = DIFFICULTY[k] || DIFFICULTY.normal; }
-  constructor(party, groups, { inventory = [], canFlee = true, boss = false, difficulty = 'normal', story = null, elite = null } = {}) {
-    this.elite = elite;
+  constructor(party, groups, { inventory = [], canFlee = true, boss = false, difficulty = 'normal', story = null, elite = null, lore = null } = {}) {
+    this.elite = elite; this.lore = lore || {};
     this.party = party; this.inventory = inventory; this.canFlee = canFlee; this.boss = boss; this.story = story || {};
     this.diff = DIFFICULTY[difficulty] || DIFFICULTY.normal;
     this.monsters = [];
     for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1) * (elite ? (this.monsters.length === 0 ? 1.7 : 1.25) : 1))); if (elite) { m.elite = true; if (this.monsters.length === 0) { m.ac += 1; if (elite.title) m.name = elite.title; } } this.monsters.push(m); }
+    for (const m of this.monsters) { const l = this.lore[m.key]; m.known = { types: { ...(l?.types || {}) }, studied: !!l?.studied }; m.studyTried = new Set(); }
     this.log = []; this.events = []; this.round = 0; this.state = 'running'; this.turnIdx = -1; this.xp = 0; this.gold = 0;
     for (const c of party) { c.reaction = true; for (const k of ['dodging', 'hidden', 'raging', 'reckless', 'invisible', 'sacredWeapon']) delete c.conditions[k]; c.side = 'party'; if (c.tempHp == null) c.tempHp = 0; }
     // Initiative: d20 + Dex
@@ -55,6 +57,27 @@ export class Combat {
   conscious() { return this.party.filter((c) => !isDown(c)); }
   frontRow() { return this.party.filter((c) => !isDown(c)).slice(0, 2); }
   inFront(c) { return this.frontRow().includes(c); }
+  /** Can this hero hit a front-line enemy in melee? Front row, or a reach weapon (glaive, halberd, pike, whip). */
+  hasReach(c) { return !!(c.equip?.weapon && WEAPONS[c.equip.weapon.base]?.props.includes('reach')); }
+  canMelee(c) { return !!c.equip?.weapon && (this.inFront(c) || this.hasReach(c)); }
+  /** Swap two living heroes between the front and back row (party order is the formation). */
+  swapRows(a, b) {
+    const i = this.party.indexOf(a), j = this.party.indexOf(b);
+    if (i < 0 || j < 0 || i === j || isDown(a) || isDown(b)) return false;
+    this.party[i] = b; this.party[j] = a; this.emit({ type: 'rows' });
+    this.say(`${a.name} and ${b.name} trade places: ${a.name} is now in the ${this.inFront(a) ? 'front' : 'back'} row, ${b.name} in the ${this.inFront(b) ? 'front' : 'back'}.`, 'sys');
+    return true;
+  }
+  /** Remember what the party has learned about a monster kind (saved with the game). */
+  learn(m, type) {
+    if (m.known.types[type]) return false;
+    m.known.types[type] = true;
+    const l = (this.lore[m.key] ||= { types: {}, studied: false }); l.types[type] = true; return true;
+  }
+  learnAll(m) {
+    m.known.studied = true; for (const t of traitsOf(m.T)) m.known.types[t.type] = true;
+    const l = (this.lore[m.key] ||= { types: {}, studied: false }); l.studied = true; for (const t of traitsOf(m.T)) l.types[t.type] = true;
+  }
   current() { return this.order[this.turnIdx]; }
   needsInput() { const c = this.current(); return this.state === 'running' && c && c.side === 'party' && !c.ai && canAct(c) && this.turn && !this.turn.done; }
 
@@ -145,8 +168,16 @@ export class Combat {
   damage(target, amt, type, src, { crit = false, attack = false } = {}) {
     if (src && src.side === 'monster' && target.side === 'party' && this.diff && this.diff.dmg !== 1 && amt > 0) amt = Math.max(1, Math.round(amt * this.diff.dmg));
     if (target.side === 'monster') {
-      if (target.T.immune?.includes(type)) { this.say(`${target.name} is immune to ${type}!`, 'dim'); return 0; }
       if (target.hp <= 0) return 0;
+      const tk = traitFor(target.T, type);
+      if (tk) {
+        const first = this.learn(target, type); const D = dtype(type); const before = amt; amt = applyTrait(amt, tk);
+        const ev = [...this.events].reverse().find((e) => e.type === 'hit' && e.tgt === target && !e.adj);
+        if (ev) { ev.dmg = amt; ev.adj = true; ev.mod = tk; }
+        this.emit({ type: 'trait', who: target, dtype: type, kind: tk, first });
+        if (tk === 'immune') { this.say(`${target.name} is immune to ${D.name.toLowerCase()}! ${D.icon}`, 'dim'); return 0; }
+        this.say(tk === 'vuln' ? `${D.icon} ${target.name} is weak to ${D.name.toLowerCase()}: ${before} becomes ${amt}!` : `${D.icon} ${target.name} resists ${D.name.toLowerCase()}: ${before} becomes ${amt}.`, tk === 'vuln' ? 'good' : 'dim');
+      }
       target.hp -= amt; delete target.conditions.unconscious;
       this.emit({ type: 'hurt', who: target, amt, crit });
       if (target.hp <= 0) {
@@ -282,12 +313,12 @@ export class Combat {
     const t = this.turn;
     if (t.action) {
       const front = this.inFront(c);
-      if (front && c.equip.weapon) acts.push({ id: 'attack', label: `Attack (${weaponStats(c, 'weapon').name})`, target: 'enemy' });
+      if (this.canMelee(c)) acts.push({ id: 'attack', label: `Attack (${weaponStats(c, 'weapon').name})${front ? '' : ' · reach'}`, target: 'enemy' });
       if (c.equip.ranged) acts.push({ id: 'shoot', label: `Shoot (${weaponStats(c, 'ranged').name})`, target: 'enemy' });
       if (!front && c.equip.weapon && WEAPONS[c.equip.weapon.base].props.includes('thrown')) acts.push({ id: 'throw', label: 'Throw ' + WEAPONS[c.equip.weapon.base].name, target: 'enemy' });
       if (knownSpells(c).length) acts.push({ id: 'cast', label: 'Cast Spell…' });
       if (c.res.channelDivinity && c.cls === 'cleric') acts.push({ id: 'preserveLife', label: 'Channel Divinity: Preserve Life' });
-      if (front && c.equip.weapon && c.cls === 'paladin' && c.level >= 2 && c.slots.some((n) => n > 0)) acts.push({ id: 'smite', label: 'Attack + Divine Smite', target: 'enemy' });
+      if (this.canMelee(c) && c.cls === 'paladin' && c.level >= 2 && c.slots.some((n) => n > 0)) acts.push({ id: 'smite', label: 'Attack + Divine Smite', target: 'enemy' });
       if (c.cls === 'paladin' && c.res.layOnHands > 0) acts.push({ id: 'layOnHands', label: `Lay on Hands (${c.res.layOnHands} HP left)`, target: 'ally' });
       if (c.cls === 'paladin' && c.res.sacredWeapon && !c.conditions.sacredWeapon) acts.push({ id: 'sacredWeapon', label: 'Channel Divinity: Sacred Weapon' });
       if (c.res.breath) acts.push({ id: 'breath', label: 'Breath Weapon (fire)' });
@@ -299,6 +330,8 @@ export class Combat {
       if (this.canFlee && !this.boss) acts.push({ id: 'flee', label: 'Run Away!' });
     }
     if (t.bonus) {
+      if (this.conscious().length > 1) acts.push({ id: 'swap', label: `Swap rows (bonus) — you are in the ${this.inFront(c) ? 'front' : 'back'} row`, bonus: true, target: 'rowmate' });
+      if (this.studyTargets(c).length) acts.push({ id: 'study', label: `Study a foe (${studySkill(this.studyTargets(c)[0].T)[0].toUpperCase()}${studySkill(this.studyTargets(c)[0].T).slice(1)} check) — learn weaknesses (bonus)`, bonus: true, target: 'enemy' });
       if (c.res.secondWind && c.hp < c.maxHp) acts.push({ id: 'secondWind', label: 'Second Wind (bonus)', bonus: true });
       if (c.cls === 'barbarian' && c.res.rage > 0 && !c.conditions.raging) acts.push({ id: 'rage', label: `RAGE! (bonus, ${c.res.rage} left)`, bonus: true });
       if (c.cls === 'barbarian' && c.level >= 3 && c.conditions.raging && t.attacked && this.inFront(c)) acts.push({ id: 'frenzy', label: 'Frenzy: extra attack (bonus)', bonus: true, target: 'enemy' });
@@ -312,6 +345,24 @@ export class Combat {
     acts.push({ id: 'end', label: 'End Turn', bonus: true });
     return acts;
   }
+  /** Living enemies this hero has not yet tried to Study and that still hide something. */
+  studyTargets(c) { return this.livingMonsters().filter((m) => !m.known.studied && !m.studyTried.has(c.id) && traitsOf(m.T).length > 0); }
+  /** Bonus action Knowledge check: Arcana, Nature, Religion or History by creature type. Success reveals every weakness and resistance. */
+  study(c, m) {
+    this.turn.bonus = 0;
+    if (!m || m.hp <= 0 || m.known.studied) { this.say(`${c.name} has nothing more to learn.`, 'dim'); return false; }
+    const skill = studySkill(m.T), dc = studyDC(m.T); m.studyTried.add(c.id);
+    const nat = d20(); const total = nat + skillMod(c, skill); const ok = total >= dc;
+    this.say(`${c.name} studies ${m.name} (${skill} check ${nat}+${total - nat}=${total} vs DC ${dc}).`, 'spell');
+    if (ok) {
+      this.learnAll(m); const ts = traitsOf(m.T);
+      const txt = ts.length ? ts.map((t) => `${dtype(t.type).icon} ${TRAIT_KINDS[t.kind].word.toLowerCase()} ${dtype(t.type).name.toLowerCase()}`).join(', ') : 'no special weaknesses';
+      this.say(`${c.name} remembers: ${m.name} — ${txt}.`, 'good');
+      this.caption(`${c.name} recalls the lore on ${m.name}.`, txt, 'spell');
+    } else { this.say(`${c.name} can't recall anything useful about ${m.name}.`, 'dim'); this.caption(`${c.name} squints at ${m.name}, but the lore escapes them.`, `${skill[0].toUpperCase()}${skill.slice(1)} ${total} vs DC ${dc} — try someone else`, 'miss'); }
+    this.emit({ type: 'study', who: c, tgt: m, ok });
+    return ok;
+  }
   castable(c, onlyBonus = false) {
     return knownSpells(c).map((k) => ({ k, s: SPELLS[k] })).filter(({ s }) => s.kind !== 'reaction' && !s.outOfCombat && s.target !== 'none' && (s.level === 0 || c.slots.slice(s.level - 1).some((n) => n > 0)) && (s.bonus ? this.turn?.bonus : this.turn?.action) && (!onlyBonus || s.bonus));
   }
@@ -321,6 +372,10 @@ export class Combat {
   act(c, id, opts = {}) {
     const t = this.turn; if (!t || this.state !== 'running') return;
     const enemy = () => { let tg = opts.target; if (!tg || tg.hp <= 0) tg = this.pickEnemy(); return tg; };
+    if (['attack', 'smite', 'frenzy', 'martialArts', 'flurry'].includes(id) && !(id === 'attack' || id === 'smite' ? this.canMelee(c) : this.inFront(c))) { this.say(`${c.name} is in the back row and can't reach the enemy with a melee attack (use a ranged attack, a spell, a reach weapon, or swap rows).`, 'bad'); return; }
+    if (id === 'swap') { const o = opts.target; if (o && this.swapRows(c, o)) { t.bonus = 0; this.caption(`${c.name} and ${o.name} trade places.`, `${c.name} now in the ${this.inFront(c) ? 'front' : 'back'} row`, ''); } return; }
+    if (id === 'study') { this.study(c, opts.target && opts.target.hp > 0 ? opts.target : this.studyTargets(c)[0]); return; }
+    { const ck = cutinKindFor(id, id === 'cast' ? SPELLS[opts.spell] : id === 'item' ? ITEMS[opts.item] : null); if (ck) this.emit({ type: 'cutin', who: c, kind: ck, id, spell: id === 'cast' ? opts.spell : null, weapon: id === 'shoot' ? c.equip.ranged?.base : c.equip.weapon?.base }); }
     switch (id) {
       case 'attack': case 'shoot': case 'throw': case 'smite': {
         t.action = 0; t.attacked = true;
@@ -626,7 +681,7 @@ export class Combat {
     const targets = this.conscious(); if (!targets.length) return;
     if (T.special && T.special.kind && m.specialReady && rand() < 0.6 && !(m.key === 'malthrax' && this.staffBroken && rand() < 0.5)) { m.specialReady = false; this.monsterSpecial(m); return; }
     const front = this.frontRow();
-    const choose = () => { const live = this.conscious(); const f = this.frontRow(); const pool = T.flying || !f.length || rand() < 0.15 ? live : f; return pick(pool); };
+    const choose = () => { const live = this.conscious(); return pickWeighted(targetWeights(this.frontRow(), live, T), rand()); };
     if (T.special && m.specialReady && rand() < 0.6) {
       m.specialReady = false; const tg = choose();
       this.emit({ type: 'monsterAttack', who: m, tgt: tg });
@@ -677,6 +732,15 @@ export class Combat {
     if (style === 'defensive' && c.hp < c.maxHp * Math.max(thr, 0.35)) { if (potion) return go('item', { item: potion, target: c }); if (!this.boss) return go('dodge'); }
     // Support: patch up allies first (potions on others if there is no healing spell)
     if (style === 'support' && potion && t.action) { const ally = this.party.filter((p) => !p.dead && p.hp < p.maxHp * thr).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]; if (ally && !(c.cls === 'cleric' && (can('cureWounds') || can('healingWord')))) return go('item', { item: potion, target: ally }); }
+    // Phase D: a melee hero stuck in the back row trades places with an AI caster up front; casters and scholars Study the toughest foe early
+    if (t.bonus && t.action && c.ai && !this.inFront(c) && c.equip.weapon && !c.equip.ranged && !this.hasReach(c) && ['fighter', 'barbarian', 'paladin', 'monk', 'rogue'].includes(c.cls)) {
+      const sq = this.frontRow().find((p) => p !== c && p.ai && ['wizard', 'sorcerer', 'warlock', 'bard', 'druid'].includes(p.cls));
+      if (sq) this.act(c, 'swap', { target: sq });
+    }
+    if (t.bonus && this.round <= 2 && ['wizard', 'cleric', 'druid', 'bard', 'ranger', 'sorcerer', 'warlock'].includes(c.cls) && this.state === 'running' && this.current() === c) {
+      const st = this.studyTargets(c).sort((x, y) => y.maxHp - x.maxHp)[0];
+      if (st && skillMod(c, studySkill(st.T)) >= 3 && rand() < 0.6) go('study', { target: st });
+    }
     if (c.cls === 'fighter' && c.res.actionSurge && hard) { if (this.inFront(c)) go('attack', { target: this.pickEnemy() }); else go('shoot', { target: this.pickEnemy() }); if (this.current() === c && this.state === 'running') go('actionSurge'); }
     if (this.state !== 'running' || this.current() !== c || !t.action) return;
     const front = this.inFront(c);

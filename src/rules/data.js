@@ -131,6 +131,11 @@ export const WEAPONS = {
   maul: { name: 'Maul', dmg: '2d6', type: 'bludgeoning', cat: 'martial', props: ['heavy', 'two-handed'], cost: 10 },
   handCrossbow: { name: 'Hand Crossbow', dmg: '1d6', type: 'piercing', cat: 'martial', props: ['ranged', 'light', 'loading'], cost: 75 },
   longbow: { name: 'Longbow', dmg: '1d8', type: 'piercing', cat: 'martial', props: ['ranged', 'heavy', 'two-handed'], cost: 50 },
+  // Phase D: reach weapons (SRD). A hero in the back row can strike the front line with these.
+  glaive: { name: 'Glaive', dmg: '1d10', type: 'slashing', cat: 'martial', props: ['heavy', 'reach', 'two-handed'], cost: 20 },
+  halberd: { name: 'Halberd', dmg: '1d10', type: 'slashing', cat: 'martial', props: ['heavy', 'reach', 'two-handed'], cost: 20 },
+  pike: { name: 'Pike', dmg: '1d10', type: 'piercing', cat: 'martial', props: ['heavy', 'reach', 'two-handed'], cost: 5 },
+  whip: { name: 'Whip', dmg: '1d4', type: 'slashing', cat: 'martial', props: ['finesse', 'reach'], cost: 2 },
 };
 
 export const ARMOR = {
@@ -227,7 +232,7 @@ export function tierOf(key) {
 // Buyable gear in the town shop
 export const SHOP_STOCK = [
   'potionHealing', 'potionGreater', 'antitoxin',
-  'w:dagger', 'w:mace', 'w:quarterstaff', 'w:spear', 'w:shortsword', 'w:rapier', 'w:longsword', 'w:battleaxe', 'w:warhammer', 'w:greatsword', 'w:greataxe', 'w:maul', 'w:shortbow', 'w:longbow', 'w:lightCrossbow',
+  'w:dagger', 'w:mace', 'w:quarterstaff', 'w:spear', 'w:shortsword', 'w:rapier', 'w:longsword', 'w:battleaxe', 'w:warhammer', 'w:greatsword', 'w:greataxe', 'w:maul', 'w:glaive', 'w:halberd', 'w:pike', 'w:whip', 'w:shortbow', 'w:longbow', 'w:lightCrossbow',
   'a:leather', 'a:studdedLeather', 'a:chainShirt', 'a:scaleMail', 'a:breastplate', 'a:halfPlate', 'a:chainMail', 'a:splint', 'a:plate', 'shield',
 ];
 
@@ -389,3 +394,15 @@ export const CONDITIONS = {
 const TYPE_OF = { giantRat: 'beast', giantPoisonousSnake: 'beast', giantFrog: 'beast', wolf: 'beast', giantWolfSpider: 'beast', giantSpider: 'beast', giantCrab: 'beast', giantWasp: 'beast', giantToad: 'beast', direWolf: 'beast', flyingSword: 'construct', animatedArmor: 'construct', allosaurus: 'beast', ankylosaurus: 'beast', triceratops: 'beast', tyrannosaurus: 'beast' };
 for (const [k, m] of Object.entries(MONSTERS)) m.type ||= TYPE_OF[k] || 'beast';
 export const SET_BONUS = { 3: '+1 AC (3 pieces of the Dawn Regalia)', 5: '+2 AC, +1 to saves, weapon hits add 1d6 radiant (all 5 pieces)' };
+
+// Phase D: elemental weaknesses (vuln = double damage), resistances (half) and immunities per monster. SRD where the SRD says so,
+// otherwise a game-specific nudge that matches the creature (webs burn, plants burn, forge creatures hate cold).
+const MONSTER_TRAITS = {
+  giantPoisonousSnake: { resist: ['poison'] }, giantWolfSpider: { vuln: ['fire'] }, giantSpider: { vuln: ['fire'], resist: ['poison'] },
+  giantCrab: { vuln: ['lightning'] }, giantToad: { vuln: ['lightning'] }, flyingSword: { vuln: ['lightning'] },
+  violetFungus: { vuln: ['fire'], resist: ['poison'] }, shrieker: { vuln: ['fire'] }, motherSporegrave: { vuln: ['fire'], resist: ['poison'] },
+  ochreJelly: { resist: ['acid'] }, gelatinousCube: { resist: ['acid'] }, glasshide: { vuln: ['thunder'], resist: ['poison'] },
+  magmin: { vuln: ['cold'] }, hellHound: { vuln: ['cold'] }, minotaurSkeleton: { vuln: ['bludgeoning'] }, gargoyle: { resist: ['lightning'] },
+  brakk: { resist: ['fire'] }, cindermaw: { resist: ['fire'], vuln: ['cold'] }, sisterVey: { resist: ['necrotic'], vuln: ['radiant'] }, malthrax: { resist: ['necrotic'], vuln: ['radiant'] },
+};
+for (const [k, t] of Object.entries(MONSTER_TRAITS)) if (MONSTERS[k]) Object.assign(MONSTERS[k], t);

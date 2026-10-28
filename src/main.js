@@ -1014,7 +1014,7 @@ async function startCombat(info) {
   document.body.classList.add('incombat'); $('#cmenu').innerHTML = '<div class="who dim">Combat begins…</div>';
   const theme = getLevel(S.level).def.color;
   combatInfo = info; lootBase = snapLoot();
-  combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss && !info.town, difficulty: S.difficulty || 'normal', story: info.town ? {} : G.combatOpts(S, info), elite: info.elite || null });
+  combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss && !info.town, difficulty: S.difficulty || 'normal', story: info.town ? {} : G.combatOpts(S, info), elite: info.elite || null, lore: S.lore });
   combatStarting = false;
   R.setMode('combat');
   try { await R.showMonsters(combat.monsters, theme); } catch (e) { log('Could not draw the monsters: ' + (e && e.message || e), 'bad'); } // a failed model load must not leave the battle without its menu

@@ -86,8 +86,8 @@ describe('save migration', () => {
     const s = fresh(); s.quests.ballad = 'done'; const raw = JSON.parse(serialize(s));
     for (const k of ['disc', 'rested', 'fightsWon', 'cleared', 'pins', 'session', 'stats']) delete raw[k]; raw.version = 2;
     const d = deserialize(JSON.stringify(raw));
-    expect(d.version).toBe(5); expect(d.pins.length).toBe(5); expect(d.disc['quest:ballad']).toBe(1); expect(d.party[0].name).toBe(s.party[0].name);
-    expect(deserialize(serialize(d)).version).toBe(5);
+    expect(d.version).toBe(6); expect(d.pins.length).toBe(5); expect(d.disc['quest:ballad']).toBe(1); expect(d.party[0].name).toBe(s.party[0].name);
+    expect(deserialize(serialize(d)).version).toBe(6);
   });
 });
 
