@@ -1090,7 +1090,7 @@ async function startCombat(info) {
 }
 let looping = false, loopFor = null; // loopFor: the Combat the running loop belongs to
 let loopGen = 0;
-function abandonCombat() { suspendSnap = null; skipping = false; loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
+function abandonCombat() { hideTurnPortrait(true); suspendSnap = null; skipping = false; loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
 async function combatLoop() {
   // A new fight can begin while the previous fight's loop is still unwinding inside endCombat (town/boss paths await the loot card or a
   // rebuild there): the stale `looping` flag used to make this call a no-op, so the new battle never got a turn and no menu appeared.
@@ -1098,6 +1098,7 @@ async function combatLoop() {
   try {
     while (combat && combat.state === 'running' && gen === loopGen) {
       renderParty(); renderTargets();
+      { const cur = combat.current(); if (cur && cur.side === 'party') showTurnPortrait(cur); else hideTurnPortrait(); } // the hero's portrait appears when their turn starts and stays through the result
       if (combat.needsInput() && !autoBattle) { await playerTurn(); }
       else {
         const c = combat.current();
@@ -1111,7 +1112,24 @@ async function combatLoop() {
 }
 /* ---------- Phase D: hero cut-ins (portrait slides in, strike, hit flash). Honors battle speed, Reduce motion and Skip. ---------- */
 let cutinStop = null, cutinBusy = false;
-function hideCutin() { const el = $('#cutin'), fl = $('#cutflash'); if (el) { el.className = ''; el.innerHTML = ''; } if (fl) fl.className = ''; }
+function hideCutin() { const el = $('#turnport'), fl = $('#cutflash'); if (el) { el.classList.remove('strike', 'flash', 'melee', 'ranged', 'spell', 'heal'); el.style.removeProperty('--acc'); delete el.dataset.kind; const fx = el.querySelector('.tp-fx'); if (fx) fx.innerHTML = ''; } if (fl) fl.className = ''; }
+/* The acting hero's painted portrait stays at the bottom of the arena for the whole turn (menu, strike, result) and slides away when the
+   next actor's turn begins. Effects from playCutin play over it. Skip / 2x only shorten the effects; the portrait always shows. */
+let turnWho = null, turnHideT = null;
+function showTurnPortrait(c) {
+  const el = $('#turnport'); if (!el || !c) return;
+  clearTimeout(turnHideT); turnHideT = null;
+  if (turnWho === c && el.classList.contains('in') && !el.classList.contains('out')) return;
+  turnWho = c; el.className = ''; el.style.cssText = ''; el.dataset.who = c.name; delete el.dataset.kind;
+  el.replaceChildren(h('div', { class: 'tp-port' }, portrait(c, 'tp-img'), h('div', { class: 'tp-fx' }), h('div', { class: 'tp-flash' }), h('div', { class: 'tp-name' }, h('b', {}, c.name), h('span', { class: 'tp-act' }, ''))));
+  el.className = 'on'; void el.offsetWidth; el.classList.add('in');
+}
+function hideTurnPortrait(now = false) {
+  const el = $('#turnport'); turnWho = null; clearTimeout(turnHideT); turnHideT = null; if (!el) return;
+  const clear = () => { el.className = ''; el.style.cssText = ''; el.replaceChildren(); delete el.dataset.who; delete el.dataset.kind; };
+  if (now || !el.classList.contains('on') || reduceMotion()) return clear();
+  el.classList.remove('in'); el.classList.add('out'); turnHideT = setTimeout(() => { turnHideT = null; if (!turnWho) clear(); }, 200);
+}
 const CUTIN_GLYPH = { melee: '⚔', ranged: '🏹', spell: '✦', heal: '✚' };
 const CUTIN_NAMES = { shoot: 'Shot', throw: 'Throw', layOnHands: 'Lay on Hands', secondWind: 'Second Wind', preserveLife: 'Preserve Life', smite: 'Divine Smite', item: 'Potion', breath: 'Breath Weapon', frenzy: 'Frenzy', martialArts: 'Martial Arts', flurry: 'Flurry of Blows', strikeStaff: 'Staff Strike', breakCollar: 'Break the Collar' };
 function cutinLabel(e) {
@@ -1121,7 +1139,10 @@ function cutinLabel(e) {
   return CUTIN_NAMES[e.id] || 'Action';
 }
 async function playCutin(e) {
-  const el = $('#cutin'); if (!el || skipping || cutinBusy) return;
+  if (!$('#turnport') || cutinBusy) return;
+  if (turnWho !== e.who) showTurnPortrait(e.who); // normally already up since the turn began
+  const el = $('#turnport'); const label = el.querySelector('.tp-act'); if (label) label.textContent = `${CUTIN_GLYPH[e.kind]} ${cutinLabel(e)}`;
+  if (skipping) return; // Skip: no effects, the portrait stays
   const T = D.cutinTimes(speed().f, { skipping, reduce: reduceMotion() }); if (!T.total) return;
   cutinBusy = true;
   const sleepC = (ms) => new Promise((r) => { if (ms <= 0) return r(); const t = setTimeout(r, ms); cutinStop = () => { clearTimeout(t); r(); }; });
@@ -1129,19 +1150,18 @@ async function playCutin(e) {
   const fx = { melee: [h('i', { class: 'sl s1' }), h('i', { class: 'sl s2' })], ranged: [h('i', { class: 'trail' }), h('i', { class: 'arrow' })],
     spell: [h('i', { class: 'ring r1' }), h('i', { class: 'ring r2' }), ...[0, 1, 2, 3, 4, 5].map((i) => h('i', { class: 'spk', style: `--i:${i}` }))],
     heal: [h('i', { class: 'glow' }), ...[0, 1, 2, 3, 4].map((i) => h('i', { class: 'plus', style: `--i:${i}` }, '✚'))] }[e.kind];
-  el.innerHTML = ''; el.className = '';
-  el.style.cssText = `--sl:${T.slide}ms;--st:${T.strike}ms;--fl:${T.flash}ms;${col ? `--acc:${col};` : ''}`;
+  el.classList.remove('strike', 'flash', 'melee', 'ranged', 'spell', 'heal');
+  el.style.setProperty('--sl', T.slide + 'ms'); el.style.setProperty('--st', T.strike + 'ms'); el.style.setProperty('--fl', T.flash + 'ms'); if (col) el.style.setProperty('--acc', col); else el.style.removeProperty('--acc');
   el.dataset.kind = e.kind; el.dataset.who = e.who.name;
-  el.append(h('div', { class: 'ci-band' }), h('div', { class: 'ci-port' }, portrait(e.who, 'ci-img')), h('div', { class: 'ci-txt' }, h('b', {}, e.who.name), h('span', {}, `${CUTIN_GLYPH[e.kind]} ${cutinLabel(e)}`)), h('div', { class: 'ci-fx' }, ...fx), h('div', { class: 'ci-flash' }));
-  el.className = `cutin ${e.kind} on`; void el.offsetWidth; el.classList.add('in');
+  const box = el.querySelector('.tp-fx'); box.replaceChildren(...fx); el.classList.add(e.kind); void el.offsetWidth;
   try {
-    await sleepC(T.slide); if (skipping) return;
+    await sleepC(Math.round(T.slide * 0.4)); if (skipping) return;
     el.classList.add('strike');
     await sleepC(T.strike + (e.hold || 0)); if (skipping) return; // hold: test hook only, freezes the strike phase for a screenshot
     el.classList.add('flash'); const fl = $('#cutflash'); fl.style.cssText = `--acc:${col || ''}`; fl.className = 'on ' + e.kind;
     await sleepC(T.flash); if (skipping) return;
-    el.classList.add('out'); await sleepC(Math.round(110 * Math.max(0.3, speed().f)));
-  } finally { cutinStop = null; cutinBusy = false; hideCutin(); }
+    await sleepC(Math.round(110 * Math.max(0.3, speed().f)));
+  } finally { cutinStop = null; cutinBusy = false; hideCutin(); } // effects end; the portrait stays until the next turn
 }
 async function flushCombat() {
   const { log: lines, events } = combat.drain();
@@ -1209,7 +1229,7 @@ function chooseFrom(title, options, kind = '') {
     modal._resolve = done; modal._options = options;
   });
 }
-function endCombatUI() { skipping = false; curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
+function endCombatUI() { hideTurnPortrait(); skipping = false; curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
 function combatKey(e) {
   const n = parseInt(e.key, 10); if (!modal._options) return;
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }

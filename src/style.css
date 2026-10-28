@@ -461,54 +461,54 @@ body.reducemotion #caption.msg.rare, body.reducemotion #caption.msg.loot { anima
 #cutflash { position: absolute; inset: 0; pointer-events: none; z-index: 3; opacity: 0; background: radial-gradient(circle at 50% 30%, transparent 25%, color-mix(in srgb, var(--acc, #fff) 38%, transparent)); }
 #cutflash.on { animation: cutflash .26s ease-out; }
 @keyframes cutflash { 0% { opacity: .0; } 30% { opacity: .9; } 100% { opacity: 0; } }
-#cutin { position: absolute; left: 0; right: 0; top: 19%; --h: 76px; height: var(--h); z-index: 4; pointer-events: none; display: none; overflow: visible; --acc: #ffb347; --acc2: #6b2a10; --sl: 240ms; --st: 300ms; --fl: 160ms; }
-#cutin.on { display: block; }
-#cutin.melee { --acc: #ffb347; --acc2: #6b2a10; } #cutin.ranged { --acc: #7dffb0; --acc2: #0f4a2a; } #cutin.spell { --acc: #c9a0ff; --acc2: #3a1670; } #cutin.heal { --acc: #9dffc4; --acc2: #0e5a3a; }
-#cutin .ci-band { position: absolute; inset: 8% -6%; transform: skewX(-12deg) scaleX(0); transform-origin: left center; background: linear-gradient(90deg, #0b0716f2 0%, var(--acc2) 48%, #0b0716e8 100%); border-top: 2px solid var(--acc); border-bottom: 2px solid var(--acc); box-shadow: 0 0 18px color-mix(in srgb, var(--acc) 50%, transparent); }
-#cutin.in .ci-band { transform: skewX(-12deg) scaleX(1); transition: transform var(--sl) cubic-bezier(.2, .8, .2, 1); }
-#cutin .ci-port { position: absolute; left: 4%; top: -4%; bottom: -4%; aspect-ratio: 1; border: 2px solid var(--acc); border-radius: 10px; overflow: hidden; background: #0b0716; transform: translateX(-160%); box-shadow: 0 0 14px color-mix(in srgb, var(--acc) 60%, transparent); }
-#cutin.in .ci-port { transform: none; transition: transform var(--sl) cubic-bezier(.15, .9, .25, 1.12); }
-#cutin.strike .ci-port { transform: translateX(8px) scale(1.07); transition: transform var(--st) ease-out; }
-#cutin.ranged.strike .ci-port { transform: translateX(-4px) scale(1.03); }
-#cutin .ci-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 0; margin: 0; }
-#cutin span.ci-img { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 28px; color: #000; }
-#cutin .ci-txt { position: absolute; left: calc(4% + var(--h) * 1.08 + 14px); top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; opacity: 0; transform: translateX(-18px); max-width: 44%; text-shadow: 0 2px 4px #000; }
-#cutin.in .ci-txt { opacity: 1; transform: none; transition: all var(--sl) ease-out calc(var(--sl) * .4); }
-#cutin .ci-txt b { font-size: clamp(14px, 2.6vh, 20px); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#cutin .ci-txt span { font-size: clamp(11px, 2vh, 15px); color: var(--acc); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#cutin .ci-fx { position: absolute; right: 3%; top: 0; bottom: 0; width: 38%; overflow: hidden; }
-#cutin .ci-fx i { position: absolute; opacity: 0; }
-#cutin .sl { left: 6%; top: 50%; width: 88%; height: 5px; border-radius: 3px; background: linear-gradient(90deg, transparent, #fff 40%, var(--acc) 70%, transparent); transform-origin: left center; }
-#cutin .s1 { transform: rotate(-26deg) scaleX(0); } #cutin .s2 { transform: rotate(24deg) scaleX(0); }
-#cutin.strike .s1 { animation: ciSlash var(--st) ease-out forwards; } #cutin.strike .s2 { animation: ciSlash2 var(--st) ease-out calc(var(--st) * .3) forwards; }
+/* Persistent turn portrait: the acting hero sits at the bottom-left of the arena (just above the party cards) for the whole turn;
+   strike effects play over it. It slides away when the next actor's turn begins. */
+#turnport { position: absolute; left: 8px; bottom: 8px; --tp: 76px; width: var(--tp); z-index: 3; pointer-events: none; display: none; --acc: #ffd37a; --sl: 240ms; --st: 300ms; --fl: 160ms; transform: translateX(-140%); opacity: 0; }
+#turnport.on { display: block; }
+#turnport.in { transform: none; opacity: 1; transition: transform 240ms cubic-bezier(.15, .9, .25, 1.12), opacity 160ms; }
+#turnport.out { transform: translateX(-140%); opacity: 0; transition: transform 180ms ease-in, opacity 180ms; }
+#turnport.melee { --acc: #ffb347; } #turnport.ranged { --acc: #7dffb0; } #turnport.spell { --acc: #c9a0ff; } #turnport.heal { --acc: #9dffc4; }
+#turnport .tp-port { position: relative; width: var(--tp); height: var(--tp); border: 2px solid var(--acc); border-radius: 10px; overflow: hidden; background: #0b0716; box-shadow: 0 0 10px color-mix(in srgb, var(--acc) 55%, transparent), 0 2px 8px #000a; animation: tpGlow 2.4s ease-in-out infinite; }
+@keyframes tpGlow { 0%, 100% { box-shadow: 0 0 7px color-mix(in srgb, var(--acc) 40%, transparent), 0 2px 8px #000a; } 50% { box-shadow: 0 0 15px color-mix(in srgb, var(--acc) 75%, transparent), 0 2px 8px #000a; } }
+#turnport .tp-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 0; margin: 0; }
+#turnport span.tp-img { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 28px; color: #000; }
+#turnport .tp-name { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 4px 2px; display: flex; flex-direction: column; align-items: center; text-align: center; background: linear-gradient(transparent, #0b0716f0 55%); text-shadow: 0 1px 3px #000; }
+#turnport .tp-name b { font-size: 12px; line-height: 1.15; color: #fff; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#turnport .tp-name span { font-size: 9px; line-height: 1.1; color: var(--acc); letter-spacing: .05em; text-transform: uppercase; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 9px; }
+#turnport .tp-fx { position: absolute; inset: 0; overflow: hidden; border-radius: 8px; pointer-events: none; }
+#turnport .tp-fx i { position: absolute; opacity: 0; }
+#turnport .tp-flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+#turnport.flash .tp-flash { animation: ciFlash var(--fl) ease-out; }
+#turnport.strike .tp-port { transform: scale(1.06); transition: transform var(--st) ease-out; }
+@keyframes ciFlash { 0% { opacity: 0; } 25% { opacity: .75; } 100% { opacity: 0; } }
+
+#turnport .sl { left: 6%; top: 50%; width: 88%; height: 5px; border-radius: 3px; background: linear-gradient(90deg, transparent, #fff 40%, var(--acc) 70%, transparent); transform-origin: left center; }
+#turnport .s1 { transform: rotate(-26deg) scaleX(0); } #turnport .s2 { transform: rotate(24deg) scaleX(0); }
+#turnport.strike .s1 { animation: ciSlash var(--st) ease-out forwards; } #turnport.strike .s2 { animation: ciSlash2 var(--st) ease-out calc(var(--st) * .3) forwards; }
 @keyframes ciSlash { 0% { opacity: 1; transform: rotate(-26deg) scaleX(0); } 45% { opacity: 1; transform: rotate(-26deg) scaleX(1); } 100% { opacity: 0; transform: rotate(-26deg) scaleX(1); } }
 @keyframes ciSlash2 { 0% { opacity: 1; transform: rotate(24deg) scaleX(0); } 45% { opacity: 1; transform: rotate(24deg) scaleX(1); } 100% { opacity: 0; transform: rotate(24deg) scaleX(1); } }
-#cutin .arrow { left: -10%; top: calc(50% - 2px); width: 44px; height: 4px; background: linear-gradient(90deg, var(--acc), #fff); border-radius: 2px; }
-#cutin .arrow::after { content: ''; position: absolute; right: -7px; top: -4px; border-left: 9px solid #fff; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-#cutin .trail { left: 0; top: calc(50% - 1px); width: 80%; height: 2px; background: linear-gradient(90deg, transparent, var(--acc)); transform-origin: left; transform: scaleX(0); }
-#cutin.strike .arrow { animation: ciArrow var(--st) cubic-bezier(.3, .6, .5, 1) forwards; } #cutin.strike .trail { animation: ciTrail var(--st) ease-out forwards; }
+#turnport .arrow { left: -10%; top: calc(50% - 2px); width: 44px; height: 4px; background: linear-gradient(90deg, var(--acc), #fff); border-radius: 2px; }
+#turnport .arrow::after { content: ''; position: absolute; right: -7px; top: -4px; border-left: 9px solid #fff; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+#turnport .trail { left: 0; top: calc(50% - 1px); width: 80%; height: 2px; background: linear-gradient(90deg, transparent, var(--acc)); transform-origin: left; transform: scaleX(0); }
+#turnport.strike .arrow { animation: ciArrow var(--st) cubic-bezier(.3, .6, .5, 1) forwards; } #turnport.strike .trail { animation: ciTrail var(--st) ease-out forwards; }
 @keyframes ciArrow { 0% { opacity: 1; left: -10%; } 85% { opacity: 1; } 100% { opacity: 0; left: 96%; } }
 @keyframes ciTrail { 0% { opacity: .9; transform: scaleX(0); } 70% { opacity: .9; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1); } }
-#cutin .ring { left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px; border: 3px solid var(--acc); border-radius: 50%; box-shadow: 0 0 12px var(--acc), inset 0 0 8px var(--acc); }
-#cutin.strike .r1 { animation: ciRing var(--st) ease-out forwards; } #cutin.strike .r2 { animation: ciRing var(--st) ease-out calc(var(--st) * .3) forwards; }
+#turnport .ring { left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px; border: 3px solid var(--acc); border-radius: 50%; box-shadow: 0 0 12px var(--acc), inset 0 0 8px var(--acc); }
+#turnport.strike .r1 { animation: ciRing var(--st) ease-out forwards; } #turnport.strike .r2 { animation: ciRing var(--st) ease-out calc(var(--st) * .3) forwards; }
 @keyframes ciRing { 0% { opacity: 1; transform: scale(.3); } 100% { opacity: 0; transform: scale(3.6); } }
-#cutin .spk { left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px var(--acc); transform: rotate(calc(var(--i) * 60deg)) translateX(6px); }
-#cutin.strike .spk { animation: ciSpk var(--st) ease-out forwards; }
+#turnport .spk { left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px var(--acc); transform: rotate(calc(var(--i) * 60deg)) translateX(6px); }
+#turnport.strike .spk { animation: ciSpk var(--st) ease-out forwards; }
 @keyframes ciSpk { 0% { opacity: 1; transform: rotate(calc(var(--i) * 60deg)) translateX(6px); } 100% { opacity: 0; transform: rotate(calc(var(--i) * 60deg + 40deg)) translateX(46px); } }
-#cutin .glow { left: 10%; right: 10%; top: 10%; bottom: 10%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--acc) 80%, transparent), transparent); }
-#cutin.strike .glow { animation: ciGlow var(--st) ease-out forwards; }
+#turnport .glow { left: 10%; right: 10%; top: 10%; bottom: 10%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--acc) 80%, transparent), transparent); }
+#turnport.strike .glow { animation: ciGlow var(--st) ease-out forwards; }
 @keyframes ciGlow { 0% { opacity: 0; transform: scale(.5); } 40% { opacity: 1; } 100% { opacity: 0; transform: scale(1.3); } }
-#cutin .plus { bottom: 4%; left: calc(8% + var(--i) * 18%); font-size: 18px; color: var(--acc); text-shadow: 0 0 8px var(--acc); }
-#cutin.strike .plus { animation: ciPlus var(--st) ease-out forwards; animation-delay: calc(var(--i) * var(--st) * .08); }
+#turnport .plus { bottom: 4%; left: calc(8% + var(--i) * 18%); font-size: 18px; color: var(--acc); text-shadow: 0 0 8px var(--acc); }
+#turnport.strike .plus { animation: ciPlus var(--st) ease-out forwards; animation-delay: calc(var(--i) * var(--st) * .08); }
 @keyframes ciPlus { 0% { opacity: 0; transform: translateY(0); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-62px); } }
-#cutin .ci-flash { position: absolute; inset: 8% -6%; background: #fff; opacity: 0; transform: skewX(-12deg); }
-#cutin.flash .ci-flash { animation: ciFlash var(--fl) ease-out; }
-@keyframes ciFlash { 0% { opacity: 0; } 25% { opacity: .75; } 100% { opacity: 0; } }
-#cutin.out { opacity: 0; transition: opacity .11s; }
-body.reducemotion #cutin .ci-fx i, body.reducemotion #cutin .ci-flash, body.reducemotion #cutflash { animation: none !important; }
-body.reducemotion #cutin .ci-band, body.reducemotion #cutin .ci-port, body.reducemotion #cutin .ci-txt { transition: none !important; }
-@media (max-width: 760px) { #cutin { top: 21%; --h: 70px; } #cutin .ci-txt { max-width: 44%; } #cutin .ci-txt b { font-size: 15px; } #cutin .ci-txt span { font-size: 11px; } }
-@media (min-width: 761px) and (max-width: 1200px) { #cutin { --h: 90px; } }
+body.reducemotion #turnport .tp-fx i, body.reducemotion #turnport .tp-flash, body.reducemotion #cutflash, body.reducemotion #turnport .tp-port { animation: none !important; }
+body.reducemotion #turnport.in, body.reducemotion #turnport.out, body.reducemotion #turnport.strike .tp-port { transition: none !important; }
+@media (min-width: 761px) and (max-width: 1200px) { #turnport { --tp: 112px; left: 12px; bottom: 12px; } #turnport .tp-name b { font-size: 15px; } #turnport .tp-name span { font-size: 11px; min-height: 11px; } }
+@media (min-width: 1201px) { #turnport { --tp: 100px; } #turnport .tp-name b { font-size: 14px; } #turnport .tp-name span { font-size: 10px; } }
 .formation { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 .formation .fcol { background: #120a22; border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 5px; }
 .formation .fhead { display: flex; flex-direction: column; margin-bottom: 2px; } .formation .fhead small { color: #aaa; }
@@ -516,3 +516,5 @@ body.reducemotion #cutin .ci-band, body.reducemotion #cutin .ci-port, body.reduc
 .formation .fhero.sel { border-color: var(--gold); box-shadow: 0 0 10px #ffd34d88; } .formation .fhero.down { opacity: .55; }
 .formation .fhero .fnm { font-weight: 700; } .formation .fhero small { flex-basis: 100%; color: #b9a8dd; }
 .formation .fnote { grid-column: 1 / -1; font-size: 12px; color: #b9a8dd; }
+
+@media (max-height: 520px) and (orientation: landscape) { #turnport { --tp: 56px; left: 6px; bottom: 6px; } #turnport .tp-name b { font-size: 10px; } #turnport .tp-name span { display: none; } }
