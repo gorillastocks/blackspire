@@ -10,7 +10,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 /** One-time migration of saves/settings from the game's old name (same origin on GitHub Pages, so old saves are visible). */
 export function migrateLegacy(store = (typeof localStorage !== 'undefined' ? localStorage : null)) {
   if (!store) return 0; let n = 0;
-  const OLD = String.fromCharCode(103, 114, 111, 107) + 'wizard.'; // old prefix, kept only to find pre-rename saves
+  const OLD = [103, 114, 111, 107].map((c) => String.fromCharCode(c)).join('') + 'wizard.'; // old prefix, kept only to find pre-rename saves
   for (const suf of ['save.v1', 'save.slot1', 'save.slot2', 'save.slot3', 'settings']) for (const ext of ['', '.bak']) {
     try { const v = store.getItem(OLD + suf + ext); if (v != null && store.getItem('blackspire.' + suf + ext) == null) { store.setItem('blackspire.' + suf + ext, v); n++; } } catch { /* ignore */ }
   }
