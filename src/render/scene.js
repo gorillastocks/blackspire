@@ -223,6 +223,7 @@ export class Renderer {
   clearDynamic() {
     for (const o of this.eliteObjs?.values() || []) { if (o.mixer) this.mixers = this.mixers.filter((m) => m !== o.mixer); }
     this.dyn?.clear(); this.eliteObjs = new Map(); this.shimmerObjs = new Map(); this.evObjs = new Map();
+    this._dynGen = (this._dynGen | 0) + 1; this._eliteLoading = new Set(); // an elite still loading for the old floor must not appear on the new one
   }
   shimmerTex() {
     if (this._shTex) return this._shTex;
@@ -264,14 +265,23 @@ export class Renderer {
     }
     const alive = new Set(elites.map((e) => e.id));
     for (const [id, o] of this.eliteObjs) if (!alive.has(id)) { this.dyn.remove(o.holder); if (o.mixer) this.mixers = this.mixers.filter((m) => m !== o.mixer); this.eliteObjs.delete(id); }
+    const gen = this._dynGen | 0; this._eliteWant = new Map(elites.map((e) => [e.id, e]));
     for (const e of elites) {
       let o = this.eliteObjs.get(e.id);
-      if (!o) { if (this._eliteLoading?.has(e.id)) continue; (this._eliteLoading ||= new Set()).add(e.id); o = await this.makeElite(e); this._eliteLoading.delete(e.id); if (!o) continue; this.eliteObjs.set(e.id, o); this.dyn.add(o.holder); o.holder.position.set(e.x * CELL, 0, e.y * CELL); }
+      if (!o) {
+        if (this._eliteLoading?.has(e.id)) continue; const loading = (this._eliteLoading ||= new Set()); loading.add(e.id);
+        try { o = await this.makeElite(e); } catch { o = null; } // a model that fails to load still gets its red marker
+        if (gen !== (this._dynGen | 0)) { if (o) this.disposeElite?.(o); continue; } // the floor changed while loading: drop it
+        loading.delete(e.id); if (!o) continue;
+        const cur = this._eliteWant?.get(e.id); if (!cur) continue; // no longer alive / no longer on this floor
+        this.eliteObjs.set(e.id, o); this.dyn.add(o.holder); o.holder.position.set(cur.x * CELL, 0, cur.y * CELL); o.target.set(cur.x * CELL, 0, cur.y * CELL); continue;
+      }
       o.target.set(e.x * CELL, 0, e.y * CELL);
     }
   }
+  disposeElite(o) { if (o?.mixer) this.mixers = this.mixers.filter((m) => m !== o.mixer); }
   async makeElite(e) {
-    const T = MONSTERS[e.key]; const g = T ? await loadModel(T.model) : null; const holder = new THREE.Group(); const target = new THREE.Vector3();
+    const T = MONSTERS[e.key]; const g = T ? await loadModel(T.model).catch(() => null) : null; const holder = new THREE.Group(); const target = new THREE.Vector3();
     let mixer = null, h = 1.6;
     if (g) {
       const o = SkeletonUtils.clone(g.scene); const mats = [];

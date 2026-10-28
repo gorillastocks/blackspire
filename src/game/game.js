@@ -605,8 +605,11 @@ export function grantRare(s, tier, from = 'elite') {
   s.inventory.push(key);
   return [{ log: `✦ ${tierOf(key) === 'common' ? '' : tierOf(key).toUpperCase() + ' DROP: '}${ITEMS[key].name}! ${ITEMS[key].desc || ''}`.trim(), cls: tier === 'uncommon' ? 'good' : 'crit', rare: { key, tier: tierOf(key), from } }];
 }
-/** Elites still standing on the current floor, with their position at the current step count. */
-export function liveElites(s, lvl = s.level) { return (getLevel(lvl).elites || []).filter((e) => !s.disc?.[`elite:${lvl}:${e.id}`]); }
+/** Elites still standing on the current floor. An elite whose ground is not walkable (a bad or stale save) never counts: no warning, no marker, no fight. */
+export function liveElites(s, lvl = s.level) {
+  const L = getLevel(lvl); const walk = (x, y) => { const c = lvl === s.level ? tile(s, x, y) : L.tiles[y]?.[x]; return c !== undefined && !isSolid(c); };
+  return (L.elites || []).filter((e) => !s.disc?.[`elite:${lvl}:${e.id}`] && e.path.length > 0 && e.path.every(([x, y]) => walk(x, y)));
+}
 export function elitePosNow(s, e, steps = s.steps) { return elitePos(e, steps | 0); }
 function eliteContact(s, ox, oy) {
   for (const e of liveElites(s)) {
@@ -619,18 +622,35 @@ function eliteContact(s, ox, oy) {
 function eliteFight(s, e) {
   return { log: `⚔ ${e.title} ${e.kind === 'guard' ? 'rears up to defend this spot' : 'catches you on its patrol'}!`, cls: 'bad', shake: true, combat: { groups: e.groups.map((g) => ({ ...g })), elite: { id: e.id, title: e.title, kind: e.kind }, fixed: true } };
 }
-/** A telegraph the first time an elite comes into view along a straight, open line (or within two tiles). */
-function eliteSpotted(s) {
+/** Walking distance (through open ground only: no walls, secret walls, locked or closed doors) from the party to a tile, capped. */
+function walkDist(s, tx, ty, cap = 2) {
+  const seen = new Set([`${s.x},${s.y}`]); let front = [[s.x, s.y]];
+  for (let d = 0; d <= cap; d++) {
+    if (front.some(([x, y]) => x === tx && y === ty)) return d;
+    const next = []; for (const [x, y] of front) for (const [dx, dy] of DIRS) { const nx = x + dx, ny = y + dy, k = `${nx},${ny}`; if (seen.has(k) || nx < 0 || ny < 0) continue; const c = tile(s, nx, ny); if (c === undefined || isSolid(c) || c === 'D') continue; seen.add(k); next.push([nx, ny]); }
+    front = next;
+  }
+  return Infinity;
+}
+/** Can the party see this tile right now: straight ahead (the way they face), within 6 tiles, nothing solid or any closed door in between. */
+function seesAhead(s, tx, ty) {
+  const [fx, fy] = DIRS[s.dir | 0]; let k = 0;
+  for (let i = 1; i <= 6; i++) { if (s.x + fx * i === tx && s.y + fy * i === ty) { k = i; break; } }
+  if (!k) return false;
+  for (let i = 1; i < k; i++) { const c = tile(s, s.x + fx * i, s.y + fy * i); if (c === undefined || isSolid(c) || c === 'D') return false; }
+  return true;
+}
+/** A telegraph the first time a LIVING elite is really in view (straight ahead down open ground) or within two steps by walking: never through a wall. */
+export function eliteSpotted(s) {
   const out = [];
   for (const e of liveElites(s)) {
     const id = `${s.level}:${e.id}`; if (s.eliteSeen[id]) continue;
-    const [ex, ey] = elitePos(e, s.steps); const dx = ex - s.x, dy = ey - s.y; const dist = Math.abs(dx) + Math.abs(dy);
-    let seen = dist <= 2;
-    if (!seen && (dx === 0 || dy === 0) && dist <= 6) { seen = true; const sx = Math.sign(dx), sy = Math.sign(dy); for (let i = 1; i < dist; i++) if (isSolid(tile(s, s.x + sx * i, s.y + sy * i))) seen = false; }
-    if (!seen) continue;
-    s.eliteSeen[id] = 1; const p0 = e.path[0];
-    Prog.addPin(s, p0[0], p0[1], '☠', `Elite: ${e.title}${e.kind === 'patrol' ? ' (patrols here)' : ' (guards here)'}`);
-    out.push({ log: `⚠ ELITE: ${e.title} ${e.kind === 'guard' ? 'stands guard ahead' : 'paces this corridor'}. Fight it, sneak around it, or come back later. Its drops are the best on the floor.`, cls: 'crit', card: true, sfx: 'encounter', elite: e.id, banter: PC.reactive(s, 'elite') });
+    const [ex, ey] = elitePos(e, s.steps);
+    const near = walkDist(s, ex, ey, 2) <= 2, ahead = !near && seesAhead(s, ex, ey);
+    if (!near && !ahead) continue;
+    s.eliteSeen[id] = 1;
+    Prog.addPin(s, ex, ey, '☠', `Elite: ${e.title}${e.kind === 'patrol' ? ' (patrols here)' : ' (guards here)'}`);
+    out.push({ log: `⚠ ELITE: ${e.title} ${e.kind === 'guard' ? (ahead ? 'stands guard ahead' : 'stands guard right here') : (ahead ? 'paces this corridor' : 'paces close by')}. Fight it, sneak around it, or come back later. Its drops are the best on the floor.`, cls: 'crit', card: true, sfx: 'encounter', elite: e.id, banter: PC.reactive(s, 'elite') });
   }
   return out;
 }
