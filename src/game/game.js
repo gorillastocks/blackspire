@@ -62,6 +62,7 @@ export function availableCompanions(s) {
 export function recruitCompanion(s, key) {
   const C = COMPANIONS[key]; if (!C || !availableCompanions(s).includes(key)) return [{ log: 'They are not available.', cls: 'dim' }];
   const c = createCharacter({ name: C.short, race: C.race, cls: C.cls, base: C.base, companion: key, skills: C.skills }); givePortrait(c);
+  if (Number.isInteger(C.portrait)) c.portrait = C.portrait;
   raiseTo(c, partyLevel(s));
   const out = [{ log: place(s, c), cls: 'good' }];
   if (C.lines.recruit) out.push({ banter: { who: C.short, color: C.color, text: pick(C.lines.recruit) } });

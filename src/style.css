@@ -429,3 +429,15 @@ body.incombat #combatchips { display: flex; }
 body.reducemotion #caption.msg.rare, body.reducemotion #caption.msg.loot { animation: none; }
 #hud .secrets { color: #ffe27a; font-weight: 700; }
 .mapstats { margin: 4px 0; font-size: 13px; color: #ffe9a8; }
+/* Phase C: painted speaker portraits, hire cards, event cards, bonds */
+.dlgportrait.pimgwrap{width:84px;height:84px;border-radius:14px;overflow:hidden;padding:0;box-shadow:0 0 14px rgba(255,200,120,.35)}
+.dlgportrait.pimgwrap img{width:100%;height:100%;object-fit:cover;display:block}
+.hirecard{position:relative}
+.hirepic{float:left;width:64px;height:64px;border-radius:10px;margin:0 8px 4px 0;border:2px solid #ffb866;object-fit:cover}
+.hirecard::after{content:"";display:block;clear:both}
+.evcard .evres{border-left:3px solid #ffb866;padding:4px 8px;margin:6px 0;color:#f3e3c3}
+.evcard .fx{font-size:12px;color:#9fe3a1}
+.evcard .fx.bad{color:#ff9d8a}
+.evcard .choice small{display:block;opacity:.75;font-weight:normal}
+.bonds .heart{color:#ff7f9f;letter-spacing:2px}
+.bubble.thread{border-color:#ffb866}

@@ -16,7 +16,7 @@ export const NPCS = {
   tamsin: { name: 'Old Tamsin', icon: '🧓', color: '#d0c0ff' },
   hero: { name: 'You', icon: '⚔', color: '#ffa24a' },
 };
-const C = (k) => ({ name: COMPANIONS[k].short, icon: { brambur: '🔨', fizzwick: '⚙', pip: '🥄', grumsh: '🪓', zizzy: '🔥', vexrath: '🐉', nettle: '🎻' }[k], color: COMPANIONS[k].color });
+const C = (k) => ({ name: COMPANIONS[k].short, icon: { brambur: '🔨', fizzwick: '⚙', pip: '🥄', grumsh: '🪓', zizzy: '🔥', vexrath: '🐉', nettle: '🎻', liora: '🌅' }[k], color: COMPANIONS[k].color, img: COMPANIONS[k].portrait });
 export function speaker(who) { return NPCS[who] || (COMPANIONS[who] ? C(who) : NPCS.narrator); }
 const L = (who, text) => ({ who, text });
 

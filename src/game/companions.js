@@ -192,6 +192,35 @@ export const COMPANIONS = {
       'Nettle: "Vexrath asked me for proof of my dragon fight. I gave him a scale. It was off a fish. He filed it anyway."',
     ],
   },
+  liora: {
+    name: 'Liora Wardenfall', short: 'Liora', race: 'halfElf', cls: 'ranger', color: '#ffb866', portrait: 36, romance: true,
+    base: { str: 11, dex: 16, con: 13, int: 10, wis: 14, cha: 14 }, skills: ['perception', 'survival', 'stealth', 'animalHandling'],
+    blurb: 'A sunny, dry-witted half-elf ranger of the Warden\'s Watch. Her father walked into the Blackspire thirty years ago, and she has stopped waiting at the door.',
+    lines: {
+      recruit: ["Liora Wardenfall, Warden's Watch. My father went down into the Blackspire thirty years ago. I'm done waiting at the door. Mind if I join you?"],
+      combatStart: ['Arrows nocked. Let us make this quick.', "Stay behind me. Or in front. Honestly, I'll shoot around you.", 'Right. Time to earn the sun on my clasp.'],
+      kill: ['One less thing in the dark.', "That's the {m} dealt with.", "Clean shot. Don't tell the others I'm pleased."],
+      crit: ['Straight through the eye. I do love a bright day.', 'Oh, that felt good.'],
+      enemyCrit: ['Ow. Rude.', "Fair. I'd have done the same."],
+      lowHp: ["I'm fine. I'm... mostly fine.", 'Somebody tell the floor to stop hitting me.'],
+      down: ["{p}! Hold on, I've got you!", 'No, no. Stay with me, {p}.'],
+      loot: ['Now THAT was worth the climb.', 'Shiny. Dad always said to check every chest twice.'],
+      stairs: ['Deeper. He went this way. I can feel it.', 'One more stair. One more step closer.'],
+      rest: ["I'll take first watch. I don't sleep much down here anyway.", "Come sit by the fire. It's the one warm thing in this whole place."],
+      trap: ['I SAW that. I was just choosing to be brave about it.', "Dad's lessons: step light, curse softly."],
+      victory: ['Well fought, all of you. Truly.', 'Another one down. I could get used to this.'],
+      levelUp: ['Stronger, and still not close enough to him. But closer.'],
+      secret: ['A hidden door. Dad loved those. He would be so smug.'],
+      newArea: ['I know this kind of silence. Someone was here recently, or never left.', 'Mind the shadows. And the floor. And, well, everything.'],
+    },
+    camp: [
+      "Liora: \"The Watch taught me to read tracks. Dad taught me to read people. Only one of those is any use in a dungeon.\"",
+      "Liora: \"I keep a lantern lit for him back home. Marga thinks it's for the inn. I let her.\"",
+      "Liora: \"Half-elf means two families that never quite fit me. So I made a third out of whoever shows up. Hello.\"",
+      "Liora: \"Do you ever notice how the rats are polite? They only bite when you stop looking.\"",
+      "Liora: \"If I ever sing, it's the wind. Agreed? Good.\"",
+    ],
+  },
 };
 export const COMPANION_KEYS = ['brambur', 'fizzwick', 'pip'];
 

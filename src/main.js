@@ -50,7 +50,7 @@ function showDialogue(scene, { closable = false } = {}) {
       playVoiceLine(ln.text, ln.who, { kind: 'dialog' });
       openModal([h('div', { class: 'dialogue' },
         scene.title ? h('h2', {}, scene.title) : null,
-        h('div', { class: 'dlgrow' }, h('span', { class: 'dlgportrait', style: `border-color:${sp.color}` }, sp.icon || (sp.name || '?')[0]),
+        h('div', { class: 'dlgrow' }, speakerPortrait(sp),
           h('div', { class: 'dlgtext' }, sp.name ? h('b', { style: `color:${sp.color}` }, sp.name) : null, h('p', { class: ln.who === 'narrator' ? 'lore' : '' }, ln.text))),
         h('div', { class: 'hint' }, `${Math.min(i + 1, lines.length)} / ${lines.length}`),
         h('div', { class: 'menu' }, last
@@ -59,6 +59,11 @@ function showDialogue(scene, { closable = false } = {}) {
     };
     draw();
   });
+}
+/** Round portrait for a dialogue speaker: a painted image when they have one (Liora, event guests), else the emoji disc. */
+function speakerPortrait(sp) {
+  if (Number.isInteger(sp.img)) return h('span', { class: 'dlgportrait pimgwrap', style: `border-color:${sp.color}` }, h('img', { src: portraitURL(sp.img), alt: `${sp.name || 'Speaker'} portrait`, draggable: 'false' }));
+  return h('span', { class: 'dlgportrait', style: `border-color:${sp.color}` }, sp.icon || (sp.name || '?')[0]);
 }
 let prologueFight = false;
 async function runPrologue() {
@@ -417,7 +422,7 @@ function showTown(sub = null) {
       S.roster.length ? h('div', { class: 'menu', id: 'roster' }, S.roster.map((c) => h('div', { class: 'row' }, portrait(c), h('span', { style: 'flex:1' }, `${c.name} — L${c.level} ${CLASSES[c.cls].name}${c.dead ? ' (DEAD — raise at the Temple)' : ''}`),
         btn('Join party', () => { handle(G.rejoin(S, c)); autosave(); showTown('tavern'); }, { class: 'small', disabled: S.party.length >= 4 })))) : h('p', { class: 'hint' }, 'Nobody is waiting. Dismissed members stay here, so you can bring them back (or raise them at the Temple) later.'),
       h('h3', {}, `Adventurers for hire (join at level ${G.partyLevel(S)})`),
-      h('div', { class: 'menu', id: 'hire' }, G.availableCompanions(S).map((k) => { const C = COMPANIONS[k]; return h('div', { class: 'hirecard' }, h('p', {}, h('b', { style: `color:${C.color}` }, `${C.name} — ${RACES[C.race].name} ${CLASSES[C.cls].name}: `), C.blurb),
+      h('div', { class: 'menu', id: 'hire' }, G.availableCompanions(S).map((k) => { const C = COMPANIONS[k]; return h('div', { class: 'hirecard' }, Number.isInteger(C.portrait) ? h('img', { class: 'hirepic', src: portraitURL(C.portrait), alt: `${C.name} portrait` }) : null, h('p', {}, h('b', { style: `color:${C.color}` }, `${C.name} — ${RACES[C.race].name} ${CLASSES[C.cls].name}: `), C.blurb),
         btn(`Recruit ${C.short}${S.party.length >= 4 ? ' (to roster)' : ''}`, () => { handle(G.recruitCompanion(S, k)); autosave(); showTown('tavern'); }, { class: 'small', 'data-recruit': k })); })),
       btn('✍ Create a new recruit (full creator)', () => showCreate(true), { id: 'btn-new-recruit' })]);
   } else if (sub === 'temple') {
