@@ -65,10 +65,20 @@ export function saveMod(c, a) {
   if (setCount(c) >= 5) m += 1;
   return m;
 }
+/** Class proficiency (category or named weapon) plus racial weapon training (Dwarven Combat Training, Elf Weapon Training). */
 export function isProficientWeapon(c, wkey) {
-  const W = WEAPONS[wkey], list = CLASSES[c.cls].weapons; return list.includes(W.cat) || list.includes(wkey);
+  const W = WEAPONS[wkey], list = CLASSES[c.cls].weapons; return list.includes(W.cat) || list.includes(wkey) || !!RACES[c.race]?.weapons?.includes(wkey);
 }
-export function canWearArmor(c, akey) { return akey === null || CLASSES[c.cls].armor.includes(ARMOR[akey].type); }
+/** Armor the class is proficient with. Druids also refuse metal armor (SRD: "will not wear armor or use shields made of metal"). */
+export function canWearArmor(c, akey) { return akey === null || (CLASSES[c.cls].armor.includes(ARMOR[akey].type) && !(c.cls === 'druid' && ARMOR[akey].metal)); }
+/** Small races (halfling, gnome) have disadvantage on attacks with Heavy weapons. */
+export const heavyPenalty = (c, wkey) => !!RACES[c.race]?.small && !!WEAPONS[wkey]?.props.includes('heavy');
+/** Walking speed: heavy armor with a Strength requirement slows a wearer below it by 10 ft (dwarves are not slowed). */
+export function speedOf(c) {
+  const A = c.equip?.armor && ARMOR[c.equip.armor.base]; let sp = RACES[c.race].speed;
+  if (A?.str && c.scores.str < A.str && RACES[c.race].armorSlow !== false) sp -= 10;
+  return sp;
+}
 
 export function armorClass(c) {
   const dex = abilityMod(c, 'dex');
@@ -115,7 +125,7 @@ export function weaponStats(c, slot = 'weapon') {
   if (monkWpn) { const md = martialDie(c); if (+md.slice(2) > +dmg.split('d')[1]) dmg = md; }
   const bonus = m + (isProficientWeapon(c, w.base) ? prof(c) : 0) + (w.magic || 0) + (ranged && c.cls === 'ranger' && c.level >= 2 ? 2 : 0);
   const fx = w.key ? ITEMS[w.key]?.fx : null;
-  return { elem: fx?.elem || null, name: (w.key && (ITEMS[w.key]?.set || ITEMS[w.key]?.fx) ? ITEMS[w.key].name : w.magic ? `${W.name} +${w.magic}` : W.name), bonus, dmg, dmgBonus: m + (w.magic || 0), type: W.type, ranged, finesse };
+  return { heavyDis: heavyPenalty(c, w.base), proficient: isProficientWeapon(c, w.base), elem: fx?.elem || null, name: (w.key && (ITEMS[w.key]?.set || ITEMS[w.key]?.fx) ? ITEMS[w.key].name : w.magic ? `${W.name} +${w.magic}` : W.name), bonus, dmg, dmgBonus: m + (w.magic || 0), type: W.type, ranged, finesse };
 }
 export function spellMod(c) { const a = CLASSES[c.cls].caster; return a ? abilityMod(c, a) : 0; }
 export function spellDC(c) { return 8 + prof(c) + spellMod(c); }

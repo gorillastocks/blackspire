@@ -6,7 +6,7 @@ import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js
 import { outdoorRegion, inRegion, hourAt, todName, WEATHER_INFO } from './dungeon/outdoor.js';
 import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, TIER_COLOR, TIER_LABEL, tierOf, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
-import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
+import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, speedOf, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
 import * as SC from './rules/spellcasting.js';
 import * as D from './rules/phaseD.js';
 import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
@@ -830,9 +830,9 @@ function showSheet(c) {
     h('div', { class: 'abil' }, ABILITIES.map((a) => h('div', { title: ABILITY_NAMES[a] }, h('small', {}, a.toUpperCase()), h('b', {}, c.scores[a]), h('small', {}, fmtMod(mod(c.scores[a])))))),
     h('div', { class: 'cols', style: 'margin-top:10px' },
       h('div', {}, h('table', {}, h('tbody', {},
-        ...[['HP', `${Math.max(0, c.hp)} / ${c.maxHp}`], ['Armor Class', armorClass(c)], ['Proficiency', fmtMod(prof(c))], ['Initiative', fmtMod(mod(c.scores.dex))], ['Speed', `${Rr.speed} ft`], ['Hit Dice', `${c.hitDice}d${C.hitDie} / ${c.level}`],
+        ...[['HP', `${Math.max(0, c.hp)} / ${c.maxHp}`], ['Armor Class', armorClass(c)], ['Proficiency', fmtMod(prof(c))], ['Initiative', fmtMod(mod(c.scores.dex))], ['Speed', `${speedOf(c)} ft${speedOf(c) < Rr.speed ? ' (heavy armor, Str too low)' : ''}`], ['Hit Dice', `${c.hitDice}d${C.hitDie} / ${c.level}`],
           ['XP', `${c.xp} / ${xpForNext(c) === Infinity ? 'MAX' : xpForNext(c)}`], ['Passive Perception', passive(c, 'perception')],
-          ['Melee', w ? `${w.name} ${fmtMod(w.bonus)} · ${w.dmg}${fmtMod(w.dmgBonus)} ${w.type}` : '—'], ['Ranged', r ? `${r.name} ${fmtMod(r.bonus)} · ${r.dmg}${fmtMod(r.dmgBonus)}` : '—'],
+          ['Melee', w ? `${w.name} ${fmtMod(w.bonus)} · ${w.dmg}${fmtMod(w.dmgBonus)} ${w.type}${w.proficient ? '' : ' · not proficient'}${w.heavyDis ? ' · disadvantage (Small, heavy)' : ''}` : '—'], ['Ranged', r ? `${r.name} ${fmtMod(r.bonus)} · ${r.dmg}${fmtMod(r.dmgBonus)}${r.proficient ? '' : ' · not proficient'}${r.heavyDis ? ' · disadvantage (Small, heavy)' : ''}` : '—'],
           ['Armor', `${c.equip.armor ? ARMOR[c.equip.armor.base].name + (c.equip.armor.magic ? ' +' + c.equip.armor.magic : '') : c.conditions.mageArmor ? 'Mage Armor' : 'None'}${c.equip.shield ? ' + Shield' : ''}`],
           ['Magic', [c.equip.ring, c.equip.cloak, c.equip.helm].filter(Boolean).map((k) => ITEMS[k].name).join(', ') || '—'],
           ['Death Saves', `${c.deathSaves.s} ✓  ${c.deathSaves.f} ✗`],
@@ -851,7 +851,7 @@ function showSheet(c) {
 /* ---------- Combat ---------- */
 let skipping = false; // the player tapped ⏭ Skip: animations and captions collapse until the next menu / fight
 const wait = (ms) => new Promise((r) => setTimeout(r, skipping ? 0 : ms * speed().f));
-function skipNow() { skipping = true; tapPending?.(); cutinStop?.(); hideCutin(); }
+function skipNow() { skipping = true; tapPending?.(); cutinStop?.(); hideCutin(); document.querySelectorAll('#foeport .fp-tile.hurt, #foeport .fp-tile.dodge').forEach((t) => { t.style.setProperty('--fd', '0ms'); t.dataset.static = '1'; }); }
 function cycleSpeed() { const ks = Object.keys(BATTLE_SPEEDS); const cur = loadSettings().battleSpeed || 'pause'; setSpeed(ks[(ks.indexOf(cur) + 1) % ks.length]); syncFxSettings(); syncCombatChips(); }
 function syncCombatChips() { const b = $('#speedbtn'); if (b) b.textContent = `⏩ ${speed().short}`; }
 /* ---------- Action captions (large, centered narration of each action) ---------- */
@@ -1090,7 +1090,7 @@ async function startCombat(info) {
 }
 let looping = false, loopFor = null; // loopFor: the Combat the running loop belongs to
 let loopGen = 0;
-function abandonCombat() { hideTurnPortrait(true); suspendSnap = null; skipping = false; loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
+function abandonCombat() { hideTurnPortrait(true); hideFoePortrait(true); suspendSnap = null; skipping = false; loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
 async function combatLoop() {
   // A new fight can begin while the previous fight's loop is still unwinding inside endCombat (town/boss paths await the loot card or a
   // rebuild there): the stale `looping` flag used to make this call a no-op, so the new battle never got a turn and no menu appeared.
@@ -1098,7 +1098,7 @@ async function combatLoop() {
   try {
     while (combat && combat.state === 'running' && gen === loopGen) {
       renderParty(); renderTargets();
-      { const cur = combat.current(); if (cur && cur.side === 'party') showTurnPortrait(cur); else hideTurnPortrait(); } // the hero's portrait appears when their turn starts and stays through the result
+      { const cur = combat.current(); if (cur && cur.side === 'party') { hideFoePortrait(true); showTurnPortrait(cur); } else hideTurnPortrait(); } // the hero's portrait appears when their turn starts and stays through the result
       if (combat.needsInput() && !autoBattle) { await playerTurn(); }
       else {
         const c = combat.current();
@@ -1163,6 +1163,44 @@ async function playCutin(e) {
     await sleepC(Math.round(110 * Math.max(0.3, speed().f)));
   } finally { cutinStop = null; cutinBusy = false; hideCutin(); } // effects end; the portrait stays until the next turn
 }
+/* ---------- Monster attacks: the targeted hero's portrait takes the same bottom-left spot as the hero cut-in for the monster's strike,
+   with a red flash + shake on a hit (and the damage), a dodge slide + 'Miss' on a miss. AoE hits show a compact row of the heroes hit.
+   Speed and Skip shorten the animation only (the portrait still shows). ---------- */
+let foeKey = '', foeHideT = null;
+function hideFoePortrait(now = false) {
+  const el = $('#foeport'); foeKey = ''; clearTimeout(foeHideT); foeHideT = null; if (!el) return;
+  const clear = () => { el.className = ''; el.replaceChildren(); delete el.dataset.who; delete el.dataset.from; };
+  if (now || !el.classList.contains('on') || reduceMotion()) return clear();
+  el.classList.remove('in'); el.classList.add('out'); foeHideT = setTimeout(() => { foeHideT = null; if (!foeKey) clear(); }, 200);
+}
+function showFoePortrait(heroes, foe) {
+  const el = $('#foeport'); if (!el || !heroes.length) return;
+  const key = foe.id + ':' + heroes.map((c) => c.id).join(',');
+  clearTimeout(foeHideT); foeHideT = null;
+  if (key === foeKey && el.classList.contains('in') && !el.classList.contains('out')) return;
+  hideTurnPortrait(true); foeKey = key; el.className = ''; el.dataset.from = foe.name; el.dataset.who = heroes.map((c) => c.name).join(',');
+  el.replaceChildren(...heroes.map((c) => h('div', { class: 'fp-tile', 'data-id': c.id }, portrait(c, 'tp-img'), h('div', { class: 'fp-flash' }), h('div', { class: 'fp-num' }), h('div', { class: 'fp-name' }, h('b', {}, c.name), h('span', {}, heroes.length > 1 ? '' : `⚔ ${foe.name}`)))));
+  el.className = 'on ' + (heroes.length > 1 ? 'row' : 'single'); void el.offsetWidth; el.classList.add('in');
+}
+/** kind: 'hurt' (amt, crit) or 'dodge'. Does nothing unless this hero's tile is on screen for the current monster strike. */
+function foeReact(c, kind, amt = 0, crit = false) {
+  const el = $('#foeport'); const tile = el && foeKey ? [...el.querySelectorAll('.fp-tile')].find((t) => t.dataset.id === c.id) : null; if (!tile) return;
+  const f = speed().f; const dur = skipping ? 0 : Math.round((kind === 'hurt' ? 420 : 520) * ANIM_SLOW * Math.max(0.4, f));
+  tile.style.setProperty('--fd', dur + 'ms'); tile.classList.remove('hurt', 'dodge', 'crit'); if (dur) delete tile.dataset.static; else tile.dataset.static = '1'; void tile.offsetWidth;
+  const num = tile.querySelector('.fp-num'); num.textContent = kind === 'hurt' ? (crit ? `CRIT ${amt}` : `-${amt}`) : 'Miss';
+  tile.classList.add(kind); if (crit) tile.classList.add('crit');
+}
+/** Heroes a monster's strike lands on, read ahead from the event stream: the attack's own target, or everyone hurt by an AoE. */
+function foeTargets(events, i) {
+  const e = events[i], out = new Map(); if (e.tgt) out.set(e.tgt.id, e.tgt);
+  let mult = false;
+  for (let j = i + 1; j < events.length; j++) {
+    const n = events[j]; if (n.type === 'monsterAttack' || n.type === 'partyAttack' || n.type === 'cutin') break;
+    const who = n.type === 'partyHurt' ? n.who : (n.type === 'hit' || n.type === 'miss') && n.tgt?.side === 'party' && n.att === e.who ? n.tgt : null;
+    if (who) { if (!out.has(who.id) && n.type === 'partyHurt' && out.size) mult = true; out.set(who.id, who); }
+  }
+  return mult || out.size > 1 ? [...out.values()] : [e.tgt].filter(Boolean);
+}
 async function flushCombat() {
   const { log: lines, events } = combat.drain();
   for (const l of lines) log(l.t, l.cls);
@@ -1177,7 +1215,7 @@ async function flushCombat() {
     if (e.type === 'trait') { const d = D.dtype(e.dtype), k = D.TRAIT_KINDS[e.kind]; floater(e.who.id, `${d.icon} ${k.mark}`, false, e.dtype); renderTargets(); if (e.first) toast(`${d.icon} Discovered: ${e.who.name} ${k.word.toLowerCase()} ${d.name.toLowerCase()} (${k.mark})`); await wait(e.kind === 'immune' ? 220 : 140); continue; }
     if (e.type === 'rows') { renderParty(); continue; }
     if (e.type === 'study') { renderTargets(); sfx(e.ok ? 'chime' : 'miss'); if (e.ok) await wait(200); continue; }
-    if (e.type === 'monsterAttack') { pending = null; R.monsterAttack(e.who.id); sfx('swing'); await wait(560 * ANIM_SLOW); }
+    if (e.type === 'monsterAttack') { pending = null; if (e.tgt?.side === 'party') showFoePortrait(foeTargets(events, events.indexOf(e)), e.who); R.monsterAttack(e.who.id); sfx('swing'); await wait(560 * ANIM_SLOW); }
     else if (e.type === 'partyAttack') { pending = null; const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait((k === 'bow' || k === 'crossbow' ? 60 : 150) * ANIM_SLOW); }
     else if (e.type === 'hit' && e.tgt.side === 'monster') {
       const sp = pending && pending.who === e.att ? pending.spell : null;
@@ -1188,8 +1226,8 @@ async function flushCombat() {
       if (sp) dmgSfx(e, sp); else sfx(WEAPON_SFX[wk] && wk !== 'bow' && wk !== 'crossbow' ? WEAPON_SFX[wk] : e.dtype === 'bludgeoning' ? 'thud' : e.dtype === 'piercing' ? 'stab' : SPELL_SFX[e.dtype] || 'slash');
       if (e.crit) sfx('crit'); await wait((sp ? 160 : wk ? 200 : 260) * ANIM_SLOW + 90); // impact hold on the hit frame (sound already fired with the hit)
     }
-    else if (e.type === 'miss') { const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else cardFloat(e.tgt, 'Miss'); sfx('miss'); await wait(160 * ANIM_SLOW); }
-    else if (e.type === 'partyHurt') { renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); sfx('mhit'); if (e.crit) sfx('crit'); await wait(260 * ANIM_SLOW + 90); }
+    else if (e.type === 'miss') { const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else { cardFloat(e.tgt, 'Miss'); foeReact(e.tgt, 'dodge'); } sfx('miss'); await wait(160 * ANIM_SLOW); }
+    else if (e.type === 'partyHurt') { renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); foeReact(e.who, 'hurt', e.amt ?? e.dmg, e.crit); sfx('mhit'); if (e.crit) sfx('crit'); await wait(260 * ANIM_SLOW + 90); }
     else if (e.type === 'kill') { if (e.who.side === 'party') sfx('kill'); else { R.monsterDie(e.who.id); sfx('mdeath'); } say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(300); }
     else if (e.type === 'crit') { if (e.att.side === 'party') say(banter(S.party, 'crit', { who: e.att }, 0.8)); else say(banter(S.party, 'enemyCrit', { who: e.tgt }, 0.8)); }
     else if (e.type === 'spell') {
@@ -1229,7 +1267,7 @@ function chooseFrom(title, options, kind = '') {
     modal._resolve = done; modal._options = options;
   });
 }
-function endCombatUI() { hideTurnPortrait(); skipping = false; curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
+function endCombatUI() { hideTurnPortrait(); hideFoePortrait(true); skipping = false; curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
 function combatKey(e) {
   const n = parseInt(e.key, 10); if (!modal._options) return;
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
@@ -1424,7 +1462,7 @@ async function boot() {
   log('Loading the 3D engine…', 'dim');
   const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
   R = new Renderer($('#view')); R.onResize = () => { if (combat) { replaceOverlays(); renderTargets(); } else if ($('#caption').classList.contains('show')) replaceOverlays(); };
-  window.__gw = { sfx, SFX_NAMES, applyAudioSettings, playCutin, endCutinPhase() { cutinStop?.(); }, closeModal, renderCombatUI() { renderParty(); renderTargets(); }, showHelp,
+  window.__gw = { sfx, SFX_NAMES, applyAudioSettings, playCutin, flushCombat, showFoePortrait, foeReact, hideFoePortrait, endCutinPhase() { cutinStop?.(); }, closeModal, renderCombatUI() { renderParty(); renderTargets(); }, showHelp,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
     outdoorInfo: () => ({ reg: outReg(), near: S ? outNear() : false, hour: S ? outHour() : null, tod: S ? todName(outHour()) : null, weather: R?.outdoor?.weather || null, state: R?.outState || null, counts: R?.outdoor?.counts || null }), look(p) { if (R) R.pitch = p; }, setHour(h) { if (R?.outdoor) R.outdoor.forceHour = h; refresh(); }, setWeather(k) { R?.outdoor?.setWeather(k); refresh(); },
@@ -1635,7 +1673,7 @@ function monsterInfo(m) {
 function spellInfo(k) { const s = SPELLS[k]; return s ? [`${s.name} — ${s.level ? 'Level ' + s.level : 'Cantrip'}${s.conc ? ' · Concentration' : ''}`, s.desc || ''] : []; }
 function itemInfo(k) {
   const I = ITEMS[k]; const w = k.startsWith('w:') ? WEAPONS[k.slice(2)] : null; const a = k.startsWith('a:') ? ARMOR[k.slice(2)] : null;
-  return [G.nameOf(k) + (tierOf(k) !== 'common' ? ` — ${TIER_LABEL[tierOf(k)]}` : ''), I?.heal ? `Heals ${I.heal} HP` : I?.cure ? `Cures ${I.cure}` : w ? `${w.dmg} ${w.type} · ${w.cat}${w.props?.length ? ' · ' + w.props.join(', ') : ''}` : a ? `AC ${a.base} (${a.type} armor)` : k === 'shield' ? '+2 AC' : I?.desc || I?.kind || '', `Value ${G.priceOf(k)} gp`].filter(Boolean);
+  return [G.nameOf(k) + (tierOf(k) !== 'common' ? ` — ${TIER_LABEL[tierOf(k)]}` : ''), I?.heal ? `Heals ${I.heal} HP` : I?.cure ? `Cures ${I.cure}` : w ? `${w.dmg} ${w.type} · ${w.cat}${w.props?.length ? ' · ' + w.props.join(', ') : ''}` : a ? `AC ${a.base} (${a.type} armor)${a.str ? ' · needs Str ' + a.str : ''}${a.stealthDis ? ' · Stealth disadvantage' : ''}${a.metal ? ' · metal' : ''}` : k === 'shield' ? '+2 AC' : I?.desc || I?.kind || '', `Value ${G.priceOf(k)} gp`].filter(Boolean);
 }
 
 /* ---------- First-run tutorial ---------- */

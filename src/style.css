@@ -509,6 +509,36 @@ body.reducemotion #turnport .tp-fx i, body.reducemotion #turnport .tp-flash, bod
 body.reducemotion #turnport.in, body.reducemotion #turnport.out, body.reducemotion #turnport.strike .tp-port { transition: none !important; }
 @media (min-width: 761px) and (max-width: 1200px) { #turnport { --tp: 112px; left: 12px; bottom: 12px; } #turnport .tp-name b { font-size: 15px; } #turnport .tp-name span { font-size: 11px; min-height: 11px; } }
 @media (min-width: 1201px) { #turnport { --tp: 100px; } #turnport .tp-name b { font-size: 14px; } #turnport .tp-name span { font-size: 10px; } }
+/* Monster strike: the targeted hero's portrait sits in the same bottom-left spot as the hero's turn portrait (that one is hidden while a
+   monster acts). Hit = red flash + shake + damage number; miss = dodge slide + 'Miss'. AoE = a compact row of the heroes hit. */
+#foeport { position: absolute; left: 8px; bottom: 8px; --tp: 76px; z-index: 3; pointer-events: none; display: none; transform: translateX(-140%); opacity: 0; max-width: calc(100% - 16px); }
+#foeport.on { display: flex; gap: 6px; }
+#foeport.in { transform: none; opacity: 1; transition: transform 200ms cubic-bezier(.15, .9, .25, 1.12), opacity 140ms; }
+#foeport.out { transform: translateX(-140%); opacity: 0; transition: transform 180ms ease-in, opacity 180ms; }
+#foeport .fp-tile { position: relative; width: var(--tp); height: var(--tp); border: 2px solid #ff7a66; border-radius: 10px; overflow: hidden; background: #0b0716; box-shadow: 0 0 10px #ff5a3a66, 0 2px 8px #000a; --fd: 420ms; flex: 0 0 auto; }
+#foeport.row { --tp: 40px; gap: 4px; flex-wrap: wrap; max-width: calc(100% - 200px); } /* leaves the corner chips (right) free on a phone */
+#foeport .tp-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 0; margin: 0; }
+#foeport span.tp-img { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; color: #000; }
+#foeport .fp-name { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 3px 2px; display: flex; flex-direction: column; align-items: center; text-align: center; background: linear-gradient(transparent, #0b0716f0 55%); text-shadow: 0 1px 3px #000; }
+#foeport .fp-name b { font-size: 12px; line-height: 1.15; color: #fff; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#foeport .fp-name span { font-size: 9px; line-height: 1.1; color: #ff9d8a; letter-spacing: .04em; text-transform: uppercase; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 9px; }
+#foeport.row .fp-name { padding-top: 6px; } #foeport.row .fp-name b { font-size: 8px; } #foeport.row .fp-name span { display: none; }
+#foeport .fp-flash { position: absolute; inset: 0; background: #ff1a1a; opacity: 0; }
+#foeport .fp-num { position: absolute; left: 0; right: 0; top: 18%; text-align: center; font-weight: 800; font-size: 24px; line-height: 1; color: #fff; text-shadow: 0 0 6px #000, 0 2px 3px #000; opacity: 0; }
+#foeport.row .fp-num { font-size: 15px; top: 12%; }
+#foeport .fp-tile.hurt { border-color: #ff2a2a; animation: fpShake var(--fd) ease-out; } #foeport .fp-tile.hurt .fp-flash { animation: fpFlash var(--fd) ease-out; } #foeport .fp-tile.hurt .fp-num { color: #ff6b6b; animation: fpNum var(--fd) ease-out; }
+#foeport .fp-tile.hurt.crit .fp-num { color: #ffd34d; font-size: 18px; }
+#foeport .fp-tile.dodge { border-color: #cfd6ff; animation: fpDodge var(--fd) ease-in-out; } #foeport .fp-tile.dodge .fp-num { color: #e8ecff; animation: fpNum var(--fd) ease-out; }
+#foeport .fp-tile[data-static] { animation: none; } #foeport .fp-tile[data-static] .fp-num { animation: none; opacity: 1; } #foeport .fp-tile[data-static] .fp-flash { animation: none; }
+@keyframes fpShake { 0%, 100% { transform: translateX(0); } 12% { transform: translateX(-7px) rotate(-2deg); } 28% { transform: translateX(7px) rotate(2deg); } 44% { transform: translateX(-5px); } 60% { transform: translateX(4px); } 78% { transform: translateX(-2px); } }
+@keyframes fpFlash { 0% { opacity: 0; } 15% { opacity: .75; } 100% { opacity: 0; } }
+@keyframes fpDodge { 0% { transform: translateX(0); opacity: 1; } 35% { transform: translateX(26px) skewX(-8deg); opacity: .6; } 70% { transform: translateX(26px) skewX(-8deg); opacity: .6; } 100% { transform: translateX(0); opacity: 1; } }
+@keyframes fpNum { 0% { opacity: 0; transform: translateY(8px) scale(.7); } 20% { opacity: 1; transform: translateY(0) scale(1.15); } 70% { opacity: 1; transform: translateY(-4px) scale(1); } 100% { opacity: 0; transform: translateY(-10px); } }
+body.reducemotion #foeport .fp-tile, body.reducemotion #foeport .fp-flash, body.reducemotion #foeport .fp-num { animation: none !important; }
+body.reducemotion #foeport .fp-tile.hurt .fp-num, body.reducemotion #foeport .fp-tile.dodge .fp-num { opacity: 1; }
+body.reducemotion #foeport.in, body.reducemotion #foeport.out { transition: none !important; }
+@media (min-width: 761px) and (max-width: 1200px) { #foeport { --tp: 112px; left: 12px; bottom: 12px; } #foeport.row { --tp: 64px; gap: 6px; max-width: calc(100% - 24px); } #foeport .fp-name b { font-size: 15px; } #foeport .fp-name span { font-size: 11px; } #foeport .fp-num { font-size: 32px; } #foeport.row .fp-num { font-size: 20px; } #foeport.row .fp-name b { font-size: 11px; } }
+@media (min-width: 1201px) { #foeport { --tp: 100px; } #foeport.row { --tp: 60px; gap: 6px; max-width: calc(100% - 24px); } #foeport .fp-name b { font-size: 14px; } #foeport .fp-num { font-size: 28px; } #foeport.row .fp-num { font-size: 18px; } #foeport.row .fp-name b { font-size: 10px; } }
 .formation { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 .formation .fcol { background: #120a22; border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 5px; }
 .formation .fhead { display: flex; flex-direction: column; margin-bottom: 2px; } .formation .fhead small { color: #aaa; }
@@ -518,3 +548,4 @@ body.reducemotion #turnport.in, body.reducemotion #turnport.out, body.reducemoti
 .formation .fnote { grid-column: 1 / -1; font-size: 12px; color: #b9a8dd; }
 
 @media (max-height: 520px) and (orientation: landscape) { #turnport { --tp: 56px; left: 6px; bottom: 6px; } #turnport .tp-name b { font-size: 10px; } #turnport .tp-name span { display: none; } }
+@media (max-height: 520px) and (orientation: landscape) { #foeport { --tp: 56px; left: 6px; bottom: 6px; } #foeport.row { --tp: 40px; max-width: calc(100% - 200px); } #foeport .fp-name b { font-size: 10px; } #foeport .fp-name span { display: none; } #foeport .fp-num { font-size: 18px; } }

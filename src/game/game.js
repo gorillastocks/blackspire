@@ -1,7 +1,7 @@
 // Core game state & exploration logic (DOM-free, so it can be unit tested and simulated).
 import { getLevel, DIRS, W, H, tileOrdinal, LEVEL_DEFS, setDungeonSeeds, randomSeeds } from '../dungeon/levels.js';
-import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor, skillMod, knownSpells, spellMod, heal } from '../rules/character.js';
-import { ITEMS, WEAPONS, ARMOR, CLASSES, XP_LEVELS, SPELLS, DROP_POOL, tierOf } from '../rules/data.js';
+import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor, isProficientWeapon, heavyPenalty, speedOf, skillMod, knownSpells, spellMod, heal } from '../rules/character.js';
+import { ITEMS, WEAPONS, ARMOR, CLASSES, RACES, XP_LEVELS, SPELLS, DROP_POOL, tierOf } from '../rules/data.js';
 import { elitePos, LORE } from '../dungeon/extras.js';
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './companions.js';
@@ -434,7 +434,7 @@ export function sell(s, idx) {
 /** Equip an inventory item on a character. */
 export function equip(s, c, idx) {
   const key = s.inventory[idx]; if (!key) return [];
-  let slot, val;
+  let slot, val, displaced = false;
   if (key === 'shield' || key === 'sunshardAegis') {
     if (!CLASSES[c.cls].armor.includes('shield')) return [{ log: `${c.name} can't use shields.`, cls: 'bad' }];
     if (c.equip.shield === (key === 'shield' ? true : key)) return [{ log: 'Already has that shield.' }];
@@ -445,15 +445,19 @@ export function equip(s, c, idx) {
   if (key.startsWith('w:') || ITEMS[key]?.kind === 'weapon') {
     const base = key.startsWith('w:') ? key.slice(2) : ITEMS[key].base; val = { base, magic: ITEMS[key]?.magic || 0 }; if (ITEMS[key]?.set || ITEMS[key]?.kind === 'weapon') val.key = key;
     slot = WEAPONS[base].props.includes('ranged') ? 'ranged' : 'weapon';
-    if (WEAPONS[base].props.includes('two-handed') && slot === 'weapon' && c.equip.shield) { s.inventory.push(c.equip.shield === true ? 'shield' : c.equip.shield); c.equip.shield = false; }
+    if (WEAPONS[base].props.includes('two-handed') && slot === 'weapon' && c.equip.shield) { displaced = true; s.inventory.push(c.equip.shield === true ? 'shield' : c.equip.shield); c.equip.shield = false; }
   } else if (key.startsWith('a:') || ITEMS[key]?.kind === 'armor') {
-    const base = key.startsWith('a:') ? key.slice(2) : ITEMS[key].base; if (!canWearArmor(c, base)) return [{ log: `${c.name} isn't proficient with ${ARMOR[base].type} armor.`, cls: 'bad' }];
+    const base = key.startsWith('a:') ? key.slice(2) : ITEMS[key].base; if (!canWearArmor(c, base)) return [{ log: c.cls === 'druid' && CLASSES.druid.armor.includes(ARMOR[base].type) ? `${c.name} won't wear metal armor (druid).` : `${c.name} isn't proficient with ${ARMOR[base].type} armor.`, cls: 'bad' }];
     val = { base, magic: ITEMS[key]?.magic || 0 }; if (ITEMS[key]) val.key = key; slot = 'armor';
   } else if (['ring', 'cloak', 'helm'].includes(ITEMS[key]?.kind)) { slot = ITEMS[key].kind; val = key; }
   else return [{ log: 'That cannot be equipped.', cls: 'dim' }];
   const old = c.equip[slot]; s.inventory.splice(idx, 1); c.equip[slot] = val;
   if (old) s.inventory.push(typeof old === 'string' ? old : old.key ? old.key : (old.magic ? Object.keys(ITEMS).find((k) => ITEMS[k].base === old.base && ITEMS[k].magic === old.magic) : (slot === 'armor' ? 'a:' : 'w:') + old.base));
-  return [{ log: `${c.name} equips ${nameOf(key)}.`, cls: 'good' }];
+  const notes = [];
+  if (slot === 'weapon' || slot === 'ranged') { if (!isProficientWeapon(c, val.base)) notes.push('not proficient: no proficiency bonus on attacks'); if (heavyPenalty(c, val.base)) notes.push('Small: disadvantage with heavy weapons'); if (displaced) notes.push('shield put away: two-handed'); }
+  if (slot === 'armor' && ARMOR[val.base].str && c.scores.str < ARMOR[val.base].str && speedOf(c) < RACES[c.race].speed) notes.push(`Str ${ARMOR[val.base].str} needed: speed −10 ft`);
+  if (slot === 'armor' && ARMOR[val.base].stealthDis) notes.push('disadvantage on Stealth');
+  return [{ log: `${c.name} equips ${nameOf(key)}${notes.length ? ` (${notes.join('; ')})` : ''}.`, cls: notes.some((n) => /not proficient|Small|Str/.test(n)) ? 'dim' : 'good' }];
 }
 export function usePotion(s, idx, c) {
   const key = s.inventory[idx]; const I = ITEMS[key]; if (!I || I.kind !== 'potion') return [];

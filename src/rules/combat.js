@@ -1,5 +1,5 @@
 // Turn-based combat engine implementing SRD 5.1 combat rules (condensed to a Wizardry-style party-vs-groups view).
-import { MONSTERS, SPELLS, CR_XP, WEAPONS, ITEMS, CLASSES, TUNING } from './data.js';
+import { MONSTERS, SPELLS, CR_XP, WEAPONS, ARMOR, ITEMS, CLASSES, TUNING } from './data.js';
 import { roll, d20, die, pick, rand } from './dice.js';
 import { narrateAttack, line as narr } from './narrate.js';
 import {
@@ -261,8 +261,8 @@ export class Combat {
     return { adv, dis };
   }
   /** Generic attack. Returns {hit, crit, dmg}. */
-  attack(att, tgt, { bonus, dmg, type, ranged = false, spell = false, label, extraOnCrit = 0, sneak = 0, dmgBonus = 0, rider = null, extra = null, onHit = null }) {
-    const { adv, dis } = this.advantageFor(att, tgt, { ranged });
+  attack(att, tgt, { bonus, dmg, type, ranged = false, spell = false, label, extraOnCrit = 0, sneak = 0, dmgBonus = 0, rider = null, extra = null, onHit = null, forceDis = false }) {
+    const { adv, dis: dis0 } = this.advantageFor(att, tgt, { ranged }); const dis = dis0 || forceDis;
     delete att.conditions.hidden; delete att.conditions.mocked; if (tgt.conditions.guided) delete tgt.conditions.guided;
     const lucky = att.side === 'party' && hasTrait(att, 'Lucky');
     const nat = d20({ adv, dis, lucky });
@@ -388,7 +388,7 @@ export class Combat {
           const w = weaponStats(c, slot); const ranged = id === 'shoot' || id === 'throw';
           let sneak = 0;
           if (c.cls === 'rogue' && !t.sneakUsed && (w.finesse || w.ranged)) {
-            const { adv, dis } = this.advantageFor(c, tg, { ranged });
+            const { adv, dis: dis0 } = this.advantageFor(c, tg, { ranged }); const dis = dis0 || w.heavyDis;
             const allyEngaged = this.frontRow().some((p) => p !== c);
             if ((adv && !dis) || (allyEngaged && !dis)) sneak = sneakDice(c);
           }
@@ -444,7 +444,7 @@ export class Combat {
       case 'secondWind': { t.bonus = 0; c.res.secondWind = 0; const h = heal(c, roll('1d10') + c.level); this.say(`${c.name} catches a Second Wind: +${h} HP.`, 'good'); this.caption(`${c.name} grits their teeth and finds a second wind!`, `+${h} HP`, 'good'); this.emit({ type: 'heal', who: c }); break; }
       case 'actionSurge': { c.res.actionSurge = 0; t.action = 1; this.say(`${c.name} uses ACTION SURGE!`, 'crit'); this.caption(`${c.name} roars and surges forward — ACTION SURGE!`, 'An extra action', 'crit'); break; }
       case 'hide': {
-        t.bonus = 0; const r = d20({ dis: c.equip.armor && ['chainMail', 'splint', 'plate', 'scaleMail', 'halfPlate', 'ringMail', 'padded'].includes(c.equip.armor.base) }) + skillMod(c, 'stealth');
+        t.bonus = 0; const r = d20({ dis: !!(c.equip.armor && ARMOR[c.equip.armor.base]?.stealthDis) }) + skillMod(c, 'stealth');
         const pp = Math.max(...this.awakeMonsters().map((m) => 10 + monsterSave(m, 'wis')), 0);
         if (r >= pp) { c.conditions.hidden = true; this.say(`${c.name} slips into the shadows (Stealth ${r} vs ${pp}).`); } else this.say(`${c.name} fails to hide (Stealth ${r} vs ${pp}).`, 'dim');
         break;
@@ -495,7 +495,7 @@ export class Combat {
       return { dmg: Object.entries(dice).map(([f, n]) => `${n}d${f}`).join('+'), label: labels.join(' +') };
     };
     const brutal = (c.cls === 'barbarian' && c.level >= 9 && !ranged ? 1 : 0) + (c.race === 'halfOrc' && !ranged ? 1 : 0);
-    return this.attack(c, tg, { bonus: w.bonus, dmg: w.dmg, dmgBonus: w.dmgBonus + rage, type: w.type, ranged, label: w.name, sneak, extraOnCrit: brutal, onHit, extra: w.elem || null });
+    return this.attack(c, tg, { bonus: w.bonus, dmg: w.dmg, dmgBonus: w.dmgBonus + rage, type: w.type, ranged, label: w.name, sneak, extraOnCrit: brutal, onHit, extra: w.elem || null, forceDis: !!w.heavyDis });
   }
   wantsSmite(c, tg, crit) { const big = this.boss || tg.T?.boss || tg.hp > 25; return crit || (big && c.slots.some((n) => n > 0) && (tacticsOf(c).spells !== false)); }
 
