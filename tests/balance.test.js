@@ -12,12 +12,14 @@ describe('all-AI balance simulation', () => {
     expect(wins).toBeGreaterThanOrEqual(18); // game is beatable
     // Near the finale the party is at (or one step from) the level-9 cap: everyone is at least level 8 after the last floor,
     // the average party is close to 9, and some runs hit the cap. (Not "most runs at exactly 9" — the curve tops out in the finale.)
-    const fin = runs.map((r) => r.levels.at(-1).split('/').map(Number)); const avg = fin.flat().reduce((a, b) => a + b, 0) / fin.flat().length;
+    // (floors 2-5 are a real wall for this naive bot now: some runs stall at a boss, so the level checks are over the runs that finish)
+    const fin = runs.filter((r) => r.result === 'victory').map((r) => r.levels.at(-1).split('/').map(Number)); const avg = fin.flat().reduce((a, b) => a + b, 0) / fin.flat().length;
     const at9 = fin.filter((f) => f.every((l) => l >= 9)).length; console.log(`final party level avg ${avg.toFixed(2)}, runs at the level-9 cap: ${at9}/30`);
     // (A hero who falls at the B4/B5 bosses and is not raised in this coarse sim can lag a level behind, so: nobody below 7, and 90% of runs have everyone at 8+.)
     for (const f of fin) expect(Math.min(...f)).toBeGreaterThanOrEqual(7);
-    expect(fin.filter((f) => Math.min(...f) >= 8).length).toBeGreaterThanOrEqual(27);
+    expect(fin.filter((f) => Math.min(...f) >= 8).length).toBeGreaterThanOrEqual(Math.floor(fin.length * 0.9));
     expect(avg).toBeGreaterThanOrEqual(8.4); expect(at9).toBeGreaterThanOrEqual(3);
+    expect(wins).toBeLessThanOrEqual(29); // and it is not a guaranteed walkover any more (this bot never shops or uses tactics; the campaign sim in balance-targets.test.js is the real measure)
     expect(fightWin).toBeGreaterThan(0.8);
     // (Normal can now be a clean sweep for the sim; 'not trivial' is checked on Hard below.)
   });

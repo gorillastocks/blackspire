@@ -6,6 +6,7 @@ import { ITEMS } from '../rules/data.js';
 import { longRest, shortRest, canLevelUp, levelUp, canWearArmor } from '../rules/character.js';
 import { setRng, seeded } from '../rules/dice.js';
 
+const BOSS_LVL = [3, 4, 6, 8, 9]; // the level each floor's boss is designed for (EXPECTED_BOSS in balance.js)
 const groupsOf = (gs) => gs.map((g) => ({ key: g.key, count: g.count[0] }));
 // Hand each Dawn Regalia piece to the party member who can use it best (front-liners first).
 function equipRegalia(s) {
@@ -14,7 +15,7 @@ function equipRegalia(s) {
     for (const c of s.party) { const before = s.inventory.length; equip(s, c, i); if (s.inventory.length !== before || s.inventory[i] !== k) break; }
   }
 }
-export function simulateRun(seed, { heroCls = 'fighter', encountersPerLevel = [12, 14, 14, 14, 12], restEvery = 4, difficulty = 'normal' } = {}) {
+export function simulateRun(seed, { heroCls = 'fighter', encountersPerLevel = [12, 14, 14, 14, 12], restEvery = 4, difficulty = 'normal', grindToLevel = true } = {}) {
   setRng(seeded(seed));
   const s = newGame({ name: 'Sim', cls: heroCls, race: 'human' });
   s.flags.prologue = true;
@@ -36,6 +37,12 @@ export function simulateRun(seed, { heroCls = 'fighter', encountersPerLevel = [1
       if ((i + 1) % restEvery === 0) town();
     }
     town();
+    // a party that is behind the level the boss is designed for goes back out and farms random fights (up to 16 extra) before trying it
+    if (grindToLevel) for (let g = 0; g < 16 && s.party.reduce((t, c) => t + c.level, 0) / s.party.length < BOSS_LVL[L]; g++) {
+      const { cb } = fight({ groups: randomEncounter(s) }); stats.fights++;
+      if (cb.state === 'won') stats.wins++; else stats.losses++;
+      town();
+    }
     const def = LEVEL_DEFS[L];
     let beat = false;
     for (let a = 0; a < 4 && !beat; a++) {
