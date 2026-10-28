@@ -438,7 +438,7 @@ export function deserialize(str) {
   const N = LEVEL_DEFS.length;
   if (!Array.isArray(s.seeds) || s.seeds.length !== N) { s.seeds = null; s.randomDungeons = false; } setDungeonSeeds(s.seeds); // old saves: fixed classic layouts
   s.mods ||= []; s.explored ||= []; s.bossDead ||= [];
-  if ((s.version | 0) < 2) { // GrokWizard (3 floors) -> BLACKSPIRE (5 floors): old B3 vault became B5; the new B3 starts fresh
+  if ((s.version | 0) < 2) { // original 3-floor game -> BLACKSPIRE (5 floors): old B3 vault became B5; the new B3 starts fresh
     s.mods[2] = {}; s.explored[2] = []; s.bossDead[2] = false; s.victory = false; if (s.level === 2 && s.mode === 'dungeon') { s.mode = 'town'; } s.maxDepth = Math.min(s.maxDepth | 0, 2);
     s.keys = (s.keys || []).filter((k) => k !== 'key3'); s.inventory = (s.inventory || []).filter((k) => k !== 'key3');
     s.flags = { ...(s.flags || {}), prologue: true }; s.version = 2;

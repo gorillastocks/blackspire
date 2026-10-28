@@ -49,9 +49,10 @@ export function questXp(s, key, label) { return discover(s, 'quest', key, label 
 
 /** Combat victory XP (called from Combat.checkEnd): shares, catch-up, rested, bench. `elite` doubles it. */
 export function awardCombatXp(s, share, info = {}) {
-  const base = share * (info.elite ? 2 : 1); const r = giveXp(s, base);
+  const elite = !!(info.elite || info.lieutenant || info.guard); // named lieutenants and POI guards are the elites
+  const base = share * (elite ? 2 : 1); const r = giveXp(s, base);
   const mx = Math.max(0, ...r.gains.values()), mn = Math.min(...r.gains.values());
-  return { text: `${info.elite ? 'Elite slain! ' : ''}Each survivor earns ${mn === mx ? mx : `${mn}–${mx}`} XP${r.notes.length ? ` (${[...new Set(r.notes)].join(', ')})` : ''}.`, base: r.base };
+  return { text: `${elite ? 'Elite slain! ' : ''}Each survivor earns ${mn === mx ? mx : `${mn}–${mx}`} XP${r.notes.length ? ` (${[...new Set(r.notes)].join(', ')})` : ''}.`, base: r.base };
 }
 
 /* ---------- Encounter rate: exploring / clearing makes an area quieter ---------- */

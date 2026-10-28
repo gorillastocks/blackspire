@@ -102,3 +102,10 @@ describe('entitlements', () => {
     E.resetEntitlement(); expect(E.isLevelLocked(1)).toBe(true);
   });
 });
+
+describe('elite kills', () => {
+  it('lieutenants and guards pay double combat XP', () => {
+    const s = fresh(); const a = s.party[0]; const x0 = a.xp; P.awardCombatXp(s, 50, { lieutenant: true }); expect(a.xp - x0).toBe(100);
+    const y0 = a.xp; P.awardCombatXp(s, 50, {}); expect(a.xp - y0).toBe(50);
+  });
+});
