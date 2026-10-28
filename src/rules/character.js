@@ -94,6 +94,13 @@ export function armorClass(c) {
 }
 
 /** Attack bonus and damage for a weapon slot ('weapon' | 'ranged'). */
+/** Sum of a named-item effect over everything a character has equipped (e.g. 'healOnKill'). */
+export function fxSum(c, name) {
+  let n = 0; const eq = c.equip || {};
+  for (const v of [eq.weapon, eq.ranged, eq.armor]) if (v && v.key && ITEMS[v.key]?.fx?.[name]) n += ITEMS[v.key].fx[name];
+  for (const k of [eq.ring, eq.cloak, eq.helm]) if (typeof k === 'string' && ITEMS[k]?.fx?.[name]) n += ITEMS[k].fx[name];
+  return n;
+}
 export function weaponStats(c, slot = 'weapon') {
   const w = c.equip[slot]; if (!w) return null;
   const W = WEAPONS[w.base];
@@ -107,7 +114,8 @@ export function weaponStats(c, slot = 'weapon') {
   if (W.props.includes('versatile') && !c.equip.shield) dmg = { longsword: '1d10', battleaxe: '1d10', warhammer: '1d10', quarterstaff: '1d8', spear: '1d8' }[w.base] || dmg;
   if (monkWpn) { const md = martialDie(c); if (+md.slice(2) > +dmg.split('d')[1]) dmg = md; }
   const bonus = m + (isProficientWeapon(c, w.base) ? prof(c) : 0) + (w.magic || 0) + (ranged && c.cls === 'ranger' && c.level >= 2 ? 2 : 0);
-  return { name: (w.key && ITEMS[w.key]?.set ? ITEMS[w.key].name : w.magic ? `${W.name} +${w.magic}` : W.name), bonus, dmg, dmgBonus: m + (w.magic || 0), type: W.type, ranged, finesse };
+  const fx = w.key ? ITEMS[w.key]?.fx : null;
+  return { elem: fx?.elem || null, name: (w.key && (ITEMS[w.key]?.set || ITEMS[w.key]?.fx) ? ITEMS[w.key].name : w.magic ? `${W.name} +${w.magic}` : W.name), bonus, dmg, dmgBonus: m + (w.magic || 0), type: W.type, ranged, finesse };
 }
 export function spellMod(c) { const a = CLASSES[c.cls].caster; return a ? abilityMod(c, a) : 0; }
 export function spellDC(c) { return 8 + prof(c) + spellMod(c); }

@@ -190,6 +190,40 @@ export const ITEMS = {
   ironLadle: { name: 'Iron Ladle', kind: 'junk', cost: 40, spoon: true },
   royalSpoon: { name: 'Royal Silver Spoon', kind: 'junk', cost: 500, spoon: true, desc: 'The spoon of the Spoon-Keepers. Pip is beside himself.' },
 };
+// ---- Rare loot (Phase B): named items with small special effects. fx.elem = bonus damage on every hit; fx.healOnKill = HP restored on a killing blow ----
+Object.assign(ITEMS, {
+  emberbrand: { name: 'Emberbrand', kind: 'weapon', base: 'longsword', magic: 1, tier: 'rare', cost: 2500, fx: { elem: { dmg: '1d4', type: 'fire' } }, desc: 'Longsword +1. Its edge glows like a forge: +1d4 fire damage on every hit.' },
+  rimefang: { name: 'Rimefang', kind: 'weapon', base: 'rapier', magic: 1, tier: 'rare', cost: 2500, fx: { elem: { dmg: '1d4', type: 'cold' } }, desc: 'Rapier +1. Frost creeps along the blade: +1d4 cold damage on every hit.' },
+  galeBow: { name: 'Galesong Bow', kind: 'weapon', base: 'longbow', magic: 1, tier: 'rare', cost: 2500, fx: { elem: { dmg: '1d4', type: 'lightning' } }, desc: 'Longbow +1. Arrows crackle in flight: +1d4 lightning damage on every hit.' },
+  bloodRing: { name: 'Ring of the Red Cup', kind: 'ring', ac: 0, saves: 0, tier: 'rare', cost: 2000, fx: { healOnKill: 3 }, desc: 'Drinks a little of every foe: heals the wearer 3 HP whenever they land a killing blow.' },
+  ironvowHelm: { name: 'Ironvow Helm', kind: 'helm', ac: 1, saves: 0, tier: 'rare', cost: 2000, fx: { healOnKill: 2 }, desc: '+1 AC. Heals the wearer 2 HP on a killing blow.' },
+  soulreaver: { name: 'Soulreaver', kind: 'weapon', base: 'greatsword', magic: 2, tier: 'epic', cost: 6000, fx: { elem: { dmg: '1d6', type: 'necrotic' }, healOnKill: 4 }, desc: 'Greatsword +2. +1d6 necrotic damage on every hit, and heals the wielder 4 HP on a killing blow.' },
+  stormcaller: { name: 'Stormcaller', kind: 'weapon', base: 'longbow', magic: 2, tier: 'epic', cost: 6000, fx: { elem: { dmg: '1d6', type: 'lightning' } }, desc: 'Longbow +2. Every arrow carries a thunderclap: +1d6 lightning damage on every hit.' },
+  phoenixCloak: { name: 'Phoenix-Feather Cloak', kind: 'cloak', ac: 1, saves: 1, resist: 'fire', tier: 'epic', cost: 6000, fx: { healOnKill: 3 }, desc: '+1 AC and saves, resistance to fire, and heals the wearer 3 HP on a killing blow.' },
+  hollowCrownRing: { name: 'Ring of the Hollow Crown', kind: 'ring', ac: 1, saves: 1, tier: 'epic', cost: 6000, fx: { healOnKill: 4 }, desc: '+1 AC and saves. Heals the wearer 4 HP on a killing blow.' },
+  thunderlordFang: { name: "Thunderlord's Fang", kind: 'weapon', base: 'greatsword', magic: 2, tier: 'legendary', cost: 12000, fx: { elem: { dmg: '1d8', type: 'lightning' }, healOnKill: 5 }, desc: 'Greatsword +2 torn from a thunder-lizard\'s jaw. +1d8 lightning on every hit; heals 5 HP on a killing blow.' },
+  blackspireHeart: { name: 'Heart of the Blackspire', kind: 'ring', ac: 2, saves: 2, tier: 'legendary', cost: 12000, fx: { healOnKill: 6 }, desc: '+2 AC and saves. A cold gold heart that beats for you: heals 6 HP on a killing blow.' },
+});
+// Pools the drops come from, by tier
+export const TIERS = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+export const TIER_COLOR = { common: '#d8d4e8', uncommon: '#5cdc6e', rare: '#4aa3ff', epic: '#b66bff', legendary: '#ffc83a' };
+export const TIER_LABEL = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary' };
+export const DROP_POOL = {
+  uncommon: ['potionGreater', 'longsword1', 'rapier1', 'mace1', 'greatsword1', 'longbow1', 'chainMail1', 'studded1', 'ringProtection', 'cloakProtection'],
+  rare: ['emberbrand', 'rimefang', 'galeBow', 'bloodRing', 'ironvowHelm'],
+  epic: ['soulreaver', 'stormcaller', 'phoenixCloak', 'hollowCrownRing'],
+  legendary: ['thunderlordFang', 'blackspireHeart'],
+};
+/** Colour tier of any inventory key: explicit tier, else legendary for set pieces, uncommon for magic gear, common for the rest. */
+export function tierOf(key) {
+  const I = ITEMS[key]; if (!I) return 'common';
+  if (I.tier) return I.tier;
+  if (I.set) return 'legendary';
+  if (key === 'runcibleSpoon') return 'legendary';
+  if (I.magic >= 2 || I.cost >= 4000) return 'rare';
+  if (I.magic || I.kind === 'ring' || I.kind === 'cloak' || key === 'potionGreater' || key === 'goldSpoon') return 'uncommon';
+  return 'common';
+}
 // Buyable gear in the town shop
 export const SHOP_STOCK = [
   'potionHealing', 'potionGreater', 'antitoxin',

@@ -4,7 +4,7 @@ import { roll, d20, die, pick, rand } from './dice.js';
 import { narrateAttack, line as narr } from './narrate.js';
 import {
   mod, abilityMod, saveMod, armorClass, weaponStats, spellDC, spellAttack, spellMod, sneakDice, cantripDice, attacksPerAction,
-  critRange, prof, isDown, canAct, heal, hasTrait, skillMod, knownSpells, rageDamage, inspirationDie, unarmedStats, setCount,
+  critRange, prof, isDown, canAct, heal, hasTrait, skillMod, knownSpells, rageDamage, inspirationDie, unarmedStats, setCount, fxSum,
 } from './character.js';
 const BPS = ['bludgeoning', 'piercing', 'slashing'];
 
@@ -29,11 +29,12 @@ const monsterSave = (m, ab) => mod(m.T.stats[ab]);
 export class Combat {
   /** Change difficulty mid-fight: affects damage from now on (monster HP was set when the fight began). */
   setDifficulty(k) { this.diff = DIFFICULTY[k] || DIFFICULTY.normal; }
-  constructor(party, groups, { inventory = [], canFlee = true, boss = false, difficulty = 'normal', story = null } = {}) {
+  constructor(party, groups, { inventory = [], canFlee = true, boss = false, difficulty = 'normal', story = null, elite = null } = {}) {
+    this.elite = elite;
     this.party = party; this.inventory = inventory; this.canFlee = canFlee; this.boss = boss; this.story = story || {};
     this.diff = DIFFICULTY[difficulty] || DIFFICULTY.normal;
     this.monsters = [];
-    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1))); this.monsters.push(m); }
+    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1) * (elite ? (this.monsters.length === 0 ? 1.7 : 1.25) : 1))); if (elite) { m.elite = true; if (this.monsters.length === 0) { m.ac += 1; if (elite.title) m.name = elite.title; } } this.monsters.push(m); }
     this.log = []; this.events = []; this.round = 0; this.state = 'running'; this.turnIdx = -1; this.xp = 0; this.gold = 0;
     for (const c of party) { c.reaction = true; for (const k of ['dodging', 'hidden', 'raging', 'reckless', 'invisible', 'sacredWeapon']) delete c.conditions[k]; c.side = 'party'; if (c.tempHp == null) c.tempHp = 0; }
     // Initiative: d20 + Dex
@@ -151,6 +152,7 @@ export class Combat {
       if (target.hp <= 0) {
         target.hp = 0; this.say(`${target.name} is slain!`, 'good'); this.emit({ type: 'kill', who: target, by: src });
         if (src && src.side === 'party' && src.cls === 'warlock' && !isDown(src)) { const th = Math.max(1, abilityMod(src, 'cha') + src.level); if (th > (src.tempHp || 0)) { src.tempHp = th; this.say(`Dark One's Blessing: ${src.name} gains ${th} temporary HP.`, 'spell'); } }
+        if (src && src.side === 'party' && !isDown(src)) { const hk = fxSum(src, 'healOnKill'); if (hk) { const got = heal(src, hk); if (got) { this.say(`${src.name}'s gear drinks the kill: +${got} HP.`, 'good'); this.emit({ type: 'heal', who: src }); } } }
         this.xp += CR_XP[target.T.cr] || 10; this.gold += Math.floor(roll('2d6') * (1 + target.T.cr * 4));
         for (const p of this.party) if (p.concentration && p.concentration.targets) p.concentration.targets = p.concentration.targets.filter((x) => x !== target.id);
       }
@@ -436,7 +438,7 @@ export class Combat {
       return { dmg: Object.entries(dice).map(([f, n]) => `${n}d${f}`).join('+'), label: labels.join(' +') };
     };
     const brutal = (c.cls === 'barbarian' && c.level >= 9 && !ranged ? 1 : 0) + (c.race === 'halfOrc' && !ranged ? 1 : 0);
-    return this.attack(c, tg, { bonus: w.bonus, dmg: w.dmg, dmgBonus: w.dmgBonus + rage, type: w.type, ranged, label: w.name, sneak, extraOnCrit: brutal, onHit });
+    return this.attack(c, tg, { bonus: w.bonus, dmg: w.dmg, dmgBonus: w.dmgBonus + rage, type: w.type, ranged, label: w.name, sneak, extraOnCrit: brutal, onHit, extra: w.elem || null });
   }
   wantsSmite(c, tg, crit) { const big = this.boss || tg.T?.boss || tg.hp > 25; return crit || (big && c.slots.some((n) => n > 0) && (tacticsOf(c).spells !== false)); }
 

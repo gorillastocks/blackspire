@@ -462,7 +462,7 @@ export const sweepQuests = (s) => Prog.sweepQuests(s);
 /** Fight a trivial encounter headlessly (everyone on AI); returns the afterCombat events. Party state is updated like a real fight. */
 export function autoResolve(s, info) {
   const flags = s.party.map((c) => c.ai); for (const c of s.party) c.ai = true;
-  const cb = new Combat(s.party, info.groups, { inventory: s.inventory, canFlee: false, difficulty: s.difficulty || 'normal', story: combatOpts(s, info) });
+  const cb = new Combat(s.party, info.groups, { inventory: s.inventory, canFlee: false, difficulty: s.difficulty || 'normal', story: combatOpts(s, info), elite: info.elite || null });
   try { cb.runAuto(); } finally { s.party.forEach((c, i) => { c.ai = flags[i]; }); }
   s.stats.trivial++; return { combat: cb, events: afterCombat(s, cb, info) };
 }
