@@ -64,8 +64,8 @@ describe('elemental weaknesses and resistances', () => {
   it('a Study check reveals everything on success and each hero tries once per monster', () => {
     const s = fresh(); const cb = mk(s, 'giantWolfSpider', 1); const m = cb.monsters[0]; const c = cb.current().side === 'party' ? cb.current() : (toTurn(cb, s.party[0]), s.party[0]);
     expect(cb.actionsFor(c).some((a) => a.id === 'study')).toBe(true);
-    c.abilities && (c.abilities.int = 30); c.abilities && (c.abilities.wis = 30);
-    let ok = false; for (let i = 0; i < 1 && !ok; i++) ok = cb.act(c, 'study', { target: m }) || D.isStudied(m);
+    for (const a of ['int', 'wis', 'cha', 'str']) c.scores[a] = 30; // +10: a natural 1 still beats DC 10
+    cb.act(c, 'study', { target: m });
     expect(D.isStudied(m)).toBe(true); expect(s.lore.giantWolfSpider.studied).toBe(true); expect(cb.turn.bonus).toBe(0);
     expect(cb.actionsFor(c).some((a) => a.id === 'study')).toBe(false);
   });
