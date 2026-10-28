@@ -69,7 +69,7 @@ test('rows: back-row hero cannot melee, formation swap works in the tavern and i
   await expect(page.locator('#cmenu .combatmenu')).toBeVisible({ timeout: 60000 });
   const r = await page.evaluate(() => { const cb = window.__gw.combat; const c = cb.current(); return { front: cb.inFront(c), acts: cb.actionsFor(c).map((a) => a.id), swap: cb.actionsFor(c).some((a) => a.id === 'swap') }; });
   expect(r.swap).toBe(true);
-  await expect(page.locator('#cmenu .combatmenu button', { hasText: 'Swap rows' })).toBeVisible();
+  await page.locator('#cmenu .combatmenu button', { hasText: 'More' }).click(); await expect(page.locator('#cmenu .combatmenu button', { hasText: 'Swap rows' })).toBeVisible();
   await shot(page, { path: `/workspace/shots/phaseD-swap-menu-${info.project.name}.png` });
   await page.locator('#cmenu .combatmenu button', { hasText: 'Swap rows' }).click();
   await expect(page.locator('#cmenu .combatmenu button', { hasText: /trade places|now (back|front)/i }).first()).toBeVisible();
@@ -91,7 +91,7 @@ test('condition icons with tooltips on heroes and monsters, weakness chips after
   await shot(page, { path: `/workspace/shots/phaseD-conditions-${info.project.name}.png` });
   // Study: the menu offers it, and it reveals the rest
   await page.evaluate(() => { const c = window.__gw.combat.current(); for (const a of ['int', 'wis']) c.scores[a] = 30; });
-  const study = page.locator('#cmenu .combatmenu button', { hasText: 'Study a foe' }); await expect(study).toBeVisible(); await study.click();
+  await page.locator('#cmenu .combatmenu button', { hasText: 'More' }).click(); const study = page.locator('#cmenu .combatmenu button', { hasText: 'Study a foe' }); await expect(study).toBeVisible(); await study.click();
   const pick = page.locator('#cmenu .combatmenu button', { hasText: /Broodmother/ }).first(); if (await pick.isVisible().catch(() => false)) await pick.click();
   await expect.poll(() => page.evaluate(() => window.__gw.combat.monsters.some((m) => m.known.studied)), { timeout: 20000 }).toBe(true);
   await page.evaluate(() => window.__gw.renderCombatUI()); await expect(page.locator('#targets .wchip.unk')).toHaveCount(1);

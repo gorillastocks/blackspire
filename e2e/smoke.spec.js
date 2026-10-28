@@ -35,8 +35,10 @@ test('smoke: title → create → town → dungeon → combat → sheet, no cons
   expect(lb.height).toBeGreaterThan(40);
   // pick first action (attack/shoot) for the hero, then auto-battle
   // cycle battle speed Normal → Fast, then watch for a narration caption
+  await page.locator('#cmenu .combatmenu button', { hasText: 'More' }).click(); // speed lives on the More page
   for (let i = 0; i < 5 && !(await page.locator('#cmenu .combatmenu button:has-text("Battle speed")').textContent()).includes('Fast'); i++) await page.click('#cmenu .combatmenu button:has-text("Battle speed")'); // Pause > Slow > Normal > 2x > Fast
   await expect(page.locator('#cmenu .combatmenu button:has-text("Battle speed")')).toContainText('Fast');
+  await page.locator('#cmenu .combatmenu button', { hasText: 'Back' }).click();
   await page.evaluate(() => { window.__caps = []; new MutationObserver(() => { const t = document.querySelector('#caption')?.textContent; if (t) window.__caps.push(t); }).observe(document.querySelector('#caption'), { childList: true, subtree: true, characterData: true }); });
   const auto = page.locator('#cmenu .combatmenu button:has-text("Auto-battle")'); if (await auto.count()) await auto.first().click();
   await page.waitForFunction(() => !window.__gw.combat, null, { timeout: 120000 });

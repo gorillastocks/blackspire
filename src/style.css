@@ -64,9 +64,11 @@ table { border-collapse: collapse; width: 100%; font-size: 13px; } td, th { padd
 .who { color: var(--gold); font-weight: bold; margin-bottom: 6px; }
 .bigmap { width: min(80vmin, 640px); aspect-ratio: 1; image-rendering: pixelated; }
 #cmenu { display: none; min-height: 0; overflow-y: auto; background: #0e0920; border-left: 1px solid var(--line); padding: 6px; }
-#cmenu .panel { max-width: none; width: auto; margin: 0; padding: 8px; border-radius: 10px; box-sizing: border-box; }
+#cmenu .panel { max-width: none; width: auto; margin: 0; padding: 8px; border-radius: 10px; box-sizing: border-box; max-height: none; overflow: visible; }
 #cmenu .who { font-size: 12px; margin-bottom: 6px; color: var(--gold); }
-#cmenu .combatmenu { grid-template-columns: 1fr 1fr; }
+#cmenu .combatmenu { grid-template-columns: repeat(6, 1fr); }
+#cmenu .combatmenu button { grid-column: span 3; }
+#cmenu .combatmenu button.util { grid-column: span 2; font-size: 11.5px; padding: 4px 4px; text-align: center; }
 #cmenu .combatmenu button { font-size: 12px; padding: 6px; text-align: left; min-height: 36px; }
 body.incombat #controls { display: none; }
 body.incombat #cmenu { display: block; }
@@ -90,7 +92,10 @@ body.incombat #bottom { grid-template-columns: 1fr 420px; }
   #modal { position: fixed; }
   body.incombat #bottom { grid-template-columns: 1fr; grid-template-rows: minmax(64px, 1fr) auto; }
   body.incombat #cmenu { border-left: none; border-top: 1px solid var(--line); max-height: 36vh; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
-  #cmenu .combatmenu button { min-height: 44px; font-size: 16px; }
+  #cmenu .combatmenu { gap: 4px; }
+  #cmenu .combatmenu button { min-height: 40px; font-size: 14px; padding: 4px 7px; line-height: 1.15; }
+  #cmenu .combatmenu button.util { min-height: 40px; font-size: 11.5px; padding: 3px 2px; letter-spacing: -.2px; }
+  #cmenu .panel { padding: 6px 8px; } #cmenu .who { font-size: 13px; margin-bottom: 4px; }
   .slider b, .tactic .tag, .toggle, .slider { font-size: 16px; }
 }
 /* phone landscape: 3D view left, party + log + combat menu right */
@@ -105,7 +110,8 @@ body.incombat #bottom { grid-template-columns: 1fr 420px; }
   #controls { grid-template-columns: repeat(6, 1fr); }
   #controls button { min-height: 44px; }
   body.incombat #cmenu { max-height: 52vh; }
-  #cmenu .combatmenu button { min-height: 44px; padding: 4px 6px; }
+  #cmenu .combatmenu button { min-height: 38px; padding: 3px 6px; font-size: 13px; }
+  #cmenu .combatmenu button.util { min-height: 38px; font-size: 11.5px; }
 }
 
 /* sticky nav so Back / Close is always reachable, even on short phone screens */

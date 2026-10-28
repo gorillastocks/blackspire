@@ -1181,14 +1181,14 @@ function renderTargets() {
   }
 }
 let curMenu = null; // the combat menu being waited on (so the watchdog can redraw it if it ever goes missing)
-function chooseFrom(title, options) {
+function chooseFrom(title, options, kind = '') {
   return new Promise((resolve) => {
     // combat menu docks into the bottom panel (in place of movement controls) so it never covers the log
     const cm = $('#cmenu'); if (modal.classList.contains('combat')) closeModal();
     if (!tapPending) { const cap = $('#caption'); if (cap.querySelector('.captap')) hideCaption(); captionDown(true); } // never ask with the menu collapsed
     document.body.classList.add('incombat');
     const done = (o) => { modal._options = null; curMenu = null; cm.innerHTML = ''; cm.append(h('div', { class: 'who dim' }, '…')); resolve(o); };
-    const draw = () => { cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: o.primary ? 'primary' : '', info: o.info || null }))))); document.body.classList.add('incombat'); };
+    const draw = () => { cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' + (kind ? ' ' + kind : '') }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: (o.primary ? 'primary' : '') + (o.util ? ' util' : ''), info: o.info || null }))))); document.body.classList.add('incombat'); };
     draw(); curMenu = { draw, cm };
     cm.scrollTop = 0; requestAnimationFrame(() => { const l = $('#log'); l.scrollTop = l.scrollHeight; });
     modal._resolve = done; modal._options = options;
@@ -1238,18 +1238,33 @@ async function pickTarget(kind, c) {
   }
   return true;
 }
+/** Less common actions live behind a "More" page so the main combat menu fits a phone screen without scrolling. */
+const LESS_COMMON = new Set(['swap', 'study', 'item', 'dodge', 'flee']);
+const SHORT_LABEL = { swap: 'Swap rows (bonus)', study: 'Study a foe (bonus)' };
+const moreHint = (a) => ({ swap: 'Swap rows', study: 'Study', item: 'Items', dodge: 'Dodge', flee: 'Run' })[a.id] || a.label;
 async function playerTurn() {
-  const c = combat.current(); if (!autoBattle) skipping = false;
+  const c = combat.current(); if (!autoBattle) skipping = false; let page = 'main';
   while (combat && combat.state === 'running' && combat.current() === c && !combat.turn.done) {
     renderParty();
-    const acts = combat.actionsFor(c);
-    const opts = acts.map((a) => ({ ...a, primary: a.id === 'attack' || a.id === 'shoot' }));
-    opts.push({ id: 'auto', label: '🤖 Auto-battle (all AI)', bonus: true });
-    opts.push({ id: 'speed', label: `Battle speed: ${speed().short} ↻`, bonus: true, info: () => ['Battle speed', ...Object.values(BATTLE_SPEEDS).map((v) => v.label)] });
-    const t = combat.turn;
-    const o = await chooseFrom(`${c.name}'s turn — ${t.action ? 'Action' : ''}${t.action && t.bonus ? ' + ' : ''}${t.bonus ? 'Bonus action' : ''} available · HP ${c.hp}/${c.maxHp}`, opts);
+    const acts = combat.actionsFor(c).map((a) => ({ ...a, primary: a.id === 'attack' || a.id === 'shoot', util: a.id === 'end', ...(SHORT_LABEL[a.id] ? { label: SHORT_LABEL[a.id], info: () => [SHORT_LABEL[a.id], a.label] } : {}) }));
+    const less = acts.filter((a) => LESS_COMMON.has(a.id)), core = acts.filter((a) => !LESS_COMMON.has(a.id) && a.id !== 'end'), end = acts.find((a) => a.id === 'end');
+    const t = combat.turn; const title = `${c.name} · ${t.action ? 'Action' : ''}${t.action && t.bonus ? ' + ' : ''}${t.bonus ? 'Bonus' : ''} · HP ${c.hp}/${c.maxHp}`;
+        let opts;
+    if (page === 'more') {
+      opts = [...less,
+        { id: 'speed', label: `Battle speed: ${speed().short} ↻`, bonus: true, info: () => ['Battle speed', ...Object.values(BATTLE_SPEEDS).map((v) => v.label)] },
+        { id: 'back', label: '← Back', back: true }];
+    } else {
+      opts = [...core, { id: 'auto', label: 'Auto-battle', bonus: true, util: true, info: () => ['Auto-battle', 'Every hero acts on AI for the rest of the fight.'] }];
+      opts.push({ id: 'more', label: 'More… ▸', more: true, util: true, info: () => ['More actions', ...less.map(moreHint), 'Battle speed'] });
+      if (end) opts.push(end);
+    }
+    const o = await chooseFrom(page === 'more' ? `${c.name}: more actions` : title, opts, page === 'more' ? 'more' : 'main');
+    if (o.id === 'more') { page = 'more'; continue; }
+    if (o.id === 'back') { page = 'main'; continue; }
     if (o.id === 'auto') { autoBattle = true; closeModal(); return; }
     if (o.id === 'speed') { const ks = Object.keys(BATTLE_SPEEDS); setSpeed(ks[(ks.indexOf(loadSettings().battleSpeed) + 1) % ks.length]); log(`Battle speed: ${speed().label}`, 'sys'); continue; }
+    page = 'main';
     let args = {};
     if (o.target === 'enemy') { const m = await pickTarget('enemy', c); if (!m) continue; args.target = m; }
     if (o.target === 'ally' || o.target === 'rowmate') { const p = await pickTarget(o.target, c); if (!p) continue; args.target = p; }
