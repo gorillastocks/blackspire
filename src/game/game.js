@@ -188,7 +188,7 @@ export function enterTile(s) {
       if (passivePerc >= def.trapDC) { setTile(s, s.x, s.y, 't'); out.push({ log: `You spot a hidden ${def.trapKind === 'pit' ? 'pit' : 'dart trap'} (passive Perception ${passivePerc}) and step around it.`, card: true, cls: 'good' }, ...Prog.discover(s, 'trap', `${s.x},${s.y}`, 'trap spotted')); break; }
       setTile(s, s.x, s.y, 't');
       if (def.trapKind === 'pit') {
-        const v = s.party.find((c) => !isDown(c)); const dc = 15;
+        const v = s.party.find((c) => !isDown(c)) || s.party[0]; const dc = 15;
         const sv = d20() + abilityMod(v, 'dex'); if (sv >= dc) out.push({ log: `A pit opens! ${v.name} leaps aside (Dex ${sv}).` });
         else { const d = roll(def.trapDmg); v.hp = Math.max(1, v.hp - d); out.push({ log: `A pit opens! ${v.name} falls in for ${d} damage.`, cls: 'bad', card: true, banter: banter(s.party, 'trap', {}, 0.9), shake: true }); }
       } else {
