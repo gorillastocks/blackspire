@@ -3,6 +3,7 @@
 // 'C' chest, 'K' key, 'E' fixed encounter, 'B' boss, 'M' message, 'F' healing fountain, 'A' altar (final goal), 'Q' story point of interest
 import { seeded } from '../rules/dice.js';
 import { LEVEL_POIS } from '../game/story.js';
+import { decorate } from './extras.js';
 
 export const W = 21, H = 21;
 export const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
@@ -192,7 +193,7 @@ export function validateLevel(L) {
 export function generateLevel(idx, seed = LEVEL_DEFS[idx].seed) {
   for (let n = 0; n < 200; n++) {
     let L = null; try { L = buildLevel(idx, seed + n * 7919); } catch { L = null; }
-    if (L && !validateLevel(L).length) return L;
+    if (L && !validateLevel(L).length) return decorate(L).L;
   }
   throw new Error(`could not build a valid level ${idx} from seed ${seed}`);
 }
