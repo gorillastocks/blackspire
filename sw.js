@@ -1,6 +1,6 @@
 // Blackspire offline service worker (generated at build time)
-const CACHE = 'blackspire-b3cadc31a8';
-const SHELL = ["./","./assets/index-BGN_tZk8.js","./assets/index-ClGlq6ZY.css","./icon-180.png","./icon-192.png","./index.html","./manifest.webmanifest"];
+const CACHE = 'blackspire-12ecf361c3';
+const SHELL = ["./","./assets/index-BtonJmg5.css","./assets/index-CI0GAvlZ.js","./icon-180.png","./icon-192.png","./index.html","./manifest.webmanifest"];
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const c = await caches.open(CACHE);
