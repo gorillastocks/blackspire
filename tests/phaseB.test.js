@@ -55,7 +55,8 @@ describe('elites', () => {
     const ev = G.move(s, 0); const c = ev.find((x) => x.combat); expect(c.combat.elite.id).toBe(e.id);
     const cb = new Combat(s.party, c.combat.groups, { elite: c.combat.elite });
     expect(cb.monsters[0].name).toBe(e.title); expect(cb.monsters.every((m) => m.elite)).toBe(true);
-    const base = new Combat(s.party, c.combat.groups, {}); expect(cb.monsters[0].maxHp).toBeGreaterThan(base.monsters[0].maxHp * 1.2);
+    const avg = (el) => { let n = 0; for (let i = 0; i < 40; i++) n += new Combat(s.party, c.combat.groups, el ? { elite: c.combat.elite } : {}).monsters[0].maxHp; return n / 40; };
+    expect(avg(true)).toBeGreaterThan(avg(false) * 1.3); // dice vary, so compare averages
     cb.state = 'won'; const after = G.afterCombat(s, cb, c.combat);
     expect(after.some((x) => x.rare)).toBe(true); expect(s.disc[`elite:0:${e.id}`]).toBe(1);
     expect(G.liveElites(s).some((x) => x.id === e.id)).toBe(false);
