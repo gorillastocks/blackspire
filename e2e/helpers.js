@@ -42,6 +42,7 @@ export const dismissCards = async (page) => {
   for (let i = 0; i < 10; i++) {
     await page.waitForTimeout(300);
     const tip = page.locator('#tip-skip'); if (await tip.isVisible().catch(() => false)) { await tip.click(); continue; }
+    const later = page.locator('#ev-later'); if (await later.isVisible().catch(() => false)) { await later.click(); continue; } // a story event card on the path: "Not now"
     if (await page.locator('#tapcatch').isVisible().catch(() => false)) { await page.locator('#tapcatch').click({ force: true }); continue; }
     break;
   }

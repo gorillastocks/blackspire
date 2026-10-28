@@ -22,11 +22,14 @@ test('Liora: painted portrait on her hire card, intro dialogue, recruit from the
   const card = page.locator('#hire .hirecard', { hasText: 'Liora' }); await expect(card).toBeVisible();
   await expect(card.locator('img.hirepic')).toBeVisible();
   const loaded = await card.locator('img.hirepic').evaluate((i) => i.complete && i.naturalWidth > 100); expect(loaded).toBe(true);
-  await card.scrollIntoViewIfNeeded(); await shot(page, { path: `/workspace/shots/phaseC-liora-hire-${info.project.name}.png` });
+  await card.evaluate((el) => el.scrollIntoView({ block: 'center' })); await page.waitForTimeout(300); await shot(page, { path: `/workspace/shots/phaseC-liora-hire-${info.project.name}.png` });
   await page.locator('[data-recruit="liora"]').click();
   await expect(page.locator('.dialogue .dlgportrait img')).toBeVisible(); await page.waitForTimeout(500);
   await shot(page, { path: `/workspace/shots/phaseC-liora-portrait-${info.project.name}.png` });
   for (let i = 0; i < 6 && await page.locator('#dlg-next').count(); i++) { await page.locator('#dlg-next').click(); await page.waitForTimeout(150); if (await page.locator('.dialogue').count() === 0) break; }
+  // her four voiced lines resolve to clips; an unvoiced line still has its caption text and no clip
+  const v = await page.evaluate(() => { const h = window.__gw.voice().has; return [h("Liora Wardenfall, Warden's Watch. My father went down into the Blackspire twenty years ago. I'm done waiting at the door. Mind if I join you?", 'Liora'), h('Arrows nocked. Let us make this quick.', 'Liora')]; });
+  expect(v).toEqual([true, false]);
   const inParty = await page.evaluate(() => window.__gw.state.party.some((c) => c.companion === 'liora') || window.__gw.state.roster.some((c) => c.companion === 'liora'));
   expect(inParty).toBe(true); expect(okErr(errors)).toEqual([]);
 });
