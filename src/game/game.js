@@ -605,8 +605,16 @@ export function grantRare(s, tier, from = 'elite') {
   s.inventory.push(key);
   return [{ log: `✦ ${tierOf(key) === 'common' ? '' : tierOf(key).toUpperCase() + ' DROP: '}${ITEMS[key].name}! ${ITEMS[key].desc || ''}`.trim(), cls: tier === 'uncommon' ? 'good' : 'crit', rare: { key, tier: tierOf(key), from } }];
 }
+/** Drop the map's ☠ pin for any elite on this floor that has been defeated. */
+export function pruneElitePins(s) {
+  const list = s.pins?.[s.level]; if (!list) return;
+  const dead = (getLevel(s.level).elites || []).filter((e) => s.disc?.[`elite:${s.level}:${e.id}`]).map((e) => `Elite: ${e.title}`);
+  if (!dead.length) return;
+  for (let i = list.length - 1; i >= 0; i--) { const p = list[i]; if (p.icon === '☠' && dead.some((d) => String(p.note || '').startsWith(d))) list.splice(i, 1); }
+}
 /** Elites still standing on the current floor. An elite whose ground is not walkable (a bad or stale save) never counts: no warning, no marker, no fight. */
 export function liveElites(s, lvl = s.level) {
+  if (lvl === s.level) pruneElitePins(s);
   const L = getLevel(lvl); const walk = (x, y) => { const c = lvl === s.level ? tile(s, x, y) : L.tiles[y]?.[x]; return c !== undefined && !isSolid(c); };
   return (L.elites || []).filter((e) => !s.disc?.[`elite:${lvl}:${e.id}`] && e.path.length > 0 && e.path.every(([x, y]) => walk(x, y)));
 }
