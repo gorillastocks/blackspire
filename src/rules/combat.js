@@ -1,5 +1,5 @@
 // Turn-based combat engine implementing SRD 5.1 combat rules (condensed to a Wizardry-style party-vs-groups view).
-import { MONSTERS, SPELLS, CR_XP, WEAPONS, ITEMS, CLASSES } from './data.js';
+import { MONSTERS, SPELLS, CR_XP, WEAPONS, ITEMS, CLASSES, TUNING } from './data.js';
 import { roll, d20, die, pick, rand } from './dice.js';
 import { narrateAttack, line as narr } from './narrate.js';
 import {
@@ -35,7 +35,7 @@ export class Combat {
     this.party = party; this.inventory = inventory; this.canFlee = canFlee; this.boss = boss; this.story = story || {};
     this.diff = DIFFICULTY[difficulty] || DIFFICULTY.normal;
     this.monsters = [];
-    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1) * (elite ? (this.monsters.length === 0 ? 1.7 : 1.25) : 1))); if (elite) { m.elite = true; if (this.monsters.length === 0) { m.ac += 1; if (elite.title) m.name = elite.title; } } this.monsters.push(m); }
+    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1) * (TUNING.bossHp[g.key] || 1) * (elite ? (this.monsters.length === 0 ? 1.7 : 1.25) * (TUNING.eliteFloorHp[elite.floor] || 1) : 1))); if (elite) { m.elite = true; if (this.monsters.length === 0) { m.ac += 1; if (elite.title) m.name = elite.title; } } this.monsters.push(m); }
     for (const m of this.monsters) { const l = this.lore[m.key]; m.known = { types: { ...(l?.types || {}) }, studied: !!l?.studied }; m.studyTried = new Set(); }
     this.log = []; this.events = []; this.round = 0; this.state = 'running'; this.turnIdx = -1; this.xp = 0; this.gold = 0;
     for (const c of party) { c.reaction = true; for (const k of ['dodging', 'hidden', 'raging', 'reckless', 'invisible', 'sacredWeapon']) delete c.conditions[k]; c.side = 'party'; if (c.tempHp == null) c.tempHp = 0; }

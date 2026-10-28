@@ -406,3 +406,10 @@ const MONSTER_TRAITS = {
   brakk: { resist: ['fire'] }, cindermaw: { resist: ['fire'], vuln: ['cold'] }, sisterVey: { resist: ['necrotic'], vuln: ['radiant'] }, malthrax: { resist: ['necrotic'], vuln: ['radiant'] },
 };
 for (const [k, t] of Object.entries(MONSTER_TRAITS)) if (MONSTERS[k]) Object.assign(MONSTERS[k], t);
+
+/** Balance-pass tuning (see scripts/balance-results). Plain multipliers on top of the SRD stat lines, so the numbers stay auditable.
+ *  bossHp: floor-boss and lieutenant hit points. eliteFloorHp: extra elite hit points by floor (B1..B5), on top of the 1.7x leader / 1.25x escort elite bonus. */
+export const TUNING = {
+  bossHp: { giantSpider: 1.5, skarn: 1, ankylosaurus: 1.5, glasshide: 2, brakk: 1.5, cindermaw: 1.75, malthrax: 1.75, tyrannosaurus: 2 },
+  eliteFloorHp: [1, 1, 1, 1, 1],
+};
