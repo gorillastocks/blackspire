@@ -27,7 +27,7 @@ test('settings: volume sliders, difficulty, readable', async ({ page }, ti) => {
   await page.locator('#vol-music').fill('20'); await page.locator('#vol-music').dispatchEvent('change');
   await expect(page.locator('#gmenu .slider b').first()).toHaveText('20%');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('blackspire.settings')).music)).toBeCloseTo(0.2);
-  await page.click('[data-diff=hard]'); await expect(page.locator('[data-diff=hard]')).toHaveClass(/on/);
+  await page.click('#gmenu [data-tab="game"]'); await page.click('[data-diff=hard]'); await expect(page.locator('[data-diff=hard]')).toHaveClass(/on/);
   expect(await page.evaluate(() => window.__gw.state.difficulty)).toBe('hard');
   await auditText(page, '#gmenu .panel', minPx(ti));
   await page.screenshot({ path: `test-results/shots/settings-${ti.project.name}.png` });

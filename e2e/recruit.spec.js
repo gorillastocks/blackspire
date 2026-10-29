@@ -3,6 +3,7 @@ import { trackErrors, newGame, openLocation, townSquare, expectReachable, auditT
 
 test.describe.configure({ timeout: 400000 });
 const st = (page, f) => page.evaluate(f);
+const tab = async (page, id) => { const t = page.locator(`#modal [data-tab="${id}"]`); await expectReachable(page, t, `${id} tab`); await t.click(); };
 
 test('tavern recruiting: dismiss dead to roster, hire, create recruit, max 4, temple raise, AI toggle', async ({ page }, info) => {
   const errors = trackErrors(page); const P = info.project.name; const minPx = P.startsWith('iphone') ? 16 : 13;
@@ -16,15 +17,17 @@ test('tavern recruiting: dismiss dead to roster, hire, create recruit, max 4, te
     await expectReachable(page, d, 'Dismiss'); await d.click();
   }
   expect(await st(page, () => [window.__gw.state.party.length, window.__gw.state.roster.filter((c) => c.dead).length])).toEqual([2, 2]);
-  await expect(page.locator('#roster')).toContainText('DEAD');
+  await expect(page.locator('#modal [data-tab="roster"] .tabbadge')).toHaveText('2');
+  await tab(page, 'roster'); await expect(page.locator('#roster')).toContainText('DEAD');
   await page.screenshot({ path: `screenshots/recruit-${P}-tavern-roster.png` });
   await auditText(page, '#modal .panel', minPx);
 
   // hire a pre-made companion
+  await tab(page, 'hire');
   const z = page.locator('#modal button[data-recruit="zizzy"]'); await expectReachable(page, z, 'Recruit Zizzy'); await z.click();
   await expect(page.locator('#modal h2').first()).toContainText('Tavern');
   // create a brand-new recruit with the full creator
-  await expectReachable(page, page.locator('#btn-new-recruit'), 'Create recruit'); await page.click('#btn-new-recruit');
+  await tab(page, 'hire'); await expectReachable(page, page.locator('#btn-new-recruit'), 'Create recruit'); await page.click('#btn-new-recruit');
   await page.fill('#cname', 'Testy McRecruit'); await page.selectOption('#crace', 'tiefling'); await page.selectOption('#ccls', 'cleric');
   await page.click('#btn-roll');
   await page.screenshot({ path: `screenshots/recruit-${P}-creator.png` });
@@ -34,17 +37,18 @@ test('tavern recruiting: dismiss dead to roster, hire, create recruit, max 4, te
   const party = await st(page, () => window.__gw.state.party.map((c) => ({ n: c.name, r: !!c.recruit, ai: c.ai, cls: c.cls, race: c.race })));
   expect(party.length).toBe(4); expect(party.find((c) => c.r)).toMatchObject({ n: 'Testy McRecruit', cls: 'cleric', race: 'tiefling', ai: true });
   // full party: hiring goes to the roster, rejoin is disabled
-  await page.locator('#modal button[data-recruit="grumsh"]').click();
+  await tab(page, 'hire'); await page.locator('#modal button[data-recruit="grumsh"]').click();
   expect(await st(page, () => [window.__gw.state.party.length, window.__gw.state.roster.length])).toEqual([4, 3]);
-  expect(await page.locator('#roster button', { hasText: 'Join party' }).first().isDisabled()).toBe(true);
-  // AI/YOU toggle on the recruit's row
+  await tab(page, 'roster'); expect(await page.locator('#roster button', { hasText: 'Join party' }).first().isDisabled()).toBe(true);
+  // AI/YOU toggle on the recruit's row (Party page)
+  await tab(page, 'party');
   const tog = page.locator('#modal .row', { hasText: 'Testy McRecruit' }).locator('button.aitog'); await tog.click();
   expect(await st(page, () => window.__gw.state.party.find((c) => c.recruit).ai)).toBe(false);
   await page.screenshot({ path: `screenshots/recruit-${P}-tavern-full.png` });
   await auditText(page, '#modal .panel', minPx);
   // swap: dismiss Zizzy, a dead member rejoins, then the Temple raises them (roster members too)
   await page.locator('#modal .row', { hasText: /^.*Zizzy/ }).locator('button.dismiss').first().click();
-  await page.locator('#roster button', { hasText: 'Join party' }).first().click();
+  await tab(page, 'roster'); await page.locator('#roster button', { hasText: 'Join party' }).first().click();
   expect(await st(page, () => window.__gw.state.party.filter((c) => c.dead).length)).toBe(1);
   await page.locator('#modal .backbtn').first().click(); await openLocation(page, 'Temple');
   const raise = page.locator('#modal button', { hasText: 'Raise Dead' }); expect(await raise.count()).toBe(2);
@@ -55,7 +59,7 @@ test('tavern recruiting: dismiss dead to roster, hire, create recruit, max 4, te
   await page.locator('#modal .closebtn').click(); await expect(page.locator('#modal h2').first()).toContainText('Training Grounds');
   // survives save + reload
   await page.locator('#modal .backbtn').first().click();
-  await page.locator('#modal button', { hasText: 'Save Game' }).click();
+  await page.locator('#btn-town-save').click();
   await page.reload(); await page.waitForSelector('#btn-new', { timeout: 90000 });
   await page.locator('#modal button', { hasText: 'Continue' }).click(); await expect(townSquare(page)).toBeVisible();
   expect(await st(page, () => [window.__gw.state.party.length, window.__gw.state.roster.length])).toEqual([4, 3]);
@@ -112,23 +116,27 @@ test('level up at camp in the dungeon (same logic as Training Grounds), camp but
   expect(w.level).toBe(3); expect(w.maxSlots.length).toBeGreaterThan(wiz.slots);
   await page.locator('#modal button.levelup').first().click();
   await expect(page.locator('#modal button.levelup')).toHaveCount(0);
-  await expect(page.locator('#modal .panel')).toContainText('Nobody has enough XP');
+  await expect(page.locator('#camp-levelup'), 'no Level Up section once nobody is ready').toHaveCount(0);
   expect(await st(page, () => window.__gw.state.party[0].level)).toBe(2);
   await expect(page.locator('#party .lvchip')).toHaveCount(0);
   await page.screenshot({ path: `screenshots/camp-levelup-${P}-done.png` });
-  // click-through: every camp button leaves a working Close
+  // click-through: every camp page, and every button on it, leaves a working Close (and nothing needs scrolling to reach Close / the tabs)
   const SKIP = /Load|Rest|✕/; // rests can roll a wandering-monster fight
-  const labels = await page.locator('#modal button:visible').evaluateAll((bs) => bs.map((b) => (b.disabled ? null : b.textContent.trim())));
   let clicked = 0;
-  for (const label of labels) {
-    if (!label || SKIP.test(label)) continue;
+  for (const tabId of ['rest', 'heal', 'spells', 'party']) {
     if (!(await page.locator('#modal h2', { hasText: 'Camp' }).count())) { if (await st(page, () => !!window.__gw.combat)) break; const cl = page.locator('#modal .closebtn:visible'); if (await cl.count()) await cl.first().click(); await openCamp(); }
-    const b = page.locator('#modal button:visible', { hasText: label }).first();
-    if (!(await b.count()) || (await b.isDisabled())) continue;
-    await b.click(); clicked++;
-    if (await st(page, () => !!window.__gw.combat)) break;
-    const close = page.locator('#modal .closebtn:visible');
-    if (await close.count()) { await expectReachable(page, close.first(), `Close after camp "${label}"`); }
+    const tb = page.locator(`#modal [data-tab="${tabId}"]`); await expectReachable(page, tb, `Camp tab ${tabId}`); await tb.click(); clicked++;
+    const labels = await page.locator('#modal .tabpage button:visible').evaluateAll((bs) => bs.map((b) => (b.disabled ? null : b.textContent.trim())));
+    for (const label of labels) {
+      if (!label || SKIP.test(label)) continue;
+      if (!(await page.locator('#modal h2', { hasText: 'Camp' }).count())) { if (await st(page, () => !!window.__gw.combat)) break; const cl = page.locator('#modal .closebtn:visible'); if (await cl.count()) await cl.first().click(); await openCamp(); await page.locator(`#modal [data-tab="${tabId}"]`).click(); }
+      const b = page.locator('#modal .tabpage button:visible', { hasText: label }).first();
+      if (!(await b.count()) || (await b.isDisabled())) continue;
+      await b.click(); clicked++;
+      if (await st(page, () => !!window.__gw.combat)) break;
+      const close = page.locator('#modal .closebtn:visible');
+      if (await close.count()) { await expectReachable(page, close.first(), `Close after camp "${label}"`); }
+    }
   }
   expect(clicked).toBeGreaterThan(5);
   expect(errors, errors.join('\n')).toEqual([]);

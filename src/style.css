@@ -357,7 +357,7 @@ body.reducemotion .card.hurt { animation: none; } body.reducemotion .sparkle { a
 span.cport { display: inline-flex; align-items: center; justify-content: center; color: #000; font-weight: 700; }
 .nmw { display: inline-flex; align-items: center; min-width: 0; }
 .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 5px; max-height: 32dvh; overflow-y: auto; padding: 2px; }
-.pgrid .pick { padding: 0; aspect-ratio: 1; min-height: 44px; border: 2px solid transparent; border-radius: 8px; background: #0003; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.pgrid .pick { padding: 0; aspect-ratio: 1; min-height: 44px; border: 2px solid transparent; border-radius: 8px; background: #1b1233; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 22px; }
 .pgrid .pick img { width: 100%; height: 100%; display: block; }
 .pgrid .pick.on { border-color: #ffd34d; box-shadow: 0 0 0 2px #ffd34d55; }
 .sheethead { align-items: center; gap: 10px; flex-wrap: nowrap; }
@@ -545,7 +545,67 @@ body.reducemotion #foeport.in, body.reducemotion #foeport.out { transition: none
 .formation .fhero { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; text-align: left; padding: 6px; min-height: 44px; border-radius: 8px; background: #1b1233; border: 1.5px solid #3a2a60; color: inherit; cursor: pointer; }
 .formation .fhero.sel { border-color: var(--gold); box-shadow: 0 0 10px #ffd34d88; } .formation .fhero.down { opacity: .55; }
 .formation .fhero .fnm { font-weight: 700; } .formation .fhero small { flex-basis: 100%; color: #b9a8dd; }
-.formation .fnote { grid-column: 1 / -1; font-size: 12px; color: #b9a8dd; }
+.formation .fnote { grid-column: 1 / -1; font-size: 16px; color: #b9a8dd; }
 
 @media (max-height: 520px) and (orientation: landscape) { #turnport { --tp: 56px; left: 6px; bottom: 6px; } #turnport .tp-name b { font-size: 10px; } #turnport .tp-name span { display: none; } }
 @media (max-height: 520px) and (orientation: landscape) { #foeport { --tp: 56px; left: 6px; bottom: 6px; } #foeport.row { --tp: 40px; max-width: calc(100% - 200px); } #foeport .fp-name b { font-size: 10px; } #foeport .fp-name span { display: none; } #foeport .fp-num { font-size: 18px; } }
+
+/* ===== Menu reorganisation: short pages with large tabs, two-column button grids, sticky Back / Close ===== */
+.maintabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; flex: 1 0 100%; margin-top: 2px; }
+.maintabs button { position: relative; min-height: 52px; padding: 4px 3px; line-height: 1.15; text-align: center; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; overflow-wrap: anywhere; }
+.maintabs button.on { border-color: var(--gold); color: var(--gold); background: linear-gradient(#3a2470, #24124d); box-shadow: inset 0 -3px 0 var(--gold); }
+.tabbadge { position: absolute; top: -6px; right: -3px; min-width: 20px; padding: 0 5px; border-radius: 10px; background: var(--gold); color: #1a1000; font-weight: bold; font-size: 14px; line-height: 20px; box-shadow: 0 0 0 2px var(--panel); }
+.panel > .closebar.titled, .panel > .closebar.withback { justify-content: space-between; }
+.panel > .closebar.titled { border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 8px; }
+.panel > .closebar.titled h2 { flex: 1 1 auto; }
+.panel > .closebar.withback { padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.tabpage > .menu, .tabpage > .menu + *, .tabpage > .bigtab { margin-top: 8px; }
+.tabpage > h3:first-child { margin-top: 4px; }
+.menu.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.menu.grid2 > button { min-height: 56px; }
+.menu.row3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column; gap: 8px; margin-top: 10px; }
+.menu.row3 > button { min-height: 48px; }
+button.bigtown { min-height: 60px; font-size: 18px; margin-bottom: 8px; width: 100%; }
+button.bigtab { width: 100%; min-height: 52px; margin-bottom: 4px; }
+.bigbtn { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; text-align: left; min-height: 64px; }
+.bigbtn .bt { font-size: 17px; } .bigbtn .bs { font-size: 14px; color: #c9bde8; line-height: 1.25; }
+@media (max-width: 760px), (max-height: 520px) and (orientation: landscape) { .panel .bigbtn .bt { font-size: 17px; } .panel .bigbtn .bs { font-size: 16px; } }
+.bigbtn:disabled .bs { color: inherit; }
+.goldline { margin: 0 0 8px; color: var(--gold); font-weight: bold; }
+.shopgrid .shopitem { min-height: 60px; }
+.townsq { display: flex; flex-direction: column; }
+.levelups h3 { margin: 0 0 4px; } .levelups { margin-bottom: 10px; }
+.restgrid { margin-bottom: 4px; }
+.trainrow { gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: #150d28; }
+.trainrow .trainmain { flex: 1 1 100%; min-height: 48px; text-align: left; }
+.trainrow button.small { flex: 1 1 0; }
+.rosterrow { padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: #150d28; }
+.partyrow { gap: 6px; }
+.partyrow .pname { flex: 1 1 140px; min-width: 0; } .partyrow .pname small { color: #b9a8dd; display: block; }
+.formation .fnote summary { cursor: pointer; padding: 6px 0; min-height: 32px; font-size: 16px; }
+.formation .fnote { padding: 0 4px; }
+.invchips { margin-bottom: 4px; } .invchips button { flex: 0 1 auto; }
+.menu.grid2 .seg, .seg { gap: 6px; }
+/* phone: keep the sticky bar (title + Back/Close + tabs) compact so the page under it gets the room */
+@media (max-width: 760px), (max-height: 520px) and (orientation: landscape) {
+  .maintabs button { font-size: 16px; min-height: 52px; }
+  .panel > .navbar { row-gap: 6px; }
+  .panel > .closebar.titled h2 { font-size: 20px; }
+}
+.partyrow { flex-wrap: wrap; }
+.partyrow .pname { flex: 1 1 110px; }
+.partyrow button.small { min-width: 44px; padding-left: 8px; padding-right: 8px; }
+.partyrow button.aitog, .partyrow button.dismiss { flex: 1 1 40%; }
+.trainrow button.small { white-space: nowrap; }
+.shopgrid .shopitem { min-height: 54px; padding-top: 5px; padding-bottom: 5px; }
+@media (max-width: 760px) {
+  .formation .fhead small, .formation .fhero .frole { display: none; }
+  .formation .fhero { min-height: 52px; }
+  .partyrow .pname small { display: none; } /* class + row are already shown on the formation board above */
+  .partyrow { flex-wrap: nowrap; gap: 4px; }
+  .partyrow .pname { flex: 1 1 60px; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .partyrow button.small { min-width: 44px; padding-left: 6px; padding-right: 6px; flex: 0 0 auto; }
+  .partyrow button.aitog, .partyrow button.dismiss { flex: 0 0 auto; }
+  .formation .fhero small { flex-basis: auto; }
+}
+#skipbtn.on{background:#c9a227;color:#111;}

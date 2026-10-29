@@ -33,6 +33,10 @@ const h = (tag, attrs = {}, ...kids) => {
   return e;
 };
 const btn = (label, onclick, attrs = {}) => h('button', { onclick: (e) => { sfx('click'); onclick(e); }, ...attrs }, label);
+/** Big two-line menu button: a bold title with a short description under it. */
+const bigBtn = (title, sub, onclick, attrs = {}) => btn([h('b', { class: 'bt' }, title), sub ? h('small', { class: 'bs' }, sub) : null], onclick, { ...attrs, class: ('bigbtn ' + (attrs.class || '')).trim() });
+/** A row of large tabs that splits a long menu into short pages. tabs = [[id, label, badge?]]. */
+const tabBar = (tabs, cur, pick) => h('div', { class: 'maintabs', role: 'tablist' }, tabs.map(([id, label, badge]) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(id === cur), 'data-tab': id, class: id === cur ? 'on' : '', onclick: () => { if (id !== cur) { sfx('click'); pick(id); } } }, label, badge ? h('span', { class: 'tabbadge' }, String(badge)) : null)));
 
 let S = null; // game state
 let R = null; // renderer
@@ -79,14 +83,20 @@ async function afterPrologueFight() {
   const choice = await showDialogue(Story.prologueScenes(S).abduction);
   handle(Story.finishPrologue(S, choice)); autosave(); showTown(); startTutorial();
 }
-function showJournal(back) {
-  const qs = Story.questList(S);
-  openModal([h('div', { class: 'navbar' }, h('h2', {}, '📖 Journal'), btn('Close', () => (back ? back() : closeModal()), { id: 'btn-journal-close' })),
-    h('p', { class: 'hint' }, `Moon ${Math.min(5, (S.moon | 0) + 1)} of 5 · Seals broken: ${Story.sealsBroken(S)}/5${Story.empowered(S) ? ' · ⚠ Malthrax is EMPOWERED' : ''}`),
-    bondsPanel(),
-    h('h3', {}, 'Quests'), h('div', { class: 'menu' }, qs.map((q) => h('p', {}, h('b', {}, `${q.status === 'done' ? '✔' : q.status === 'ready' ? '❗' : '•'} ${q.title || q.id}`), q.progress ? ` (${q.progress})` : '', q.desc ? h('br') : null, q.desc ? h('span', { class: 'hint' }, q.desc) : null))),
-    h('h3', {}, `Elowen's notes (${(S.notes || []).length}/10)`), ...(S.notes || []).map((n) => h('p', { class: 'lore' }, typeof n === 'string' ? n : Story.NOTES[n - 1] || '')),
-    h('h3', {}, 'Entries'), ...(S.journal || []).slice().reverse().map((j) => h('p', { class: 'hint' }, typeof j === 'string' ? j : j.text))], { closable: true });
+let journalTab = 'quests';
+function showJournal(back, tab) {
+  if (tab) journalTab = tab;
+  const qs = Story.questList(S), notes = S.notes || [], entries = S.journal || [];
+  const tabs = [['quests', '📜 Quests', qs.filter((q) => q.status === 'ready').length || null], ['bonds', '💞 Bonds'], ['notes', '🗒 Notes'], ['entries', '🕮 Entries']];
+  const pages = {
+    quests: () => [h('p', { class: 'hint' }, `Moon ${Math.min(5, (S.moon | 0) + 1)} of 5 · Seals broken: ${Story.sealsBroken(S)}/5${Story.empowered(S) ? ' · ⚠ Malthrax is EMPOWERED' : ''}`),
+      h('div', { class: 'menu' }, qs.map((q) => h('p', {}, h('b', {}, `${q.status === 'done' ? '✔' : q.status === 'ready' ? '❗' : '•'} ${q.title || q.id}`), q.progress ? ` (${q.progress})` : '', q.desc ? h('br') : null, q.desc ? h('span', { class: 'hint' }, q.desc) : null)))],
+    bonds: () => [bondsPanel()],
+    notes: () => [h('h3', {}, `Elowen's notes (${notes.length}/10)`), ...notes.map((n) => h('p', { class: 'lore' }, typeof n === 'string' ? n : Story.NOTES[n - 1] || ''))],
+    entries: () => [...(entries.length ? entries.slice().reverse().map((j) => h('p', { class: 'hint' }, typeof j === 'string' ? j : j.text)) : [h('p', { class: 'hint' }, 'Nothing written yet.')])],
+  };
+  const p = openModal(h('div', { class: 'tabpage', 'data-page': journalTab }, pages[journalTab]()), { title: '📖 Journal', tabs: tabBar(tabs, journalTab, (id) => showJournal(back, id)) });
+  const cl = p.querySelector('.closebtn'); if (cl) cl.id = 'btn-journal-close'; // ✕ Close returns to wherever the Journal was opened from (town square or the maze)
 }
 /** Journal: companion bonds (hearts), Liora's story, curses and blessings, and what Emberhollow remembers. */
 function bondsPanel() {
@@ -237,9 +247,9 @@ function formationBoard(redraw) {
           if (sel === c) { sel = null; draw(); return; }
           if (!sel) { sel = c; draw(); return; }
           const a = S.party.indexOf(sel), b = i; if (a >= 0 && (a < 2) !== (b < 2)) { [S.party[a], S.party[b]] = [S.party[b], S.party[a]]; log(`${sel.name} and ${c.name} trade rows.`, 'sys'); sel = null; autosave(); refresh(); redraw ? redraw() : draw(); } else { sel = c; draw(); }
-        } }, portrait(c, 'cport'), h('span', { class: 'fnm' }, c.name), h('small', {}, `${CLASSES[c.cls].name} · ${roleOf(c)}`)); }));
+        } }, portrait(c, 'cport'), h('span', { class: 'fnm' }, c.name), h('small', {}, CLASSES[c.cls].name, h('span', { class: 'frole' }, ` · ${roleOf(c)}`))); }));
     root.append(col('⚔ Front row', 'melee · hit first', 0, 2, 'frow-front'), col('🏹 Back row', 'ranged, spells, reach', 2, S.party.length, 'frow-back'),
-      h('div', { class: 'fnote' }, 'Only the front row can melee (unless wielding a glaive, halberd, pike or whip). Monsters pick the front row about 9 times in 10. In a fight, swapping costs a bonus action.'));
+      h('details', { class: 'fnote' }, h('summary', {}, 'ℹ How rows work'), 'Only the front row can melee (unless wielding a glaive, halberd, pike or whip). Monsters pick the front row about 9 times in 10. In a fight, swapping costs a bonus action. Tap a hero, then a hero in the other row, to swap.'));
   };
   draw(); return root;
 }
@@ -340,7 +350,7 @@ function setControls(kind) {
     const b = (l, f, cls = '', title = '') => el.append(h('button', { class: cls, title, onclick: () => { if (!busy && !combat && !msgRunning && modal.classList.contains('hidden')) f(); } }, l));
     b('↶', () => act(() => G.turn(S, -1)), '', 'Turn left (A)'); b('▲', () => act(() => G.move(S, 0)), '', 'Forward (W)'); b('↷', () => act(() => G.turn(S, 1)), '', 'Turn right (D)');
     b('◀', () => act(() => G.move(S, 3)), '', 'Strafe left (Q)'); b('▼', () => act(() => G.move(S, 2)), '', 'Back (S)'); b('▶', () => act(() => G.move(S, 1)), '', 'Strafe right (E)');
-    b('🔍 Search', doSearch, 'act', 'Search (F)'); b('⛺ Camp', () => { healSel = null; showCamp(); }, 'act', 'Camp (C)'); b('🗺 Map', showMap, 'act', 'Map (M)');
+    b('🔍 Search', doSearch, 'act', 'Search (F)'); b('⛺ Camp', () => { healSel = null; showCamp('rest'); }, 'act', 'Camp (C)'); b('🗺 Map', showMap, 'act', 'Map (M)');
     b('📜 Sheet', () => showSheet(S.party[0]), 'act', 'Character sheet (I)'); b('🎒 Items', showInventory, 'act', 'Inventory (B)'); b('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, 'act', 'Save (P)');
   }
 }
@@ -356,14 +366,14 @@ window.addEventListener('keydown', (e) => {
   if (!S) return;
   if (e.key === 'Escape' && !combat && modal.classList.contains('hidden')) { e.preventDefault(); openMenu(); return; }
   if (combat) return combatKey(e);
-  if (e.key.toLowerCase() === 'j' && modal.classList.contains('hidden') && S.mode === 'dungeon' && !busy) { e.preventDefault(); showJournal(); return; }
+  if (e.key.toLowerCase() === 'j' && modal.classList.contains('hidden') && S.mode === 'dungeon' && !busy) { e.preventDefault(); showJournal(null, 'quests'); return; }
   if (!modal.classList.contains('hidden')) { if (e.key === 'Escape') { if (modal.dataset.closable) dismissModal(); else if (S.mode === 'town' && townSub) showTown(); } return; }
   if (S.mode !== 'dungeon' || busy || msgRunning) return;
   const k = e.key.toLowerCase();
   const map = { arrowup: () => G.move(S, 0), w: () => G.move(S, 0), arrowdown: () => G.move(S, 2), s: () => G.move(S, 2), arrowleft: () => G.turn(S, -1), a: () => G.turn(S, -1), arrowright: () => G.turn(S, 1), d: () => G.turn(S, 1), q: () => G.move(S, 3), e: () => G.move(S, 1) };
   if (map[k]) { e.preventDefault(); act(map[k]); return; }
   if (k === 'f' || k === ' ') { e.preventDefault(); doSearch(); }
-  if (k === 'c') showCamp(); if (k === 'm') showMap(); if (k === 'i') showSheet(S.party[0]); if (k === 'b') showInventory(); if (k === 'p') { autosave(); log('Game saved.', 'sys'); }
+  if (k === 'c') showCamp('rest'); if (k === 'm') showMap(); if (k === 'i') showSheet(S.party[0]); if (k === 'b') showInventory(); if (k === 'p') { autosave(); log('Game saved.', 'sys'); }
 });
 // Swipe controls on the 3D view
 let touch0 = null;
@@ -376,10 +386,10 @@ $('#view').addEventListener('touchend', (e) => {
 }, { passive: true });
 
 /* ---------- Modal helpers ---------- */
-function openModal(content, { closable = true, cls = '' } = {}) {
+function openModal(content, { closable = true, cls = '', title = null, tabs = null } = {}) {
   modal.className = cls; modal.innerHTML = ''; modal.dataset.closable = closable ? '1' : '';
   const p = h('div', { class: 'panel' }, content, h('div', { class: 'dlgout', 'aria-live': 'polite', hidden: true })); modal.append(p);
-  if (closable) p.prepend(h('div', { class: 'navbar closebar' }, btn('✕ Close', dismissModal, { class: 'small closebtn', 'aria-label': 'Close' })));
+  if (closable) p.prepend(h('div', { class: 'navbar closebar' + (title ? ' titled' : '') }, title ? h('h2', {}, title) : null, btn('✕ Close', dismissModal, { class: 'small closebtn', 'aria-label': 'Close' }), tabs));
   return p;
 }
 function closeModal() { stopVoice(); modal.className = 'hidden'; modal.innerHTML = ''; }
@@ -401,7 +411,7 @@ async function showTitle() {
       has ? btn('⟲ Continue', () => continueLatest(), { id: 'btn-continue' }) : null,
       has ? btn('📂 Load Game', () => openMenu('load'), { id: 'btn-title-load' }) : null,
       btn('⇅ Import Save', () => openMenu('backup'), { id: 'btn-title-import' }),
-      btn('⚙ Settings', () => openMenu('settings'), { id: 'btn-title-settings' }),
+      btn('⚙ Settings', () => { settingsTab = 'audio'; openMenu('settings'); }, { id: 'btn-title-settings' }),
       btn('? How to Play', showHelp),
       btn('© Credits & License', showCredits)),
   ], { closable: false, cls: 'transparent' });
@@ -486,61 +496,81 @@ function showCreate(asRecruit = false) {
 
 /* ---------- Town ---------- */
 let townSub = null; let townVisited = false;
+const TOWN_TITLES = { tavern: '🍺 Tavern', temple: '⛪ Temple', shop: '⚒ Trading Post', train: '🎯 Training Grounds', edge: '🕳 Edge of Town' };
+let tavernTab = 'party', shopTab = 'potions';
 function showTown(sub = null) {
   townSub = sub; const arriving = S.mode !== 'town' || !townVisited; townVisited = true;
   S.mode = 'town'; combat = null; endCombatUI(); setControls(null); R.setMode('combat'); R.clearMonsters(); refresh();
   if (arriving) autosave(); // autosave on every town entry
-  const back = (where) => btn('← Back to Town Square', () => showTown(), { class: 'backbtn', 'data-back': where });
-  const P = (content) => openModal([h('div', { class: 'navbar' }, h('h2', {}, sub ? `Emberhollow · ${{ tavern: 'Tavern', temple: 'Temple', shop: 'Trading Post', train: 'Training Grounds', edge: 'Edge of Town' }[sub]}` : 'Emberhollow'), sub ? back('top') : null), content, sub ? h('div', { style: 'margin-top:10px' }, back('bottom')) : null], { closable: false, cls: 'transparent' });
+  const back = (where) => btn('← Town', () => showTown(), { class: 'backbtn', 'data-back': where, 'aria-label': 'Back to Town Square', title: 'Back to Town Square' });
+  // every location: a sticky bar (title, Back, optional tabs) over the page; locations without tabs keep a second Back under the content
+  const P = (content, { tabs = null } = {}) => openModal([h('div', { class: 'navbar' }, h('h2', {}, sub ? TOWN_TITLES[sub] : 'Emberhollow'), sub ? back('top') : null, tabs), content, sub && !tabs ? h('div', { style: 'margin-top:10px' }, back('bottom')) : null], { closable: false, cls: 'transparent' });
   if (!sub) {
-    P(h('div', { class: 'menu grid' },
-      btn('🍺 The Boar & Spoon Tavern', () => showTown('tavern'), { id: 'btn-tavern' }),
-      btn(S.flags?.freeInn ? '🛏 Inn (long rest, free)' : '🛏 Inn (long rest, 10 gp)', () => { handle(G.innRest(S)); say(banter(S.party, 'rest', {}, 1)); }),
-      btn('⛪ Temple of Cant', () => showTown('temple')),
-      btn('⚒ Fizzbang\'s Trading Post', () => showTown('shop'), { id: 'btn-shop' }),
-      btn('🎯 Training Grounds', () => showTown('train'), { id: 'btn-train' }),
-      btn('🗣 Town Folk (quests)', () => showTownFolk(), { id: 'btn-folk' }),
-      btn('📖 Journal', () => showJournal(() => showTown()), { id: 'btn-journal' }),
-      btn('🕳 Edge of Town — Enter the Maze', () => showTown('edge'), { id: 'btn-edge', class: 'primary' }),
-      btn('💾 Save Game', () => { autosave(); log('Game saved.', 'sys'); }),
-      btn('📂 Load Game', () => loadGame()),
-      btn('⏏ Title Screen', () => { closeModal(); showTitle(); })));
+    // most-used first: the maze, then the places you visit, then story pages, then game (save/load) controls
+    P(h('div', { class: 'townsq' },
+      btn('🕳 Edge of Town — Enter the Maze', () => showTown('edge'), { id: 'btn-edge', class: 'primary bigtown' }),
+      h('div', { class: 'menu grid2' },
+        btn('🍺 The Boar & Spoon Tavern', () => { tavernTab = 'party'; showTown('tavern'); }, { id: 'btn-tavern' }),
+        btn(S.flags?.freeInn ? '🛏 Inn (long rest, free)' : '🛏 Inn (long rest, 10 gp)', () => { handle(G.innRest(S)); say(banter(S.party, 'rest', {}, 1)); }),
+        btn('⛪ Temple of Cant', () => showTown('temple')),
+        btn('⚒ Fizzbang\'s Trading Post', () => { shopTab = 'potions'; showTown('shop'); }, { id: 'btn-shop' }),
+        btn('🎯 Training Grounds', () => showTown('train'), { id: 'btn-train' }),
+        btn('🗣 Town Folk (quests)', () => showTownFolk(), { id: 'btn-folk' }),
+        btn('📖 Journal', () => showJournal(() => showTown(), 'quests'), { id: 'btn-journal' })),
+      h('div', { class: 'menu row3' },
+        btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, { id: 'btn-town-save', 'aria-label': 'Save Game' }),
+        btn('📂 Load', () => loadGame(), { id: 'btn-town-load', 'aria-label': 'Load Game' }),
+        btn('⏏ Title', () => { closeModal(); showTitle(); }, { id: 'btn-town-title', 'aria-label': 'Title Screen' }))));
     handle(G.Narr.townIntro(S, null)); handle(G.PC.townArrive(S)); // Phase C: a companion remark, and what the town remembers
     return;
   }
   if (sub === 'tavern') {
-    P([h('h3', {}, 'The Boar & Spoon — your party'), partyOrderList(() => showTown('tavern')), btn('🧠 Companion Tactics', () => showTactics(null, () => showTown('tavern')), { id: 'btn-tavern-tactics', class: 'small' }),
-      h('h3', {}, 'Chatter at the bar'), ...S.party.filter((c) => c.companion).map((c) => h('p', {}, h('b', { style: `color:${COMPANIONS[c.companion].color}` }, c.name + ': '), COMPANIONS[c.companion].blurb)),
-      btn(G.PC.pendingMoment(S) != null ? '💬 Talk with Liora' : '🗣 Listen in', () => campTalk(() => showTown('tavern')), { id: 'btn-listen' }),
-      h('h3', {}, `Roster — waiting at the bar (party ${S.party.length}/4)`),
-      S.roster.length ? h('div', { class: 'menu', id: 'roster' }, S.roster.map((c) => h('div', { class: 'row' }, portrait(c), h('span', { style: 'flex:1' }, `${c.name} — L${c.level} ${CLASSES[c.cls].name}${c.dead ? ' (DEAD — raise at the Temple)' : ''}`),
-        btn('Join party', () => { handle(G.rejoin(S, c)); autosave(); showTown('tavern'); }, { class: 'small', disabled: S.party.length >= 4 })))) : h('p', { class: 'hint' }, 'Nobody is waiting. Dismissed members stay here, so you can bring them back (or raise them at the Temple) later.'),
-      h('h3', {}, `Adventurers for hire (join at level ${G.partyLevel(S)})`),
-      h('div', { class: 'menu', id: 'hire' }, G.availableCompanions(S).map((k) => { const C = COMPANIONS[k]; return h('div', { class: 'hirecard' }, Number.isInteger(C.portrait) ? h('img', { class: 'hirepic', src: portraitURL(C.portrait), alt: `${C.name} portrait` }) : null, h('p', {}, h('b', { style: `color:${C.color}` }, `${C.name} — ${RACES[C.race].name} ${CLASSES[C.cls].name}: `), C.blurb),
-        btn(`Recruit ${C.short}${S.party.length >= 4 ? ' (to roster)' : ''}`, async () => { handle(G.recruitCompanion(S, k)); autosave(); if (k === 'liora') { G.PC.ensure(S); S.flags.lioraMet = true; await showDialogue(G.PC.lioraIntro(S), { closable: true }); } showTown('tavern'); }, { class: 'small', 'data-recruit': k })); })),
-      btn('✍ Create a new recruit (full creator)', () => showCreate(true), { id: 'btn-new-recruit' })]);
+    // four short pages instead of one long scroll: your party / who is waiting / who is for hire / the bar
+    const redraw = () => showTown('tavern');
+    const tabs = [['party', '👥 Party'], ['roster', '📋 Roster', S.roster.length || null], ['hire', '🤝 Hire'], ['bar', '🗣 Bar', G.PC.pendingMoment(S) != null ? '!' : null]];
+    if (!tabs.some((t) => t[0] === tavernTab)) tavernTab = 'party';
+    const pages = {
+      party: () => [partyOrderList(redraw), btn('🧠 Companion Tactics', () => showTactics(null, redraw), { id: 'btn-tavern-tactics', class: 'bigtab' })],
+      roster: () => [h('h3', {}, `Waiting at the bar (party ${S.party.length}/4)`),
+        S.roster.length ? h('div', { class: 'menu', id: 'roster' }, S.roster.map((c) => h('div', { class: 'row rosterrow' }, portrait(c), h('span', { style: 'flex:1' }, `${c.name} — L${c.level} ${CLASSES[c.cls].name}${c.dead ? ' (DEAD — raise at the Temple)' : ''}`),
+          btn('Join party', () => { handle(G.rejoin(S, c)); autosave(); redraw(); }, { class: 'small', disabled: S.party.length >= 4 })))) : h('p', { class: 'hint' }, 'Nobody is waiting. Dismissed members stay here, so you can bring them back (or raise them at the Temple) later.')],
+      hire: () => [btn('✍ Create a new recruit (full creator)', () => showCreate(true), { id: 'btn-new-recruit', class: 'bigtab' }),
+        h('h3', {}, `Adventurers for hire (join at level ${G.partyLevel(S)})`),
+        h('div', { class: 'menu', id: 'hire' }, G.availableCompanions(S).map((k) => { const C = COMPANIONS[k]; return h('div', { class: 'hirecard' }, Number.isInteger(C.portrait) ? h('img', { class: 'hirepic', src: portraitURL(C.portrait), alt: `${C.name} portrait` }) : null, h('p', {}, h('b', { style: `color:${C.color}` }, `${C.name} — ${RACES[C.race].name} ${CLASSES[C.cls].name}: `), C.blurb),
+          btn(`Recruit ${C.short}${S.party.length >= 4 ? ' (to roster)' : ''}`, async () => { handle(G.recruitCompanion(S, k)); autosave(); if (k === 'liora') { G.PC.ensure(S); S.flags.lioraMet = true; await showDialogue(G.PC.lioraIntro(S), { closable: true }); } redraw(); }, { class: 'small', 'data-recruit': k })); }))],
+      bar: () => [btn(G.PC.pendingMoment(S) != null ? '💬 Talk with Liora' : '🗣 Listen in', () => campTalk(redraw), { id: 'btn-listen', class: 'bigtab' }),
+        h('h3', {}, 'Chatter at the bar'), ...S.party.filter((c) => c.companion).map((c) => h('p', {}, h('b', { style: `color:${COMPANIONS[c.companion].color}` }, c.name + ': '), COMPANIONS[c.companion].blurb))],
+    };
+    P(h('div', { class: 'tabpage', 'data-page': tavernTab }, pages[tavernTab]()), { tabs: tabBar(tabs, tavernTab, (id) => { tavernTab = id; redraw(); }) });
   } else if (sub === 'temple') {
-    P([h('h3', {}, 'Temple of Cant — "Healing by donation (mandatory)"'), h('div', { class: 'menu' }, [...S.party, ...S.roster].map((c) => { const cost = G.templeCost(c); return btn(`${c.name}: ${c.dead ? 'Raise Dead' : c.conditions.poisoned ? 'Cure poison' : c.hp < c.maxHp ? 'Heal wounds' : 'Healthy'} ${cost ? `(${cost} gp)` : ''}`, () => { handle(G.templeHeal(S, c)); showTown('temple'); }, { disabled: !cost }); }))]);
+    const need = (c) => (G.templeCost(c) ? 0 : 1); // those who need help first
+    P([h('h3', {}, 'Temple of Cant — "Healing by donation (mandatory)"'), h('div', { class: 'menu' }, [...S.party, ...S.roster].map((c, i) => [c, i]).sort((x, y) => need(x[0]) - need(y[0]) || x[1] - y[1]).map(([c]) => { const cost = G.templeCost(c); return btn(`${c.name}: ${c.dead ? 'Raise Dead' : c.conditions.poisoned ? 'Cure poison' : c.hp < c.maxHp ? 'Heal wounds' : 'Healthy'} ${cost ? `(${cost} gp)` : ''}`, () => { handle(G.templeHeal(S, c)); showTown('temple'); }, { disabled: !cost }); }))]);
   } else if (sub === 'shop') {
-    const p = P([]); const body = h('div');
-    body.append(h('h3', {}, `Fizzbang's Trading Post — you have ${S.gold} gp`), h('div', { class: 'cols' },
-      h('div', {}, h('h3', {}, 'Buy'), h('div', { class: 'menu' }, SHOP_STOCK.map((k) => btn(`${G.nameOf(k)} — ${G.priceOf(k)} gp`, () => { handle(G.buy(S, k)); showTown('shop'); }, { disabled: S.gold < G.priceOf(k), class: 'small' })))),
-      h('div', {}, h('h3', {}, 'Sell / Equip'), inventoryList(() => showTown('shop'), true))));
-    p.insertBefore(body, p.lastChild);
+    // short pages: potions / weapons / armor / sell & equip (the stock is over thirty items)
+    const redraw = () => showTown('shop');
+    const stock = (pred) => SHOP_STOCK.filter(pred);
+    const kindOf = (k) => (k.startsWith('w:') ? 'weapons' : k.startsWith('a:') || k === 'shield' ? 'armor' : 'potions');
+    const list = (kind) => h('div', { class: 'menu grid2 shopgrid' }, stock((k) => kindOf(k) === kind).map((k) => btn([h('b', { class: 'bt' }, G.nameOf(k)), h('small', { class: 'bs' }, `${G.priceOf(k)} gp`)], () => { handle(G.buy(S, k)); redraw(); }, { disabled: S.gold < G.priceOf(k), class: 'bigbtn shopitem', 'data-buy': k })));
+    const tabs = [['potions', '🧪 Potions'], ['weapons', '⚔ Weapons'], ['armor', '🛡 Armor'], ['sell', '💰 Sell & Equip']];
+    if (!tabs.some((t) => t[0] === shopTab)) shopTab = 'potions';
+    const page = shopTab === 'sell' ? [h('h3', {}, 'Sell / Equip — selling pays half price'), inventoryList(redraw, true)] : [list(shopTab)];
+    P([h('p', { class: 'goldline' }, `💰 You have ${S.gold} gp`), h('div', { class: 'tabpage', 'data-page': shopTab }, page)], { tabs: tabBar(tabs, shopTab, (id) => { shopTab = id; redraw(); }) });
   } else if (sub === 'train') {
-    P([h('h3', {}, 'Training Grounds'), h('div', { class: 'menu' }, S.party.map((c) => h('div', { class: 'row' },
-      btn(canLevelUp(c) ? `⬆ Train ${c.name} to level ${c.level + 1}` : `${c.name} — L${c.level} (${c.xp}/${xpForNext(c) === Infinity ? 'max' : xpForNext(c)} XP)`, () => trainWithSpells(c, () => showTown('train')), { disabled: !canLevelUp(c) }),
+    P([h('div', { class: 'menu trainlist' }, S.party.map((c) => h('div', { class: 'row trainrow' },
+      btn(canLevelUp(c) ? `⬆ Train ${c.name} to level ${c.level + 1}` : `${c.name} — L${c.level} (${c.xp}/${xpForNext(c) === Infinity ? 'max' : xpForNext(c)} XP)`, () => trainWithSpells(c, () => showTown('train')), { disabled: !canLevelUp(c), class: canLevelUp(c) ? 'levelup trainmain' : 'trainmain' }),
       SC.preparedMax(c) ? btn('📖 Prepare', () => showSpellPicker(c, 'prepare', null, () => showTown('train')), { class: 'small', 'data-prepare': c.id }) : null,
       (c.companion || c.recruit) ? btn('Re-class', () => reclassMenu(c), { class: 'small' }) : null,
       btn('Sheet', () => showSheet(c), { class: 'small' })))),
-      h('p', { class: 'hint' }, 'Re-class: retrain a companion or recruit into any of the 12 classes at the same level (50 gp per level).'),
-      btn('✍ Create a new recruit', () => showCreate(true), { id: 'btn-train-recruit' })]);
+      btn('✍ Create a new recruit', () => showCreate(true), { id: 'btn-train-recruit', class: 'bigtab' }),
+      h('p', { class: 'hint' }, 'Re-class: retrain a companion or recruit into any of the 12 classes at the same level (50 gp per level).')]);
   } else if (sub === 'edge') {
-    P([h('h3', {}, 'Edge of Town'), h('p', { class: 'hint' }, 'The maze entrance yawns before you. The dwarven mine lift can take you to any level you have already reached.'),
+    P([h('p', { class: 'hint' }, 'The maze entrance yawns before you. The dwarven mine lift can take you to any level you have already reached.'),
       h('div', { class: 'menu' }, btn('Descend the stairs to B1', () => enter(0), { class: 'primary', id: 'btn-enter' }),
         ...LEVEL_DEFS.map((_, l) => l).filter((l) => l > 0 && l <= S.maxDepth).map((l) => btn(`Mine lift to ${LEVEL_DEFS[l].name}`, () => enter(l))))]);
   }
   if (sub) handle(G.Narr.townIntro(S, sub));
+  // the narration echo scrolls the panel to its foot: a location always opens at its top (title, Back, tabs)
+  const pn = modal.querySelector('.panel'); if (pn) { pn.scrollTop = 0; requestAnimationFrame(() => { pn.scrollTop = 0; }); }
 }
 function enter(l) { closeModal(); const ev = G.enterDungeon(S, l); if (ev.some((e) => e.paywall)) { prompt('paywall', { then: () => enter(l) }); return; } handle(ev); startDungeon(); say(banter(S.party, 'stairs', {}, 1)); autosave(); }
 async function startDungeon() {
@@ -549,9 +579,9 @@ async function startDungeon() {
 let lastBuiltLevel = -1;
 async function rebuild() { if (!S || S.mode !== 'dungeon') return; await R.buildLevel(S, (x, y) => G.tile(S, x, y), getLevel(S.level).def, outReg()); lastBuiltLevel = S.level; syncWorld(); }
 function partyOrderList(redraw) {
-  return h('div', { class: 'menu' }, formationBoard(redraw), S.party.map((c, i) => h('div', { class: 'row' }, portrait(c), h('span', { style: 'flex:1' }, `${i + 1}. ${c.name} (${CLASSES[c.cls].name}) ${i < 2 ? '— front row' : '— back row'}`),
-    btn('▲', () => { if (i > 0) { [S.party[i - 1], S.party[i]] = [S.party[i], S.party[i - 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === 0 }),
-    btn('▼', () => { if (i < S.party.length - 1) { [S.party[i + 1], S.party[i]] = [S.party[i], S.party[i + 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === S.party.length - 1 }),
+  return h('div', { class: 'menu partylist' }, formationBoard(redraw), S.party.map((c, i) => h('div', { class: 'row partyrow' }, portrait(c), h('span', { class: 'pname' }, h('b', {}, `${i + 1}. ${c.name}`), h('small', {}, ` ${CLASSES[c.cls].name} · ${i < 2 ? 'front' : 'back'} row`)),
+    btn('▲', () => { if (i > 0) { [S.party[i - 1], S.party[i]] = [S.party[i], S.party[i - 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === 0, 'aria-label': `Move ${c.name} up` }),
+    btn('▼', () => { if (i < S.party.length - 1) { [S.party[i + 1], S.party[i]] = [S.party[i], S.party[i + 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === S.party.length - 1, 'aria-label': `Move ${c.name} down` }),
     !G.isHero(c) ? btn(c.ai ? 'AI' : 'YOU', () => { c.ai = !c.ai; redraw(); refresh(); }, { class: 'small aitog ' + (c.ai ? 'on' : '') }) : null,
     !G.isHero(c) ? btn('Dismiss', () => { handle(G.dismiss(S, c)); autosave(); redraw(); }, { class: 'small dismiss', title: 'Send to the Tavern roster' }) : null)));
 }
@@ -653,25 +683,31 @@ function campHealSection() {
   return h('div', { class: 'menu' }, ...rows);
 }
 /* ---------- Camp ---------- */
-function showCamp() {
-  const p = openModal([h('h2', {}, '⛺ Camp'), h('div', { class: 'menu grid' },
-    btn('☕ Short Rest (1 hr: hit dice, 2nd wind, arcane recovery)', () => { closeModal(); handle(G.rest(S, 'short')); }),
-    btn('🌙 Long Rest (8 hrs, full recovery, risky)', () => { closeModal(); handle(G.rest(S, 'long')); }),
-    btn(G.PC.pendingMoment(S) != null ? '💬 Talk with Liora' : '🗣 Talk with companions', () => campTalk(showCamp), { id: 'btn-talk' }),
-    btn('✨ Cast Mage Armor on wizard', () => { const w = S.party.find((c) => c.cls === 'wizard' && !c.equip.armor && !c.dead && c.slots[0] > 0 && knownSpells(c).includes('mageArmor')); if (!w) { log('No wizard with a free slot and Mage Armor prepared needs it.', 'dim'); return; } w.slots[0]--; w.conditions.mageArmor = true; log(`${w.name} casts Mage Armor (AC ${armorClass(w)}).`, 'spell'); refresh(); }),
-    btn('🧠 Companion Tactics', () => showTactics(null, showCamp), { id: 'btn-camp-tactics' }),
-    btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }), btn('📂 Load', () => loadGame())),
-  h('h3', { id: 'camp-levelup' }, '⬆ Level Up'),
-  (() => { const ready = S.party.filter((c) => canLevelUp(c)); return ready.length
-    ? h('div', { class: 'menu' }, ready.map((c) => btn(`⬆ Level up ${c.name} to level ${c.level + 1}`, () => trainWithSpells(c, showCamp), { class: 'levelup', 'data-levelup': c.id })))
-    : h('p', { class: 'hint' }, 'Nobody has enough XP to level up yet.'); })(),
-  h('h3', { id: 'camp-heal' }, '✚ Heal'), campHealSection(),
-  h('h3', { id: 'camp-prepare' }, '📖 Prepare spells'),
-  (() => { const preps = S.party.filter((c) => !c.dead && SC.preparedMax(c)); return preps.length
-    ? h('div', { class: 'menu' }, preps.map((c) => btn(`📖 ${c.name} — ${SC.casterType(c.cls) === 'book' ? 'from spellbook' : 'from the ' + CLASSES[c.cls].name + ' list'} (${SC.preparedMax(c)} prepared)`, () => showSpellPicker(c, 'prepare', null, showCamp), { 'data-prepare': c.id })))
-    : h('p', { class: 'hint' }, 'Nobody in the party prepares spells.'); })(),
-  h('h3', {}, 'Formation & marching order'), partyOrderList(showCamp)]);
-  void p;
+// Four short pages instead of one long scroll: Rest (the everyday actions + level-ups + save/load), Heal, Spells, Party.
+let campTab = 'rest';
+function showCamp(tab) {
+  if (typeof tab === 'string') { campTab = tab; healSel = null; }
+  const tabs = [['rest', '⛺ Rest'], ['heal', '✚ Heal', S.party.filter(G.hurt).length || null], ['spells', '📖 Spells'], ['party', '👥 Party']];
+  const go = (id) => { healSel = null; showCamp(id); };
+  const pages = {
+    rest: () => {
+      const ready = S.party.filter((c) => canLevelUp(c));
+      return [
+        ready.length ? h('div', { class: 'menu levelups' }, h('h3', { id: 'camp-levelup' }, '⬆ Level Up'), ready.map((c) => btn(`⬆ Level up ${c.name} to level ${c.level + 1}`, () => trainWithSpells(c, showCamp), { class: 'levelup', 'data-levelup': c.id }))) : null,
+        h('div', { class: 'menu grid2 restgrid' },
+          bigBtn('☕ Short Rest', '1 hr: hit dice, 2nd wind, arcane recovery', () => { closeModal(); handle(G.rest(S, 'short')); }, { id: 'btn-short-rest' }),
+          bigBtn('🌙 Long Rest', '8 hrs, full recovery, risky', () => { closeModal(); handle(G.rest(S, 'long')); }, { id: 'btn-long-rest' }),
+          bigBtn(G.PC.pendingMoment(S) != null ? '💬 Talk with Liora' : '🗣 Talk', G.PC.pendingMoment(S) != null ? 'she has something to say' : 'with your companions', () => campTalk(showCamp), { id: 'btn-talk' }),
+          bigBtn('✨ Mage Armor', 'cast on the wizard', () => { const w = S.party.find((c) => c.cls === 'wizard' && !c.equip.armor && !c.dead && c.slots[0] > 0 && knownSpells(c).includes('mageArmor')); if (!w) { log('No wizard with a free slot and Mage Armor prepared needs it.', 'dim'); return; } w.slots[0]--; w.conditions.mageArmor = true; log(`${w.name} casts Mage Armor (AC ${armorClass(w)}).`, 'spell'); refresh(); }, { id: 'btn-mage-armor' })),
+        h('div', { class: 'menu row3 saverow' }, btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, { id: 'btn-camp-save' }), btn('📂 Load', () => loadGame(), { id: 'btn-camp-load' }))];
+    },
+    heal: () => [h('div', { id: 'camp-heal' }, campHealSection())],
+    spells: () => { const preps = S.party.filter((c) => !c.dead && SC.preparedMax(c)); return [h('div', { id: 'camp-prepare' }, preps.length
+      ? h('div', { class: 'menu' }, preps.map((c) => btn(`📖 ${c.name} — ${SC.casterType(c.cls) === 'book' ? 'from spellbook' : 'from the ' + CLASSES[c.cls].name + ' list'} (${SC.preparedMax(c)} prepared)`, () => showSpellPicker(c, 'prepare', null, showCamp), { 'data-prepare': c.id })))
+      : h('p', { class: 'hint' }, 'Nobody in the party prepares spells.'))]; },
+    party: () => [btn('🧠 Companion Tactics', () => showTactics(null, showCamp), { id: 'btn-camp-tactics', class: 'bigtab' }), partyOrderList(showCamp)],
+  };
+  openModal(h('div', { class: 'tabpage', 'data-page': campTab }, pages[campTab]()), { title: '⛺ Camp', tabs: tabBar(tabs, campTab, go) });
 }
 
 /* ---------- Spell selection (SRD) ---------- */
@@ -776,7 +812,7 @@ $('#minimap').addEventListener('click', (e) => {
   const path = G.Prog.findPath(S, x, y, (a, b) => G.tile(S, a, b)); if (!path) { toast('No known route there'); return; } autoWalk(path);
 });
 $('#minimap').title = 'Tap an explored tile to walk there · tap yourself for the full map';
-$('#skipbtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); skipNow(); });
+$('#skipbtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); if (skipSticky) { skipSticky = false; skipping = false; } else { skipSticky = true; skipNow(); } syncSkipBtn(); });
 $('#speedbtn').addEventListener('click', cycleSpeed);
 
 /* ---------- Easy fights: offer to auto-resolve ---------- */
@@ -800,11 +836,20 @@ async function maybeAutoResolve(info) {
 }
 
 /* ---------- Inventory ---------- */
+let invFilter = 'all';
+const invKind = (k) => { const I = ITEMS[k]; return I?.kind || (k.startsWith('w:') ? 'weapon' : k.startsWith('a:') || k === 'shield' ? 'armor' : ''); };
+const INV_GROUPS = { weapons: ['weapon'], armor: ['armor', 'helm', 'cloak', 'ring'], potions: ['potion'] };
 function inventoryList(redraw, shop = false) {
   const inv = S.inventory;
   if (!inv.length) return h('p', { class: 'hint' }, 'Empty.');
-  return h('div', { class: 'menu' }, inv.map((k, i) => {
-    const I = ITEMS[k]; const kind = I?.kind || (k.startsWith('w:') ? 'weapon' : k.startsWith('a:') || k === 'shield' ? 'armor' : '');
+  const group = (k) => { const kind = invKind(k); return Object.keys(INV_GROUPS).find((g) => INV_GROUPS[g].includes(kind)) || 'other'; };
+  // a long pack gets filter chips (All / Weapons / Armor / Potions / Other) so it never becomes one endless list
+  const counts = { all: inv.length }; for (const k of inv) counts[group(k)] = (counts[group(k)] || 0) + 1;
+  const chips = inv.length > 8 ? [['all', 'All'], ['weapons', '⚔ Weapons'], ['armor', '🛡 Armor'], ['potions', '🧪 Potions'], ['other', 'Other']].filter(([g]) => counts[g]) : [];
+  if (invFilter !== 'all' && !counts[invFilter]) invFilter = 'all';
+  const filter = chips.length ? invFilter : 'all';
+  return h('div', { class: 'menu' }, chips.length ? h('div', { class: 'seg invchips', role: 'tablist' }, chips.map(([g, l]) => btn(`${l} (${counts[g]})`, () => { invFilter = g; redraw(); }, { class: 'small ' + (filter === g ? 'on' : ''), 'data-inv': g, role: 'tab', 'aria-selected': String(filter === g) }))) : null, inv.map((k, i) => [k, i]).filter(([k]) => filter === 'all' || group(k) === filter).map(([k, i]) => {
+    const I = ITEMS[k]; const kind = invKind(k);
     return h('div', { class: 'row' }, h('span', { style: 'flex:1;' + tierStyle(k), class: 'itemname tier-' + tierOf(k), info: () => itemInfo(k), tabindex: 0 }, G.nameOf(k)),
       kind === 'potion' ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.usePotion(S, i, c)); redraw(); } }, h('option', {}, 'Use on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
       ['weapon', 'armor', 'ring', 'cloak', 'helm'].includes(kind) ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.equip(S, c, i)); redraw(); } }, h('option', {}, 'Equip on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
@@ -849,6 +894,8 @@ function showSheet(c) {
 }
 
 /* ---------- Combat ---------- */
+let skipSticky = false; // ⏭ Skip stays on for the rest of the fight until tapped again
+function syncSkipBtn() { const b = document.getElementById('skipbtn'); if (b) { b.classList.toggle('on', skipSticky); b.textContent = skipSticky ? '⏭ Skipping' : '⏭ Skip'; } }
 let skipping = false; // the player tapped ⏭ Skip: animations and captions collapse until the next menu / fight
 const wait = (ms) => new Promise((r) => setTimeout(r, skipping ? 0 : ms * speed().f));
 function skipNow() { skipping = true; tapPending?.(); cutinStop?.(); hideCutin(); document.querySelectorAll('#foeport .fp-tile.hurt, #foeport .fp-tile.dodge').forEach((t) => { t.style.setProperty('--fd', '0ms'); t.dataset.static = '1'; }); }
@@ -1090,7 +1137,7 @@ async function startCombat(info) {
 }
 let looping = false, loopFor = null; // loopFor: the Combat the running loop belongs to
 let loopGen = 0;
-function abandonCombat() { hideTurnPortrait(true); hideFoePortrait(true); suspendSnap = null; skipping = false; loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
+function abandonCombat() { hideTurnPortrait(true); hideFoePortrait(true); suspendSnap = null; skipping = false; skipSticky = false; syncSkipBtn(); loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
 async function combatLoop() {
   // A new fight can begin while the previous fight's loop is still unwinding inside endCombat (town/boss paths await the loot card or a
   // rebuild there): the stale `looping` flag used to make this call a no-op, so the new battle never got a turn and no menu appeared.
@@ -1267,7 +1314,7 @@ function chooseFrom(title, options, kind = '') {
     modal._resolve = done; modal._options = options;
   });
 }
-function endCombatUI() { hideTurnPortrait(); hideFoePortrait(true); skipping = false; curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
+function endCombatUI() { hideTurnPortrait(); hideFoePortrait(true); skipping = false; skipSticky = false; syncSkipBtn(); curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
 function combatKey(e) {
   const n = parseInt(e.key, 10); if (!modal._options) return;
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
@@ -1316,7 +1363,7 @@ const LESS_COMMON = new Set(['swap', 'study', 'item', 'dodge', 'flee']);
 const SHORT_LABEL = { swap: 'Swap rows (bonus)', study: 'Study a foe (bonus)' };
 const moreHint = (a) => ({ swap: 'Swap rows', study: 'Study', item: 'Items', dodge: 'Dodge', flee: 'Run' })[a.id] || a.label;
 async function playerTurn() {
-  const c = combat.current(); if (!autoBattle) skipping = false; let page = 'main';
+  const c = combat.current(); if (!autoBattle && !skipSticky) skipping = false; let page = 'main';
   while (combat && combat.state === 'running' && combat.current() === c && !combat.turn.done) {
     renderParty();
     const acts = combat.actionsFor(c).map((a) => ({ ...a, primary: a.id === 'attack' || a.id === 'shoot', util: a.id === 'end', ...(SHORT_LABEL[a.id] ? { label: SHORT_LABEL[a.id], info: () => [SHORT_LABEL[a.id], a.label] } : {}) }));
@@ -1493,7 +1540,7 @@ boot();
 const gmenu = h('div', { id: 'gmenu', class: 'hidden', role: 'dialog', 'aria-label': 'Main menu' });
 const menuBtn = h('button', { id: 'btn-menu', class: 'hidden', 'aria-label': 'Main menu', title: 'Main menu (Esc)', onclick: () => (menuOpen() ? closeMenu() : openMenu()) }, '☰ Menu');
 document.body.append(gmenu, menuBtn);
-let menuView = 'main';
+let menuView = 'main', settingsTab = 'audio';
 function menuOpen() { return !gmenu.classList.contains('hidden'); }
 function closeMenu() { gmenu.className = 'hidden'; gmenu.innerHTML = ''; }
 function updateMenuBtn() { menuBtn.classList.toggle('hidden', !S); document.body.classList.toggle('ingame', !!S); }
@@ -1511,19 +1558,22 @@ function openMenu(view = 'main', custom = null) {
   menuView = custom ? 'confirm' : view;
   const inCombat = !!combat;
   const note = (t) => h('p', { class: 'hint' }, t);
-  let body;
+  let body, barTabs = null;
   if (custom) body = custom;
   else if (view === 'main') {
     body = [h('h2', {}, '☰ Main Menu'),
       inCombat ? h('p', { class: 'warn' }, '⚔ You are in combat. Saving is disabled until the fight ends, so a save never puts you in the middle of a battle. You can still quit: progress since your last save will be lost.') : null,
       h('div', { class: 'menu' },
-        btn('▶ Resume', closeMenu, { class: 'primary', id: 'menu-resume' }),
-        btn('💾 Save Game…', () => openMenu('save'), { id: 'menu-save', disabled: inCombat }),
-        btn('📂 Load Game…', () => openMenu('load'), { id: 'menu-load' }),
-        btn('⚙ Settings', () => openMenu('settings'), { id: 'menu-settings' }),
-        btn('⇅ Export / Import Saves', () => openMenu('backup'), { id: 'menu-backup' }),
-        btn('💾⏏ Save & Quit to Title', () => openMenu('savequit'), { id: 'menu-savequit', disabled: inCombat }),
-        btn('⏏ Quit to Title without saving', () => confirmView('Quit without saving?', 'Progress since your last save will be lost.', '⏏ Quit without saving', () => { closeMenu(); closeModal(); abandonCombat(); showTitle(); }), { id: 'menu-quit' }))];
+        btn('▶ Resume', closeMenu, { class: 'primary bigtown', id: 'menu-resume' }),
+        h('div', { class: 'menu grid2' },
+          btn('💾 Save Game…', () => openMenu('save'), { id: 'menu-save', disabled: inCombat }),
+          btn('📂 Load Game…', () => openMenu('load'), { id: 'menu-load' }),
+          btn('⚙ Settings', () => { settingsTab = 'audio'; openMenu('settings'); }, { id: 'menu-settings' }),
+          btn('⇅ Export / Import', () => openMenu('backup'), { id: 'menu-backup' })),
+        h('h3', {}, 'Leave the game'),
+        h('div', { class: 'menu grid2' },
+          btn('💾⏏ Save & Quit', () => openMenu('savequit'), { id: 'menu-savequit', disabled: inCombat }),
+        btn('⏏ Quit without saving', () => confirmView('Quit without saving?', 'Progress since your last save will be lost.', '⏏ Quit without saving', () => { closeMenu(); closeModal(); abandonCombat(); showTitle(); }), { id: 'menu-quit' })))];
   } else if (view === 'save' || view === 'savequit') {
     const quit = view === 'savequit';
     body = [h('h2', {}, quit ? '💾 Save & Quit — choose a slot' : '💾 Save Game — choose a slot'),
@@ -1532,46 +1582,48 @@ function openMenu(view = 'main', custom = null) {
         try { saveTo(k); } catch (e) { log('Save failed: ' + e.message, 'bad'); return; }
         log(`Game saved to Slot ${i + 1}.`, 'sys');
         if (quit) { closeMenu(); closeModal(); showTitle(); } else openMenu('main', [h('h2', {}, '✔ Saved'), h('p', {}, `Saved to Slot ${i + 1}.`), h('div', { class: 'menu' }, btn('▶ Resume', closeMenu, { class: 'primary', id: 'menu-resume' }), btn('← Main Menu', () => openMenu('main')))]);
-      }, view), { class: 'slot', 'data-slot': i + 1 })),
-        btn('← Back', () => openMenu('main'), { class: 'menuback' }))];
+      }, view), { class: 'slot', 'data-slot': i + 1 })))];
   } else if (view === 'load') {
     const keys = [[G.SAVE_KEY, -1], ...SLOT_KEYS.map((k, i) => [k, i])];
     body = [h('h2', {}, '📂 Load Game'), S ? note('Loading replaces the current game; progress since your last save will be lost.') : null,
-      h('div', { class: 'menu' }, keys.map(([k, i]) => btn(slotLabel(k, i), () => (S ? confirmView('Load this save?', 'Progress since your last save will be lost.', '📂 Load', () => loadGame(k), 'load') : loadGame(k)), { class: 'slot', 'data-load': i + 1, disabled: !slotInfo(k) })),
-        btn('← Back', () => (S ? openMenu('main') : closeMenu()), { class: 'menuback' }))];
+      h('div', { class: 'menu' }, keys.map(([k, i]) => btn(slotLabel(k, i), () => (S ? confirmView('Load this save?', 'Progress since your last save will be lost.', '📂 Load', () => loadGame(k), 'load') : loadGame(k)), { class: 'slot', 'data-load': i + 1, disabled: !slotInfo(k) })))];
   } else if (view === 'settings') {
     const st = loadSettings();
     const slider = (key, label) => h('label', { class: 'slider' }, h('span', {}, label), h('input', { type: 'range', min: 0, max: 100, step: 5, value: Math.round(st[key] * 100), id: 'vol-' + key, 'aria-label': label + ' volume',
       oninput: (e) => { st[key] = +e.target.value / 100; e.target.nextSibling.textContent = e.target.value + '%'; applyAudioSettings(st); }, onchange: () => { saveSettings(st); if (key === 'sfx') sfx('hit'); } }), h('b', {}, Math.round(st[key] * 100) + '%'));
-    body = [h('h2', {}, '⚙ Settings'),
-      h('h3', {}, 'Audio'),
-      h('div', { class: 'menu' }, btn(`🔊 Sound: ${st.sound ? 'On' : 'Off (all muted)'}`, () => { st.sound = !st.sound; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-sound' })),
-      h('div', { class: 'menu' }, btn(`💥 Sound effects: ${st.sfxOn !== false ? 'On' : 'Off'}`, () => { st.sfxOn = st.sfxOn === false; saveSettings(st); applyAudioSettings(st); if (st.sfxOn) sfx('slash'); openMenu('settings'); }, { id: 'set-sfx' })),
-      slider('music', '🎵 Music'), slider('sfx', '💥 Sound effects volume'), slider('amb', '🌫 Ambience'),
-      h('div', { class: 'menu' }, btn(`🗣 Voices: ${st.voices !== false ? 'On' : 'Off'}`, () => { st.voices = st.voices === false; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-voices' })),
-      slider('voice', '🗣 Voice volume'),
-      h('div', { class: 'menu' }, btn('🗣 Test voice (Elowen)', () => { st.voices = true; if (!st.sound) { st.sound = true; } saveSettings(st); applyAudioSettings(st); testVoice(); }, { id: 'set-test-voice' })),
-      h('div', { class: 'menu' }, btn('🎺 Test victory music', () => { if (!st.sound) { st.sound = true; saveSettings(st); applyAudioSettings(st); } try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ } testVictoryMusic(); }, { id: 'set-test-victory' })),
-      h('h3', {}, 'Battle speed'),
-      h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'pause') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'pause') === k) }))),
-      h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action. In a fight, ⏩ cycles the speed and ⏭ Skip fast-forwards the animations.'),
-      h('h3', {}, 'Easy fights'),
-      h('div', { class: 'seg', role: 'radiogroup' }, [['ask', 'Ask me'], ['auto', 'Auto-resolve'], ['off', 'Always fight']].map(([k, l]) => btn(l, () => { st.trivialFights = k; saveSettings(st); openMenu('settings'); }, { class: (st.trivialFights || 'ask') === k ? 'on' : '', 'data-trivial': k, role: 'radio' }))),
-      h('p', { class: 'hint' }, 'When the party is far stronger than the foes, you can resolve the fight instantly (it still pays XP and loot).'),
-      S ? h('h3', {}, 'Difficulty') : null,
-      S ? h('div', { class: 'seg', role: 'radiogroup' }, Object.keys(DIFFICULTY).map((k) => btn(DIFF_LABEL[k], () => { S.difficulty = k; if (combat) combat.setDifficulty?.(k); autosave(); log(`Difficulty: ${DIFF_LABEL[k]}.`, 'sys'); openMenu('settings'); }, { class: (S.difficulty || 'normal') === k ? 'on' : '', 'data-diff': k, role: 'radio', 'aria-checked': String((S.difficulty || 'normal') === k) }))) : null,
-      S ? h('p', { class: 'hint' }, DIFF_HELP[S.difficulty || 'normal']) : null,
-      h('h3', {}, 'Storytelling'),
-      h('div', { class: 'menu' }, btn(`🕯 Area descriptions: ${st.areaDesc !== false ? 'On' : 'Off'}`, () => { st.areaDesc = st.areaDesc === false; saveSettings(st); openMenu('settings'); }, { id: 'set-areadesc' }),
-        btn(`🌀 Reduce motion: ${reduceMotion() ? 'On' : 'Off'}`, () => { st.reduceMotion = !reduceMotion(); saveSettings(st); syncFxSettings(); openMenu('settings'); }, { id: 'set-reducemotion' })),
-      h('p', { class: 'hint' }, 'A Dungeon Master reads out each new floor, room and town spot the first time you arrive. Off: they only go to the log.'),
-      h('h3', {}, 'Full game'),
-      h('div', { class: 'menu' }, btn('♻ Restore Purchases', () => { log(ENT.restore() ? 'Purchases restored.' : (ENT.paywallActive() ? 'No purchase found on this device.' : 'Nothing to restore — this build is fully unlocked.'), 'sys'); }, { id: 'set-restore' }),
-        btn(`🧪 Dev: free-version paywall ${ENT.paywallActive() ? 'On' : 'Off'}`, () => { ENT.setPaywallDev(!ENT.paywallActive()); if (!ENT.paywallActive()) ENT.resetEntitlement(); openMenu('settings'); }, { id: 'set-paywall' })),
-      h('p', { class: 'hint' }, 'The web build is unlocked. The paywall switch simulates the free version (B1 free, B2–B5 behind one unlock) for testing.'),
-      h('h3', {}, 'Help'),
-      h('div', { class: 'menu' }, btn('💡 Show the tutorial tips again', () => { st.tutorialDone = false; saveSettings(st); closeMenu(); startTutorial(); }, { id: 'set-tutorial' }),
-        btn('← Back', () => openMenu('main'), { class: 'menuback' }))];
+    const pages = {
+      audio: () => [
+        h('div', { class: 'menu grid2' },
+          btn(`🔊 Sound: ${st.sound ? 'On' : 'Off (all muted)'}`, () => { st.sound = !st.sound; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-sound' }),
+          btn(`💥 Sound effects: ${st.sfxOn !== false ? 'On' : 'Off'}`, () => { st.sfxOn = st.sfxOn === false; saveSettings(st); applyAudioSettings(st); if (st.sfxOn) sfx('slash'); openMenu('settings'); }, { id: 'set-sfx' }),
+          btn(`🗣 Voices: ${st.voices !== false ? 'On' : 'Off'}`, () => { st.voices = st.voices === false; saveSettings(st); applyAudioSettings(st); openMenu('settings'); }, { id: 'set-voices' }),
+          btn('🗣 Test voice (Elowen)', () => { st.voices = true; if (!st.sound) { st.sound = true; } saveSettings(st); applyAudioSettings(st); testVoice(); }, { id: 'set-test-voice' })),
+        slider('music', '🎵 Music'), slider('sfx', '💥 Effects volume'), slider('amb', '🌫 Ambience'), slider('voice', '🗣 Voice volume'),
+        h('div', { class: 'menu' }, btn('🎺 Test victory music', () => { if (!st.sound) { st.sound = true; saveSettings(st); applyAudioSettings(st); } try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ } testVictoryMusic(); }, { id: 'set-test-victory' }))],
+      game: () => [
+        h('h3', {}, 'Battle speed'),
+        h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'pause') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'pause') === k) }))),
+        h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action. In a fight, ⏩ cycles the speed and ⏭ Skip fast-forwards the animations.'),
+        h('h3', {}, 'Easy fights'),
+        h('div', { class: 'seg', role: 'radiogroup' }, [['ask', 'Ask me'], ['auto', 'Auto-resolve'], ['off', 'Always fight']].map(([k, l]) => btn(l, () => { st.trivialFights = k; saveSettings(st); openMenu('settings'); }, { class: (st.trivialFights || 'ask') === k ? 'on' : '', 'data-trivial': k, role: 'radio' }))),
+        h('p', { class: 'hint' }, 'When the party is far stronger than the foes, you can resolve the fight instantly (it still pays XP and loot).'),
+        S ? h('h3', {}, 'Difficulty') : null,
+        S ? h('div', { class: 'seg', role: 'radiogroup' }, Object.keys(DIFFICULTY).map((k) => btn(DIFF_LABEL[k], () => { S.difficulty = k; if (combat) combat.setDifficulty?.(k); autosave(); log(`Difficulty: ${DIFF_LABEL[k]}.`, 'sys'); openMenu('settings'); }, { class: (S.difficulty || 'normal') === k ? 'on' : '', 'data-diff': k, role: 'radio', 'aria-checked': String((S.difficulty || 'normal') === k) }))) : null,
+        S ? h('p', { class: 'hint' }, DIFF_HELP[S.difficulty || 'normal']) : null],
+      more: () => [
+        h('h3', {}, 'Storytelling'),
+        h('div', { class: 'menu grid2' }, btn(`🕯 Area descriptions: ${st.areaDesc !== false ? 'On' : 'Off'}`, () => { st.areaDesc = st.areaDesc === false; saveSettings(st); openMenu('settings'); }, { id: 'set-areadesc' }),
+          btn(`🌀 Reduce motion: ${reduceMotion() ? 'On' : 'Off'}`, () => { st.reduceMotion = !reduceMotion(); saveSettings(st); syncFxSettings(); openMenu('settings'); }, { id: 'set-reducemotion' })),
+        h('p', { class: 'hint' }, 'A Dungeon Master reads out each new floor, room and town spot the first time you arrive. Off: they only go to the log.'),
+        h('h3', {}, 'Help'),
+        h('div', { class: 'menu' }, btn('💡 Show the tutorial tips again', () => { st.tutorialDone = false; saveSettings(st); closeMenu(); startTutorial(); }, { id: 'set-tutorial' })),
+        h('h3', {}, 'Full game'),
+        h('div', { class: 'menu grid2' }, btn('♻ Restore Purchases', () => { log(ENT.restore() ? 'Purchases restored.' : (ENT.paywallActive() ? 'No purchase found on this device.' : 'Nothing to restore — this build is fully unlocked.'), 'sys'); }, { id: 'set-restore' }),
+          btn(`🧪 Dev: free-version paywall ${ENT.paywallActive() ? 'On' : 'Off'}`, () => { ENT.setPaywallDev(!ENT.paywallActive()); if (!ENT.paywallActive()) ENT.resetEntitlement(); openMenu('settings'); }, { id: 'set-paywall' })),
+        h('p', { class: 'hint' }, 'The web build is unlocked. The paywall switch simulates the free version (B1 free, B2–B5 behind one unlock) for testing.')],
+    };
+    barTabs = tabBar([['audio', '🔊 Audio'], ['game', '⚔ Game'], ['more', '⚙ More']], settingsTab, (id) => { settingsTab = id; openMenu('settings'); });
+    body = [h('h2', {}, '⚙ Settings'), h('div', { class: 'tabpage', 'data-page': settingsTab }, pages[settingsTab]())];
   } else if (view === 'backup') {
     const cur = S && !combat ? G.serialize({ ...S, savedAt: Date.now() }) : (readSave(latestKey() || G.SAVE_KEY) || {}).raw;
     const area = h('textarea', { id: 'import-code', rows: 4, placeholder: 'Paste a BS1: save code here…', spellcheck: 'false', autocapitalize: 'off' });
@@ -1587,10 +1639,12 @@ function openMenu(view = 'main', custom = null) {
       note(S ? 'Importing replaces your current game (it is also kept in the autosave slot).' : 'The imported game goes into the autosave slot and loads.'),
       area, file,
       h('div', { class: 'menu' }, btn('⬆ Import from code', () => doImport(area.value), { id: 'btn-import-code' }), btn('📂 Import from file…', () => file.click(), { id: 'btn-import-file' }),
-        btn('← Back', () => (S ? openMenu('main') : closeMenu()), { class: 'menuback' }))];
+        )];
   }
   gmenu.className = ''; gmenu.innerHTML = '';
-  gmenu.append(h('div', { class: 'panel' }, h('div', { class: 'navbar closebar' }, btn('✕ Close', closeMenu, { class: 'small closebtn', id: 'menu-close' })), body));
+  // sticky bar: ← Back (sub-pages), ✕ Close, and the page tabs (Settings), so navigation never scrolls away
+  const sub = !custom && view !== 'main';
+  gmenu.append(h('div', { class: 'panel' }, h('div', { class: 'navbar closebar' + (sub ? ' withback' : '') }, sub ? btn('← Back', () => (S ? openMenu('main') : closeMenu()), { class: 'small menuback', id: 'menu-back' }) : null, btn('✕ Close', closeMenu, { class: 'small closebtn', id: 'menu-close' }), barTabs), body));
 }
 function doImport(text) {
   let raw; try { raw = importCode(text); } catch (e) { openMenu(null, [h('h2', {}, 'Import failed'), h('p', { class: 'warn' }, e.message), h('div', { class: 'menu' }, btn('← Back', () => openMenu('backup')))]); return; }

@@ -37,7 +37,7 @@ for (const rnd of [false, true]) for (const [i, difficulty] of ['story', 'normal
     await page.evaluate((st) => window.__gw.loadState(st), r._state);
     await page.click('#btn-folk'); await expect(page.locator('[data-npc]')).toHaveCount(6);
     for (const b of await page.locator('[data-npc]').all()) await expect(b).toContainText('✔');
-    await page.locator('#modal .backbtn').click(); await page.click('#btn-journal');
+    await page.locator('#modal .backbtn').click(); await page.click('#btn-journal'); await page.click('#modal [data-tab="notes"]');
     await expect(page.locator('#modal')).toContainText("Elowen's notes (10/10)"); await page.click('#btn-journal-close');
     expect(await page.evaluate(() => document.body.innerText.match(/\bNaN\b|\bundefined\b|\[object Object\]/g)), 'no NaN/undefined in UI (B5)').toBeNull();
     // stand at the altar on B5 and play the ending

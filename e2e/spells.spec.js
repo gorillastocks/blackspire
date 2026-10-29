@@ -51,6 +51,7 @@ test('spell picker: sorcerer creation, level-up (new pick + one swap) at Trainin
   await expect.poll(() => st(page, () => window.__gw.state.mode)).toBe('dungeon');
   for (let k = 0; k < 8 && await page.locator('#caption.show').isVisible(); k++) { await page.keyboard.press('Enter'); await page.waitForTimeout(350); }
   await page.locator('#controls button', { hasText: 'Camp' }).first().click();
+  await page.locator('#modal [data-tab="spells"]').click();
   await expect(page.locator('#camp-prepare')).toBeVisible();
   const clId = await st(page, () => window.__gw.state.party.find((c) => c.cls === 'cleric').id);
   await page.locator(`#modal [data-prepare="${clId}"]`).click();

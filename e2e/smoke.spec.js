@@ -13,7 +13,7 @@ test('smoke: title → create → town → dungeon → combat → sheet, no cons
   await page.selectOption('#crace', 'halfOrc'); await page.waitForTimeout(300); await shot('02-create');
   await page.click('#btn-begin'); await skipPrologue(page);
   await page.click('#btn-tavern'); await page.waitForTimeout(800); await shot('03-tavern-party');
-  await page.click('text=Back to Town Square');
+  await page.locator('#modal .backbtn').first().click();
   await page.click('#btn-edge'); await page.click('#btn-enter');
   await page.waitForTimeout(2500);
   // walk around a bit

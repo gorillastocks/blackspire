@@ -13,12 +13,15 @@ test('every town location + sub-screen has a working, reachable Back; then enter
 
   for (const loc of LOCATIONS) {
     await openLocation(page, loc.button);
-    for (const where of ['top', 'bottom']) {
+    // tabbed locations (Tavern, Trading Post) keep Back in the sticky bar only; the rest also repeat it under the content
+    const tabbed = ['tavern', 'shop'].includes(loc.key);
+    for (const where of tabbed ? ['top'] : ['top', 'bottom']) {
       const back = page.locator(`#modal .backbtn[data-back="${where}"]`);
       await expectReachable(page, back, `${loc.key} Back (${where})`);
     }
+    if (tabbed) { await expect(page.locator('#modal .maintabs button')).not.toHaveCount(0); for (const t of await page.locator('#modal .maintabs button').all()) { await expectReachable(page, t, `${loc.key} tab`); const b = await t.boundingBox(); expect(b.height, `${loc.key} tab tap height`).toBeGreaterThanOrEqual(44); } }
     await page.screenshot({ path: `screenshots/town-${info.project.name}-${loc.key}.png` });
-    await page.locator('#modal .backbtn[data-back="bottom"]').click();
+    await page.locator(`#modal .backbtn[data-back="${tabbed ? 'top' : 'bottom'}"]`).click();
     await expect(townSquare(page), `back from ${loc.key}`).toBeVisible();
   }
 
@@ -98,7 +101,7 @@ test('click-through: every visible button on every town screen leaves a way back
   test.setTimeout(900000);
   const errors = trackErrors(page);
   await newGame(page);
-  const SKIP = /Title Screen|Load Game|Descend the stairs|Mine lift|^Begin|✕/;
+  const SKIP = /Title Screen|⏏ Title|Load Game|Descend the stairs|Mine lift|^Begin|✕/;
   const screens = [null, ...LOCATIONS.map((l) => l.button)];
   let clicked = 0;
   for (const scr of screens) {

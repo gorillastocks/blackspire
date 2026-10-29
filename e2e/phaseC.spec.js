@@ -18,7 +18,7 @@ const approach = (page, idx) => page.evaluate((idx) => { const { state: S, G } =
 
 test('Liora: painted portrait on her hire card, intro dialogue, recruit from the tavern', async ({ page }, info) => {
   test.setTimeout(180000); const errors = trackErrors(page);
-  await newGame(page); await openLocation(page, 'Tavern');
+  await newGame(page); await openLocation(page, 'Tavern'); await page.locator('#modal [data-tab="hire"]').click();
   const card = page.locator('#hire .hirecard', { hasText: 'Liora' }); await expect(card).toBeVisible();
   await expect(card.locator('img.hirepic')).toBeVisible();
   const loaded = await card.locator('img.hirepic').evaluate((i) => i.complete && i.naturalWidth > 100); expect(loaded).toBe(true);
@@ -78,13 +78,13 @@ test('Liora conversation: choices raise hearts, journal shows bonds, save round-
   await newGame(page);
   await page.evaluate(() => { const g = window.__gw; g.G.joinLiora(g.state); g.refresh(); });
   await page.evaluate(() => window.__gw.showTown('tavern'));
-  await page.locator('#btn-listen').click(); await expect(page.locator('.dialogue')).toBeVisible();
+  await page.locator('#modal [data-tab="bar"]').click(); await page.locator('#btn-listen').click(); await expect(page.locator('.dialogue')).toBeVisible();
   for (let i = 0; i < 8; i++) { if (await page.locator('.dialogue [data-choice]').count() > 1) break; await page.locator('#dlg-next').click(); await page.waitForTimeout(120); }
   await page.locator('.dialogue [data-choice]').first().click(); await page.waitForTimeout(300);
   for (let i = 0; i < 6 && await page.locator('.dialogue').count(); i++) { await page.locator('#dlg-next').click(); await page.waitForTimeout(150); }
   expect(await page.evaluate(() => window.__gw.G.PC.aff(window.__gw.state, 'liora'))).toBeGreaterThan(0);
   await page.evaluate(() => window.__gw.showTown());
-  await page.locator('#btn-journal').click(); await expect(page.locator('.bonds .heart').first()).toBeVisible();
+  await page.locator('#btn-journal').click(); await page.locator('#modal [data-tab="bonds"]').click(); await expect(page.locator('.bonds .heart').first()).toBeVisible();
   await shot(page, { path: `/workspace/shots/phaseC-journal-${info.project.name}.png` });
   const ok = await page.evaluate(() => { const { G, state } = window.__gw; const d = G.deserialize(G.serialize(state)); return d.version === 6 && d.pc.moments[0] !== undefined; }); expect(ok).toBe(true);
   expect(okErr(errors)).toEqual([]);

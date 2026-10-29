@@ -4,7 +4,7 @@ const shot = async (page, o) => { for (let i = 0; i < 3; i++) { try { await page
 import { newGame, openLocation, trackErrors } from './helpers.js';
 
 const dismissCards = async (page) => { for (let k = 0; k < 8 && await page.locator('#caption.show').isVisible(); k++) { await page.keyboard.press('Enter'); await page.waitForTimeout(350); } };
-const openCamp = async (page) => { await page.locator('#controls button', { hasText: 'Camp' }).first().click(); await expect(page.locator('#camp-heal')).toBeVisible(); };
+const openCamp = async (page) => { await page.locator('#controls button', { hasText: 'Camp' }).first().click(); await page.locator('#modal [data-tab="heal"]').click(); await expect(page.locator('#camp-heal')).toBeVisible(); };
 
 test('camp healing: caster → spell/slot (upcast) → target; revives a downed ally; potion; disabled reasons', async ({ page }, info) => {
   const errors = trackErrors(page); const P = info.project.name;
