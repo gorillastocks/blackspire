@@ -5,8 +5,8 @@ import { newGame, trackErrors } from './helpers.js';
 const shot = async (page, name, P) => { for (let i = 0; i < 6; i++) { try { await page.screenshot({ path: `/workspace/shots/quest-${name}-${P}.png`, timeout: 15000 }); return; } catch (e) { console.log('shot retry', e.message.slice(0, 60)); await page.waitForTimeout(1500); } } };
 const okErr = (errors) => errors.filter((e) => !/favicon|Failed to load resource|net::/.test(e));
 /** Tap through a tabletop session: Next until the choices appear, then pick the first choice matching `want` (else the first). */
-async function drive(page, wants = [], { shots = null, P = '' } = {}) {
-  let n = 0; const seen = [];
+async function drive(page, wants = [], { shots = null, P = '', dcShot = null } = {}) {
+  let n = 0, dcDone = false; const seen = [];
   for (let step = 0; step < 60; step++) {
     const dlg = page.locator('.dialogue'); if (!(await dlg.isVisible().catch(() => false))) break;
     const next = page.locator('#dlg-next:has-text("Next")');
@@ -15,6 +15,7 @@ async function drive(page, wants = [], { shots = null, P = '' } = {}) {
     const ids = await btns.evaluateAll((els) => els.map((e) => e.dataset.choice));
     seen.push(labels);
     if (shots && shots[n]) await shot(page, shots[n], P);
+    if (dcShot && !dcDone && labels.some((l) => /DC \d+/.test(l))) { dcDone = true; await shot(page, dcShot, P); }
     const w = wants[n++]; let i = w ? (typeof w === 'string' ? ids.indexOf(w) : labels.findIndex((l) => w.test(l))) : -1; if (i < 0) i = 0;
     await btns.nth(i).click(); await page.waitForTimeout(250);
   }
@@ -30,7 +31,7 @@ test('Pip: the confrontation with Garrick, a visible roll, then mercy or vengean
   await page.waitForTimeout(500); await shot(page, 'dm-scene', P);
   const voiced = await page.evaluate(() => { const l = document.querySelector('.dialogue .dlgtext p')?.textContent; return window.__gw.voice().has(l, 'narrator'); });
   expect(voiced, 'the Dungeon Master line has a recorded clip').toBe(true);
-  const seen = await drive(page, [/Read him/, /Decide his fate|fate/, /mercy|Mercy/], { shots: ['choices-with-dc'], P });
+  const seen = await drive(page, [/Read him/, /Decide his fate|fate/, /mercy|Mercy/], { shots: ['choices-with-dc'], dcShot: 'pip-roll-choices', P });
   expect(seen[0].some((l) => /DC \d+/.test(l)), 'choices show their check and DC').toBe(true);
   await page.waitForTimeout(500);
   await expect(page.locator('.dialogue')).toHaveCount(0);
