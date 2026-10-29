@@ -1397,6 +1397,7 @@ function declutterTags() {
     return ok;
   };
   for (const t of tags) t.classList.remove('dense');
+  if (R.sprMode && tags.length >= 4) { for (const t of tags) t.classList.add('dense'); if (run(false) || run(true)) return; for (const t of tags) t.classList.remove('dense'); } // crowded painted-sprite fights: compact plates from the start so they do not hide the (smaller) monsters
   if (run(false)) return;
   for (const t of tags) t.classList.add('dense');
   if (!run(false)) run(true);

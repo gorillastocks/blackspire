@@ -19,7 +19,7 @@ import { rankLayout, spriteRankLayout } from './ranks.js';
 import { spriteFor, spriteSize, buildSpriteMonster, updateSprites, disposeSprite } from './sprites.js';
 
 const CELL = 2, WALL_H = 2.6;
-/** Painted battle sprites are framed at this share of the size the fit would otherwise give them (d3aa5f8 filled the arena; half of that keeps big groups and bosses inside it and leaves room for the name plates). Bosses and elites scale the same way. */
+/** Painted battle sprites are shown at this share of the size the fit would otherwise give them (a lens zoom-out, so the camera distance and fog are unchanged) (d3aa5f8 filled the arena; half of that keeps big groups and bosses inside it and leaves room for the name plates). Bosses and elites scale the same way. */
 export const SPR_VIEW_SCALE = 0.5;
 const gltfCache = {};
 export function loadModel(name) {
@@ -424,7 +424,7 @@ export class Renderer {
     const reserve = phonePortrait && !this.captionUp ? 0.1 : Math.min(0.62, Math.max(0.24, (this.captionReservePx || (w < 520 ? 150 : 140)) / h)); // no caption up: just room for floaters
     const hud = this.container.querySelector('#hud'), top = Math.max(3, hud && hud.offsetHeight ? ((hud.offsetTop + hud.offsetHeight) / h) * 100 + 1 : 3), limit = 100 * (1 - reserve) - 2 + (spr ? 1 : 0);
     const topPad = spr ? 3 : 0; // room for the name plates above the heads
-    cam.clearViewOffset(); let k = 1; this._co?.set(0, 0, 0);
+    cam.clearViewOffset(); cam.zoom = 1; cam.updateProjectionMatrix(); let k = 1; this._co?.set(0, 0, 0);
     // never dolly in so far that the padded monster box reaches the camera: points behind it project mirrored, the fit then
     // "sees" a gigantic/flipped rect and throws the whole picture off the top of the screen (tall phone view, no menu yet)
     let nearZ = -Infinity; for (const [, v] of this.monsterObjs) { if (v.dead || !v.wbox || v.wbox.isEmpty()) continue; const sz = v.wbox.getSize(new THREE.Vector3()); nearZ = Math.max(nearZ, v.wbox.max.z + sz.z * 0.1 + 0.4); }
@@ -436,9 +436,11 @@ export class Renderer {
       let need = Math.max(span / avail, wide, half);
       if (spr) { // painted sprites: the FRONT rank is fitted big (about 72% of the stage); back ranks may rise past the top edge a little (their heads tuck under the HUD) but stay visible
         const f = this.monsterRect(0) || r, fw = (f.right - f.left) / 97, fh = Math.max(50 - f.left, f.right - 50) / 48.5;
-        need = Math.max((f.bottom - f.top) / (0.72 * avail), span / (1.3 * avail), fw, wide / 1.3, fh, half / 1.2) / SPR_VIEW_SCALE; } if (Math.abs(need - 0.97) < 0.03) break;
+        need = Math.max((f.bottom - f.top) / (0.72 * avail), span / (1.3 * avail), fw, wide / 1.3, fh, half / 1.2) ; } if (Math.abs(need - 0.97) < 0.03) break;
       const nk = Math.max(kMin, k * Math.min(2.5, need * 1.03)); if (Math.abs(nk - k) < 0.002) break; k = nk; // pull back if too big, push in if small
     }
+    // Painted sprites are shown at SPR_VIEW_SCALE of the fitted size by zooming the lens out, NOT by dollying back: a camera that far away loses big bosses in the fog / far plane.
+    if (spr) { cam.zoom = SPR_VIEW_SCALE; cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
     const r = (spr && this.monsterRect(0)) || this.monsterRect(); this.arenaShift = 0;
     if (r) { const shift = (r.top + r.bottom) / 2 - (top + topPad + limit) / 2; // centre the monsters in the band above the caption (+ moves the picture up)
       const s = Number.isFinite(shift) ? Math.max(-45, Math.min(45, shift)) : 0; // a bigger shift can only mean a bad measurement
