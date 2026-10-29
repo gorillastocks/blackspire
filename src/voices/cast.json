@@ -1,8 +1,8 @@
 {
   "elowen": {
-    "id": "ksryVoNAGZT8GxWCTiVm",
-    "name": "Elariel",
-    "note": "Princess. PENDING: user is choosing a younger voice (Annabel rWArYo7a2NWuBYf5BE4V / Alexandra m0MqfGOWTAfVVEaz4KxX / Mia e6qsVnCuD0MWxmhZcuKz); Elariel X ksryVoNAGZT8GxWCTiVm rejected as too old",
+    "id": "e6qsVnCuD0MWxmhZcuKz",
+    "name": "Mia",
+    "note": "Princess (Mia - Elegant Storyteller; young, refined British)",
     "settings": {
       "stability": 0.5,
       "similarity_boost": 0.8,

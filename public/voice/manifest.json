@@ -3,120 +3,120 @@
   "clips": {
     "elowen-591217990d9f": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Rise, Knight of the Dawn.",
       "chars": 25,
-      "hash": "d20c834b6472d0fd",
+      "hash": "a61b3ec8e697ed22",
       "file": "voice/elowen-591217990d9f.mp3",
-      "bytes": 13835
+      "bytes": 24702
     },
     "elowen-3a67bbfa5e0f": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Take it! Follow me down, I'll leave you a trail!",
-      "chars": 51,
-      "hash": "a7208d1dfb4e68af",
+      "chars": 48,
+      "hash": "dc17cc00e03ba74e",
       "file": "voice/elowen-3a67bbfa5e0f.mp3",
-      "bytes": 25120
+      "bytes": 50198
     },
     "elowen-e85e02b05dee": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "To Emberhollow, and to whoever finally finishes Marga's pie!",
-      "chars": 63,
-      "hash": "68c2a16008dc209a",
+      "chars": 60,
+      "hash": "6912f7fab8f16066",
       "file": "voice/elowen-e85e02b05dee.mp3",
-      "bytes": 31807
+      "bytes": 58139
     },
     "elowen-note-1024318d97ae": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Note 6: \"Mushrooms that scream. I am not making this up. Kill the little ones first.\"",
       "chars": 85,
-      "hash": "1c444303274bc3bb",
+      "hash": "06a8d836c6210253",
       "file": "voice/elowen-note-1024318d97ae.mp3",
-      "bytes": 47272
+      "bytes": 87814
     },
     "elowen-note-d11cd65f17d7": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Note 8: \"Brakk carries a dwarf-made hammer far too fine for him. Brambur will know it.\"",
       "chars": 87,
-      "hash": "ef8d2078a1a76d1e",
+      "hash": "a19718fa0400e967",
       "file": "voice/elowen-note-d11cd65f17d7.mp3",
-      "bytes": 42883
+      "bytes": 95337
     },
     "elowen-note-0fbdc5693982": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Note 3: \"Water to my knees. Sister Vey sings to the old lizard. It is very bad singing.\"",
       "chars": 88,
-      "hash": "4b6cd5b90d496beb",
+      "hash": "fa862d4a694ebde6",
       "file": "voice/elowen-note-0fbdc5693982.mp3",
-      "bytes": 49571
+      "bytes": 100771
     },
     "elowen-note-4fb1c440b527": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Note 10: \"His staff is the anchor. Break it and I am free. I will be ready. Your friend, E.\"",
-      "chars": 96,
-      "hash": "ee75b08379992ebe",
+      "chars": 92,
+      "hash": "a2ec4a42de77121e",
       "file": "voice/elowen-note-4fb1c440b527.mp3",
-      "bytes": 58975
+      "bytes": 106622
     },
     "elowen-note-018a8ba075a7": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Note 1: \"If you are reading this, you followed. Good. They tied my hands but not my pencil. Yours, E.\"",
-      "chars": 99,
-      "hash": "d5a3bf389860f142",
+      "chars": 102,
+      "hash": "5b166a91a20da830",
       "file": "voice/elowen-note-018a8ba075a7.mp3",
-      "bytes": 51452
+      "bytes": 148836
     },
     "elowen-note-455e6dedd2b7": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Note 2: \"The spider-rider is called Skarn. He talks to his mount. It does not answer. Neither do I.\"",
       "chars": 100,
-      "hash": "252a16a2da29d240",
+      "hash": "42c056c45f495739",
       "file": "voice/elowen-note-455e6dedd2b7.mp3",
-      "bytes": 51869
+      "bytes": 114563
     },
     "elowen-note-b1f61767d24f": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Note 5: \"The crystals hum when the basilisk looks at them. Mirrors, perhaps? Bring something shiny.\"",
       "chars": 100,
-      "hash": "fb78692c765df3ed",
+      "hash": "fb40f658065b9fa1",
       "file": "voice/elowen-note-b1f61767d24f.mp3",
-      "bytes": 53959
+      "bytes": 120833
     },
     "elowen-note-d4d7024cb566": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Note 4: \"Malthrax says there are five seals and one breaks with every moonrise. Hurry. But eat something.\"",
       "chars": 106,
-      "hash": "017f6911dda7d60b",
+      "hash": "2fac29264eb8fec1",
       "file": "voice/elowen-note-d4d7024cb566.mp3",
-      "bytes": 51034
+      "bytes": 119997
     },
     "elowen-note-429f5944c7f7": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Note 7: \"Ashforge. They chain smiths to the anvils. The chimera wears a collar. Brakk is afraid of it.\"",
-      "chars": 106,
-      "hash": "fa7a53d0bee86c99",
+      "chars": 103,
+      "hash": "3fa38dcab5e74422",
       "file": "voice/elowen-note-429f5944c7f7.mp3",
-      "bytes": 56258
+      "bytes": 120833
     },
     "elowen-note-de69fc8cd1a9": {
       "speaker": "elowen",
-      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "voice": "e6qsVnCuD0MWxmhZcuKz",
       "text": "Note 9: \"I can see the vault. Something very large is sleeping under the floor. Malthrax keeps saying 'Gorvax'.\"",
       "chars": 112,
-      "hash": "b6993cb8c0154dda",
+      "hash": "b4ef6d522f95a4c7",
       "file": "voice/elowen-note-de69fc8cd1a9.mp3",
-      "bytes": 61483
+      "bytes": 119161
     },
     "malthrax-826e0c25c64e": {
       "speaker": "malthrax",
