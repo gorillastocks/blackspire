@@ -384,7 +384,7 @@ export function goUp(s) {
 /* ---------- Rest ---------- */
 export function rest(s, kind) {
   const out = [];
-  if (s.mode === 'dungeon' && rand() < (kind === 'long' ? 0.3 : 0.12) * quiet(s)) {
+  if (s.mode === 'dungeon' && rand() < (kind === 'long' ? Math.max(0.12, 0.3 * quiet(s)) : 0.12 * quiet(s))) { // a long rest in a dungeon always has at least a 12% chance of being interrupted, however quiet the area
     out.push({ log: 'Your rest is interrupted by monsters!', cls: 'bad', combat: { ...RAND(s), ambush: true } }); return out;
   }
   if (kind === 'short') { for (const c of s.party) for (const l of shortRest(c)) out.push({ log: l }); out.push({ log: 'The party takes a short rest (1 hour).', cls: 'good' }); }
