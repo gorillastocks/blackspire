@@ -29,6 +29,17 @@ export function makeMonster(key, idx = 0) {
 }
 const monsterSave = (m, ab) => mod(m.T.stats[ab]);
 
+/** Wizardry-style ranks: at most MAX_GROUPS groups (one per monster type), melee brutes in front, archers/casters/shamans (T.ranged) in back.
+ *  Within a role the tougher kind (higher CR) stands in front; ties keep the encounter's own order. Extra kinds beyond four join the last group. */
+export const MAX_GROUPS = 4;
+export const FRONT_GROUPS = 2; // party melee reaches this many living groups (a reach weapon adds one)
+function buildRanks(monsters) {
+  const byGid = new Map(); monsters.forEach((m) => { if (!byGid.has(m.gid)) byGid.set(m.gid, { gid: m.gid, key: m.key, name: m.T.name, ranged: !!m.T.ranged, cr: m.T.cr || 0, members: [] }); byGid.get(m.gid).members.push(m); });
+  const gs = [...byGid.values()].sort((a, b) => (a.ranged ? 1 : 0) - (b.ranged ? 1 : 0) || (a.ranged ? a.cr - b.cr : b.cr - a.cr) || a.gid - b.gid);
+  while (gs.length > MAX_GROUPS) { const x = gs.pop(), last = gs[gs.length - 1]; for (const m of x.members) { m.gid = last.gid; last.members.push(m); } last.mixed = true; last.name += ' & co.'; }
+  return gs;
+}
+
 /** How many separately aimable darts / rays / beams a spell throws at the chosen slot level (0 = not a multi-projectile spell).
  *  Magic Missile: 3 darts +1 per slot above 1st. Scorching Ray: 3 rays +1 per slot above 2nd. Eldritch Blast: 1 beam, +1 at levels 5, 11 and 17. */
 export function projectileCount(c, key, slot) {
@@ -49,9 +60,10 @@ export class Combat {
     this.elite = elite; this.lore = lore || {};
     this.party = party; this.inventory = inventory; this.canFlee = canFlee; this.boss = boss; this.story = story || {};
     this.diff = DIFFICULTY[difficulty] || DIFFICULTY.normal;
-    this.monsters = [];
-    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1) * tuneX(this.diff, TUNING.bossHp[g.key], this.story.floor) * tuneX(this.diff, TUNING.floorHp[this.story.floor], this.story.floor) * (this.story.floor > 0 ? tuneX(this.diff, TUNING.foeHp[g.key], this.story.floor) : 1) * (elite ? (this.monsters.length === 0 ? 1.7 : 1.25) * tuneX(this.diff, TUNING.eliteFloorHp[elite.floor], this.story.floor) : 1))); if (elite) { m.elite = true; if (this.monsters.length === 0) { m.ac += 1; if (elite.title) m.name = elite.title; } } this.monsters.push(m); }
+    this.monsters = []; const gidOf = new Map();
+    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); if (!gidOf.has(g.key)) gidOf.set(g.key, gidOf.size); m.gid = gidOf.get(g.key); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1) * tuneX(this.diff, TUNING.bossHp[g.key], this.story.floor) * tuneX(this.diff, TUNING.floorHp[this.story.floor], this.story.floor) * (this.story.floor > 0 ? tuneX(this.diff, TUNING.foeHp[g.key], this.story.floor) : 1) * (elite ? (this.monsters.length === 0 ? 1.7 : 1.25) * tuneX(this.diff, TUNING.eliteFloorHp[elite.floor], this.story.floor) : 1))); if (elite) { m.elite = true; if (this.monsters.length === 0) { m.ac += 1; if (elite.title) m.name = elite.title; } } this.monsters.push(m); }
     for (const m of this.monsters) { const l = this.lore[m.key]; m.known = { types: { ...(l?.types || {}) }, studied: !!l?.studied }; m.studyTried = new Set(); }
+    this.groups = buildRanks(this.monsters); this.rankSig = this.liveRanks().map((g) => g.gid).join();
     this.log = []; this.events = []; this.round = 0; this.state = 'running'; this.turnIdx = -1; this.xp = 0; this.gold = 0;
     for (const c of party) { c.reaction = true; for (const k of ['dodging', 'hidden', 'raging', 'reckless', 'invisible', 'sacredWeapon']) delete c.conditions[k]; c.side = 'party'; if (c.tempHp == null) c.tempHp = 0; }
     // Initiative: d20 + Dex
@@ -70,6 +82,28 @@ export class Combat {
   livingMonsters() { return this.monsters.filter((m) => m.hp > 0 && !m.ally); }
   awakeMonsters() { return this.livingMonsters().filter((m) => !m.conditions.unconscious); }
   conscious() { return this.party.filter((c) => !isDown(c)); }
+  /** Living monster groups in rank order, front first (a wiped group drops out, so the groups behind it move up). Each has .rank (0 = front). */
+  liveRanks() { const out = []; for (const g of this.groups) { const live = g.members.filter((m) => m.hp > 0 && !m.ally); if (live.length) out.push({ gid: g.gid, key: g.key, name: g.name, ranged: g.ranged, mixed: !!g.mixed, monsters: live, rank: out.length }); } return out; }
+  groupOf(m) { return this.liveRanks().find((g) => g.gid === m.gid) || null; }
+  rankOf(m) { const g = this.groupOf(m); return g ? g.rank : -1; }
+  /** How many groups a hero's attack of this kind reaches: ranged = all, melee = the first 2 living groups (+1 with a reach weapon), 'touch' (unarmed, melee spells) = the first 2. */
+  reachOf(c, kind = 'melee') { return kind === 'ranged' ? Infinity : FRONT_GROUPS + (kind === 'melee' && this.hasReach(c) ? 1 : 0); }
+  /** Which monsters this hero can hit with an attack of this kind: 'melee' (weapon, reach-aware), 'touch' (no reach) or 'ranged' (shots, spells, thrown). */
+  legalTargets(c, kind = 'ranged') { const n = this.reachOf(c, kind); return this.liveRanks().filter((g) => g.rank < n).flatMap((g) => g.monsters); }
+  canTarget(c, m, kind = 'ranged') { return !!m && m.hp > 0 && this.legalTargets(c, kind).includes(m); }
+  /** The range kind of a party action id (spells: pass the spell key as `spell`). */
+  rangeKind(id, spell = null) { if (id === 'cast') return SPELLS[spell]?.melee ? 'touch' : 'ranged'; if (['martialArts', 'flurry'].includes(id)) return 'touch'; if (['attack', 'smite', 'frenzy'].includes(id)) return 'melee'; return 'ranged'; }
+  /** Melee monsters in the third and fourth rank can't strike (they wait to advance); ranged and caster monsters act from anywhere. */
+  monsterActs(m) { return !!m.T.ranged || this.rankOf(m) < FRONT_GROUPS; }
+  /** The group an area spell hits when nobody chose: the one with the most awake foes (ties: more total HP). */
+  bestGroup(pred = () => true) { let best = null, bn = 0, bh = 0; for (const g of this.liveRanks()) { const a = g.monsters.filter((m) => !m.conditions.unconscious && pred(m)); const n = a.length, h = a.reduce((t, m) => t + m.hp, 0); if (n > bn || (n === bn && n && h > bh)) { best = g; bn = n; bh = h; } } return best; }
+  /** After kills: when a group is wiped out the ones behind it step up. Logs it and tells the UI once. */
+  syncRanks() {
+    const gs = this.liveRanks(), sig = gs.map((g) => g.gid).join(); if (sig === this.rankSig) return; const was = this.rankSig; this.rankSig = sig;
+    if (!gs.length || !was) return;
+    const front = gs.slice(0, FRONT_GROUPS).map((g) => g.name).join(' and ');
+    this.say(`The ranks close up. Front: ${front}.`, 'sys'); this.emit({ type: 'advance', ranks: gs.map((g) => ({ gid: g.gid, rank: g.rank })) });
+  }
   frontRow() { return this.party.filter((c) => !isDown(c)).slice(0, 2); }
   inFront(c) { return this.frontRow().includes(c); }
   /** Can this hero hit a front-line enemy in melee? Front row, or a reach weapon (glaive, halberd, pike, whip). */
@@ -98,6 +132,7 @@ export class Combat {
 
   checkEnd() {
     if (this.state !== 'running') return true;
+    this.syncRanks();
     if (this.livingMonsters().length === 0) {
       this.state = 'won';
       const alive = this.party.filter((c) => !c.dead);
@@ -328,15 +363,15 @@ export class Combat {
     const t = this.turn;
     if (t.action) {
       const front = this.inFront(c);
-      if (this.canMelee(c)) acts.push({ id: 'attack', label: `Attack (${weaponStats(c, 'weapon').name})${front ? '' : ' · reach'}`, target: 'enemy' });
-      if (c.equip.ranged) acts.push({ id: 'shoot', label: `Shoot (${weaponStats(c, 'ranged').name})`, target: 'enemy' });
-      if (!front && c.equip.weapon && WEAPONS[c.equip.weapon.base].props.includes('thrown')) acts.push({ id: 'throw', label: 'Throw ' + WEAPONS[c.equip.weapon.base].name, target: 'enemy' });
+      if (this.canMelee(c)) acts.push({ id: 'attack', label: `Attack (${weaponStats(c, 'weapon').name})${front ? '' : ' · reach'}`, target: 'enemy', range: 'melee' });
+      if (c.equip.ranged) acts.push({ id: 'shoot', label: `Shoot (${weaponStats(c, 'ranged').name})`, target: 'enemy', range: 'ranged' });
+      if (!front && c.equip.weapon && WEAPONS[c.equip.weapon.base].props.includes('thrown')) acts.push({ id: 'throw', label: 'Throw ' + WEAPONS[c.equip.weapon.base].name, target: 'enemy', range: 'ranged' });
       if (knownSpells(c).length) acts.push({ id: 'cast', label: 'Cast Spell…' });
       if (c.res.channelDivinity && c.cls === 'cleric') acts.push({ id: 'preserveLife', label: 'Channel Divinity: Preserve Life' });
-      if (this.canMelee(c) && c.cls === 'paladin' && c.level >= 2 && c.slots.some((n) => n > 0)) acts.push({ id: 'smite', label: 'Attack + Divine Smite', target: 'enemy' });
+      if (this.canMelee(c) && c.cls === 'paladin' && c.level >= 2 && c.slots.some((n) => n > 0)) acts.push({ id: 'smite', label: 'Attack + Divine Smite', target: 'enemy', range: 'melee' });
       if (c.cls === 'paladin' && c.res.layOnHands > 0) acts.push({ id: 'layOnHands', label: `Lay on Hands (${c.res.layOnHands} HP left)`, target: 'ally' });
       if (c.cls === 'paladin' && c.res.sacredWeapon && !c.conditions.sacredWeapon) acts.push({ id: 'sacredWeapon', label: 'Channel Divinity: Sacred Weapon' });
-      if (c.res.breath) acts.push({ id: 'breath', label: 'Breath Weapon (fire)' });
+      if (c.res.breath) acts.push({ id: 'breath', label: 'Breath Weapon (fire)', target: 'enemy', range: 'ranged', area: true });
       if (this.inventory.some((k) => ITEMS[k]?.kind === 'potion')) acts.push({ id: 'item', label: 'Use Item…' });
       if (c.conditions.restrained) acts.push({ id: 'escape', label: 'Break Free (Athletics)' });
       if (this.story.staff && !this.staffBroken && this.monsters.some((m) => m.key === 'malthrax' && m.hp > 0)) acts.push({ id: 'strikeStaff', label: `⚡ Strike Malthrax's Staff (AC ${this.story.staff.ac})` });
@@ -349,8 +384,8 @@ export class Combat {
       if (this.studyTargets(c).length) acts.push({ id: 'study', label: `Study a foe (${studySkill(this.studyTargets(c)[0].T)[0].toUpperCase()}${studySkill(this.studyTargets(c)[0].T).slice(1)} check) — learn weaknesses (bonus)`, bonus: true, target: 'enemy' });
       if (c.res.secondWind && c.hp < c.maxHp) acts.push({ id: 'secondWind', label: 'Second Wind (bonus)', bonus: true });
       if (c.cls === 'barbarian' && c.res.rage > 0 && !c.conditions.raging) acts.push({ id: 'rage', label: `RAGE! (bonus, ${c.res.rage} left)`, bonus: true });
-      if (c.cls === 'barbarian' && c.level >= 3 && c.conditions.raging && t.attacked && this.inFront(c)) acts.push({ id: 'frenzy', label: 'Frenzy: extra attack (bonus)', bonus: true, target: 'enemy' });
-      if (c.cls === 'monk' && t.attacked && this.inFront(c)) { acts.push({ id: 'martialArts', label: 'Martial Arts: unarmed strike (bonus)', bonus: true, target: 'enemy' }); if (c.res.ki > 0) acts.push({ id: 'flurry', label: `Flurry of Blows (bonus, 1 ki of ${c.res.ki})`, bonus: true, target: 'enemy' }); }
+      if (c.cls === 'barbarian' && c.level >= 3 && c.conditions.raging && t.attacked && this.inFront(c)) acts.push({ id: 'frenzy', label: 'Frenzy: extra attack (bonus)', bonus: true, target: 'enemy', range: 'melee' });
+      if (c.cls === 'monk' && t.attacked && this.inFront(c)) { acts.push({ id: 'martialArts', label: 'Martial Arts: unarmed strike (bonus)', bonus: true, target: 'enemy', range: 'touch' }); if (c.res.ki > 0) acts.push({ id: 'flurry', label: `Flurry of Blows (bonus, 1 ki of ${c.res.ki})`, bonus: true, target: 'enemy', range: 'touch' }); }
       if (c.cls === 'monk' && c.res.ki > 0 && !t.attacked) acts.push({ id: 'patientDefense', label: 'Patient Defense: Dodge (bonus, 1 ki)', bonus: true });
       if (c.cls === 'bard' && c.res.inspiration > 0) acts.push({ id: 'inspire', label: `Bardic Inspiration (bonus, ${c.res.inspiration} left)`, bonus: true, target: 'ally' });
       if (c.cls === 'rogue' && c.level >= 2 && !c.conditions.hidden) acts.push({ id: 'hide', label: 'Cunning Action: Hide (bonus)', bonus: true });
@@ -386,8 +421,13 @@ export class Combat {
   /** Perform an action for the current party member. opts: {target, targets, spell, slot, item} */
   act(c, id, opts = {}) {
     const t = this.turn; if (!t || this.state !== 'running') return;
-    const enemy = () => { let tg = opts.target; if (!tg || tg.hp <= 0) tg = this.pickEnemy(); return tg; };
+    const kind = this.rangeKind(id, opts.spell);
+    const enemy = () => { let tg = opts.target; if (!tg || tg.hp <= 0 || !this.canTarget(c, tg, kind)) tg = this.pickEnemy(c, kind); return tg; };
     if (['attack', 'smite', 'frenzy', 'martialArts', 'flurry'].includes(id) && !(id === 'attack' || id === 'smite' ? this.canMelee(c) : this.inFront(c))) { this.say(`${c.name} is in the back row and can't reach the enemy with a melee attack (use a ranged attack, a spell, a reach weapon, or swap rows).`, 'bad'); return; }
+    // Ranks: melee only reaches the first two living groups (three with a reach weapon). A chosen foe beyond that is refused, nothing spent.
+    if (['attack', 'smite', 'frenzy', 'martialArts', 'flurry', 'shoot', 'throw'].includes(id) || (id === 'cast' && SPELLS[opts.spell]?.melee)) {
+      const tg = opts.target; if (tg && tg.side === 'monster' && tg.hp > 0 && !this.canTarget(c, tg, kind)) { this.say(`${tg.name} is out of reach: ${c.name} can't hit a foe that far back in melee (shoot it, cast a spell, use a reach weapon, or wipe out the groups in front).`, 'bad'); return; }
+    }
     if (id === 'swap') { const o = opts.target; if (o && this.swapRows(c, o)) { t.bonus = 0; this.caption(`${c.name} and ${o.name} trade places.`, `${c.name} now in the ${this.inFront(c) ? 'front' : 'back'} row`, ''); } return; }
     if (id === 'study') { this.study(c, opts.target && opts.target.hp > 0 ? opts.target : this.studyTargets(c)[0]); return; }
     { const ck = cutinKindFor(id, id === 'cast' ? SPELLS[opts.spell] : id === 'item' ? ITEMS[opts.item] : null); if (ck) this.emit({ type: 'cutin', who: c, kind: ck, id, spell: id === 'cast' ? opts.spell : null, weapon: id === 'shoot' ? c.equip.ranged?.base : c.equip.weapon?.base }); }
@@ -481,7 +521,8 @@ export class Combat {
         t.action = 0; c.res.breath = 0; const dc = 8 + abilityMod(c, 'con') + prof(c); const dice = c.level >= 6 ? '3d6' : '2d6';
         this.emit({ type: 'spell', who: c, spell: 'breath' });
         this.caption(`${c.name} draws a deep breath and exhales a torrent of dragonfire!`, 'Breath Weapon', 'spell');
-        for (const m of this.livingMonsters().slice(0, 2)) { let dmg = roll(dice); const ok = this.save(m, 'dex', dc); if (ok) dmg = Math.floor(dmg / 2); this.say(`${c.name}'s fiery breath scorches ${m.name}: ${dmg}${ok ? ' (save)' : ''}.`, 'spell'); this.damage(m, dmg, 'fire', c); }
+        const bg = opts.target && opts.target.hp > 0 ? this.groupOf(opts.target) : this.liveRanks()[0];
+        for (const m of bg ? bg.monsters : []) { let dmg = roll(dice); const ok = this.save(m, 'dex', dc); if (ok) dmg = Math.floor(dmg / 2); this.say(`${c.name}'s fiery breath scorches ${m.name}: ${dmg}${ok ? ' (save)' : ''}.`, 'spell'); this.damage(m, dmg, 'fire', c); }
         break;
       }
       case 'end': t.done = true; break;
@@ -529,18 +570,22 @@ export class Combat {
     const affinity = c.cls === 'sorcerer' && c.level >= 6 && S.type === 'fire' ? Math.max(0, sm) : 0;
     const rollD = (e) => (empower ? Math.max(roll(e), roll(e)) : roll(e));
     const enemies = this.livingMonsters();
-    const pickT = () => (target && target.hp > 0 && target.side === 'monster' ? target : this.pickEnemy());
+    const rk = S.melee ? 'touch' : 'ranged'; // spell range: melee-touch spells only reach the front groups, everything else any group
+    const legalNow = (m) => !!m && m.hp > 0 && m.side === 'monster' && this.canTarget(c, m, rk);
+    const pickT = () => (legalNow(target) ? target : this.pickEnemy(c, rk));
+    // Area spells (S.area: Fireball, Burning Hands, ...) hit every living monster in ONE group: the group of the chosen foe, or (AI / auto-aim) the fullest group.
+    const areaMembers = (pred) => { const g = legalNow(target) && !autoAim ? this.groupOf(target) : this.bestGroup(pred) || this.groupOf(this.pickEnemy(c, rk) || {}); return g ? g.monsters : []; };
     // Multi-projectile spells (Magic Missile darts, Scorching Ray rays, Eldritch Blast beams): every dart/ray/beam has its own target.
     // opts.aims = one monster (or monster id) per projectile, repeats allowed. No aims → everything at `target` (legacy), or — for the AI / auto-battle
     // (autoAim) or with no target — adaptive focus fire on the weakest awake foe. A target that is already dead when its projectile fires is replaced the same way.
     const nProj = projectileCount(c, key, lvl);
     let aims = null; // null entries = "pick the weakest awake foe at the moment this projectile fires" (focus fire that adapts to kills and misses)
     if (nProj) {
-      const given = (Array.isArray(aims0) ? aims0 : []).map((a) => (typeof a === 'string' || typeof a === 'number' ? this.monsters.find((m) => m.id === a) : a)).filter((m) => m && m.side === 'monster');
+      const given = (Array.isArray(aims0) ? aims0 : []).map((a) => (typeof a === 'string' || typeof a === 'number' ? this.monsters.find((m) => m.id === a) : a)).filter((m) => m && m.side === 'monster' && legalNow(m));
       if (given.length) { aims = given.slice(0, nProj); while (aims.length < nProj) aims.push(null); }
-      else if (target && target.hp > 0 && target.side === 'monster' && !autoAim) aims = Array(nProj).fill(target);
+      else if (legalNow(target) && !autoAim) aims = Array(nProj).fill(target);
     }
-    let shot = 0; const pickA = () => { const a = aims ? aims[shot++] : null; return a && a.hp > 0 ? a : this.pickEnemy(); };
+    let shot = 0; const pickA = () => { const a = aims ? aims[shot++] : null; return legalNow(a) ? a : this.pickEnemy(c, rk); };
     const tally = (list) => { const m = new Map(); for (const t of list) m.set(t.name, (m.get(t.name) || 0) + 1); return [...m].map(([n, k]) => (k > 1 ? `${n} ×${k}` : n)).join(', '); };
     if (aims && new Set(aims).size > 1) this.say(`${nProj} ${projectileNoun(key)}s: ${tally(aims.filter(Boolean))}${aims.includes(null) ? ' + the rest at the weakest foe' : ''}.`, 'dim');
     switch (S.kind) {
@@ -566,7 +611,7 @@ export class Combat {
         break;
       }
       case 'save': {
-        let tgs = S.target === 'enemy' ? [pickT()] : S.target === 'allEnemies' ? enemies : (targets || this.pickGroup(target, S.maxTargets));
+        let tgs = S.area ? (targets || areaMembers()) : S.target === 'enemy' ? [pickT()] : S.target === 'allEnemies' ? enemies : (targets || this.pickGroup(legalNow(target) ? target : this.pickEnemy(c, rk), S.maxTargets));
         tgs = tgs.filter(Boolean); let tot = 0, saved = 0, slain = 0, held = 0;
         for (const m of tgs) {
           if (m.hp <= 0) continue;
@@ -587,7 +632,8 @@ export class Combat {
       case 'sleep': {
         let pool = roll(`${5 + 2 * up}d8`); this.say(`Sleep affects up to ${pool} HP of creatures.`, 'spell');
         let zz = 0;
-        for (const m of [...this.awakeMonsters()].filter((m) => !m.T.construct).sort((a, b) => a.hp - b.hp)) { if (m.hp > pool) break; pool -= m.hp; m.conditions.unconscious = true; zz++; this.say(`${m.name} falls asleep!`, 'spell'); }
+        const zone = areaMembers((m) => !m.T.construct);
+        for (const m of zone.filter((m) => !m.conditions.unconscious && !m.T.construct).sort((a, b) => a.hp - b.hp)) { if (m.hp > pool) break; pool -= m.hp; m.conditions.unconscious = true; zz++; this.say(`${m.name} falls asleep!`, 'spell'); }
         this.caption(`${c.name} scatters a glittering sand of dreams…`, zz ? `${zz} ${zz > 1 ? 'foes fall' : 'foe falls'} asleep` : 'Nobody nods off!', zz ? 'spell' : 'miss');
         break;
       }
@@ -621,8 +667,10 @@ export class Combat {
       }
     }
   }
-  pickEnemy() { const a = this.awakeMonsters(); const l = a.length ? a : this.livingMonsters(); return l.sort((x, y) => x.hp - y.hp)[0]; }
-  pickGroup(first, n) { const l = this.livingMonsters(); const out = first && first.hp > 0 ? [first] : []; for (const m of l) if (out.length < n && !out.includes(m)) out.push(m); return out; }
+  /** The weakest awake foe this hero can legally hit (kind: 'melee' | 'touch' | 'ranged'); with no hero, the weakest awake foe anywhere. */
+  pickEnemy(c = null, kind = 'ranged') { const pool = c ? this.legalTargets(c, kind) : this.livingMonsters(); const a = pool.filter((m) => !m.conditions.unconscious); const l = a.length ? a : pool; return [...l].sort((x, y) => x.hp - y.hp)[0]; }
+  /** First foe plus up to n-1 more for multi-target (not area) spells: its own group first, then the ranks behind it, front to back. */
+  pickGroup(first, n) { const l = this.liveRanks().flatMap((g) => g.monsters); const out = first && first.hp > 0 ? [first] : []; const same = first ? l.filter((m) => m.gid === first.gid) : []; for (const m of [...same, ...l]) if (out.length < n && !out.includes(m)) out.push(m); return out; }
   mostHurt() { return this.party.filter((p) => !p.dead).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]; }
 
   /* ---------- AI ---------- */
@@ -684,7 +732,7 @@ export class Combat {
   legendaryActions() {
     if (!(this.story.floor > 0)) return;
     for (const m of this.livingMonsters()) {
-      const n = TUNING.legendary[m.key] || 0; if (!n || m.conditions.unconscious || m.conditions.paralyzed) continue;
+      const n = TUNING.legendary[m.key] || 0; if (!n || m.conditions.unconscious || m.conditions.paralyzed || !this.monsterActs(m)) continue;
       for (let i = 0; i < n; i++) {
         const live = this.conscious(); if (!live.length) return;
         const tg = pickWeighted(targetWeights(this.frontRow(), live, m.T), rand()); const A = m.T.attacks[0];
@@ -720,6 +768,10 @@ export class Combat {
       this.caption(`${m.name} turns on ${foe.name}!`, 'Freed from the collar', 'good'); this.checkEnd(); return;
     }
     if (T.shriek) { const tg = pick(this.conscious()); if (tg) { tg.conditions.mocked = true; this.say(`${m.name} SHRIEKS! ${tg.name} is rattled (disadvantage on the next attack).`, 'bad'); this.caption(`${m.name} lets out a piercing shriek!`, `${tg.name} rattled`, 'bad'); } return; }
+    if (!this.monsterActs(m)) { // Wizardry ranks: a melee monster in the 3rd or 4th group can't reach anyone and waits to advance (logged once per group per round)
+      const k = m.gid + ':' + this.round; if (!(this.waitSaid ||= new Set()).has(k)) { this.waitSaid.add(k); this.say(`${m.name} waits behind the line, unable to reach anyone.`, 'dim'); }
+      this.emit({ type: 'wait', who: m }); return;
+    }
     const targets = this.conscious(); if (!targets.length) return;
     if (T.special && T.special.kind && m.specialReady && rand() < 0.6 && !(m.key === 'malthrax' && this.staffBroken && rand() < 0.5)) { m.specialReady = false; this.monsterSpecial(m); return; }
     const front = this.frontRow();
@@ -751,6 +803,8 @@ export class Combat {
     const hurt = this.party.filter((p) => !isDown(p) && p.hp < p.maxHp * thr);
     const potion = T.potions ? this.inventory.find((k) => ITEMS[k]?.kind === 'potion') : null;
     const can = (k) => (T.spells || SPELLS[k].level === 0) && (T.aoe || !AOE_SPELLS.includes(k)) && this.castable(c).some((x) => x.k === k);
+    // Area spells hit one whole group, so what counts is the fullest group, not the total head count
+    const bgrp = this.bestGroup(), gn = bgrp ? bgrp.monsters.filter((m) => !m.conditions.unconscious).length : 0; const aoe2 = gn >= 2, aoe3 = enemies.length >= 3 && gn >= 2;
     this.lastAi = { who: c.id, style };
     const go = (id, o) => { if (this.state === 'running' && this.current() === c) this.act(c, id, o); };
     const cast = (k, o = {}) => go('cast', { spell: k, autoAim: true, ...o });
@@ -783,7 +837,7 @@ export class Combat {
       const st = this.studyTargets(c).sort((x, y) => y.maxHp - x.maxHp)[0];
       if (st && skillMod(c, studySkill(st.T)) >= 3 && rand() < 0.6) go('study', { target: st });
     }
-    if (c.cls === 'fighter' && c.res.actionSurge && hard) { if (this.inFront(c)) go('attack', { target: this.pickEnemy() }); else go('shoot', { target: this.pickEnemy() }); if (this.current() === c && this.state === 'running') go('actionSurge'); }
+    if (c.cls === 'fighter' && c.res.actionSurge && hard) { if (this.inFront(c)) go('attack', { target: this.pickEnemy(c, 'melee') }); else go('shoot', { target: this.pickEnemy(c) }); if (this.current() === c && this.state === 'running') go('actionSurge'); }
     if (this.state !== 'running' || this.current() !== c || !t.action) return;
     const front = this.inFront(c);
     if (c.cls === 'cleric') {
@@ -799,13 +853,13 @@ export class Combat {
       if (this.boss && can('guidingBolt') && c.slots[0] > 1) return cast('guidingBolt');
     }
     if (c.cls === 'wizard') {
-      const sleepable = enemies.filter((m) => !m.T.construct);
-      if (enemies.length >= 3 && can('fireball')) return cast('fireball');
-      if (enemies.length >= 2 && can('lightningBolt') && hard) return cast('lightningBolt');
+      const sg = this.bestGroup((m) => !m.T.construct), sleepable = sg ? sg.monsters.filter((m) => !m.conditions.unconscious && !m.T.construct) : [];
+      if (aoe3 && can('fireball')) return cast('fireball');
+      if (aoe2 && can('lightningBolt') && hard) return cast('lightningBolt');
       if (sleepable.length >= 2 && can('sleep') && sleepable.reduce((s, m) => s + m.hp, 0) <= 18 + 9 * (c.slots[1] ? 1 : 0) && c.level <= 4) return cast('sleep');
       if (hard && can('scorchingRay')) return cast('scorchingRay');
-      if (enemies.length >= 3 && can('burningHands') && hard) return cast('burningHands');
-      if (hard && can('magicMissile') && c.slots[0] > 1) return cast('magicMissile', { target: this.pickEnemy() });
+      if (aoe3 && can('burningHands') && hard) return cast('burningHands');
+      if (hard && can('magicMissile') && c.slots[0] > 1) return cast('magicMissile', { target: this.pickEnemy(c) });
     }
     const veryHurt2 = style === 'aggressive' ? [] : this.party.filter((p) => !isDown(p) && p.hp < p.maxHp * Math.min(thr, 0.35));
     const stillDown2 = this.party.filter((p) => p.hp <= 0 && !p.dead); const bossT = this.livingMonsters().find((m) => m.T.boss) || this.livingMonsters().sort((a, b) => b.hp - a.hp)[0];
@@ -823,32 +877,32 @@ export class Combat {
     }
     if (hard && ['bard', 'druid', 'sorcerer', 'warlock', 'ranger', 'wizard', 'cleric'].includes(c.cls)) {
       const plan = {
-        bard: [['holdMonster', this.boss], ['fear', enemies.length >= 3 && !c.concentration], ['shatter', enemies.length >= 2], ['holdPerson', bossT && bossT.T.type === 'humanoid' && !c.concentration], ['dissonantWhispers', true]],
-        druid: [['insectPlague', enemies.length >= 3], ['iceStorm', enemies.length >= 3], ['blight', this.boss], ['callLightning', enemies.length >= 2], ['moonbeam', true], ['entangle', enemies.length >= 2 && !c.concentration]],
-        sorcerer: [['coneOfCold', enemies.length >= 3], ['holdMonster', this.boss && !c.concentration], ['fireball', enemies.length >= 3], ['blight', this.boss], ['iceStorm', enemies.length >= 3], ['lightningBolt', enemies.length >= 2], ['shatter', enemies.length >= 2], ['scorchingRay', true], ['magicMissile', c.slots[0] > 1]],
-        warlock: [['holdMonster', this.boss && !c.concentration], ['fireball', enemies.length >= 3], ['blight', this.boss], ['shatter', enemies.length >= 2], ['scorchingRay', c.level < 5]],
-        ranger: [['conjureBarrage', enemies.length >= 3]],
-        wizard: [['coneOfCold', enemies.length >= 3], ['holdMonster', this.boss && !c.concentration], ['blight', this.boss], ['iceStorm', enemies.length >= 3]],
+        bard: [['holdMonster', this.boss], ['fear', aoe3 && !c.concentration], ['shatter', aoe2], ['holdPerson', bossT && bossT.T.type === 'humanoid' && !c.concentration], ['dissonantWhispers', true]],
+        druid: [['insectPlague', aoe3], ['iceStorm', aoe3], ['blight', this.boss], ['callLightning', enemies.length >= 2], ['moonbeam', true], ['entangle', aoe2 && !c.concentration]],
+        sorcerer: [['coneOfCold', aoe3], ['holdMonster', this.boss && !c.concentration], ['fireball', aoe3], ['blight', this.boss], ['iceStorm', aoe3], ['lightningBolt', aoe2], ['shatter', aoe2], ['scorchingRay', true], ['magicMissile', c.slots[0] > 1]],
+        warlock: [['holdMonster', this.boss && !c.concentration], ['fireball', aoe3], ['blight', this.boss], ['shatter', aoe2], ['scorchingRay', c.level < 5]],
+        ranger: [['conjureBarrage', aoe3]],
+        wizard: [['coneOfCold', aoe3], ['holdMonster', this.boss && !c.concentration], ['blight', this.boss], ['iceStorm', aoe3]],
         cleric: [['flameStrike', enemies.length >= 2], ['guardianOfFaith', enemies.length >= 2]],
       }[c.cls];
-      for (const [k, ok] of plan) if (ok && can(k)) return cast(k, { target: k === 'holdMonster' || k === 'blight' ? bossT : this.pickEnemy() });
+      for (const [k, ok] of plan) if (ok && can(k)) return cast(k, { target: k === 'holdMonster' || k === 'blight' ? bossT : this.pickEnemy(c) });
     }
     if (potion && c.hp < c.maxHp * thr * 0.62 && !this.party.some((p) => ['cleric', 'druid', 'bard', 'paladin'].includes(p.cls) && canAct(p) && p !== c)) return go('item', { item: potion, target: c });
     if (c.conditions.restrained && rand() < 0.5) return go('escape');
     const BLASTERS = { wizard: 'fireBolt', sorcerer: 'fireBolt', warlock: 'eldritchBlast', druid: 'produceFlame', bard: 'viciousMockery' };
-    if (front && c.equip.weapon && !['wizard', 'sorcerer', 'warlock', 'druid'].includes(c.cls)) return go('attack', { target: this.pickEnemy() });
-    if (BLASTERS[c.cls]) return cast(can(BLASTERS[c.cls]) ? BLASTERS[c.cls] : 'rayOfFrost', { target: this.pickEnemy() });
+    if (front && c.equip.weapon && !['wizard', 'sorcerer', 'warlock', 'druid'].includes(c.cls)) return go('attack', { target: this.pickEnemy(c, 'melee') });
+    if (BLASTERS[c.cls]) return cast(can(BLASTERS[c.cls]) ? BLASTERS[c.cls] : 'rayOfFrost', { target: this.pickEnemy(c) });
     if (style === 'defensive' && !front && !c.equip.ranged && c.cls !== 'cleric') return go('dodge');
-    if (c.cls === 'cleric' && !front) return cast('sacredFlame', { target: this.pickEnemy() });
-    if (c.equip.ranged) return go('shoot', { target: this.pickEnemy() });
-    if (c.equip.weapon) return go(front ? 'attack' : 'dodge', { target: this.pickEnemy() });
+    if (c.cls === 'cleric' && !front) return cast('sacredFlame', { target: this.pickEnemy(c) });
+    if (c.equip.ranged) return go('shoot', { target: this.pickEnemy(c) });
+    if (c.equip.weapon) return go(front ? 'attack' : 'dodge', { target: this.pickEnemy(c, 'melee') });
     return go('dodge');
   }
   /** Bonus actions that only make sense after attacking (Martial Arts, Flurry, Frenzy). */
   aiBonusAfter(c) {
     if (this.state !== 'running' || this.current() !== c || !this.turn || !this.turn.bonus) return;
     const ids = this.actionsFor(c).map((a) => a.id); const hard = this.boss || this.livingMonsters().reduce((s, m) => s + m.hp, 0) > 30 + c.level * 8;
-    const go = (id) => this.act(c, id, { target: this.pickEnemy() });
+    const go = (id) => this.act(c, id, { target: this.pickEnemy(c, this.rangeKind(id)) });
     if (ids.includes('flurry') && (hard || c.res.ki > c.level / 2)) return go('flurry');
     if (ids.includes('martialArts')) return go('martialArts');
     if (ids.includes('frenzy')) return go('frenzy');
