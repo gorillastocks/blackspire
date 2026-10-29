@@ -1,0 +1,187 @@
+{
+ "version": 1,
+ "generator": "ElevenLabs Sound Effects (eleven_text_to_sound_v2), Creator plan",
+ "processing": "leading silence trimmed, <=1.95s, loudnorm -18 LUFS / TP -3, mono 44.1k mp3 96k",
+ "clips": {
+  "slash": {
+   "file": "sfx/slash.mp3",
+   "prompt": "Sharp steel sword slash through air hitting flesh, short metallic swish and cut, dry game sound effect",
+   "seconds": 1.04,
+   "bytes": 12896
+  },
+  "slash2": {
+   "file": "sfx/slash2.mp3",
+   "prompt": "Fast blade slice with a bright steel ring, short, dry fantasy RPG sound effect",
+   "seconds": 1.04,
+   "bytes": 12896
+  },
+  "stab": {
+   "file": "sfx/stab.mp3",
+   "prompt": "Dagger or spear quick stab thrust into armor, short sharp metallic puncture, dry game sound effect",
+   "seconds": 0.84,
+   "bytes": 10388
+  },
+  "thud": {
+   "file": "sfx/thud.mp3",
+   "prompt": "Heavy mace or warhammer blunt hit on armor and body, deep dull thud with crunch, short game sound effect",
+   "seconds": 1.04,
+   "bytes": 12896
+  },
+  "thud2": {
+   "file": "sfx/thud2.mp3",
+   "prompt": "Heavy club bludgeoning impact, low thump with bone crack, short, dry fantasy game sound effect",
+   "seconds": 1.04,
+   "bytes": 12896
+  },
+  "twang": {
+   "file": "sfx/twang.mp3",
+   "prompt": "Wooden bow string release and arrow whoosh ending in a thunk into a target, short game sound effect",
+   "seconds": 1.23,
+   "bytes": 15090
+  },
+  "twang2": {
+   "file": "sfx/twang2.mp3",
+   "prompt": "Crossbow shot, sharp twang of the string and an arrow thunk, short, dry game sound effect",
+   "seconds": 1.04,
+   "bytes": 12896
+  },
+  "punch": {
+   "file": "sfx/punch.mp3",
+   "prompt": "Fist punch impact on body, short dull smack, dry game sound effect",
+   "seconds": 0.73,
+   "bytes": 9134
+  },
+  "swing": {
+   "file": "sfx/swing.mp3",
+   "prompt": "Weapon swing whoosh through air, quick swish, no impact, dry game sound effect",
+   "seconds": 0.81,
+   "bytes": 10075
+  },
+  "miss": {
+   "file": "sfx/miss.mp3",
+   "prompt": "Sword swing that misses, airy whoosh and a faint metallic scrape on stone floor, short, dry game sound effect",
+   "seconds": 1.04,
+   "bytes": 12896
+  },
+  "crit": {
+   "file": "sfx/crit.mp3",
+   "prompt": "Devastating critical hit, huge heavy impact with a bright metallic ringing shimmer and short boom, cinematic game sound effect",
+   "seconds": 1.52,
+   "bytes": 18538
+  },
+  "fire": {
+   "file": "sfx/fire.mp3",
+   "prompt": "Fireball spell burst, roaring whoosh of flames and a fiery explosion crackle, fantasy RPG sound effect",
+   "seconds": 1.8,
+   "bytes": 21986
+  },
+  "cold": {
+   "file": "sfx/cold.mp3",
+   "prompt": "Frost spell, icy crystalline crackle and freezing shatter with a cold wind whoosh, fantasy RPG sound effect",
+   "seconds": 1.65,
+   "bytes": 20106
+  },
+  "zap": {
+   "file": "sfx/zap.mp3",
+   "prompt": "Lightning bolt spell, sharp electric crack and sizzling zap, fantasy RPG sound effect",
+   "seconds": 1.41,
+   "bytes": 17284
+  },
+  "boom": {
+   "file": "sfx/boom.mp3",
+   "prompt": "Thunderclap booming thunder wave spell impact, deep rolling boom, fantasy RPG sound effect",
+   "seconds": 1.8,
+   "bytes": 21986
+  },
+  "radiant": {
+   "file": "sfx/radiant.mp3",
+   "prompt": "Radiant holy smite spell, bright choir-like shimmer and a sacred light burst, fantasy RPG sound effect",
+   "seconds": 1.65,
+   "bytes": 20106
+  },
+  "ping": {
+   "file": "sfx/ping.mp3",
+   "prompt": "Magic missile spell, small glowing arcane darts whizzing and zapping with sparkling pings, fantasy RPG sound effect",
+   "seconds": 1.23,
+   "bytes": 15090
+  },
+  "arcane": {
+   "file": "sfx/arcane.mp3",
+   "prompt": "Generic arcane psychic magic spell, eerie warbling mystical pulse and shimmer, fantasy RPG sound effect",
+   "seconds": 1.52,
+   "bytes": 18538
+  },
+  "acid": {
+   "file": "sfx/acid.mp3",
+   "prompt": "Acid spell splash, bubbling sizzling corrosive hiss and wet splatter, fantasy RPG sound effect",
+   "seconds": 1.52,
+   "bytes": 18538
+  },
+  "necrotic": {
+   "file": "sfx/necrotic.mp3",
+   "prompt": "Necrotic dark magic spell, ghostly whispering low drone and a decaying rattle, fantasy RPG sound effect",
+   "seconds": 1.8,
+   "bytes": 21986
+  },
+  "heal": {
+   "file": "sfx/heal.mp3",
+   "prompt": "Healing spell, warm gentle rising chime sparkle with a soft magical glow, fantasy RPG sound effect",
+   "seconds": 1.65,
+   "bytes": 20106
+  },
+  "hurt": {
+   "file": "sfx/hurt.mp3",
+   "prompt": "Player character takes damage, short pained male grunt of impact, dry game sound effect",
+   "seconds": 0.84,
+   "bytes": 10388
+  },
+  "mhit": {
+   "file": "sfx/mhit.mp3",
+   "prompt": "Hero hit by a monster claw attack, meaty slash impact with a short pained grunt, dry game sound effect",
+   "seconds": 0.91,
+   "bytes": 11328
+  },
+  "kill": {
+   "file": "sfx/kill.mp3",
+   "prompt": "Hero collapses and falls to the ground defeated, armor clatter and a heavy body thud with a dying groan, game sound effect",
+   "seconds": 1.8,
+   "bytes": 21986
+  },
+  "roar": {
+   "file": "sfx/roar.mp3",
+   "prompt": "Large fantasy monster roar, deep guttural beast growl, aggressive, game sound effect",
+   "seconds": 1.91,
+   "bytes": 23240
+  },
+  "roar2": {
+   "file": "sfx/roar2.mp3",
+   "prompt": "Small goblin or rat creature snarl and shriek, aggressive, short, game sound effect",
+   "seconds": 1.23,
+   "bytes": 15090
+  },
+  "mhurt": {
+   "file": "sfx/mhurt.mp3",
+   "prompt": "Monster hurt grunt, short pained beast yelp and growl, game sound effect",
+   "seconds": 0.91,
+   "bytes": 11328
+  },
+  "mdeath": {
+   "file": "sfx/mdeath.mp3",
+   "prompt": "Monster death cry, dying beast gurgle and collapse with a heavy thud, game sound effect",
+   "seconds": 1.91,
+   "bytes": 23240
+  },
+  "levelup": {
+   "file": "sfx/levelup.mp3",
+   "prompt": "Level up fanfare, short triumphant rising magical harp and bell shimmer with a bright sparkle, fantasy RPG sound effect",
+   "seconds": 1.91,
+   "bytes": 23240
+  },
+  "encounter": {
+   "file": "sfx/encounter.mp3",
+   "prompt": "Battle encounter sting, ominous low brass hit with a rising tension stinger and a drum, fantasy RPG sound effect",
+   "seconds": 1.8,
+   "bytes": 21986
+  }
+ }
+}
