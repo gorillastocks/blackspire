@@ -20,7 +20,7 @@ export const LEVEL_DEFS = [
   },
   {
     name: 'B2: The Drowned Grotto', seed: 4242, music: 'dungeon1', color: 0xff3df0, fog: 0x0c0414, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '2d10', trapKind: 'darts', key: 'key2', rooms: 3, loops: 8, secrets: 2, fountain: true,
-    table: [[{ key: 'giantWasp', count: [2, 2] }], [{ key: 'giantCrab', count: [2, 4] }], [{ key: 'giantToad', count: [1, 2] }], [{ key: 'direWolf', count: [1, 1] }], [{ key: 'flyingSword', count: [2, 3] }], [{ key: 'giantCrab', count: [2, 2] }, { key: 'giantWasp', count: [1, 2] }], [{ key: 'cultist', count: [3, 4] }]],
+    table: [[{ key: 'giantWasp', count: [2, 2] }], [{ key: 'giantCrab', count: [2, 4] }], [{ key: 'giantToad', count: [1, 2] }], [{ key: 'direWolf', count: [1, 1] }], [{ key: 'flyingSword', count: [2, 3] }], [{ key: 'giantCrab', count: [2, 2] }, { key: 'giantWasp', count: [1, 2] }], [{ key: 'cultist', count: [3, 4] }], [{ key: 'giantToad', count: [1, 1] }, { key: 'giantCrab', count: [2, 2] }, { key: 'cultist', count: [2, 2] }], [{ key: 'direWolf', count: [1, 1] }, { key: 'flyingSword', count: [2, 2] }, { key: 'cultist', count: [2, 2] }]],
     fixed: [[{ key: 'direWolf', count: [1, 1] }, { key: 'wolf', count: [1, 1] }], [{ key: 'giantToad', count: [2, 2] }], [{ key: 'flyingSword', count: [3, 3] }]],
     boss: [{ key: 'ankylosaurus', count: [1, 1] }, { key: 'giantWasp', count: [3, 3] }], bossName: 'Old Clubtail',
     messages: ['Dripping water spells nothing in particular. Brambur apologizes to it anyway.', 'An inscription: "BEYOND THE CORAL DOOR SLEEPS OLD CLUBTAIL. BRING SNACKS."', 'A cracked mirror. Professor Fizzwick spends some time admiring it.'],
@@ -28,7 +28,7 @@ export const LEVEL_DEFS = [
   },
   {
     name: 'B3: The Glimmerdeep', seed: 3131, color: 0x40ffd0, fog: 0x021410, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '3d8', trapKind: 'pit', key: 'key3', rooms: 3, loops: 9, secrets: 2, fountain: true, music: 'dungeon2', outdoor: true,
-    table: [[{ key: 'violetFungus', count: [2, 2] }, { key: 'shrieker', count: [1, 1] }], [{ key: 'ochreJelly', count: [1, 1] }], [{ key: 'darkmantle', count: [2, 3] }], [{ key: 'giantCentipede', count: [2, 4] }], [{ key: 'gelatinousCube', count: [0, 0] }], [{ key: 'darkmantle', count: [1, 2] }, { key: 'giantCentipede', count: [2, 2] }]],
+    table: [[{ key: 'violetFungus', count: [2, 2] }, { key: 'shrieker', count: [1, 1] }], [{ key: 'ochreJelly', count: [1, 1] }], [{ key: 'darkmantle', count: [2, 3] }], [{ key: 'giantCentipede', count: [2, 4] }], [{ key: 'gelatinousCube', count: [0, 0] }], [{ key: 'darkmantle', count: [1, 2] }, { key: 'giantCentipede', count: [2, 2] }], [{ key: 'giantCentipede', count: [2, 3] }, { key: 'violetFungus', count: [1, 2] }, { key: 'shrieker', count: [1, 1] }], [{ key: 'ochreJelly', count: [1, 1] }, { key: 'darkmantle', count: [2, 2] }, { key: 'giantCentipede', count: [1, 2] }, { key: 'shrieker', count: [1, 1] }]],
     fixed: [[{ key: 'gelatinousCube', count: [1, 1] }, { key: 'ochreJelly', count: [1, 1] }], [{ key: 'violetFungus', count: [3, 3] }, { key: 'shrieker', count: [2, 2] }], [{ key: 'darkmantle', count: [4, 4] }]],
     boss: [{ key: 'glasshide', count: [1, 1] }, { key: 'gargoyle', count: [2, 2] }, { key: 'darkmantle', count: [2, 2] }], bossName: 'Glasshide the Basilisk',
     messages: ['The crystals here show your reflection a half-second late. Fizzwick waves at his. It waves back early.', 'Scratched in a crystal: "DO NOT LOOK THE LIZARD IN THE EYE. USE A MIRROR. — a statue, probably"', 'A circle of mushrooms. Grumsh steps in it and refuses to say what he saw.'],
@@ -36,7 +36,7 @@ export const LEVEL_DEFS = [
   },
   {
     name: 'B4: The Ashforge', seed: 5150, color: 0xff5020, fog: 0x160400, trapDC: 15, secretDC: 15, lockDC: 16, trapDmg: '3d10', trapKind: 'darts', key: 'key4', rooms: 3, loops: 10, secrets: 2, fountain: true, music: 'dungeon3',
-    table: [[{ key: 'magmin', count: [2, 3] }], [{ key: 'hellHound', count: [0, 0] }, { key: 'magmin', count: [1, 1] }], [{ key: 'gargoyle', count: [2, 2] }], [{ key: 'animatedArmor', count: [2, 2] }], [{ key: 'minotaurSkeleton', count: [1, 1] }, { key: 'magmin', count: [2, 2] }], [{ key: 'cultFanatic', count: [2, 2] }, { key: 'cultist', count: [2, 2] }]],
+    table: [[{ key: 'magmin', count: [2, 3] }], [{ key: 'hellHound', count: [0, 0] }, { key: 'magmin', count: [1, 1] }], [{ key: 'gargoyle', count: [2, 2] }], [{ key: 'animatedArmor', count: [2, 2] }], [{ key: 'minotaurSkeleton', count: [1, 1] }, { key: 'magmin', count: [2, 2] }], [{ key: 'cultFanatic', count: [2, 2] }, { key: 'cultist', count: [2, 2] }], [{ key: 'minotaurSkeleton', count: [1, 1] }, { key: 'magmin', count: [2, 2] }, { key: 'cultist', count: [2, 2] }, { key: 'cultFanatic', count: [1, 1] }], [{ key: 'gargoyle', count: [2, 2] }, { key: 'magmin', count: [2, 3] }, { key: 'cultFanatic', count: [2, 2] }]],
     fixed: [[{ key: 'hellHound', count: [2, 2] }], [{ key: 'minotaurSkeleton', count: [3, 3] }], [{ key: 'cultFanatic', count: [4, 4] }]],
     boss: [{ key: 'brakk', count: [1, 1] }, { key: 'cindermaw', count: [1, 1] }], bossName: 'Forgemaster Brakk and Cindermaw',
     messages: ['An anvil, still warm, with a smith\'s name scratched on it: "VARR".', 'A forge-mural: dwarves, a chimera, and a very small Brakk hiding behind it.', 'A sign: "BRAKK\'S FORGE. NO REFUNDS. NO DWARVES. NO CHIMERA-PETTING."'],
@@ -44,7 +44,7 @@ export const LEVEL_DEFS = [
   },
   {
     name: 'B5: The Thunder-Lizard Vault', seed: 777, color: 0xb040ff, fog: 0x0c0414, trapDC: 16, secretDC: 15, lockDC: 17, trapDmg: '4d10', trapKind: 'darts', key: 'key5', rooms: 3, loops: 10, secrets: 3, fountain: true, final: true, music: 'dungeon4',
-    table: [[{ key: 'animatedArmor', count: [2, 3] }], [{ key: 'allosaurus', count: [1, 2] }], [{ key: 'triceratops', count: [1, 1] }], [{ key: 'hellHound', count: [2, 2] }], [{ key: 'cultFanatic', count: [2, 3] }], [{ key: 'minotaurSkeleton', count: [1, 2] }, { key: 'animatedArmor', count: [1, 1] }]],
+    table: [[{ key: 'animatedArmor', count: [2, 3] }], [{ key: 'allosaurus', count: [1, 2] }], [{ key: 'triceratops', count: [1, 1] }], [{ key: 'hellHound', count: [2, 2] }], [{ key: 'cultFanatic', count: [2, 3] }], [{ key: 'minotaurSkeleton', count: [1, 2] }, { key: 'animatedArmor', count: [1, 1] }], [{ key: 'animatedArmor', count: [2, 2] }, { key: 'minotaurSkeleton', count: [1, 1] }, { key: 'cultFanatic', count: [1, 2] }], [{ key: 'minotaurSkeleton', count: [1, 1] }, { key: 'hellHound', count: [1, 1] }, { key: 'animatedArmor', count: [1, 1] }, { key: 'cultFanatic', count: [1, 1] }]],
     fixed: [[{ key: 'triceratops', count: [2, 2] }, { key: 'allosaurus', count: [1, 1] }], [{ key: 'allosaurus', count: [4, 4] }], [{ key: 'animatedArmor', count: [5, 5] }]],
     boss: [{ key: 'malthrax', count: [1, 1] }, { key: 'gargoyle', count: [2, 2] }, { key: 'animatedArmor', count: [2, 2] }], bossName: 'Malthrax, the Dread Sovereign of Blackspire',
     phase2: [{ key: 'tyrannosaurus', count: [1, 1] }],

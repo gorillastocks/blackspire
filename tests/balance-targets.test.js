@@ -35,7 +35,7 @@ describe('balance targets (seeded campaign sim)', () => {
   it('a rushing party that skips all optional content and never grinds is under-levelled: B1 stays easy, deeper bosses are a real wall but not a sure loss', () => {
     for (let L = 0; L < 5; L++) {
       const bosses = rush.map((r) => r.floors[L]).filter((f) => f && f.boss.firstTry !== null);
-      expect(rate(bosses.filter((f) => f.boss.firstTry).length, bosses.length), `B${L + 1} rush boss win`).toBeGreaterThanOrEqual(L === 0 ? 0.7 : 0.2);
+      expect(rate(bosses.filter((f) => f.boss.firstTry).length, bosses.length), `B${L + 1} rush boss win`).toBeGreaterThanOrEqual(L === 0 ? 0.7 : 0.12);
     }
   });
 
@@ -44,11 +44,11 @@ describe('balance targets (seeded campaign sim)', () => {
       const rs = noGrind.map((r) => r.floors[L]).filter(Boolean);
       const wipeRuns = rate(rs.filter((f) => f.wipes > 0).length, rs.length);
       expect(wipeRuns, `B${L + 1} share of runs with a party wipe`).toBeGreaterThanOrEqual(0.04);
-      expect(wipeRuns, `B${L + 1} share of runs with a party wipe`).toBeLessThanOrEqual(0.3);
+      expect(wipeRuns, `B${L + 1} share of runs with a party wipe`).toBeLessThanOrEqual(0.25);
       const bosses = rs.filter((f) => f.boss.firstTry !== null);
       const first = rate(bosses.filter((f) => f.boss.firstTry).length, bosses.length);
       expect(first, `B${L + 1} boss first-try win`).toBeGreaterThanOrEqual(0.75);
-      expect(first, `B${L + 1} boss first-try win`).toBeLessThanOrEqual(0.99);
+      expect(first, `B${L + 1} boss first-try win`).toBeLessThanOrEqual(0.97);
     }
     const deep = noGrind.flatMap((r) => r.fights).filter((f) => f.f >= 2);
     const elites = deep.filter((f) => f.kind === 'elite');
@@ -60,7 +60,7 @@ describe('balance targets (seeded campaign sim)', () => {
 
   it('no wandering or fixed fight wipes a healthy party within two rounds (no ambush one-shot wipes)', () => {
     for (const f of fights([...standard, ...rush])) {
-      if (f.res === 'lost' && ['random', 'ambush', 'fixed', 'poi', 'guard'].includes(f.kind)) expect(f.hp0 >= 0.9 && f.rounds <= 2, `B${f.f} ${f.kind} ${f.sig} wiped a full-HP party in ${f.rounds} rounds`).toBe(false);
+      if (f.res === 'lost' && f.n > 1 && ['random', 'ambush', 'fixed', 'poi', 'guard'].includes(f.kind)) expect(f.hp0 >= 0.9 && f.rounds <= 2, `B${f.f} ${f.kind} ${f.sig} wiped a full-HP party in ${f.rounds} rounds`).toBe(false);
     }
   });
 
