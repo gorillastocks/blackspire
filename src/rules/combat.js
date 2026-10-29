@@ -29,6 +29,19 @@ export function makeMonster(key, idx = 0) {
 }
 const monsterSave = (m, ab) => mod(m.T.stats[ab]);
 
+/** How many separately aimable darts / rays / beams a spell throws at the chosen slot level (0 = not a multi-projectile spell).
+ *  Magic Missile: 3 darts +1 per slot above 1st. Scorching Ray: 3 rays +1 per slot above 2nd. Eldritch Blast: 1 beam, +1 at levels 5, 11 and 17. */
+export function projectileCount(c, key, slot) {
+  const S = SPELLS[key]; if (!S) return 0;
+  const up = Math.max(0, (slot || S.level) - S.level);
+  if (S.kind === 'auto' && S.darts) return S.darts + up;
+  if (S.kind === 'rays' && S.rays) return S.rays + up;
+  if (S.kind === 'beams') return 1 + (c.level >= 5 ? 1 : 0) + (c.level >= 11 ? 1 : 0) + (c.level >= 17 ? 1 : 0);
+  return 0;
+}
+/** Rule-accurate noun for a projectile spell ("dart", "ray", "beam"). */
+export const projectileNoun = (key) => ({ auto: 'dart', rays: 'ray', beams: 'beam' })[SPELLS[key]?.kind] || 'shot';
+
 export class Combat {
   /** Change difficulty mid-fight: affects damage from now on (monster HP was set when the fight began). */
   setDifficulty(k) { this.diff = DIFFICULTY[k] || DIFFICULTY.normal; }
@@ -499,7 +512,7 @@ export class Combat {
   }
   wantsSmite(c, tg, crit) { const big = this.boss || tg.T?.boss || tg.hp > 25; return crit || (big && c.slots.some((n) => n > 0) && (tacticsOf(c).spells !== false)); }
 
-  castSpell(c, key, { target, targets, slot } = {}) {
+  castSpell(c, key, { target, targets, slot, aims: aims0, autoAim = false } = {}) {
     const S = SPELLS[key]; const t = this.turn;
     if (S.bonus) t.bonus = 0; else t.action = 0;
     let lvl = 0;
@@ -517,6 +530,19 @@ export class Combat {
     const rollD = (e) => (empower ? Math.max(roll(e), roll(e)) : roll(e));
     const enemies = this.livingMonsters();
     const pickT = () => (target && target.hp > 0 && target.side === 'monster' ? target : this.pickEnemy());
+    // Multi-projectile spells (Magic Missile darts, Scorching Ray rays, Eldritch Blast beams): every dart/ray/beam has its own target.
+    // opts.aims = one monster (or monster id) per projectile, repeats allowed. No aims → everything at `target` (legacy), or — for the AI / auto-battle
+    // (autoAim) or with no target — adaptive focus fire on the weakest awake foe. A target that is already dead when its projectile fires is replaced the same way.
+    const nProj = projectileCount(c, key, lvl);
+    let aims = null; // null entries = "pick the weakest awake foe at the moment this projectile fires" (focus fire that adapts to kills and misses)
+    if (nProj) {
+      const given = (Array.isArray(aims0) ? aims0 : []).map((a) => (typeof a === 'string' || typeof a === 'number' ? this.monsters.find((m) => m.id === a) : a)).filter((m) => m && m.side === 'monster');
+      if (given.length) { aims = given.slice(0, nProj); while (aims.length < nProj) aims.push(null); }
+      else if (target && target.hp > 0 && target.side === 'monster' && !autoAim) aims = Array(nProj).fill(target);
+    }
+    let shot = 0; const pickA = () => { const a = aims ? aims[shot++] : null; return a && a.hp > 0 ? a : this.pickEnemy(); };
+    const tally = (list) => { const m = new Map(); for (const t of list) m.set(t.name, (m.get(t.name) || 0) + 1); return [...m].map(([n, k]) => (k > 1 ? `${n} ×${k}` : n)).join(', '); };
+    if (aims && new Set(aims).size > 1) this.say(`${nProj} ${projectileNoun(key)}s: ${tally(aims.filter(Boolean))}${aims.includes(null) ? ' + the rest at the weakest foe' : ''}.`, 'dim');
     switch (S.kind) {
       case 'attack': {
         const tg = pickT(); if (!tg) break;
@@ -524,18 +550,18 @@ export class Combat {
         if (r.hit && S.rider === 'guided' && tg.hp > 0) tg.conditions.guided = true;
         break;
       }
-      case 'beams': { const n = c.level >= 5 ? 2 : 1; for (let i = 0; i < n; i++) { const tg = pickT(); if (!tg) break; this.attack(c, tg, { bonus: atk, dmg: S.dmg, dmgBonus: c.level >= 2 ? Math.max(0, sm) : 0, type: S.type, ranged: true, spell: true, label: S.name }); } break; }
+      case 'beams': { for (let i = 0; i < nProj; i++) { const tg = pickA(); if (!tg) break; this.attack(c, tg, { bonus: atk, dmg: S.dmg, dmgBonus: c.level >= 2 ? Math.max(0, sm) : 0, type: S.type, ranged: true, spell: true, label: S.name }); } break; }
       case 'mark': {
         const tg = pickT(); if (!tg) break; if (c.concentration) c.concentration.targets = [tg.id];
         for (const m of this.monsters) if (m.conditions.marked?.src === c.id) delete m.conditions.marked;
         tg.conditions.marked = { src: c.id, spell: key }; this.say(`${tg.name} is marked by ${S.name}.`, 'spell');
         this.caption(key === 'hex' ? `${c.name} whispers a curse, and shadows cling to ${tg.name}.` : `${c.name} fixes ${tg.name} with a hunter's stare.`, `${S.name}: +1d6 on every hit`, 'spell'); break;
       }
-      case 'rays': { for (let i = 0; i < S.rays + up; i++) { const tg = pickT(); if (!tg) break; this.attack(c, tg, { bonus: atk, dmg: S.dmg, type: S.type, ranged: true, spell: true, label: 'Scorching Ray' }); } break; }
+      case 'rays': { for (let i = 0; i < nProj; i++) { const tg = pickA(); if (!tg) break; this.attack(c, tg, { bonus: atk, dmg: S.dmg, type: S.type, ranged: true, spell: true, label: 'Scorching Ray' }); } break; }
       case 'auto': {
-        const n = S.darts + up;
+        const n = nProj;
         let tot = 0; const hitN = new Set(); let slain = 0;
-        for (let i = 0; i < n; i++) { const tg = pickT(); if (!tg) break; const d = roll(S.dmg); this.say(`A glowing dart strikes ${tg.name} for ${d}.`, 'spell'); this.emit({ type: 'hit', att: c, tgt: tg, dmg: d, dtype: S.type, spell: key }); this.damage(tg, d, S.type, c); tot += d; hitN.add(tg.name); if (tg.hp <= 0) slain++; }
+        for (let i = 0; i < n; i++) { const tg = pickA(); if (!tg) break; const d = roll(S.dmg); this.say(`A glowing dart strikes ${tg.name} for ${d}.`, 'spell'); this.emit({ type: 'hit', att: c, tgt: tg, dmg: d, dtype: S.type, spell: key }); this.damage(tg, d, S.type, c); tot += d; hitN.add(tg.name); if (tg.hp <= 0) slain++; }
         this.caption(narr(S.type, { a: c.name, t: [...hitN].join(' and ') || 'the foe', w: S.name }), `${n} darts · ${tot} ${S.type} damage${slain ? ` · ${slain} slain` : ''}`, 'spell');
         break;
       }
@@ -727,7 +753,7 @@ export class Combat {
     const can = (k) => (T.spells || SPELLS[k].level === 0) && (T.aoe || !AOE_SPELLS.includes(k)) && this.castable(c).some((x) => x.k === k);
     this.lastAi = { who: c.id, style };
     const go = (id, o) => { if (this.state === 'running' && this.current() === c) this.act(c, id, o); };
-    const cast = (k, o = {}) => go('cast', { spell: k, ...o });
+    const cast = (k, o = {}) => go('cast', { spell: k, autoAim: true, ...o });
     if (c.conditions.restrained?.stone && this.inventory.includes('potionStoneFlesh')) return go('item', { item: 'potionStoneFlesh', target: c });
     if (t.action && this.story.staff && !this.staffBroken && this.monsters.some((m) => m.key === 'malthrax' && m.hp > 0) && rand() < (this.inFront(c) ? 0.6 : 0.35)) return go('strikeStaff');
     if (t.action && this.story.collar && !this.collarBroken && this.inFront(c) && this.monsters.some((m) => m.key === 'cindermaw' && m.hp > 0) && rand() < 0.5) return go('breakCollar');

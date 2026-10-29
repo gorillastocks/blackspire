@@ -4,7 +4,7 @@ import * as G from './game/game.js';
 import { SLOT_KEYS, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS, ANIM_SLOW } from './menu.js';
 import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js';
 import { outdoorRegion, inRegion, hourAt, todName, WEATHER_INFO } from './dungeon/outdoor.js';
-import { Combat, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
+import { Combat, projectileCount, projectileNoun, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, TIER_COLOR, TIER_LABEL, tierOf, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
 import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, speedOf, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
 import * as SC from './rules/spellcasting.js';
@@ -1292,12 +1292,14 @@ async function flushCombat() {
 function floater(id, v, crit, dtype) { const p = R.screenPos(id); if (!p) return; const miss = v === 'Miss'; const el = h('div', { class: 'floater' + (crit ? ' crit' : '') + (miss ? ' miss' : ''), 'data-dtype': dtype || '', style: `left:${p.x}%;top:${p.y}%;color:${miss ? '#bbb' : crit ? '' : DTYPE_CSS(dtype) || '#fff'}` }, ...(crit ? [h('small', {}, 'CRIT '), String(v)] : [String(v)])); $('#floaters').append(el); setTimeout(() => el.remove(), 1100); }
 function cardFloat(c, v, crit, cls = 'bad', dtype = null) { const el = document.getElementById('card-' + c.id); if (!el) return; const f = h('div', { class: 'floater' + (crit ? ' crit' : '') + (v === 'Miss' ? ' miss' : ''), style: `left:70%;top:0;font-size:${crit ? 24 : 18}px;color:${cls === 'good' ? '#6dffa8' : v === 'Miss' ? '#bbb' : DTYPE_CSS(dtype) || '#ff5a6e'}` }, crit ? 'CRIT ' + v : String(v)); el.append(f); setTimeout(() => f.remove(), 1100); }
 let targetPick = null;
+let aimState = null; // multi-projectile aiming in progress: array of monsters, one per assigned dart/ray/beam
+const aimCount = (m) => (aimState ? aimState.filter((x) => x === m).length : 0);
 function renderTargets() {
   const el = $('#targets'); el.innerHTML = ''; if (!combat || combat.state !== 'running') return;
   for (const m of combat.monsters) {
     if (m.hp <= 0) continue; const p = R.screenPos(m.id); if (!p) continue;
     el.append(h('div', { class: `mtag ${targetPick ? 'pick' : ''} ${combat.current() === m ? 'sel' : ''}`, style: `left:${Math.min(86, Math.max(14, p.x))}%;top:${Math.max(8, p.y)}%`, onclick: () => targetPick && targetPick(m), info: () => monsterInfo(m) },
-      h('div', {}, m.name), h('div', { class: 'bar' }, h('i', { style: `width:${m.hp / m.maxHp * 100}%` })), traitChips(m), condChips(m.conditions)));
+      h('div', {}, m.name, aimCount(m) ? h('b', { class: 'aimn' }, ` ×${aimCount(m)}`) : ''), h('div', { class: 'bar' }, h('i', { style: `width:${m.hp / m.maxHp * 100}%` })), traitChips(m), condChips(m.conditions)));
   }
 }
 let curMenu = null; // the combat menu being waited on (so the watchdog can redraw it if it ever goes missing)
@@ -1308,7 +1310,7 @@ function chooseFrom(title, options, kind = '') {
     if (!tapPending) { const cap = $('#caption'); if (cap.querySelector('.captap')) hideCaption(); captionDown(true); } // never ask with the menu collapsed
     document.body.classList.add('incombat');
     const done = (o) => { modal._options = null; curMenu = null; cm.innerHTML = ''; cm.append(h('div', { class: 'who dim' }, '…')); resolve(o); };
-    const draw = () => { cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' + (kind ? ' ' + kind : '') }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: (o.primary ? 'primary' : '') + (o.util ? ' util' : ''), info: o.info || null }))))); document.body.classList.add('incombat'); };
+    const draw = () => { cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' + (kind ? ' ' + kind : '') }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: (o.primary ? 'primary' : '') + (o.util ? ' util' : '') + (o.class ? ' ' + o.class : ''), info: o.info || null }))))); document.body.classList.add('incombat'); };
     draw(); curMenu = { draw, cm };
     cm.scrollTop = 0; requestAnimationFrame(() => { const l = $('#log'); l.scrollTop = l.scrollHeight; });
     modal._resolve = done; modal._options = options;
@@ -1331,6 +1333,37 @@ async function reclassMenu(c) {
     S.gold -= cost; log(`${n.name} retrains as a ${CLASSES[o.k].name} (${CLASSES[o.k].sub}).`, 'good'); autosave();
   }
   showTown('train');
+}
+/** Multi-projectile spells (Magic Missile darts, Scorching Ray rays, Eldritch Blast beams): assign each dart/ray/beam to a foe, repeats allowed.
+ *  Tap a monster tag (or its button) to send one more at it; "All on one" then a foe sends every remaining shot there; Undo / Clear; Cast needs all assigned. */
+async function pickAims(c, key, n) {
+  const noun = projectileNoun(key), nouns = noun + 's', title = SPELLS[key].name;
+  const live = combat.livingMonsters(); if (!live.length) return null;
+  if (live.length === 1) return Array(n).fill(live[0]);
+  aimState = []; let allOne = false;
+  try {
+    for (;;) {
+      const left = n - aimState.length;
+      const sum = live.filter((m) => aimCount(m)).map((m) => `${m.name}${aimCount(m) > 1 ? ' ×' + aimCount(m) : ''}`).join(', ');
+      const opts = [
+        { id: 'cast', label: `Cast ▶ (${aimState.length}/${n})`, disabled: left > 0, primary: true, aim: true },
+        { id: 'back', label: '← Back', back: true, aim: true },
+        { id: 'one', label: allOne ? 'All on one: tap foe' : 'All on one', util: true, class: allOne ? 'on' : '', aim: true, info: () => ['All on one', `Tap "All on one", then a foe: every unassigned ${noun} goes to that foe.`] },
+        { id: 'undo', label: 'Undo', util: true, disabled: !aimState.length, aim: true },
+        { id: 'clear', label: 'Clear', util: true, disabled: !aimState.length, aim: true },
+        ...live.map((m) => ({ id: 'mon', m, aim: true, info: () => monsterInfo(m), label: `${m.name} (${m.hp}/${m.maxHp})${aimCount(m) ? ` ×${aimCount(m)}` : ''}${D.visibleConds(m.conditions).map((k) => ' ' + D.condInfo(k).icon).join('')}` })),
+      ];
+      let resolveTap; const tap = new Promise((r) => (resolveTap = r));
+      targetPick = (m) => resolveTap({ id: 'mon', m }); renderTargets();
+      const o = await Promise.race([chooseFrom(`${c.name}: ${title} — ${aimState.length}/${n} ${nouns} aimed${sum ? ': ' + sum : ''}. Tap foes to aim; the same foe can take several.`, opts, 'aim'), tap]);
+      if (o.id === 'back') return null;
+      if (o.id === 'cast') return aimState.slice();
+      if (o.id === 'undo') aimState.pop();
+      else if (o.id === 'clear') { aimState = []; allOne = false; }
+      else if (o.id === 'one') allOne = !allOne;
+      else if (o.id === 'mon' && left > 0) { if (allOne) { for (let i = 0; i < left; i++) aimState.push(o.m); allOne = false; } else aimState.push(o.m); }
+    }
+  } finally { aimState = null; targetPick = null; renderTargets(); }
 }
 async function pickTarget(kind, c) {
   if (kind === 'enemy') {
@@ -1399,10 +1432,12 @@ async function playerTurn() {
         const so = await chooseFrom(`Cast ${sp.s.name} at which level?`, [sp.s.level, ...higher].filter((l) => c.slots[l - 1] > 0).map((l) => ({ label: `Level ${l} slot (${c.slots[l - 1]} left)`, l })));
         slot = so.l;
       }
-      const tk = sp.s.target; let target = null;
-      if (tk === 'enemy' || tk === 'someEnemies') { target = await pickTarget('enemy', c); if (!target) continue; }
+      const tk = sp.s.target; let target = null; let aims = null;
+      const nP = projectileCount(c, sp.k, slot);
+      if (nP > 1 && tk === 'enemy') { aims = await pickAims(c, sp.k, nP); if (!aims) continue; target = aims[0]; }
+      else if (tk === 'enemy' || tk === 'someEnemies') { target = await pickTarget('enemy', c); if (!target) continue; }
       if (tk === 'ally' || tk === 'downedAlly' || tk === 'deadAlly') { target = await pickTarget(tk, c); if (!target) continue; }
-      args = { spell: sp.k, slot, target };
+      args = { spell: sp.k, slot, target, ...(aims ? { aims } : {}) };
     }
     if (o.id === 'item') {
       const pots = [...new Set(S.inventory.filter((k) => ITEMS[k]?.kind === 'potion'))].map((k) => ({ info: () => itemInfo(k), label: `${ITEMS[k].name} (×${S.inventory.filter((x) => x === k).length})`, k }));
