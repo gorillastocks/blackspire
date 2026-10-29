@@ -22,3 +22,70 @@ export function rankLayout(monsters, ranks) {
   });
   return { pos, crowd };
 }
+
+// ---- Painted-sprite layout -------------------------------------------------------------------------------------------
+// Sprites are flat billboards of known width/height, so ranks are laid out from their real sizes: each rank is a row where
+// the biggest figure (a boss or elite lead) stands in the middle, slightly further back, and its neighbours stand a little
+// in front and overlap its edges. Back ranks are smaller and sit in the gaps of the rank in front. Rows of five or more
+// split into two interleaved lines so a big pack still reads and the camera can stay close.
+export const SPR_RANK_SCALE = [1, 0.78, 0.64, 0.54, 0.48, 0.44];
+export const SPR_RANK_DZ = 1.6;
+const rscale = (r) => SPR_RANK_SCALE[Math.min(r, SPR_RANK_SCALE.length - 1)];
+/** Positions for one line of figures (already scaled widths `ws`), biggest in the middle. Returns x per input index, centred on 0. */
+function chainLine(items, overlap) {
+  const order = items.slice().sort((a, b) => b.h - a.h); // biggest first
+  const seq = []; order.forEach((it, i) => { if (i % 2) seq.unshift(it); else seq.push(it); }); // ... l2 l1 [big] r1 r2 ...  (big ends up in the middle)
+  const mid = seq.indexOf(order[0]); const left = seq.slice(0, mid).reverse(), right = seq.slice(mid + 1);
+  const xs = new Map(); xs.set(order[0], 0);
+  let x = 0, prev = order[0]; for (const it of right) { x += (prev.w + it.w) / 2 * (1 - overlap); xs.set(it, x); prev = it; }
+  x = 0; prev = order[0]; for (const it of left) { x -= (prev.w + it.w) / 2 * (1 - overlap); xs.set(it, x); prev = it; }
+  return xs;
+}
+/**
+ * items: [{ id, w, h, boss, elite }] sprite world size at rank 0; ranks: arrays of ids (front to back) or null.
+ * Returns { pos: Map id -> { x, z, y, s, rank } } where s is the rank scale to multiply w/h with.
+ */
+export function spriteRankLayout(items, ranks) {
+  const rows = ranks && ranks.length ? ranks : [items.map((m) => m.id)];
+  const pos = new Map(); let prevExtents = []; let f0 = null; // f0: x-span of the front rank, back ranks should not stick out far beyond it
+  const placed = []; // { lo, hi, top } of every figure already standing: back figures are raised until their heads clear what hides them
+  rows.forEach((row, ri) => {
+    const s = rscale(ri); const its = row.map((id) => items.find((q) => q.id === id)).filter(Boolean).map((q) => ({ id: q.id, w: q.w * s, h: q.h * s, boss: !!q.boss, sc: s }));
+    if (!its.length) return;
+    const z0 = RANK_Z0 - ri * SPR_RANK_DZ; const place = []; // { it, x, z, k }
+    if (its.length >= (ri === 0 ? 3 : 5)) { // two interleaved lines in this rank
+      const nf = Math.ceil(its.length / 2); const sorted = its.slice().sort((a, b) => b.h - a.h); const A = [], B = [];
+      sorted.forEach((it, i) => (i % 2 ? B : A).push(it)); // spread the big ones over both lines
+      while (A.length > nf) B.push(A.pop());
+      const xa = chainLine(A, 0.16); const front = A.map((it) => ({ it, x: xa.get(it) })).sort((p, q) => p.x - q.x);
+      const gaps = front.slice(0, -1).map((p, i) => (p.x + front[i + 1].x) / 2); const avg = front.length > 1 ? (front[front.length - 1].x - front[0].x) / (front.length - 1) : A[0].w * 0.8;
+      while (gaps.length < B.length) gaps.push(gaps.length ? gaps[gaps.length - 1] + avg : front[0].x - avg / 2);
+      const Bs = B.slice().sort((a, b) => b.h - a.h); const gAbs = gaps.slice(0, Bs.length).sort((p, q) => Math.abs(p) - Math.abs(q)); // biggest back-liners nearest the middle
+      Bs.forEach((it, i) => place.push({ it, x: gAbs[i], z: z0 - 0.95, k: 0.9, line: 1 }));
+      front.forEach((p, i) => place.push({ it: p.it, x: p.x, z: z0 + (p.it.boss ? -0.25 : 0), k: 1, line: 0 }));
+    } else {
+      const xs = chainLine(its, ri === 0 ? 0.2 : 0.22); const big = its.slice().sort((a, b) => b.h - a.h)[0];
+      for (const it of its) place.push({ it, x: xs.get(it), z: z0 + (it === big && its.length > 1 ? -0.3 : it.boss ? 0 : its.length > 1 ? 0.15 : 0), k: 1 });
+    }
+    // centre the row, then slide it sideways (rank >= 1) to the spot where it is least hidden by the rank in front
+    const ext = (p) => [p.x - p.it.w * p.k / 2, p.x + p.it.w * p.k / 2];
+    let lo = Infinity, hi = -Infinity; for (const p of place) { const [a, b] = ext(p); lo = Math.min(lo, a); hi = Math.max(hi, b); }
+    const c0 = -(lo + hi) / 2; let best = c0;
+    if (ri > 0 && prevExtents.length) {
+      const avgW = place.reduce((t, p) => t + p.it.w, 0) / place.length; let bc = Infinity;
+      for (let d = -1.6; d <= 1.601; d += 0.1) { const sh = c0 + d * avgW; let cost = Math.abs(d) * avgW * 0.5;
+        for (const p of place) { const [a, b] = ext(p); const ca = a + sh, cb = b + sh, w = (cb - ca) * 0.7, mid = (ca + cb) / 2; for (const [pa, pb] of prevExtents) cost += 0.5 * Math.max(0, Math.min(mid + w / 2, pb) - Math.max(mid - w / 2, pa));
+          if (f0) cost += 3 * (Math.max(0, f0[0] - ca) + Math.max(0, cb - f0[1])); }
+        if (cost < bc - 1e-6) { bc = cost; best = sh; } }
+    }
+    const ex = []; const fin = place.map((p) => ({ ...p, x: Math.max(-9, Math.min(9, p.x + best)) })).sort((p, q) => (p.line || 0) - (q.line || 0)); const mine = [];
+    for (const p of fin) {
+      const [a, b] = ext(p), w = (b - a) * 0.6, mid = (a + b) / 2, hh = p.it.h * p.k; let y = ri > 0 || p.line ? 0.1 + (p.line ? 0.22 * hh : 0) : 0;
+      for (const q of placed) if (!(q.rank === ri && q.line === (p.line || 0)) && Math.min(mid + w / 2, q.hi) - Math.max(mid - w / 2, q.lo) > 0.1 * w) y = Math.max(y, Math.min(2.6 * hh, q.top - 0.52 * hh));
+      pos.set(p.it.id, { x: p.x, z: p.z, y, s: p.it.sc * p.k, rank: ri }); mine.push({ lo: mid - w / 2, hi: mid + w / 2, top: y + hh, rank: ri, line: p.line || 0 }); ex.push([a, b]);
+    }
+    placed.push(...mine);
+    prevExtents = ex; if (ri === 0) f0 = [Math.min(...ex.map((e) => e[0])), Math.max(...ex.map((e) => e[1]))];
+  });
+  return { pos };
+}

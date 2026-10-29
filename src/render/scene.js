@@ -15,8 +15,8 @@ import { inRegion } from '../dungeon/outdoor.js';
 import { Outdoor } from './outdoor.js';
 import { ANIM_SLOW } from '../menu.js';
 import { MONSTERS } from '../rules/data.js';
-import { rankLayout } from './ranks.js';
-import { spriteFor, buildSpriteMonster, updateSprites, disposeSprite } from './sprites.js';
+import { rankLayout, spriteRankLayout } from './ranks.js';
+import { spriteFor, spriteSize, buildSpriteMonster, updateSprites, disposeSprite } from './sprites.js';
 
 const CELL = 2, WALL_H = 2.6;
 const gltfCache = {};
@@ -109,7 +109,7 @@ export class Renderer {
 
   /* ---------- Dungeon ---------- */
   async buildLevel(s, tileFn, def, reg = null) {
-    const grp = this.levelGroup; grp.clear(); this.outdoor = null; this.torchK = 1; this.scene.environmentIntensity = 0.25; this.hemi.color.set(0x6c7cff); this.hemi.groundColor.set(0x221122); this.hemi.intensity = 0.35; this.torches = []; this.animated = []; this.clearDynamic();
+    const grp = this.levelGroup; grp.clear(); for (const e of Object.values(this.chestMixers || {})) this.mixers = this.mixers.filter((m) => m !== e.mx); this.chestMixers = {}; this.outdoor = null; this.torchK = 1; this.scene.environmentIntensity = 0.25; this.hemi.color.set(0x6c7cff); this.hemi.groundColor.set(0x221122); this.hemi.intensity = 0.35; this.torches = []; this.animated = []; this.clearDynamic();
     const color = new THREE.Color(def.color);
     this.scene.fog = new THREE.FogExp2(def.fog, 0.075); this.scene.background = new THREE.Color(def.fog);
     this.edgeMat = new THREE.LineBasicMaterial({ color: color.clone().multiplyScalar(0.8), toneMapped: false, fog: false }); // steady: opaque, no fog fade, kept under the bloom threshold so it doesn't pump
@@ -173,10 +173,12 @@ export class Renderer {
         const o = SkeletonUtils.clone(chest.scene); o.scale.setScalar(0.55); add(o);
         o.rotation.y = this.faceOpen(tileFn, x, y);
         const mx = new THREE.AnimationMixer(o); const clip = chest.animations.find((a) => /Open/.test(a.name));
-        if (ch === 'o' && clip) { const a = mx.clipAction(clip); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.play(); mx.update(5); }
-        this.chestMixers = this.chestMixers || {}; this.chestMixers[`${x},${y}`] = { mx, clip };
-        this.mixers.push(mx);
         const l = new THREE.PointLight(0xffc040, 4, 3, 2); l.position.set(0, 1, 0); o.add(l);
+        const ent = { mx, clip, o, light: l, open: false };
+        if (ch === 'o' && clip) { const a = mx.clipAction(clip); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.play(); mx.update(5); }
+        if (ch === 'o') this.emptyChest(ent);
+        this.chestMixers = this.chestMixers || {}; this.chestMixers[`${x},${y}`] = ent;
+        this.mixers.push(mx);
       } else if (ch === '>' || ch === '<') {
         const down = ch === '>';
         const ring = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.05, 8, 40), glow(down ? 0x40ffd0 : 0x80a0ff, 3)); ring.rotation.x = -Math.PI / 2; add(ring, 0.03);
@@ -303,7 +305,23 @@ export class Renderer {
     return { holder, target, mixer, aura, icon, light, h, heading: 0, prev: new THREE.Vector3() };
   }
   faceOpen(tileFn, x, y) { for (const [d, [dx, dy]] of DIRS.entries()) if (!['#', 'S'].includes(tileFn(x + dx, y + dy))) return [Math.PI, Math.PI / 2, 0, -Math.PI / 2][d]; return 0; }
-  openChestAnim(x, y) { const c = this.chestMixers?.[`${x},${y}`]; if (c?.clip) { const a = c.mx.clipAction(c.clip); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.reset().play(); } }
+  /** A looted chest stands open and empty: the gold heap inside the model is hidden and its treasure glow is put out. */
+  emptyChest(c) {
+    if (!c || c.open) return; c.open = true;
+    c.o.traverse((m) => { if (m.isMesh && /^Gold/i.test(m.material?.name || '')) m.visible = false; });
+    if (c.light) c.light.intensity = 0; // keep the light in the scene (adding or removing one recompiles every material)
+  }
+  openChestAnim(x, y) {
+    const c = this.chestMixers?.[`${x},${y}`]; if (!c) return;
+    if (!c.clip) { this.emptyChest(c); return; }
+    const a = c.mx.clipAction(c.clip); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.reset().play();
+    setTimeout(() => this.emptyChest(c), Math.max(300, (c.clip.duration || 0.8) * 1000 * 0.9)); // the lid swings up, then the heap is gone
+  }
+  /** Test hook: how the chest on this tile is drawn right now. */
+  chestState(x, y) {
+    const c = this.chestMixers?.[`${x},${y}`]; if (!c) return null; let gold = 0; c.o.traverse((m) => { if (m.isMesh && /^Gold/i.test(m.material?.name || '') && m.visible) gold++; });
+    return { open: c.open, goldMeshes: gold, glow: c.light ? c.light.intensity : 0 };
+  }
   setView(x, y, dir, instant = false) {
     this.targetPos.set(x * CELL, 1.25, y * CELL);
     let yaw = -dir * Math.PI / 2; // N = looking -z
@@ -339,9 +357,11 @@ export class Renderer {
   }
   async showMonsters(monsters, themeColor = 0x22e6ff, ranks = null) {
     this.clearMonsters(); this.arenaRing.material.color.set(themeColor);
-    const n = monsters.length; const lay = rankLayout(monsters.map((m) => ({ id: m.id, T: MONSTERS[m.key] })), ranks); const crowd = lay.crowd;
+    const n = monsters.length; const sprs = await Promise.all(monsters.map((m) => spriteFor(m)));
+    this.sprMode = n > 0 && sprs.every(Boolean); // every foe has a painting: lay the ranks out from the real sprite sizes, big and close
+    const lay = this.sprMode ? this.spriteLayout(monsters, ranks, sprs) : rankLayout(monsters.map((m) => ({ id: m.id, T: MONSTERS[m.key] })), ranks); const crowd = lay.crowd;
     await Promise.all(monsters.map(async (m, i) => {
-      const T = MONSTERS[m.key]; const spr = await spriteFor(m); if (spr) { buildSpriteMonster(this, m, T, spr, lay, n, crowd); return; } // hand-painted sprite, else the 3D model
+      const T = MONSTERS[m.key]; const spr = sprs[i]; if (spr) { buildSpriteMonster(this, m, T, spr, lay, n, crowd); return; } // hand-painted sprite, else the 3D model
       const g = await loadModel(T.model); if (!g) return;
       const o = SkeletonUtils.clone(g.scene);
       const mats = [];
@@ -376,13 +396,20 @@ export class Renderer {
     }));
     this.fitArena();
   }
+  /** Rank layout for painted sprites (sizes come from the paintings themselves). */
+  spriteLayout(monsters, ranks, sprs) {
+    const items = monsters.map((m, i) => { const T = MONSTERS[m.key]; const z = spriteSize(m, T, sprs[i]); return { id: m.id, w: z.w, h: z.h, boss: !!T.boss || !!m.elite }; });
+    return { ...spriteRankLayout(items, ranks), crowd: 1, sprite: true };
+  }
   /** Ranks changed (a front group fell): slide the surviving groups forward to their new depth. */
   restageMonsters(monsters, ranks, ms = 600) {
-    const lay = rankLayout(monsters.map((m) => ({ id: m.id, T: MONSTERS[m.key] })), ranks); const from = new Map();
-    for (const [id, v] of this.monsterObjs) { if (v.dead) continue; const t = lay.pos.get(id); if (t) from.set(id, { x: v.holder.position.x, z: v.holder.position.z, t }); }
+    let lay; if (this.sprMode) { const alive = monsters.filter((m) => this.monsterObjs.get(m.id)?.spr); lay = spriteRankLayout(alive.map((m) => { const v = this.monsterObjs.get(m.id), T = MONSTERS[m.key]; return { id: m.id, w: v.spr.Wd, h: v.spr.H, boss: !!T.boss || !!m.elite }; }), ranks); }
+    else lay = rankLayout(monsters.map((m) => ({ id: m.id, T: MONSTERS[m.key] })), ranks); const from = new Map();
+    for (const [id, v] of this.monsterObjs) { if (v.dead) continue; const t = lay.pos.get(id); if (t) from.set(id, { x: v.holder.position.x, z: v.holder.position.z, y: v.holder.position.y, rs: v.spr?.rs ?? 1, t }); }
     const t0 = performance.now(); const dur = this.reduceMotion ? 1 : ms;
     const step = () => { const k = Math.min(1, (performance.now() - t0) / dur), e = k * k * (3 - 2 * k);
-      for (const [id, f] of from) { const v = this.monsterObjs.get(id); if (!v) continue; v.holder.position.x = f.x + (f.t.x - f.x) * e; v.holder.position.z = f.z + (f.t.z - f.z) * e; }
+      for (const [id, f] of from) { const v = this.monsterObjs.get(id); if (!v) continue; v.holder.position.x = f.x + (f.t.x - f.x) * e; v.holder.position.z = f.z + (f.t.z - f.z) * e;
+        if (v.spr && f.t.s) { v.spr.rank = f.t.rank; v.spr.rs = f.rs + (f.t.s - f.rs) * e; const ly = f.t.y + (v.spr.flying ? 0.3 * v.spr.H * f.t.s : 0); v.holder.position.y = f.y + (ly - f.y) * e; } }
       if (k < 1) requestAnimationFrame(step); else this.fitArena(); };
     step(); return new Promise((r) => setTimeout(r, dur));
   }
@@ -390,10 +417,11 @@ export class Renderer {
    *  bottom for the narration caption (captionReservePx tall, between 24% and 62% of the view). */
   fitArena() {
     const cam = this.arenaCam; const h = this.container.clientHeight || 1; const w = this.container.clientWidth || 1;
-    const base = new THREE.Vector3(0, 2.1, 5.2), look = new THREE.Vector3(0, 1.3, -2); this.arenaLook = look;
+    const spr = !!this.sprMode; const base = new THREE.Vector3(0, spr ? 3.5 : 2.1, 5.2), look = new THREE.Vector3(0, spr ? 1.45 : 1.3, -2); this.arenaLook = look; // painted sprites: a slightly higher camera so back ranks sit higher in the picture
     const phonePortrait = window.innerWidth <= 760 && window.innerHeight > window.innerWidth; // there the view itself grows while a caption is up
     const reserve = phonePortrait && !this.captionUp ? 0.1 : Math.min(0.62, Math.max(0.24, (this.captionReservePx || (w < 520 ? 150 : 140)) / h)); // no caption up: just room for floaters
-    const hud = this.container.querySelector('#hud'), top = Math.max(3, hud && hud.offsetHeight ? ((hud.offsetTop + hud.offsetHeight) / h) * 100 + 1 : 3), limit = 100 * (1 - reserve) - 2;
+    const hud = this.container.querySelector('#hud'), top = Math.max(3, hud && hud.offsetHeight ? ((hud.offsetTop + hud.offsetHeight) / h) * 100 + 1 : 3), limit = 100 * (1 - reserve) - 2 + (spr ? 1 : 0);
+    const topPad = spr ? 3 : 0; // room for the name plates above the heads
     cam.clearViewOffset(); let k = 1; this._co?.set(0, 0, 0);
     // never dolly in so far that the padded monster box reaches the camera: points behind it project mirrored, the fit then
     // "sees" a gigantic/flipped rect and throws the whole picture off the top of the screen (tall phone view, no menu yet)
@@ -402,12 +430,15 @@ export class Renderer {
     for (let i = 0; i < 8; i++) {
       cam.position.copy(look).addScaledVector(base.clone().sub(look), k); cam.lookAt(look); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
       const r = this.monsterRect(); if (!r) break;
-      const span = r.bottom - r.top, avail = limit - top, wide = (r.right - r.left) / 90, half = Math.max(50 - r.left, r.right - 50) / 45;
-      const need = Math.max(span / avail, wide, half); if (Math.abs(need - 0.97) < 0.03) break;
+      const span = r.bottom - r.top, avail = limit - top - topPad, wide = (r.right - r.left) / (spr ? 97 : 90), half = Math.max(50 - r.left, r.right - 50) / (spr ? 48.5 : 45);
+      let need = Math.max(span / avail, wide, half);
+      if (spr) { // painted sprites: the FRONT rank is fitted big (about 72% of the stage); back ranks may rise past the top edge a little (their heads tuck under the HUD) but stay visible
+        const f = this.monsterRect(0) || r, fw = (f.right - f.left) / 97, fh = Math.max(50 - f.left, f.right - 50) / 48.5;
+        need = Math.max((f.bottom - f.top) / (0.72 * avail), span / (1.3 * avail), fw, wide / 1.3, fh, half / 1.2); } if (Math.abs(need - 0.97) < 0.03) break;
       const nk = Math.max(kMin, k * Math.min(2.5, need * 1.03)); if (Math.abs(nk - k) < 0.002) break; k = nk; // pull back if too big, push in if small
     }
-    const r = this.monsterRect(); this.arenaShift = 0;
-    if (r) { const shift = (r.top + r.bottom) / 2 - (top + limit) / 2; // centre the monsters in the band above the caption (+ moves the picture up)
+    const r = (spr && this.monsterRect(0)) || this.monsterRect(); this.arenaShift = 0;
+    if (r) { const shift = (r.top + r.bottom) / 2 - (top + topPad + limit) / 2; // centre the monsters in the band above the caption (+ moves the picture up)
       const s = Number.isFinite(shift) ? Math.max(-45, Math.min(45, shift)) : 0; // a bigger shift can only mean a bad measurement
       if (s) { cam.setViewOffset(w, h, 0, (s / 100) * h, w, h); this.arenaShift = s; } }
     cam.updateProjectionMatrix();
@@ -483,11 +514,11 @@ export class Renderer {
     this.fx.push({ m, l, t: 0 });
   }
   /** Screen rectangle (in % of the view) covered by all living monsters, padded for idle/attack animation. */
-  monsterRect() {
+  monsterRect(maxRank = Infinity) {
     let r = null; const v3 = new THREE.Vector3();
     for (const [, v] of this.monsterObjs) {
-      if (v.dead || !v.wbox || v.wbox.isEmpty()) continue; const b = v.wbox.clone(); const sz = b.getSize(new THREE.Vector3());
-      b.min.x -= sz.x * 0.1; b.max.x += sz.x * 0.1; b.max.y += sz.y * 0.12; b.min.z -= sz.z * 0.1; b.max.z += sz.z * 0.1 + 0.4; // lunge toward camera
+      if (v.dead || !v.wbox || v.wbox.isEmpty() || (v.spr?.rank ?? 0) > maxRank) continue; const b = v.wbox.clone(); const sz = b.getSize(new THREE.Vector3());
+      const px = this.sprMode ? 0.015 : 0.1, py = this.sprMode ? 0.05 : 0.12; b.min.x -= sz.x * px; b.max.x += sz.x * px; b.max.y += sz.y * py; b.min.z -= sz.z * 0.1; b.max.z += sz.z * 0.1 + 0.4; // lunge toward camera
       for (let i = 0; i < 8; i++) { v3.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).project(this.arenaCam);
         const x = (v3.x * 0.5 + 0.5) * 100, y = (-v3.y * 0.5 + 0.5) * 100;
         if (!r) r = { left: x, right: x, top: y, bottom: y }; else { r.left = Math.min(r.left, x); r.right = Math.max(r.right, x); r.top = Math.min(r.top, y); r.bottom = Math.max(r.bottom, y); } }

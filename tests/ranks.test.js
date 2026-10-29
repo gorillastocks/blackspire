@@ -3,7 +3,7 @@ import { createCharacter, assignByPriority, levelUp } from '../src/rules/charact
 import { Combat, MAX_GROUPS, FRONT_GROUPS } from '../src/rules/combat.js';
 import { setRng, seeded } from '../src/rules/dice.js';
 import { SPELLS, MONSTERS } from '../src/rules/data.js';
-import { rankLayout, RANK_Z0, RANK_DZ } from '../src/render/ranks.js';
+import { rankLayout, spriteRankLayout, SPR_RANK_SCALE, RANK_Z0, RANK_DZ } from '../src/render/ranks.js';
 
 afterEach(() => setRng(null));
 const mk = (cls, lvl = 1) => { const c = createCharacter({ name: cls, race: 'human', cls, base: assignByPriority(cls) }); c.xp = 999999; while (c.level < lvl) levelUp(c); return c; };
@@ -183,5 +183,46 @@ describe('ranks: render layout', () => {
   it('a single group lays out exactly like before: one row, spread across the width', () => {
     const ms = [{ id: 'a', T: {} }, { id: 'b', T: {} }, { id: 'c', T: {} }]; const { pos } = rankLayout(ms, null);
     expect(pos.get('a').x).toBeLessThan(pos.get('c').x); expect(pos.get('a').z).toBeLessThanOrEqual(RANK_Z0);
+  });
+});
+
+describe('ranks: painted-sprite layout', () => {
+  const fig = (id, w = 3, h = 2.4, o = {}) => ({ id, w, h, ...o });
+  const mkRows = (counts) => { let n = 0; return counts.map((c) => Array.from({ length: c }, () => `f${n++}`)); };
+  const itemsOf = (rows, o = {}) => rows.flat().map((id) => fig(id, 3, 2.4, o[id]));
+  const ext = (p, it) => [p.x - it.w * p.s / 2, p.x + it.w * p.s / 2];
+  it('every figure gets a finite place; ranks shrink and stand further back front to back', () => {
+    const rows = mkRows([2, 2, 2, 1]); const { pos } = spriteRankLayout(itemsOf(rows), rows);
+    expect(pos.size).toBe(7);
+    for (const p of pos.values()) for (const k of ['x', 'z', 'y', 's']) expect(Number.isFinite(p[k]), k).toBe(true);
+    const s = rows.map((r) => pos.get(r[0]).s), z = rows.map((r) => pos.get(r[0]).z);
+    for (let i = 1; i < rows.length; i++) { expect(s[i]).toBeLessThan(s[i - 1]); expect(z[i]).toBeLessThan(z[i - 1]); }
+    expect(SPR_RANK_SCALE[0]).toBe(1); expect(s[0]).toBe(1);
+  });
+  it('back ranks are lifted so their heads clear the rank in front; the front rank stands on the floor', () => {
+    const rows = mkRows([2, 2, 2]); const { pos } = spriteRankLayout(itemsOf(rows), rows);
+    for (const id of rows[0]) expect(pos.get(id).y).toBe(0);
+    for (const id of rows[2]) expect(pos.get(id).y).toBeGreaterThan(0);
+    expect(Math.max(...rows[1].map((id) => pos.get(id).y + 2.4 * pos.get(id).s))).toBeGreaterThan(Math.max(...rows[0].map((id) => 2.4 * pos.get(id).s)) * 0.95);
+  });
+  it('a boss stands alone in the middle at full size; the biggest figure of a row stands between its neighbours, which overlap it but not completely', () => {
+    const rows = [['boss'], ['a', 'big', 'b']]; const its = [fig('boss', 4.4, 4.2, { boss: true }), fig('a'), fig('big', 3.6, 3, { elite: true }), fig('b')];
+    const { pos } = spriteRankLayout(its, rows);
+    expect(pos.get('boss').s).toBe(1); expect(pos.get('boss').x).toBeCloseTo(0);
+    const xb = pos.get('big').x; expect(Math.min(pos.get('a').x, pos.get('b').x)).toBeLessThan(xb); expect(Math.max(pos.get('a').x, pos.get('b').x)).toBeGreaterThan(xb);
+    const sc = pos.get('big').s; for (const id of ['a', 'b']) { const gap = Math.abs(pos.get(id).x - xb), full = (3.6 * sc + 3 * sc) / 2; expect(gap).toBeLessThan(full); expect(gap).toBeGreaterThan(full * 0.5); }
+  });
+  it('three or more in the front rank split into two lines so the group stays big (one row would be too wide)', () => {
+    const rows = mkRows([3]); const { pos } = spriteRankLayout(itemsOf(rows), rows);
+    const zs = new Set(rows[0].map((id) => pos.get(id).z.toFixed(2))); expect(zs.size).toBeGreaterThan(1);
+    const xs = rows[0].map((id) => pos.get(id).x); const span = Math.max(...xs) - Math.min(...xs); expect(span).toBeLessThan(3 * 3 * 0.8 + 1e-6); // narrower than three side by side
+  });
+  it('nothing leaves the stage sideways, and a lone figure stands centred', () => {
+    for (const counts of [[6], [4, 4, 3, 3], [1], [1, 1, 1, 1, 1, 1]]) { const rows = mkRows(counts); const { pos } = spriteRankLayout(itemsOf(rows), rows);
+      for (const p of pos.values()) expect(Math.abs(p.x)).toBeLessThanOrEqual(9); }
+    const { pos } = spriteRankLayout([fig('only')], [['only']]); expect(pos.get('only').x).toBeCloseTo(0); expect(pos.get('only').y).toBe(0);
+  });
+  it('without rank info it lays everyone out as one rank', () => {
+    const { pos } = spriteRankLayout([fig('a'), fig('b')], null); expect(pos.get('a').rank).toBe(0); expect(pos.get('b').rank).toBe(0);
   });
 });

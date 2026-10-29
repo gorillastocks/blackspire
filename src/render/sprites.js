@@ -48,24 +48,36 @@ function spriteMaterial(tex) {
   mat.customProgramCacheKey = () => 'spr1'; mat.userData.u = u; return mat;
 }
 
+/** World size of a painting at the front rank: bigger creatures are bigger, elite leads and bosses bigger still; a manifest entry may carry `s` (a per-monster size multiplier). */
+export function spriteSize(m, T, spr) {
+  const aspect = spr.w / spr.h; const sz = Math.max(0.95, Math.min(1.9, Math.pow(T.size || 1, 0.5)));
+  const role = T.boss ? 1.22 : m.elite ? 1.16 : T.lieutenant ? 1.08 : 1;
+  const h = (SPR_BASE_H * sz * role * (spr.s || 1)) / Math.max(1, aspect * 0.75); // wide beasts are scaled down a little so they do not swamp the row
+  return { w: h * aspect, h, aspect };
+}
+export const SPR_BASE_H = 2.3;
+
 /** Build a sprite monster and register it in scene.monsterObjs. `lay`/`n`/`crowd` come from showMonsters (rank layout). */
 export function buildSpriteMonster(scene, m, T, spr, lay, n, crowd) {
-  const target = T.size * crowd * (n === 1 ? 0.95 : 0.85);
-  const aspect = spr.w / spr.h; const H = target / Math.max(1, aspect * 0.7), Wd = H * aspect; // wide beasts are scaled down like their 3D models were
+  const L = lay.sprite ? lay.pos.get(m.id) : null; const rs = L ? L.s : 1;
+  let H, Wd;
+  if (L) { ({ w: Wd, h: H } = spriteSize(m, T, spr)); } // painted-sprite layout: real size, rank scale applied per frame
+  else { const target = T.size * crowd * (n === 1 ? 0.95 : 0.85); const aspect = spr.w / spr.h; H = target / Math.max(1, aspect * 0.7); Wd = H * aspect; } // legacy: wide beasts scaled down like their 3D models
   const mat = spriteMaterial(spr.tex);
   const geo = new PlaneGeometry(Wd, H); geo.translate(0, H / 2, 0); // origin at the feet
   const mesh = new Mesh(geo, mat); mesh.frustumCulled = false;
   const o = new Group(); o.add(mesh);
   const holder = new Group(); holder.add(o);
   const flying = !!T.flying; const { x, z } = lay.pos.get(m.id) || { x: 0, z: -2 };
-  holder.position.set(x, flying ? 0.9 : 0, z);
+  const lift = (L ? L.y : 0) + (flying ? (L ? 0.3 * H * rs : 0.9) : 0); // flyers hover; the shadow stays at the feet of their rank
+  holder.position.set(x, lift, z);
   const shadow = new Mesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, opacity: flying ? 0.5 : 0.9 }));
-  shadow.rotation.x = -Math.PI / 2; shadow.scale.set(Wd * 0.85, Wd * 0.28, 1); shadow.position.y = -holder.position.y + 0.02; shadow.renderOrder = -1; holder.add(shadow);
+  shadow.rotation.x = -Math.PI / 2; shadow.scale.set(Wd * rs * 0.85, Wd * rs * 0.28, 1); shadow.position.y = -(flying ? 0.3 * H * rs : 0) + 0.02; shadow.renderOrder = -1; holder.add(shadow);
   holder.lookAt(scene.arenaCam.position.x * 0.3, holder.position.y, scene.arenaCam.position.z);
   scene.monsterGroup.add(holder); scene.monsterGroup.updateMatrixWorld(true);
-  const local = new Box3(new Vector3(-Wd / 2, 0, -0.12), new Vector3(Wd / 2, H, 0.12)); // billboards face the camera, so z is small
+  const local = new Box3(new Vector3(-Wd * rs / 2, 0, -0.12), new Vector3(Wd * rs / 2, H * rs, 0.12)); // billboards face the camera, so z is small
   const wbox = local.clone().translate(holder.position);
-  const rec = { id: m.id, holder, o, mixer: null, clips: {}, mats: [], dead: false, height: H, wbox, spr: { mesh, mat, shadow, local, base: holder.position.clone(), phase: Math.random() * 6.28, flying, Wd, H, lastX: x, lastZ: z } };
+  const rec = { id: m.id, holder, o, mixer: null, clips: {}, mats: [], dead: false, height: H * rs, wbox, spr: { mesh, mat, shadow, local, base: holder.position.clone(), phase: Math.random() * 6.28, flying, Wd, H, rs, rank: L ? L.rank : 0, lastX: x, lastZ: z, lastRs: rs } };
   scene.monsterObjs.set(m.id, rec); return rec;
 }
 
@@ -75,17 +87,17 @@ export function updateSprites(scene, dt, t) {
   for (const [, v] of scene.monsterObjs) {
     const s = v.spr; if (!s) continue; const u = s.mat.userData.u;
     // keep the framing box glued to the holder (ranks slide forward when a front group falls)
-    const p = v.holder.position; if (p.x !== s.lastX || p.z !== s.lastZ) { v.wbox.copy(s.local).translate(p); s.lastX = p.x; s.lastZ = p.z; if (!v.dead) v.wbox.min.y = Math.min(v.wbox.min.y, p.y); }
+    const p = v.holder.position; if (p.x !== s.lastX || p.z !== s.lastZ || s.rs !== s.lastRs) { s.local.min.set(-s.Wd * s.rs / 2, 0, -0.12); s.local.max.set(s.Wd * s.rs / 2, s.H * s.rs, 0.12); v.height = s.H * s.rs; s.shadow.scale.set(s.Wd * s.rs * 0.85, s.Wd * s.rs * 0.28, 1); v.wbox.copy(s.local).translate(p); s.lastX = p.x; s.lastZ = p.z; s.lastRs = s.rs; if (!v.dead) v.wbox.min.y = Math.min(v.wbox.min.y, p.y); }
     // idle: breathing (squash & stretch from the feet) and a slow sway; flyers hover
     const ph = t * 1.9 + s.phase; const live = !v.dead;
     const amp = live ? (rm ? 0 : 1) : 0;
-    s.mesh.scale.set(1 - Math.sin(ph) * 0.006 * amp, 1 + Math.sin(ph) * 0.016 * amp, 1);
+    s.mesh.scale.set((1 - Math.sin(ph) * 0.006 * amp) * s.rs, (1 + Math.sin(ph) * 0.016 * amp) * s.rs, 1);
     s.mesh.rotation.z = Math.sin(ph * 0.5) * 0.012 * amp;
-    s.mesh.position.y = s.flying ? Math.sin(ph * 0.8) * 0.09 * (rm ? 0.3 : 1) * (live ? 1 : 0) : 0;
+    s.mesh.position.y = s.flying ? Math.sin(ph * 0.8) * 0.09 * s.rs * (rm ? 0.3 : 1) * (live ? 1 : 0) : 0;
     // hit: red flash (spells flash in their own colour) + a quick horizontal shake
     const f = v.flash > 0 ? v.flash : 0;
     if (f > 0) { const spell = v.flashColor !== 0xffffff && v.flashColor !== 0xffee55; if (spell) u.uTint.value.setHex(v.flashColor); else u.uTint.value.setHex(0xff2a1a); u.uFlash.value = Math.min(1, f * 4.5) * (spell ? 0.55 : v.flashColor === 0xffee55 ? 0.85 : 0.7); } else u.uFlash.value = 0;
-    s.mesh.position.x = v.stagger > 0 && !rm ? Math.sin(t * 70) * 0.07 * Math.min(1, v.stagger * 3) : 0;
+    s.mesh.position.x = v.stagger > 0 && !rm ? Math.sin(t * 70) * 0.07 * s.rs * Math.min(1, v.stagger * 3) : 0;
     // death: noisy dissolve with an ember edge (plain fade under Reduce motion)
     if (v.dead && v.dieT !== undefined) {
       const k = Math.min(1, v.dieT / v.dieDur), d = k > v.dissolveAt ? (k - v.dissolveAt) / (1 - v.dissolveAt) : 0;
