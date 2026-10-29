@@ -615,3 +615,8 @@ button.bigtab { width: 100%; min-height: 52px; margin-bottom: 4px; }
 .mtag:has(.aimn) { border-color: var(--gold); box-shadow: 0 0 10px #ffd34d88; }
 #cmenu .combatmenu.aim button.on { background: #c9a227; color: #111; }
 #cmenu .combatmenu.aim button:disabled { opacity: .4; }
+
+/* Ranks: unreachable groups are greyed out in the target picker and in the arena */
+.mtag.far { opacity: .5; filter: grayscale(.8); border-style: dashed; cursor: not-allowed; }
+.mtag .rk { color: var(--gold); font-weight: 700; }
+.combatmenu.groups button.far, .combatmenu button.far { opacity: .5; filter: grayscale(.7); text-decoration: none; }

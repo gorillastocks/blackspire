@@ -1128,9 +1128,10 @@ async function startCombat(info) {
   combatStarting = false;
   if (info.elite || info.boss) sfx('roar');
   R.setMode('combat');
-  try { await R.showMonsters(combat.monsters, theme); } catch (e) { log('Could not draw the monsters: ' + (e && e.message || e), 'bad'); } // a failed model load must not leave the battle without its menu
+  try { await R.showMonsters(combat.monsters, theme, rankIds()); } catch (e) { log('Could not draw the monsters: ' + (e && e.message || e), 'bad'); } // a failed model load must not leave the battle without its menu
   const names = {}; for (const m of combat.monsters) names[m.name] = (names[m.name] || 0) + 1;
   log(`⚔ ${Object.entries(names).map(([n, k]) => `${k} ${n}${k > 1 ? 's' : ''}`).join(', ')}!`, 'bad');
+  if (combat.liveRanks().length > 1) log(`Ranks, front to back: ${combat.liveRanks().map((g, i) => `${i + 1}. ${g.name} ×${g.monsters.length}`).join(' · ')}. Melee reaches only the first ${RANKS_FRONT} groups.`, 'sys');
   say(banter(S.party, 'combatStart', {}, info.boss ? 1 : 0.7));
   busy = false;
   await flushCombat();
@@ -1262,6 +1263,8 @@ async function flushCombat() {
     if (e.type === 'cutin') { pending = null; await playCutin(e); continue; }
     if (e.type === 'trait') { const d = D.dtype(e.dtype), k = D.TRAIT_KINDS[e.kind]; floater(e.who.id, `${d.icon} ${k.mark}`, false, e.dtype); renderTargets(); if (e.first) toast(`${d.icon} Discovered: ${e.who.name} ${k.word.toLowerCase()} ${d.name.toLowerCase()} (${k.mark})`); await wait(e.kind === 'immune' ? 220 : 140); continue; }
     if (e.type === 'rows') { renderParty(); continue; }
+    if (e.type === 'advance') { try { await R.restageMonsters(combat.monsters.filter((m) => m.hp > 0 && !m.ally), rankIds(), skipping ? 60 : 650); } catch (_) { /* layout only */ } renderTargets(); continue; }
+    if (e.type === 'wait') continue;
     if (e.type === 'study') { renderTargets(); sfx(e.ok ? 'chime' : 'miss'); if (e.ok) await wait(200); continue; }
     if (e.type === 'monsterAttack') { pending = null; if (e.tgt?.side === 'party') showFoePortrait(foeTargets(events, events.indexOf(e)), e.who); R.monsterAttack(e.who.id); sfx('swing'); await wait(560 * ANIM_SLOW); }
     else if (e.type === 'partyAttack') { pending = null; const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait((k === 'bow' || k === 'crossbow' ? 60 : 150) * ANIM_SLOW); }
@@ -1293,14 +1296,21 @@ async function flushCombat() {
 function floater(id, v, crit, dtype) { const p = R.screenPos(id); if (!p) return; const miss = v === 'Miss'; const el = h('div', { class: 'floater' + (crit ? ' crit' : '') + (miss ? ' miss' : ''), 'data-dtype': dtype || '', style: `left:${p.x}%;top:${p.y}%;color:${miss ? '#bbb' : crit ? '' : DTYPE_CSS(dtype) || '#fff'}` }, ...(crit ? [h('small', {}, 'CRIT '), String(v)] : [String(v)])); $('#floaters').append(el); setTimeout(() => el.remove(), 1100); }
 function cardFloat(c, v, crit, cls = 'bad', dtype = null) { const el = document.getElementById('card-' + c.id); if (!el) return; const f = h('div', { class: 'floater' + (crit ? ' crit' : '') + (v === 'Miss' ? ' miss' : ''), style: `left:70%;top:0;font-size:${crit ? 24 : 18}px;color:${cls === 'good' ? '#6dffa8' : v === 'Miss' ? '#bbb' : DTYPE_CSS(dtype) || '#ff5a6e'}` }, crit ? 'CRIT ' + v : String(v)); el.append(f); setTimeout(() => f.remove(), 1100); }
 let targetPick = null;
+let pickKind = null; // range kind of the target being chosen ('melee' | 'touch' | 'ranged'); foes beyond it are greyed out
+const RANKS_FRONT = 2;
+/** The living monster groups as arrays of monster ids, front to back (what the arena uses to stagger the ranks). */
+const rankIds = () => combat.liveRanks().map((g) => g.monsters.map((m) => m.id));
+const rankLabel = (m) => { const g = combat.groupOf(m); return g ? `G${g.rank + 1}` : ''; };
+const reachable = (m) => !pickKind || !combat || combat.canTarget(combat.current(), m, pickKind);
 let aimState = null; // multi-projectile aiming in progress: array of monsters, one per assigned dart/ray/beam
 const aimCount = (m) => (aimState ? aimState.filter((x) => x === m).length : 0);
 function renderTargets() {
   const el = $('#targets'); el.innerHTML = ''; if (!combat || combat.state !== 'running') return;
   for (const m of combat.monsters) {
-    if (m.hp <= 0) continue; const p = R.screenPos(m.id); if (!p) continue;
-    el.append(h('div', { class: `mtag ${targetPick ? 'pick' : ''} ${combat.current() === m ? 'sel' : ''}`, style: `left:${Math.min(86, Math.max(14, p.x))}%;top:${Math.max(8, p.y)}%`, onclick: () => targetPick && targetPick(m), info: () => monsterInfo(m) },
-      h('div', {}, m.name, aimCount(m) ? h('b', { class: 'aimn' }, ` ×${aimCount(m)}`) : ''), h('div', { class: 'bar' }, h('i', { style: `width:${m.hp / m.maxHp * 100}%` })), traitChips(m), condChips(m.conditions)));
+    if (m.hp <= 0 || m.ally) continue; const p = R.screenPos(m.id); if (!p) continue;
+    const far = !!targetPick && !reachable(m);
+    el.append(h('div', { class: `mtag ${targetPick && !far ? 'pick' : ''} ${far ? 'far' : ''} ${combat.current() === m ? 'sel' : ''}`, style: `left:${Math.min(86, Math.max(14, p.x))}%;top:${Math.max(8, p.y)}%`, onclick: () => { if (!targetPick) return; if (far) { toast(`${m.name}: out of reach`); return; } targetPick(m); }, info: () => monsterInfo(m) },
+      h('div', {}, h('b', { class: 'rk' }, combat.liveRanks().length > 1 ? rankLabel(m) + ' ' : ''), m.name, aimCount(m) ? h('b', { class: 'aimn' }, ` ×${aimCount(m)}`) : ''), h('div', { class: 'bar' }, h('i', { style: `width:${m.hp / m.maxHp * 100}%` })), traitChips(m), condChips(m.conditions)));
   }
 }
 let curMenu = null; // the combat menu being waited on (so the watchdog can redraw it if it ever goes missing)
@@ -1337,11 +1347,11 @@ async function reclassMenu(c) {
 }
 /** Multi-projectile spells (Magic Missile darts, Scorching Ray rays, Eldritch Blast beams): assign each dart/ray/beam to a foe, repeats allowed.
  *  Tap a monster tag (or its button) to send one more at it; "All on one" then a foe sends every remaining shot there; Undo / Clear; Cast needs all assigned. */
-async function pickAims(c, key, n) {
+async function pickAims(c, key, n, range = 'ranged') {
   const noun = projectileNoun(key), nouns = noun + 's', title = SPELLS[key].name;
-  const live = combat.livingMonsters(); if (!live.length) return null;
+  const live = combat.legalTargets(c, range); if (!live.length) return null; const many = combat.liveRanks().length > 1;
   if (live.length === 1) return Array(n).fill(live[0]);
-  aimState = []; let allOne = false;
+  pickKind = many ? range : null; aimState = []; let allOne = false;
   try {
     for (;;) {
       const left = n - aimState.length;
@@ -1351,7 +1361,7 @@ async function pickAims(c, key, n) {
         { id: 'one', label: allOne ? 'All on one: tap foe' : 'All on one', util: true, class: allOne ? 'on' : '', aim: true, info: () => ['All on one', `Tap "All on one", then a foe: every unassigned ${noun} goes to that foe.`] },
         { id: 'undo', label: 'Undo', util: true, disabled: !aimState.length, aim: true },
         { id: 'clear', label: 'Clear', util: true, disabled: !aimState.length, aim: true },
-        ...live.map((m) => ({ id: 'mon', m, aim: true, info: () => monsterInfo(m), label: `${m.name} (${m.hp}/${m.maxHp})${aimCount(m) ? ` ×${aimCount(m)}` : ''}${D.visibleConds(m.conditions).map((k) => ' ' + D.condInfo(k).icon).join('')}` })),
+        ...live.map((m) => ({ id: 'mon', m, aim: true, info: () => monsterInfo(m), label: `${many ? rankLabel(m) + ' ' : ''}${m.name} (${m.hp}/${m.maxHp})${aimCount(m) ? ` ×${aimCount(m)}` : ''}${D.visibleConds(m.conditions).map((k) => ' ' + D.condInfo(k).icon).join('')}` })),
       ];
       let resolveTap; const tap = new Promise((r) => (resolveTap = r));
       targetPick = (m) => resolveTap({ id: 'mon', m }); renderTargets();
@@ -1363,19 +1373,34 @@ async function pickAims(c, key, n) {
       else if (o.id === 'one') allOne = !allOne;
       else if (o.id === 'mon' && left > 0) { if (allOne) { for (let i = 0; i < left; i++) aimState.push(o.m); allOne = false; } else aimState.push(o.m); }
     }
-  } finally { aimState = null; targetPick = null; renderTargets(); }
+  } finally { aimState = null; targetPick = null; pickKind = null; renderTargets(); }
 }
-async function pickTarget(kind, c) {
+const REACH_WHY = 'Out of reach';
+const condIcons = (m) => D.visibleConds(m.conditions).map((k) => ' ' + D.condInfo(k).icon).join('');
+/** Pick a foe by GROUP (Wizardry style): one row per group with its count, unreachable groups greyed out. Tapping a monster in the arena targets that exact foe;
+ *  tapping a group row hits its weakest reachable awake foe (for area spells: the whole group). opts: { range, area } */
+async function pickTarget(kind, c, opts = {}) {
   if (kind === 'enemy') {
+    const range = opts.range || 'ranged', area = !!opts.area;
     const live = combat.livingMonsters();
     if (live.length === 1) return live[0];
-    const opts = live.map((m) => ({ info: () => monsterInfo(m), label: `${m.name} (${m.hp}/${m.maxHp})${D.visibleConds(m.conditions).map((k) => ' ' + D.condInfo(k).icon).join('')}${D.knownTraits(m).map((t) => ' ' + D.dtype(t.type).icon + D.TRAIT_KINDS[t.kind].mark).join('')}`, m }));
-    opts.push({ label: '← Back', back: true });
+    const groups = combat.liveRanks(), many = groups.length > 1;
+    const rows = groups.map((g) => {
+      const ok = combat.legalTargets(c, range).some((m) => m.gid === g.gid);
+      const hp = g.monsters.reduce((t, m) => t + m.hp, 0), mx = g.monsters.reduce((t, m) => t + m.maxHp, 0), n = g.monsters.length;
+      const pick = ok ? ([...g.monsters].filter((m) => combat.canTarget(c, m, range)).sort((a, b) => (a.conditions.unconscious ? 1 : 0) - (b.conditions.unconscious ? 1 : 0) || a.hp - b.hp)[0]) : null;
+      const names = g.mixed ? g.name : g.monsters[0].name;
+      return { g, ok, m: pick, info: () => monsterInfo(g.monsters[0]), disabled: !ok, class: ok ? '' : 'far', label: `${many ? `G${g.rank + 1} ` : ''}${names}${n > 1 || many ? ` ×${n}` : ''} (${hp}/${mx})${condIcons(g.monsters[0])}${area && ok && n > 1 ? ' · all hit' : ''}${ok ? '' : ` · ${REACH_WHY}`}` };
+    });
+    const list = rows.filter((r) => r.ok || many);
+    list.push({ label: '← Back', back: true });
+    pickKind = many ? range : null;
     let resolveTap; const tap = new Promise((r) => (resolveTap = r));
     targetPick = (m) => resolveTap({ m }); renderTargets();
-    const o = await Promise.race([chooseFrom(`${c.name}: choose a target (or tap a monster)`, opts), tap]);
-    targetPick = null; renderTargets();
-    return o.back ? null : o.m;
+    try {
+      const o = await Promise.race([chooseFrom(`${c.name}: choose ${many ? 'a group' : 'a target'} (or tap a monster)${area ? ' · area spell hits the whole group' : ''}`, list, many ? 'groups' : ''), tap]);
+      return o.back ? null : o.m;
+    } finally { targetPick = null; pickKind = null; renderTargets(); }
   }
   if (kind === 'rowmate') {
     const mine = combat.inFront(c);
@@ -1419,7 +1444,7 @@ async function playerTurn() {
     if (o.id === 'speed') { const ks = Object.keys(BATTLE_SPEEDS); setSpeed(ks[(ks.indexOf(loadSettings().battleSpeed) + 1) % ks.length]); log(`Battle speed: ${speed().label}`, 'sys'); continue; }
     page = 'main';
     let args = {};
-    if (o.target === 'enemy') { const m = await pickTarget('enemy', c); if (!m) continue; args.target = m; }
+    if (o.target === 'enemy') { const m = await pickTarget('enemy', c, { range: o.range, area: o.area }); if (!m) continue; args.target = m; }
     if (o.target === 'ally' || o.target === 'rowmate') { const p = await pickTarget(o.target, c); if (!p) continue; args.target = p; }
     if (o.id === 'cast') {
       const list = combat.castable(c).map(({ k, s }) => ({ info: () => spellInfo(k), label: `${s.name}${s.level ? ` (L${s.level})` : ' (cantrip)'}${s.bonus ? ' [bonus]' : ''}${s.conc ? ' [conc]' : ''}`, k, s }));
@@ -1434,8 +1459,8 @@ async function playerTurn() {
       }
       const tk = sp.s.target; let target = null; let aims = null;
       const nP = projectileCount(c, sp.k, slot);
-      if (nP > 1 && tk === 'enemy') { aims = await pickAims(c, sp.k, nP); if (!aims) continue; target = aims[0]; }
-      else if (tk === 'enemy' || tk === 'someEnemies') { target = await pickTarget('enemy', c); if (!target) continue; }
+      if (nP > 1 && tk === 'enemy') { aims = await pickAims(c, sp.k, nP, combat.rangeKind('cast', sp.k)); if (!aims) continue; target = aims[0]; }
+      else if (tk === 'enemy' || tk === 'someEnemies' || sp.s.area) { target = await pickTarget('enemy', c, { range: combat.rangeKind('cast', sp.k), area: !!sp.s.area }); if (!target) continue; }
       if (tk === 'ally' || tk === 'downedAlly' || tk === 'deadAlly') { target = await pickTarget(tk, c); if (!target) continue; }
       args = { spell: sp.k, slot, target, ...(aims ? { aims } : {}) };
     }

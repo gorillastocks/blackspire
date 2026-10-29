@@ -15,6 +15,7 @@ import { inRegion } from '../dungeon/outdoor.js';
 import { Outdoor } from './outdoor.js';
 import { ANIM_SLOW } from '../menu.js';
 import { MONSTERS } from '../rules/data.js';
+import { rankLayout } from './ranks.js';
 
 const CELL = 2, WALL_H = 2.6;
 const gltfCache = {};
@@ -335,9 +336,9 @@ export class Renderer {
     };
     this.sparks = new THREE.Points(sp, spm); a.add(this.sparks);
   }
-  async showMonsters(monsters, themeColor = 0x22e6ff) {
+  async showMonsters(monsters, themeColor = 0x22e6ff, ranks = null) {
     this.clearMonsters(); this.arenaRing.material.color.set(themeColor);
-    const n = monsters.length; const width = Math.min(9, 2.6 * n); const crowd = n > 3 ? 3 / n + 0.15 : 1;
+    const n = monsters.length; const lay = rankLayout(monsters.map((m) => ({ id: m.id, T: MONSTERS[m.key] })), ranks); const crowd = lay.crowd;
     await Promise.all(monsters.map(async (m, i) => {
       const T = MONSTERS[m.key]; const g = await loadModel(T.model); if (!g) return;
       const o = SkeletonUtils.clone(g.scene);
@@ -353,7 +354,7 @@ export class Renderer {
       const target = T.size * crowd * (n === 1 ? 0.95 : 0.85);
       const sc = target / Math.max(size.y, size.x * 0.6, size.z * 0.5); o.scale.setScalar(sc);
       const holder = new THREE.Group(); holder.add(o);
-      const x = n === 1 ? 0 : -width / 2 + (width * i) / (n - 1); const z = -2 - (i % 2) * 0.8 - (T.boss ? 1 : 0);
+      const { x, z } = lay.pos.get(m.id) || { x: 0, z: -2 };
       holder.position.set(x, T.flying ? 0.9 : 0, z);
       const box2 = measure(); o.position.y -= box2.min.y; // feet on ground
       holder.lookAt(this.arenaCam.position.x * 0.3, holder.position.y, this.arenaCam.position.z);
@@ -372,6 +373,16 @@ export class Renderer {
       this.monsterObjs.set(m.id, { id: m.id, holder, o, mixer, clips, mats, dead: false, height: target, wbox });
     }));
     this.fitArena();
+  }
+  /** Ranks changed (a front group fell): slide the surviving groups forward to their new depth. */
+  restageMonsters(monsters, ranks, ms = 600) {
+    const lay = rankLayout(monsters.map((m) => ({ id: m.id, T: MONSTERS[m.key] })), ranks); const from = new Map();
+    for (const [id, v] of this.monsterObjs) { if (v.dead) continue; const t = lay.pos.get(id); if (t) from.set(id, { x: v.holder.position.x, z: v.holder.position.z, t }); }
+    const t0 = performance.now(); const dur = this.reduceMotion ? 1 : ms;
+    const step = () => { const k = Math.min(1, (performance.now() - t0) / dur), e = k * k * (3 - 2 * k);
+      for (const [id, f] of from) { const v = this.monsterObjs.get(id); if (!v) continue; v.holder.position.x = f.x + (f.t.x - f.x) * e; v.holder.position.z = f.z + (f.t.z - f.z) * e; }
+      if (k < 1) requestAnimationFrame(step); else this.fitArena(); };
+    step(); return new Promise((r) => setTimeout(r, dur));
   }
   /** Frame the arena camera so every monster sits in the upper part of the view, leaving a clear band at the
    *  bottom for the narration caption (captionReservePx tall, between 24% and 62% of the view). */
