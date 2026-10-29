@@ -43,7 +43,7 @@ const GLSL_BODY = `#include <alphatest_fragment>
  diffuseColor.rgb = mix(diffuseColor.rgb, uTint, uFlash);`;
 function spriteMaterial(tex) {
   const u = { uTint: { value: new Color(0xff2a1a) }, uFlash: { value: 0 }, uDis: { value: 0 } };
-  const mat = new MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, side: DoubleSide, color: 0xe8e8e8 });
+  const mat = new MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, side: DoubleSide, color: 0xffffff, toneMapped: false });
   mat.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, u); sh.fragmentShader = GLSL_HEAD + sh.fragmentShader.replace('#include <alphatest_fragment>', GLSL_BODY); };
   mat.customProgramCacheKey = () => 'spr1'; mat.userData.u = u; return mat;
 }
