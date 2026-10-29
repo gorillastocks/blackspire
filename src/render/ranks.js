@@ -28,8 +28,12 @@ export function rankLayout(monsters, ranks) {
 // the biggest figure (a boss or elite lead) stands in the middle, slightly further back, and its neighbours stand a little
 // in front and overlap its edges. Back ranks are smaller and sit in the gaps of the rank in front. Rows of five or more
 // split into two interleaved lines so a big pack still reads and the camera can stay close.
-export const SPR_RANK_SCALE = [1, 0.78, 0.64, 0.54, 0.48, 0.44];
-export const SPR_RANK_DZ = 1.6;
+export const SPR_RANK_SCALE = [1, 0.84, 0.72, 0.63, 0.57, 0.52];
+// The painted-sprite front rank stands well forward on the stage (the disc centre is z = -2, its near edge z = 3.5) and the ranks
+// behind are packed closer together, so the pack fills the stage but back groups still read as further back.
+export const SPR_BOSS_MIN_SCALE = 0.92;
+export const SPR_Z0 = 0.9;
+export const SPR_RANK_DZ = 0.95;
 const rscale = (r) => SPR_RANK_SCALE[Math.min(r, SPR_RANK_SCALE.length - 1)];
 /** Positions for one line of figures (already scaled widths `ws`), biggest in the middle. Returns x per input index, centred on 0. */
 function chainLine(items, overlap) {
@@ -50,9 +54,9 @@ export function spriteRankLayout(items, ranks) {
   const pos = new Map(); let prevExtents = []; let f0 = null; // f0: x-span of the front rank, back ranks should not stick out far beyond it
   const placed = []; // { lo, hi, top } of every figure already standing: back figures are raised until their heads clear what hides them
   rows.forEach((row, ri) => {
-    const s = rscale(ri); const its = row.map((id) => items.find((q) => q.id === id)).filter(Boolean).map((q) => ({ id: q.id, w: q.w * s, h: q.h * s, boss: !!q.boss, sc: s }));
+    const its = row.map((id) => items.find((q) => q.id === id)).filter(Boolean).map((q) => { const s = q.boss ? Math.max(rscale(ri), SPR_BOSS_MIN_SCALE) : rscale(ri); return { id: q.id, w: q.w * s, h: q.h * s, boss: !!q.boss, sc: s }; }); // a boss or elite never shrinks much with rank: it must still read at the back
     if (!its.length) return;
-    const z0 = RANK_Z0 - ri * SPR_RANK_DZ; const place = []; // { it, x, z, k }
+    const z0 = SPR_Z0 - ri * SPR_RANK_DZ; const place = []; // { it, x, z, k }
     if (its.length >= (ri === 0 ? 3 : 5)) { // two interleaved lines in this rank
       const nf = Math.ceil(its.length / 2); const sorted = its.slice().sort((a, b) => b.h - a.h); const A = [], B = [];
       sorted.forEach((it, i) => (i % 2 ? B : A).push(it)); // spread the big ones over both lines
@@ -73,15 +77,15 @@ export function spriteRankLayout(items, ranks) {
     const c0 = -(lo + hi) / 2; let best = c0;
     if (ri > 0 && prevExtents.length) {
       const avgW = place.reduce((t, p) => t + p.it.w, 0) / place.length; let bc = Infinity;
-      for (let d = -1.6; d <= 1.601; d += 0.1) { const sh = c0 + d * avgW; let cost = Math.abs(d) * avgW * 0.5;
-        for (const p of place) { const [a, b] = ext(p); const ca = a + sh, cb = b + sh, w = (cb - ca) * 0.7, mid = (ca + cb) / 2; for (const [pa, pb] of prevExtents) cost += 0.5 * Math.max(0, Math.min(mid + w / 2, pb) - Math.max(mid - w / 2, pa));
-          if (f0) cost += 3 * (Math.max(0, f0[0] - ca) + Math.max(0, cb - f0[1])); }
+      const hasBoss = place.some((p) => p.it.boss); for (let d = hasBoss ? -2.4 : -1.6; d <= (hasBoss ? 2.401 : 1.601); d += 0.1) { const sh = c0 + d * avgW; let cost = Math.abs(d) * avgW * 0.5;
+        for (const p of place) { const [a, b] = ext(p); const ca = a + sh, cb = b + sh, w = (cb - ca) * 0.7, mid = (ca + cb) / 2; for (const [pa, pb] of prevExtents) cost += (p.it.boss ? 2.5 : 0.5) * Math.max(0, Math.min(mid + w / 2, pb) - Math.max(mid - w / 2, pa));
+          if (f0) cost += (hasBoss && p.it.boss ? 0.8 : 3) * (Math.max(0, f0[0] - ca) + Math.max(0, cb - f0[1])); }
         if (cost < bc - 1e-6) { bc = cost; best = sh; } }
     }
     const ex = []; const fin = place.map((p) => ({ ...p, x: Math.max(-9, Math.min(9, p.x + best)) })).sort((p, q) => (p.line || 0) - (q.line || 0)); const mine = [];
     for (const p of fin) {
       const [a, b] = ext(p), w = (b - a) * 0.6, mid = (a + b) / 2, hh = p.it.h * p.k; let y = ri > 0 || p.line ? 0.1 + (p.line ? 0.22 * hh : 0) : 0;
-      for (const q of placed) if (!(q.rank === ri && q.line === (p.line || 0)) && Math.min(mid + w / 2, q.hi) - Math.max(mid - w / 2, q.lo) > 0.1 * w) y = Math.max(y, Math.min(2.6 * hh, q.top - 0.52 * hh));
+      for (const q of placed) if (!(q.rank === ri && q.line === (p.line || 0)) && Math.min(mid + w / 2, q.hi) - Math.max(mid - w / 2, q.lo) > 0.1 * w) y = Math.max(y, Math.min(2.6 * hh, q.top - (p.it.boss ? 0.4 : 0.52) * hh));
       pos.set(p.it.id, { x: p.x, z: p.z, y, s: p.it.sc * p.k, rank: ri }); mine.push({ lo: mid - w / 2, hi: mid + w / 2, top: y + hh, rank: ri, line: p.line || 0 }); ex.push([a, b]);
     }
     placed.push(...mine);

@@ -1381,6 +1381,7 @@ function declutterTags() {
   const run = (down) => {
     const items = tags.map((el) => { el.style.marginTop = el.style.marginLeft = ''; return { el, r: el.getBoundingClientRect() }; }).sort((a, b) => b.r.bottom - a.r.bottom || a.r.left - b.r.left); // front (lowest) first
     const placed = []; let ok = true;
+    for (const sel of ['#btn-menu']) { const e = document.querySelector(sel); if (e && e.offsetParent) { const b = e.getBoundingClientRect(); if (b.width) placed.push({ left: b.left, right: b.right, top: b.top, bottom: b.bottom }); } } // plates keep clear of the Menu button
     for (const it of items) {
       const w = it.r.width, hgt = it.r.height; let best = null;
       const need = Math.max(0, Math.ceil((hr.top + 2 - it.r.top) / (hgt * 0.5))); // plates anchored above the view slide down just enough to get in
@@ -1396,8 +1397,10 @@ function declutterTags() {
     }
     return ok;
   };
-  for (const t of tags) t.classList.remove('dense');
-  if (R.sprMode && tags.length >= 4) { for (const t of tags) t.classList.add('dense'); if (run(false) || run(true)) return; for (const t of tags) t.classList.remove('dense'); } // crowded painted-sprite fights: compact plates from the start so they do not hide the (smaller) monsters
+  for (const t of tags) t.classList.remove('dense', 'tiny');
+  if (R.sprMode && tags.length >= 4) { // crowded painted-sprite fights: compact plates from the start (then without trait chips if they still collide) so they do not hide the smaller monsters
+    for (const t of tags) t.classList.add('dense'); if (run(false) || run(true)) return;
+    for (const t of tags) t.classList.add('tiny'); if (!run(false)) run(true); return; }
   if (run(false)) return;
   for (const t of tags) t.classList.add('dense');
   if (!run(false)) run(true);

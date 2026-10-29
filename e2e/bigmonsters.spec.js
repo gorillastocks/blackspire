@@ -39,10 +39,10 @@ for (const [name, groups] of Object.entries(SCENES)) {
     await newGame(page); await page.evaluate(() => localStorage.setItem('blackspire.settings', JSON.stringify({ battleSpeed: 'fast', battleSpeedSet: true })));
     await stage(page, groups);
     const hpct = await frontHeight(page); console.log(`${name} ${P}: tallest foe ${hpct}% of the arena`);
-    await shot(page, `/workspace/shots/half-${name}-${P}.png`);
-    if (P === 'iphone') await shot(page, `/workspace/shots/half-${name}.png`);
-    if (P === 'ipad-portrait' && name === 'boss') await shot(page, '/workspace/shots/half-ipad.png');
-    expect(hpct).toBeGreaterThan(15); expect(hpct).toBeLessThan(45); // about half of the previous 50-75%
+    await shot(page, `/workspace/shots/front-${name}-${P}.png`);
+    if (P === 'iphone') await shot(page, `/workspace/shots/front-${name}.png`);
+    if (P === 'ipad-portrait' && name === 'boss') await shot(page, '/workspace/shots/front-ipad.png');
+    expect(hpct).toBeGreaterThan(15); expect(hpct).toBeLessThan(50); // about half of the old 50-75% (a little more now that the pack stands nearer the camera)
     const plates = await page.evaluate(() => { const r = [...document.querySelectorAll('#targets .mtag')].map((e) => e.getBoundingClientRect()); const bad = []; for (let i = 0; i < r.length; i++) for (let j = i + 1; j < r.length; j++) if (r[i].left < r[j].right - 1 && r[i].right > r[j].left + 1 && r[i].top < r[j].bottom - 1 && r[i].bottom > r[j].top + 1) bad.push([i, j]); return { n: r.length, bad }; });
     expect(plates.bad, `name plates overlapping (of ${plates.n})`).toEqual([]);
     expect(okErr(errors)).toEqual([]);

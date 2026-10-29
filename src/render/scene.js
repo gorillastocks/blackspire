@@ -15,12 +15,14 @@ import { inRegion } from '../dungeon/outdoor.js';
 import { Outdoor } from './outdoor.js';
 import { ANIM_SLOW } from '../menu.js';
 import { MONSTERS } from '../rules/data.js';
-import { rankLayout, spriteRankLayout } from './ranks.js';
+import { rankLayout, spriteRankLayout, SPR_Z0 } from './ranks.js';
 import { spriteFor, spriteSize, buildSpriteMonster, updateSprites, disposeSprite } from './sprites.js';
 
 const CELL = 2, WALL_H = 2.6;
 /** Painted battle sprites are shown at this share of the size the fit would otherwise give them (a lens zoom-out, so the camera distance and fog are unchanged) (d3aa5f8 filled the arena; half of that keeps big groups and bosses inside it and leaves room for the name plates). Bosses and elites scale the same way. */
-export const SPR_VIEW_SCALE = 0.5;
+export const SPR_VIEW_SCALE = 0.56;
+/** Half size on a normal stage; on a short stage (a phone with the combat menu up) the figures are allowed to grow a little so they stay readable (never beyond 0.7). */
+export const sprViewScale = (h) => Math.min(0.7, Math.max(SPR_VIEW_SCALE, SPR_VIEW_SCALE + (270 - h) * 0.0018));
 const gltfCache = {};
 export function loadModel(name) {
   // retry with backoff: GitHub Pages' CDN occasionally answers 503 right after a deploy
@@ -419,11 +421,13 @@ export class Renderer {
    *  bottom for the narration caption (captionReservePx tall, between 24% and 62% of the view). */
   fitArena() {
     const cam = this.arenaCam; const h = this.container.clientHeight || 1; const w = this.container.clientWidth || 1;
-    const spr = !!this.sprMode; const base = new THREE.Vector3(0, spr ? 3.5 : 2.1, 5.2), look = new THREE.Vector3(0, spr ? 1.45 : 1.3, -2); this.arenaLook = look; // painted sprites: a slightly higher camera so back ranks sit higher in the picture
+    const spr = !!this.sprMode; const zf = spr ? SPR_Z0 + 2 : 0; // painted sprites stand forward on the stage: the camera moves up with them
+    const base = new THREE.Vector3(0, spr ? 3.5 : 2.1, 5.2 + zf), look = new THREE.Vector3(0, spr ? 1.45 : 1.3, -2 + zf); this.arenaLook = look; // painted sprites: a slightly higher camera so back ranks sit higher in the picture
     const phonePortrait = window.innerWidth <= 760 && window.innerHeight > window.innerWidth; // there the view itself grows while a caption is up
     const reserve = phonePortrait && !this.captionUp ? 0.1 : Math.min(0.62, Math.max(0.24, (this.captionReservePx || (w < 520 ? 150 : 140)) / h)); // no caption up: just room for floaters
     const hud = this.container.querySelector('#hud'), top = Math.max(3, hud && hud.offsetHeight ? ((hud.offsetTop + hud.offsetHeight) / h) * 100 + 1 : 3), limit = 100 * (1 - reserve) - 2 + (spr ? 1 : 0);
     const topPad = spr ? 3 : 0; // room for the name plates above the heads
+    if (this.arena.fog) { this.arena.fog.near = spr ? 10 : 8; this.arena.fog.far = spr ? 32 : 22; } // the stage is framed from further back with the pack forward: keep the pillars and back ranks clear of the fog
     cam.clearViewOffset(); cam.zoom = 1; cam.updateProjectionMatrix(); let k = 1; this._co?.set(0, 0, 0);
     // never dolly in so far that the padded monster box reaches the camera: points behind it project mirrored, the fit then
     // "sees" a gigantic/flipped rect and throws the whole picture off the top of the screen (tall phone view, no menu yet)
@@ -440,7 +444,7 @@ export class Renderer {
       const nk = Math.max(kMin, k * Math.min(2.5, need * 1.03)); if (Math.abs(nk - k) < 0.002) break; k = nk; // pull back if too big, push in if small
     }
     // Painted sprites are shown at SPR_VIEW_SCALE of the fitted size by zooming the lens out, NOT by dollying back: a camera that far away loses big bosses in the fog / far plane.
-    if (spr) { cam.zoom = SPR_VIEW_SCALE; cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
+    if (spr) { cam.zoom = sprViewScale(h); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
     const r = (spr && this.monsterRect(0)) || this.monsterRect(); this.arenaShift = 0;
     if (r) { const shift = (r.top + r.bottom) / 2 - (top + topPad + limit) / 2; // centre the monsters in the band above the caption (+ moves the picture up)
       const s = Number.isFinite(shift) ? Math.max(-45, Math.min(45, shift)) : 0; // a bigger shift can only mean a bad measurement

@@ -41,7 +41,7 @@ input, select { font: inherit; background: #120c24; color: var(--text); border: 
 .mtag { position: absolute; transform: translate(-50%, -100%); pointer-events: auto; background: #0b0716cc; border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; font-size: 11px; min-width: 86px; text-align: center; cursor: pointer; }
 .mtag.sel { border-color: var(--gold); box-shadow: 0 0 10px #ffd34d88; } .mtag.pick { border-color: var(--pink); animation: pulse 1s infinite; } @keyframes pulse { 50% { box-shadow: 0 0 14px #ff3df0aa; } }
 .mtag .bar { height: 5px; }
-.mtag.dense { min-width: 54px; min-height: 0 !important; padding: 2px 4px; font-size: 10px; line-height: 1.15; } .mtag.dense .bar { height: 4px; } .mtag.dense .aimn { font-size: 10px; }
+.mtag.dense { min-width: 54px; min-height: 0 !important; padding: 2px 4px; font-size: 10px; line-height: 1.15; } .mtag.dense .bar { height: 4px; } .mtag.dense .aimn { font-size: 10px; } .mtag.dense .wchip { height: 16px; font-size: 11px; } .mtag.dense .wchips { margin-top: 1px; } .mtag.tiny .wchips { display: none; } .mtag.tiny { max-width: 128px; font-size: 9.5px; padding: 1px 3px; } .mtag.tiny > div:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #flash { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(transparent 40%, #ff002a88); opacity: 0; transition: opacity .25s; z-index: 1; }
 #modal { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: #05030be0; }
 #modal.hidden { display: none; }
