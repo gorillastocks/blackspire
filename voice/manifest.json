@@ -1666,42 +1666,6 @@
       "file": "voice/fizzwick-e0521e30d251.mp3",
       "bytes": 53123
     },
-    "pip-9439fe6439db": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Then she made me give it back. Then I stole it again.",
-      "chars": 53,
-      "hash": "7827b0b50b85f60f",
-      "file": "voice/pip-9439fe6439db.mp3",
-      "bytes": 51452
-    },
-    "pip-0eefe2c9f7dc": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "I still sleep with it under my pillow. Don't tell the others.",
-      "chars": 61,
-      "hash": "fe8e136e29fc75b5",
-      "file": "voice/pip-0eefe2c9f7dc.mp3",
-      "bytes": 59811
-    },
-    "pip-3bd5e2c38701": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "If I find that armory, I'll share it. A little. We'll discuss terms.",
-      "chars": 68,
-      "hash": "ad9a0095d947a967",
-      "file": "voice/pip-3bd5e2c38701.mp3",
-      "bytes": 64408
-    },
-    "pip-de385e491aa2": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "I'd share all of it, actually. Don't repeat that.",
-      "chars": 49,
-      "hash": "1c8d005b16fecd0f",
-      "file": "voice/pip-de385e491aa2.mp3",
-      "bytes": 51452
-    },
     "grumsh-b06f9c46460b": {
       "speaker": "grumsh",
       "voice": "10NkTYmU7tSz3Kkl3Lex",
@@ -2259,69 +2223,6 @@
       "hash": "fd99c2442fcf28bb",
       "file": "voice/fizzwick-f76b03073ae7.mp3",
       "bytes": 70260
-    },
-    "pip-ccd5f0d622c6": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Anyone else feel watched? No? Just me? I'll check the corners.",
-      "chars": 62,
-      "hash": "a8406a359c7b82dc",
-      "file": "voice/pip-ccd5f0d622c6.mp3",
-      "bytes": 89486
-    },
-    "pip-1437e4b66f5d": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Mine, mine, mine. I mean, ours! Ours, ours, mine.",
-      "chars": 49,
-      "hash": "41f3c42a9114c8d0",
-      "file": "voice/pip-1437e4b66f5d.mp3",
-      "bytes": 76111
-    },
-    "pip-1de3f512074c": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Hidden doors are just treasure with manners.",
-      "chars": 44,
-      "hash": "885ede22ef7a1789",
-      "file": "voice/pip-1de3f512074c.mp3",
-      "bytes": 38077
-    },
-    "pip-24b1472cfdd5": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Ha! Called it. I called it in my head. Loudly.",
-      "chars": 46,
-      "hash": "280757203177cd06",
-      "file": "voice/pip-24b1472cfdd5.mp3",
-      "bytes": 71096
-    },
-    "pip-ed72afec761e": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Big one. Nope. Nope nope. I'll be the one holding the door.",
-      "chars": 59,
-      "hash": "e3cbe29aeda901f6",
-      "file": "voice/pip-ed72afec761e.mp3",
-      "bytes": 74439
-    },
-    "pip-54f68d1bc61c": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Remember: when it chases us, I run fastest. You're welcome.",
-      "chars": 59,
-      "hash": "f586d43e7a890275",
-      "file": "voice/pip-54f68d1bc61c.mp3",
-      "bytes": 65662
-    },
-    "pip-9b45ee437d95": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Town! I'll just... browse. Innocently. Everything.",
-      "chars": 50,
-      "hash": "3ac2186593e8f1a4",
-      "file": "voice/pip-9b45ee437d95.mp3",
-      "bytes": 80709
     },
     "grumsh-df62992d83db": {
       "speaker": "grumsh",
@@ -3259,78 +3160,6 @@
       "file": "voice/fizzwick-3767c4b4a51d.mp3",
       "bytes": 56885
     },
-    "pip-598c84b516e3": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Straight in the soup-hole!",
-      "chars": 26,
-      "hash": "bfdc91b18bf8f6da",
-      "file": "voice/pip-598c84b516e3.mp3",
-      "bytes": 26374
-    },
-    "pip-ec550d279a26": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Oi! I bruise like a ripe pear!",
-      "chars": 30,
-      "hash": "0e32e319bfd3f554",
-      "file": "voice/pip-ec550d279a26.mp3",
-      "bytes": 31390
-    },
-    "pip-e9e0488d4ff7": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "This is the best day of my life. Again!",
-      "chars": 39,
-      "hash": "f519eb8f0b2b4255",
-      "file": "voice/pip-e9e0488d4ff7.mp3",
-      "bytes": 45600
-    },
-    "pip-da5d5e1711ad": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Look at the curve on this one. Exquisite.",
-      "chars": 41,
-      "hash": "ec05c13fea452948",
-      "file": "voice/pip-da5d5e1711ad.mp3",
-      "bytes": 44764
-    },
-    "pip-0b01e7a82344": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "I'll polish the collection. Again.",
-      "chars": 34,
-      "hash": "1c96c32e6e84854b",
-      "file": "voice/pip-0b01e7a82344.mp3",
-      "bytes": 38077
-    },
-    "pip-ca87d8dec3fc": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Who puts a trap HERE? Amateurs.",
-      "chars": 31,
-      "hash": "69b4529ab17160ed",
-      "file": "voice/pip-ca87d8dec3fc.mp3",
-      "bytes": 44764
-    },
-    "pip-3dee054b9f3d": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Excellent! Now, the important part, looting.",
-      "chars": 44,
-      "hash": "f441e0a5634a1a6a",
-      "file": "voice/pip-3dee054b9f3d.mp3",
-      "bytes": 55213
-    },
-    "pip-e2dbe776805a": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "I'll check the corners. Corners are where the good stuff hides.",
-      "chars": 63,
-      "hash": "0a25bd97fdc6016a",
-      "file": "voice/pip-e2dbe776805a.mp3",
-      "bytes": 56049
-    },
     "grumsh-d7efd86fbfa2": {
       "speaker": "grumsh",
       "voice": "10NkTYmU7tSz3Kkl3Lex",
@@ -4069,51 +3898,6 @@
       "file": "voice/nettle-385743fcde2f.mp3",
       "bytes": 58975
     },
-    "pip-dbc9536b512b": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "The prophecy is REAL!",
-      "chars": 21,
-      "hash": "648c111253b9e6e4",
-      "file": "voice/pip-dbc9536b512b.mp3",
-      "bytes": 26374
-    },
-    "pip-b148a69f5a9f": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Two! Two clues!",
-      "chars": 15,
-      "hash": "48c1c96fb9cab9da",
-      "file": "voice/pip-b148a69f5a9f.mp3",
-      "bytes": 25538
-    },
-    "pip-9f0890116e84": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Three is a pattern. Patterns are destiny.",
-      "chars": 41,
-      "hash": "a9125f509a8167f8",
-      "file": "voice/pip-9f0890116e84.mp3",
-      "bytes": 53959
-    },
-    "pip-b7300569a4d8": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Four... I may cry.",
-      "chars": 18,
-      "hash": "3da0c6417254d1de",
-      "file": "voice/pip-b7300569a4d8.mp3",
-      "bytes": 27628
-    },
-    "pip-1ebf79985941": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "FIVE. To the armory!",
-      "chars": 20,
-      "hash": "1a0f46e4addfbe38",
-      "file": "voice/pip-1ebf79985941.mp3",
-      "bytes": 34315
-    },
     "vexrath-ca44fbc58b0f": {
       "speaker": "vexrath",
       "voice": "ttNi9wVM8M97tsxE7PFZ",
@@ -4221,15 +4005,6 @@
       "hash": "bd498105d6abd7ab",
       "file": "voice/fizzwick-f6d7ddab99ec.mp3",
       "bytes": 104950
-    },
-    "pip-b41f694c9a23": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Fizzwick talks about himself in third person. Pip thinks that's weird. …Oh no. It's contagious.",
-      "chars": 95,
-      "hash": "dba397016c04b608",
-      "file": "voice/pip-b41f694c9a23.mp3",
-      "bytes": 117071
     },
     "grumsh-608fc86132fa": {
       "speaker": "grumsh",
@@ -5751,78 +5526,6 @@
       "hash": "670f31557db01e4a",
       "file": "voice/fizzwick-9ba8f40b3548.mp3",
       "bytes": 57721
-    },
-    "pip-facbb6952a6b": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Not Brambur. Not like this. We'll get you back. We WILL.",
-      "chars": 56,
-      "hash": "2b6c31d8a9daa665",
-      "file": "voice/pip-facbb6952a6b.mp3",
-      "bytes": 64408
-    },
-    "pip-81d759f0d8f2": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Not Fizzwick. Not like this. We'll get you back. We WILL.",
-      "chars": 57,
-      "hash": "356130e61cfe1b43",
-      "file": "voice/pip-81d759f0d8f2.mp3",
-      "bytes": 61901
-    },
-    "pip-c126e7c5d398": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Not Grumsh. Not like this. We'll get you back. We WILL.",
-      "chars": 55,
-      "hash": "c435ec07905e4c68",
-      "file": "voice/pip-c126e7c5d398.mp3",
-      "bytes": 73185
-    },
-    "pip-e9b39212ec46": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Not Zizzy. Not like this. We'll get you back. We WILL.",
-      "chars": 54,
-      "hash": "149118607b081866",
-      "file": "voice/pip-e9b39212ec46.mp3",
-      "bytes": 76947
-    },
-    "pip-fda6eb19f8c5": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Not Vexrath. Not like this. We'll get you back. We WILL.",
-      "chars": 56,
-      "hash": "93ae20315e1be85e",
-      "file": "voice/pip-fda6eb19f8c5.mp3",
-      "bytes": 63572
-    },
-    "pip-ee97691cd06b": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Not Nettle. Not like this. We'll get you back. We WILL.",
-      "chars": 55,
-      "hash": "fa0df3c647c20717",
-      "file": "voice/pip-ee97691cd06b.mp3",
-      "bytes": 61065
-    },
-    "pip-b0b1477b244b": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Not Liora. Not like this. We'll get you back. We WILL.",
-      "chars": 54,
-      "hash": "d60e141d8348c2c2",
-      "file": "voice/pip-b0b1477b244b.mp3",
-      "bytes": 64826
-    },
-    "pip-17836f235a1f": {
-      "speaker": "pip",
-      "voice": "P7fAh4p4xVfEzGgihOit",
-      "text": "Not Ser Aldric. Not like this. We'll get you back. We WILL.",
-      "chars": 59,
-      "hash": "e7d5e03789ef7f49",
-      "file": "voice/pip-17836f235a1f.mp3",
-      "bytes": 71514
     },
     "grumsh-2ebd5ae47eff": {
       "speaker": "grumsh",
@@ -15165,6 +14868,771 @@
       "hash": "0d2c7fe31a439e6b",
       "file": "voice/narrator-f45e1ef5e9d7.mp3",
       "bytes": 177257
+    },
+    "pip-e78704b9f237": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "I would say I forgive him. I would be lying. I am just tired of carrying it.",
+      "chars": 76,
+      "hash": "c76849113912b240",
+      "file": "voice/pip-e78704b9f237.mp3",
+      "bytes": 89486
+    },
+    "narrator-0a9fa15354d1": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "At a corner table of the Boar & Spoon, a small halfling girl with a scorched blue ribbon pretends she has not been crying. Pip crosses the whole room without a word, and then says several.",
+      "chars": 188,
+      "hash": "23f505cd6c8df63f",
+      "file": "voice/narrator-0a9fa15354d1.mp3",
+      "bytes": 209022
+    },
+    "pip-2f332c346522": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "Garrick is dead, and the Row is paid. I thought I would feel lighter. Ask me again in a year.",
+      "chars": 93,
+      "hash": "8616edbf4d8a5150",
+      "file": "voice/pip-2f332c346522.mp3",
+      "bytes": 101189
+    },
+    "narrator-00762f4b7195": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "That night, Pip hangs a lantern in the window of the Boar & Spoon. It burns for the eleven of the Row, and for one more, Pip hopes.",
+      "chars": 131,
+      "hash": "d0976d6a39b6dece",
+      "file": "voice/narrator-00762f4b7195.mp3",
+      "bytes": 160957
+    },
+    "maelis-31b09d97b333": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "Mind the roots. They remember everyone who walks on them. I am Maelis Dewbough, keeper of this orchard, which is a grand title for the last gardener alive.",
+      "chars": 155,
+      "hash": "f720b7eddc76168d",
+      "file": "voice/maelis-31b09d97b333.mp3",
+      "bytes": 168898
+    },
+    "maelis-94cd382a1365": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "The roof fell and the sky came in, and I thought it a mercy. Then the fruit turned grey. The trees are dying, and the old gate to the north will not wake. It is the Gate of the Silver Court. It should open at moonrise and water the whole orchard with light. It has not done so in sixty years.",
+      "chars": 292,
+      "hash": "08b92aa0572c4957",
+      "file": "voice/maelis-94cd382a1365.mp3",
+      "bytes": 344441
+    },
+    "maelis-670ea2536dc1": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "Read the trees. Read the sky. Read the gate. Three answers to one question: what is killing my orchard? Do that, and the Silverfruit are yours, what is left of them.",
+      "chars": 165,
+      "hash": "21fc05462b77f5c9",
+      "file": "voice/maelis-670ea2536dc1.mp3",
+      "bytes": 183109
+    },
+    "maelis-50a3d7bea6b0": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "Men came with barrels, the winter the roof fell. They said they were mending the gate. They went in loud and came out quiet. Look for their boots.",
+      "chars": 146,
+      "hash": "389ba25fc6223fb3",
+      "file": "voice/maelis-50a3d7bea6b0.mp3",
+      "bytes": 192722
+    },
+    "maelis-4129ded47b0c": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "Then go. The trees are all around you, the gate is at the north edge, and the sky is wherever you stand. Come back and tell me what you find.",
+      "chars": 141,
+      "hash": "d5960c9fb887b73a",
+      "file": "voice/maelis-4129ded47b0c.mp3",
+      "bytes": 135461
+    },
+    "maelis-e0affe733924": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "Still here, and so are my trees. Trees, sky, gate. In any order, but the gate will not listen until you have read both the trees and the sky.",
+      "chars": 141,
+      "hash": "e6f0a3d4cec4727b",
+      "file": "voice/maelis-e0affe733924.mp3",
+      "bytes": 204007
+    },
+    "maelis-d7b97ed6fcc6": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "The gate has changed its voice. I can feel it in my teeth. Whatever you did there, the old roots under it are awake. Go down to them. Tell me what they say.",
+      "chars": 156,
+      "hash": "10d2f8f91ec8235c",
+      "file": "voice/maelis-d7b97ed6fcc6.mp3",
+      "bytes": 133372
+    },
+    "aelindra-05bf01bf3987": {
+      "speaker": "aelindra",
+      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "text": "You sang me awake. It has been sixty years. I thought the sky had forgotten us.",
+      "chars": 79,
+      "hash": "bfeed8e15ac9c878",
+      "file": "voice/aelindra-05bf01bf3987.mp3",
+      "bytes": 80709
+    },
+    "aelindra-c0bb42f9d9d9": {
+      "speaker": "aelindra",
+      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "text": "You broke my door and woke me with a splinter in my side. I am old, and I am angry, and I am listening.",
+      "chars": 103,
+      "hash": "d1a4b0ee110b8422",
+      "file": "voice/aelindra-c0bb42f9d9d9.mp3",
+      "bytes": 102025
+    },
+    "aelindra-83c46b2f09cc": {
+      "speaker": "aelindra",
+      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "text": "The salt smells of men with keys. You turned a key I did not choose. Still, you are here, and they are not.",
+      "chars": 107,
+      "hash": "dffc74bd4f6662f7",
+      "file": "voice/aelindra-83c46b2f09cc.mp3",
+      "bytes": 117071
+    },
+    "aelindra-7830ff714ea9": {
+      "speaker": "aelindra",
+      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "text": "I am Aelindra, the Heartroot of the Silver Court. The salt has gone to my heart. A little care will save me, and a little greed will end me. Choose.",
+      "chars": 148,
+      "hash": "37025d0739931b9d",
+      "file": "voice/aelindra-7830ff714ea9.mp3",
+      "bytes": 156359
+    },
+    "aelindra-af04b739897e": {
+      "speaker": "aelindra",
+      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "text": "A boon is for those who ask without wanting. You want very loudly.",
+      "chars": 66,
+      "hash": "4e163387b82e89f7",
+      "file": "voice/aelindra-af04b739897e.mp3",
+      "bytes": 71514
+    },
+    "aelindra-bfc3acbde5f9": {
+      "speaker": "aelindra",
+      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "text": "There. That is what rain is for. Go and tell Maelis the orchard will blossom at the next moonrise.",
+      "chars": 98,
+      "hash": "5c481dda11ac9a69",
+      "file": "voice/aelindra-bfc3acbde5f9.mp3",
+      "bytes": 102025
+    },
+    "aelindra-1804c6960ed5": {
+      "speaker": "aelindra",
+      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "text": "A gift, and no more than a gift. The orchard will be slow to forgive. Tell Maelis what you were given.",
+      "chars": 102,
+      "hash": "8553a9598c6fa504",
+      "file": "voice/aelindra-1804c6960ed5.mp3",
+      "bytes": 113310
+    },
+    "aelindra-f9605806432a": {
+      "speaker": "aelindra",
+      "voice": "hpp4J3VqNfWAUOO0d1Us",
+      "text": "Take it, then. Take it and go. Do not come back in spring.",
+      "chars": 58,
+      "hash": "5a50bb35343e2904",
+      "file": "voice/aelindra-f9605806432a.mp3",
+      "bytes": 60647
+    },
+    "maelis-ab42cbcffe27": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "You did it. Sixty years, and the orchard remembers its own name. I cannot pay you enough, so I will pay you with what grows here.",
+      "chars": 129,
+      "hash": "2ca84a2ac363eaee",
+      "file": "voice/maelis-ab42cbcffe27.mp3",
+      "bytes": 137133
+    },
+    "maelis-c833e64cae35": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "The gate was a door, you know. Not a wall. It will open for you again, whenever the moon is out and you need somewhere to be quiet.",
+      "chars": 131,
+      "hash": "832ca1637f6c3be7",
+      "file": "voice/maelis-c833e64cae35.mp3",
+      "bytes": 137133
+    },
+    "maelis-dc1fa7f3d6f7": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "I could feel it when you cut. The roots told me before you came up the stair. You took what was growing, and you left what was dying.",
+      "chars": 133,
+      "hash": "82176f34f8f8f817",
+      "file": "voice/maelis-dc1fa7f3d6f7.mp3",
+      "bytes": 122923
+    },
+    "maelis-1225e18f6598": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "I will not take it from you. That is not the keeper's way. But I will not thank you, either. Here. A little coin, for the road. You will not be welcome in the spring.",
+      "chars": 166,
+      "hash": "a82952bcc0e9b9d2",
+      "file": "voice/maelis-1225e18f6598.mp3",
+      "bytes": 177257
+    },
+    "maelis-086998365787": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "She gave you that? She has not given a fruit in sixty years. Then it is a good sign. Slow, but good. The salt will take a season to leave.",
+      "chars": 138,
+      "hash": "40b99be7103afff6",
+      "file": "voice/maelis-086998365787.mp3",
+      "bytes": 158031
+    },
+    "maelis-1fd8fbc0d064": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "Take this wreath, with my thanks. It was my mother's. May it keep a few of your heads cool.",
+      "chars": 91,
+      "hash": "72a91880e2755258",
+      "file": "voice/maelis-1fd8fbc0d064.mp3",
+      "bytes": 97009
+    },
+    "maelis-5aa65e85474a": {
+      "speaker": "maelis",
+      "voice": "KKqCgJEpQqvlGXepFfmn",
+      "text": "The orchard is doing what orchards do. Go on. I am busy being right about the weather.",
+      "chars": 86,
+      "hash": "7ffa66c9b3a975ff",
+      "file": "voice/maelis-5aa65e85474a.mp3",
+      "bytes": 81127
+    },
+    "narrator-9fadb059e3a2": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Where the cavern roof gave way, the sky pours in. A hundred pale trees lean in the wet grass, their silver leaves gone the colour of ash. Under the oldest sits an elf woman with moss on her shoulders, pruning a branch that is no longer there.",
+      "chars": 242,
+      "hash": "8e0de0c197a21fa5",
+      "file": "voice/narrator-9fadb059e3a2.mp3",
+      "bytes": 299719
+    },
+    "narrator-3874437cd41b": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Rain ticks on the leaves and runs down the trunks in thin white streaks.",
+      "chars": 72,
+      "hash": "0c11159ab9ee5e50",
+      "file": "voice/narrator-3874437cd41b.mp3",
+      "bytes": 80709
+    },
+    "narrator-9b16edf13c45": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A low mist threads between the trunks, and it clings to the bark like breath on glass.",
+      "chars": 86,
+      "hash": "82b88c6f8468f59e",
+      "file": "voice/narrator-9b16edf13c45.mp3",
+      "bytes": 95337
+    },
+    "narrator-dcf8b3bf2080": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The sky above the hole is full of stars, and the healthy trees glow faintly under them. The sick ones are only black shapes.",
+      "chars": 124,
+      "hash": "a858d1e8b0598136",
+      "file": "voice/narrator-dcf8b3bf2080.mp3",
+      "bytes": 136297
+    },
+    "narrator-f5a86c4a70f1": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Her hands stop moving. She does not look at you.",
+      "chars": 48,
+      "hash": "e615a5ea709cd189",
+      "file": "voice/narrator-f5a86c4a70f1.mp3",
+      "bytes": 51034
+    },
+    "narrator-dbbc6010f95c": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Her face is bark and patience. Whatever she is holding back stays held.",
+      "chars": 71,
+      "hash": "f113937d8330e567",
+      "file": "voice/narrator-dbbc6010f95c.mp3",
+      "bytes": 75275
+    },
+    "narrator-abf7f3962156": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You have not yet read the trees.",
+      "chars": 32,
+      "hash": "8dff41f554ab6ca0",
+      "file": "voice/narrator-abf7f3962156.mp3",
+      "bytes": 30136
+    },
+    "narrator-18d553290135": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You have not yet read the open sky.",
+      "chars": 35,
+      "hash": "f2974f362ffe1e56",
+      "file": "voice/narrator-18d553290135.mp3",
+      "bytes": 37659
+    },
+    "narrator-c7eade2be97b": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The trees have told you what they know.",
+      "chars": 39,
+      "hash": "799753e4c74f2b79",
+      "file": "voice/narrator-c7eade2be97b.mp3",
+      "bytes": 35987
+    },
+    "narrator-bf1c28e9b3d8": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The sky has told you what it knows.",
+      "chars": 35,
+      "hash": "f13e1ae9f1fcf476",
+      "file": "voice/narrator-bf1c28e9b3d8.mp3",
+      "bytes": 38077
+    },
+    "narrator-17d2598829cd": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Pale bark and ash coloured leaves. Fruit hangs in hard grey knots, and each one holds a faint smear of old light, like a coin seen through water.",
+      "chars": 145,
+      "hash": "bb72772bc406b3be",
+      "file": "voice/narrator-17d2598829cd.mp3",
+      "bytes": 181019
+    },
+    "narrator-a0ec4b74b83f": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Rain runs down the trunks in white streaks, and where it runs whitest, something crusted is washing out of the bark.",
+      "chars": 116,
+      "hash": "f73577ed654562c6",
+      "file": "voice/narrator-a0ec4b74b83f.mp3",
+      "bytes": 117907
+    },
+    "narrator-fbed0ebabbbb": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Mist beads on the bark in strange hard drops, as if it were settling on salt.",
+      "chars": 77,
+      "hash": "edf267607e2b4354",
+      "file": "voice/narrator-fbed0ebabbbb.mp3",
+      "bytes": 89486
+    },
+    "narrator-297eef03405d": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "In the dark, the living trees glow silver and the dying ones swallow the light. Count the black ones. There are too many.",
+      "chars": 121,
+      "hash": "2ae9a22769dfe466",
+      "file": "voice/narrator-297eef03405d.mp3",
+      "bytes": 142985
+    },
+    "narrator-ff4fcf04bb54": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The roots are laced with a white crust. Brine. Cult brine, poured into the soil by the barrelful. Salt to kill the roots, so the gate would starve and stay shut.",
+      "chars": 161,
+      "hash": "2c332052cbc65c48",
+      "file": "voice/narrator-ff4fcf04bb54.mp3",
+      "bytes": 214874
+    },
+    "narrator-9285880d2842": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The bark is only bark. Whatever is wrong is down in the soil, and the soil keeps its own counsel.",
+      "chars": 97,
+      "hash": "8c59c30e77ef98f0",
+      "file": "voice/narrator-9285880d2842.mp3",
+      "bytes": 107876
+    },
+    "narrator-44cc8b2e6c2f": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Boot prints, heavy ones, in a line: men carrying barrels. They go to the gate and come back empty. One left boot is missing a heel nail, and the nail lies in the grass, bright as a tooth. You pocket it.",
+      "chars": 202,
+      "hash": "2cacf0e6e423aa06",
+      "file": "voice/narrator-44cc8b2e6c2f.mp3",
+      "bytes": 254998
+    },
+    "narrator-026dcff44366": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The grass holds a hundred prints and says nothing. A crow watches you from a branch, unimpressed.",
+      "chars": 97,
+      "hash": "8af0392ae01ba996",
+      "file": "voice/narrator-026dcff44366.mp3",
+      "bytes": 112474
+    },
+    "narrator-eff4cb2932f2": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The grey rind peels away. Inside is a thread of true silver light, still alive. A Silverfruit, nearly sound. You wrap it in a leaf.",
+      "chars": 131,
+      "hash": "a6b8f35fee284944",
+      "file": "voice/narrator-eff4cb2932f2.mp3",
+      "bytes": 191468
+    },
+    "narrator-fb7e480288d6": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The fruit bursts in a puff of grey spores. Everyone coughs and takes three damage.",
+      "chars": 82,
+      "hash": "0a40b488c0bd0c68",
+      "file": "voice/narrator-fb7e480288d6.mp3",
+      "bytes": 87814
+    },
+    "narrator-acf186040a23": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You step back from the trees. They do not thank you, but the leaves stop shivering.",
+      "chars": 83,
+      "hash": "1802098a31976afb",
+      "file": "voice/narrator-acf186040a23.mp3",
+      "bytes": 87814
+    },
+    "narrator-1f0b1b9ee94c": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You stand where the cavern roof used to be. The hole is a ragged ring of rock, and through it comes the whole sky.",
+      "chars": 114,
+      "hash": "7716f1e4f12952d7",
+      "file": "voice/narrator-1f0b1b9ee94c.mp3",
+      "bytes": 120833
+    },
+    "narrator-fa5cb4c81bac": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "It is day, and the sky is a lid of grey cloud. No stars to read. Only the sun, a pale coin, and the long shadow of the gate behind you.",
+      "chars": 135,
+      "hash": "225342df9b63d3e3",
+      "file": "voice/narrator-fa5cb4c81bac.mp3",
+      "bytes": 208186
+    },
+    "narrator-0b9d02a4ed17": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "It is night. Seven stars hang low in the north, over the old gate, like a hand held open.",
+      "chars": 89,
+      "hash": "13a7bedf311cb0e8",
+      "file": "voice/narrator-0b9d02a4ed17.mp3",
+      "bytes": 119161
+    },
+    "narrator-ad405d40f442": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The rain falls straight down through the hole and veils half the stars.",
+      "chars": 71,
+      "hash": "a6b567114ff51321",
+      "file": "voice/narrator-ad405d40f442.mp3",
+      "bytes": 77783
+    },
+    "narrator-c2b7be84a37c": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The mist rises to meet the sky and softens every star into a smudge.",
+      "chars": 68,
+      "hash": "cbf857fdc5cb5af5",
+      "file": "voice/narrator-c2b7be84a37c.mp3",
+      "bytes": 98263
+    },
+    "narrator-9dbbbb7a4c87": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You sit under the broken ring while the light drains out of the cloud. The orchard changes its voice: drip of leaf, tick of rain, a bird that has no business underground. Hours pass. The first star comes out.",
+      "chars": 208,
+      "hash": "7501a0f04acbfad9",
+      "file": "voice/narrator-9dbbbb7a4c87.mp3",
+      "bytes": 253744
+    },
+    "narrator-7db152cdcff6": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The old elves called them the Hand of the Court. Seven stars, and the hand points down, to the keystone of the gate. At midnight the moon will stand exactly there. The gate answers to a song sung in moonlight, with water on its runes.",
+      "chars": 234,
+      "hash": "1a9065290654b562",
+      "file": "voice/narrator-7db152cdcff6.mp3",
+      "bytes": 290106
+    },
+    "narrator-4fc9e3b8c145": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The gate's long shadow falls across the grass and ends on a flat stone. Beneath it, a seven pointed star, cut in the rock. The elves marked the hour so no one could forget it: moonlight, a song, and water on the runes.",
+      "chars": 218,
+      "hash": "c753990ac56ecb6a",
+      "file": "voice/narrator-4fc9e3b8c145.mp3",
+      "bytes": 261267
+    },
+    "narrator-cc849662d0b8": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The cloud shifts, the stars swim, and your neck begins to ache. You lose count somewhere past five. You will have to improvise at the gate.",
+      "chars": 139,
+      "hash": "f1590637e638a33a",
+      "file": "voice/narrator-cc849662d0b8.mp3",
+      "bytes": 181019
+    },
+    "narrator-f7a2cce4137f": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "An archway of white stone, carved with leaves and a crescent moon. It is cold, and it is silent. It feels like a door that is waiting for the right person to ask permission. Perhaps the keeper under the bough would know who that is.",
+      "chars": 232,
+      "hash": "c75fb75be8f13edc",
+      "file": "voice/narrator-f7a2cce4137f.mp3",
+      "bytes": 283419
+    },
+    "narrator-ef0aa235c77f": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The gate hums at the edge of hearing, then forgets you. It is waiting for something you do not yet know. Read the trees and the open sky first, then come back.",
+      "chars": 159,
+      "hash": "09cf8be0d98590ec",
+      "file": "voice/narrator-ef0aa235c77f.mp3",
+      "bytes": 177257
+    },
+    "narrator-01663039cdd4": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The archway is white stone carved with leaves and a crescent moon. A runnel winds through every rune, as if the elves expected the sky to fill it.",
+      "chars": 146,
+      "hash": "979c4cba44f5c3bb",
+      "file": "voice/narrator-01663039cdd4.mp3",
+      "bytes": 167644
+    },
+    "narrator-61999466d3d4": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Rain gathers in the runnel and fills the runes with water. They begin to shine.",
+      "chars": 79,
+      "hash": "242e55740f97ba4f",
+      "file": "voice/narrator-61999466d3d4.mp3",
+      "bytes": 83634
+    },
+    "narrator-4ddd92dbb886": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Mist beads in the runnel and the runes weep silver.",
+      "chars": 51,
+      "hash": "ec91b2ee823742d3",
+      "file": "voice/narrator-4ddd92dbb886.mp3",
+      "bytes": 47690
+    },
+    "narrator-f9a6efe51e39": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The crescent moon on the keystone is catching real moonlight from the hole in the roof. It glows.",
+      "chars": 97,
+      "hash": "5cb3e8a88916cd1a",
+      "file": "voice/narrator-f9a6efe51e39.mp3",
+      "bytes": 113310
+    },
+    "narrator-e65a2147ec50": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You know where the moon will stand: directly over the keystone.",
+      "chars": 63,
+      "hash": "6c12d9f5a3e3afe9",
+      "file": "voice/narrator-e65a2147ec50.mp3",
+      "bytes": 64408
+    },
+    "narrator-ec2cf10c45cd": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You know the soil below has been salted, and that the gate is choking on it.",
+      "chars": 76,
+      "hash": "dcaff4f61db1d11f",
+      "file": "voice/narrator-ec2cf10c45cd.mp3",
+      "bytes": 67334
+    },
+    "narrator-37a02378559e": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The heel nail from the grass fits a greasy iron lock hidden under the lowest leaf. The cult built a key.",
+      "chars": 104,
+      "hash": "0d5ff606a1c10a99",
+      "file": "voice/narrator-37a02378559e.mp3",
+      "bytes": 123758
+    },
+    "narrator-c3b5841d6042": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The runes flare, and the gate throws you back like a wet dog shaking off water. Everyone takes four damage.",
+      "chars": 107,
+      "hash": "f945b9c489a69dc6",
+      "file": "voice/narrator-c3b5841d6042.mp3",
+      "bytes": 132536
+    },
+    "narrator-c03e40f40861": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The song comes out of you as if it had been waiting. Water spills down the runnel, light follows the water, and the gate opens like an eyelid. Beyond it a stair of moonlit roots descends into the dark.",
+      "chars": 201,
+      "hash": "1694482c86788364",
+      "file": "voice/narrator-c03e40f40861.mp3",
+      "bytes": 238697
+    },
+    "narrator-2bab4cd911e5": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Far above, the trees shiver. Silver comes back to the leaves, one by one, like lamps being lit.",
+      "chars": 95,
+      "hash": "341ad57742e8f370",
+      "file": "voice/narrator-2bab4cd911e5.mp3",
+      "bytes": 115399
+    },
+    "narrator-c8d449f4b2cd": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You put your shoulder to the keystone and heave. It cracks with a sound like a bone, and the gate swings open crooked, with a gap of silvered dark.",
+      "chars": 147,
+      "hash": "1971e6630add9dad",
+      "file": "voice/narrator-c8d449f4b2cd.mp3",
+      "bytes": 168898
+    },
+    "narrator-2470ffb7d6dc": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The trees groan. Somewhere under the earth, something very old opens an eye and is not pleased.",
+      "chars": 95,
+      "hash": "60079a7cfadced24",
+      "file": "voice/narrator-2470ffb7d6dc.mp3",
+      "bytes": 126684
+    },
+    "narrator-bbf9f09fd134": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The key turns with a greasy click. The gate swings open without a sound, because it has been told to by someone it does not love. Far below, a bell rings once. The cult will know someone has been here.",
+      "chars": 201,
+      "hash": "4ff07461904452a2",
+      "file": "voice/narrator-bbf9f09fd134.mp3",
+      "bytes": 219471
+    },
+    "narrator-ae5c7500913d": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "On the step lies a purse the cult left for whoever opened this door for them. You take it.",
+      "chars": 90,
+      "hash": "2bd6409821455f12",
+      "file": "voice/narrator-ae5c7500913d.mp3",
+      "bytes": 104532
+    },
+    "narrator-3b2fd4741baf": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A knot of roots the width of a door, grown across a stair that leads nowhere yet. Whatever sleeps down there will not wake for you. Not until the gate is open.",
+      "chars": 159,
+      "hash": "95b0a37731db5c27",
+      "file": "voice/narrator-3b2fd4741baf.mp3",
+      "bytes": 155523
+    },
+    "narrator-ea6240cb71a9": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Beneath the gate, the stair opens into a hollow cut by roots as thick as a man. At its heart a tree no taller than a child glows with silver light. It turns toward you the way a flower turns, and speaks without a mouth.",
+      "chars": 219,
+      "hash": "0a26d0b71c8e7821",
+      "file": "voice/narrator-ea6240cb71a9.mp3",
+      "bytes": 288016
+    },
+    "narrator-3fcc2391aa1f": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The salt will not leave. The roots recoil, and a thorn finds the back of your hand. Everyone takes three damage.",
+      "chars": 112,
+      "hash": "529d4a5e5ad5e9e8",
+      "file": "voice/narrator-3fcc2391aa1f.mp3",
+      "bytes": 131282
+    },
+    "narrator-1440439dffb8": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The hollow gets colder. Everyone takes three damage.",
+      "chars": 52,
+      "hash": "002b9a65484df758",
+      "file": "voice/narrator-1440439dffb8.mp3",
+      "bytes": 56885
+    },
+    "narrator-5c58df76928f": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You kneel, pour out the clean rain from the runnel, and draw the salt out of the roots, a little at a time, until your hands are white to the wrists. The Heartroot sighs.",
+      "chars": 170,
+      "hash": "2855f868173a23c1",
+      "file": "voice/narrator-5c58df76928f.mp3",
+      "bytes": 185198
+    },
+    "narrator-eeeb47c8b5e7": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Heartroot considers you for the length of three heartbeats, and then a single silver fruit swells at the end of a low branch, and falls into your hand.",
+      "chars": 155,
+      "hash": "0cb0cf240e2e19ad",
+      "file": "voice/narrator-eeeb47c8b5e7.mp3",
+      "bytes": 154687
+    },
+    "narrator-387f66a4fe7c": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The blade goes in cleanly. The Heartroot makes no sound, but all the way up the stair you hear the trees begin to groan, one after another, like an audience leaving.",
+      "chars": 165,
+      "hash": "a5b85cc8f11a9da1",
+      "file": "voice/narrator-387f66a4fe7c.mp3",
+      "bytes": 195647
+    },
+    "narrator-80bd9d3e3e9c": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "As you reach the oldest tree, silver blossom opens on every branch at once, in the rain or the dark or whatever weather the sky has chosen. Maelis stands among it with her hands over her mouth.",
+      "chars": 193,
+      "hash": "b25b84919988855d",
+      "file": "voice/narrator-80bd9d3e3e9c.mp3",
+      "bytes": 235772
+    },
+    "narrator-9fde478bd59c": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Maelis is waiting under the oldest tree, and she is looking at the staff on your back.",
+      "chars": 86,
+      "hash": "4d3ec9580ebd0d32",
+      "file": "voice/narrator-9fde478bd59c.mp3",
+      "bytes": 77783
+    },
+    "narrator-6a0c9c5ed33f": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Maelis meets you at the oldest tree. You hold up the Silverfruit, and she takes a long breath.",
+      "chars": 94,
+      "hash": "762bc294a0abd262",
+      "file": "voice/narrator-6a0c9c5ed33f.mp3",
+      "bytes": 104532
+    },
+    "narrator-82273855edcf": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "She smiles without looking up. Rain, mist, or stars, the trees are quiet.",
+      "chars": 73,
+      "hash": "aa39ca2ba0e566db",
+      "file": "voice/narrator-82273855edcf.mp3",
+      "bytes": 99099
+    },
+    "narrator-32f1b6b9b880": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Grey fruit hangs in hard knots on pale bark. Something is badly wrong with them, but you would not know where to begin. A gardener might. There is a keeper somewhere under the nearest bough.",
+      "chars": 190,
+      "hash": "9f9cb10528d59203",
+      "file": "voice/narrator-32f1b6b9b880.mp3",
+      "bytes": 230756
+    },
+    "narrator-3a2e7d23bf74": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The cavern roof has fallen away, and the whole sky stands open above you. It is lovely, and it means nothing to you yet. Ask the keeper of the orchard what she wants read in it.",
+      "chars": 177,
+      "hash": "96c1066f31e96eff",
+      "file": "voice/narrator-3a2e7d23bf74.mp3",
+      "bytes": 188124
     }
   }
 }
