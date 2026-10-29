@@ -1,97 +1,113 @@
 {
   "elowen": {
-    "id": "hpp4J3VqNfWAUOO0d1Us",
-    "name": "Elowen",
-    "note": "Princess"
+    "id": "ksryVoNAGZT8GxWCTiVm",
+    "name": "Elariel",
+    "note": "Princess. PENDING: user is choosing a younger voice (Annabel rWArYo7a2NWuBYf5BE4V / Alexandra m0MqfGOWTAfVVEaz4KxX / Mia e6qsVnCuD0MWxmhZcuKz); Elariel X ksryVoNAGZT8GxWCTiVm rejected as too old",
+    "settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.8,
+      "style": 0.3,
+      "use_speaker_boost": true
+    }
   },
   "narrator": {
-    "id": "JBFqnCBsd6RMkjVDRZzb",
-    "name": "Dungeon Master",
-    "note": "Narrator"
+    "id": "7p1Ofvcwsv7UBPoFNcpI",
+    "name": "Julian",
+    "note": "Dungeon Master (Julian - Deep, Rich and Mature)"
   },
   "malthrax": {
-    "id": "pNInz6obpgDQGcFmaJgB",
-    "name": "Malthrax",
-    "note": "Dread Sovereign"
+    "id": "dG7SBJDxDoZkQUrwvqrD",
+    "name": "Medraut",
+    "note": "Dread Sovereign (Medraut - Theatrical Villain & Sardonic Sovereign)"
   },
   "grumsh": {
-    "id": "SOYHLrjzK2X1ezoPC6cr",
-    "name": "Grumsh",
-    "note": "Companion"
+    "id": "10NkTYmU7tSz3Kkl3Lex",
+    "name": "Kaelen",
+    "note": "Companion (Kaelen - Amateur Warrior)"
   },
   "vexrath": {
-    "id": "N2lVS1w4EtoT3dr4eOWO",
-    "name": "Vexrath",
-    "note": "Companion"
+    "id": "ttNi9wVM8M97tsxE7PFZ",
+    "name": "Victor",
+    "note": "Companion (Victor - Eloquent Evil Villain)"
   },
   "serAldric": {
-    "id": "IKne3meq5aSn9XLyUdCD",
-    "name": "Ser Aldric",
-    "note": "Hero default"
+    "id": "1RVpBInY9YUYMLSUQReV",
+    "name": "Cody McAvoy",
+    "note": "Hero default (Devoted Knight)"
   },
   "marga": {
-    "id": "XrExE9yKIg1WjnnlVkGX",
-    "name": "Marga",
-    "note": "Innkeeper"
+    "id": "1OYA2kgM85gF2eGN8HEp",
+    "name": "Colleen",
+    "note": "Innkeeper (Colleen - Warm Southern Irish Woman)"
   },
   "rowan": {
-    "id": "pNInz6obpgDQGcFmaJgB",
-    "name": "Rowan",
-    "note": "Captain (Adam)"
+    "id": "TxWZERZ5Hc6h9dGxVmXa",
+    "name": "Jerry B.",
+    "note": "Captain (Gruff and Gritty Commander)"
   },
   "osric": {
-    "id": "pqHfZKP75CvOlQylNhV4",
-    "name": "Osric",
-    "note": "Temple"
+    "id": "LvmvHEBEmMJBJw9UuhwO",
+    "name": "Eldrin",
+    "note": "Temple (Eldrin - Wise Ancient Wizard Storyteller)"
   },
   "wren": {
-    "id": "FGY2WhTYpPnrIDTdsKH5",
-    "name": "Wren",
-    "note": "Apothecary"
+    "id": "kkPJzQOWz2Oz9cUaEaQd",
+    "name": "Beatrice",
+    "note": "Apothecary (Beatrice - Mature, Gentle and Engaging)"
   },
   "dobbin": {
-    "id": "CwhRBWXzGAHq8TQ4Fs17",
-    "name": "Dobbin",
-    "note": "Smith"
+    "id": "U5UjeJMsOvyhYhXfZdvZ",
+    "name": "Adam (Scottish)",
+    "note": "Smith (Adam - Classic Scottish Storyteller)"
   },
   "tamsin": {
-    "id": "Xb7hH8MSUJpSbSDYk0k2",
-    "name": "Tamsin",
-    "note": "Warden"
+    "id": "d1PjUBrElTJTH5EkXPZp",
+    "name": "Helena Watson",
+    "note": "Warden (Authoritative but warm)"
   },
   "brambur": {
-    "id": "ErXwobaYiN019PkySvjV",
-    "name": "Brambur",
-    "note": "Antoni - dwarf cleric (free premade; Josh is library-only)"
+    "id": "YIn3yKpQSeXNJMF5CIuj",
+    "name": "Scottish Paisley",
+    "note": "Dwarf cleric (Scottish Paisley)"
   },
   "pip": {
-    "id": "MF3mGyEYCl7XYWbV9V6O",
-    "name": "Pip",
-    "note": "Elli - halfling"
+    "id": "P7fAh4p4xVfEzGgihOit",
+    "name": "Sam",
+    "note": "Halfling (Sam - British Female)"
   },
   "fizzwick": {
-    "id": "yoZ06aMxZJJ28mfd3POQ",
-    "name": "Fizzwick",
-    "note": "Sam - gnome"
+    "id": "ouL9IsyrSnUkCmfnD02u",
+    "name": "Grimblewood",
+    "note": "Gnome (Grimblewood Thornwhisker - Snarky Gnome)"
   },
   "skarn": {
-    "id": "VR6AewLTigWG4xSOukaG",
-    "name": "Skarn",
-    "note": "Arnold - B1 boss"
+    "id": "3VkFsBHdRPqWKsitgYhJ",
+    "name": "Azgar",
+    "note": "B1 boss (Azgar - Intimidating Orc Troll)"
   },
   "brakk": {
-    "id": "N2lVS1w4EtoT3dr4eOWO",
-    "name": "Brakk",
-    "note": "Callum - B4"
+    "id": "KTAbPR4QFlhaTpde6md8",
+    "name": "Bloodgrin",
+    "note": "B4 boss (Bloodgrin VF - Villain)"
   },
   "gorvax": {
-    "id": "VR6AewLTigWG4xSOukaG",
-    "name": "Gorvax",
-    "note": "Arnold - final boss"
+    "id": "ysswSXp8U9dFpzPJqFje",
+    "name": "Azazel",
+    "note": "Final boss (Azazel - Menacing and Gravelly Demon)"
   },
   "liora": {
-    "id": "EXAVITQu4vr4xnSDxMaL",
-    "name": "Sarah (premade)",
-    "note": "Liora Wardenfall, Companion (mature, warm, confident)"
+    "id": "CmoLJ5IFIu3FQ1FZAYIK",
+    "name": "Lorelai",
+    "note": "Liora Wardenfall, Companion (Lorelai - Engaging, Elegant and Warm)"
+  },
+  "zizzy": {
+    "id": "342hpGp7PKo7DsTTVSdr",
+    "name": "Katherine",
+    "note": "Zizzy Emberwhistle, tiefling sorcerer (Katherine - Eccentric Mad Scientist)"
+  },
+  "nettle": {
+    "id": "CHPhef6gfFNOkEUe49Yz",
+    "name": "Captain Bramble",
+    "note": "Nettle Quickstory, bard (Captain Bramble - Seasoned Scoundrel)"
   }
 }

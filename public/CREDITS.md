@@ -10,7 +10,11 @@ Monster, chest and torch models by **Quaternius** (quaternius.com), CC0 1.0 — 
 
 ## Spoken dialogue
 
-Voices generated with [ElevenLabs](https://elevenlabs.io).
+Voices generated with [ElevenLabs](https://elevenlabs.io) (text-to-speech, `eleven_multilingual_v2`) on a paid Creator plan that includes a commercial-use licence, using voices from the ElevenLabs Voice Library. All spoken lines were re-recorded on the paid plan; no free-plan samples remain.
+
+## Sound effects
+
+Battle and spell sound effects generated with [ElevenLabs Sound Effects](https://elevenlabs.io/sound-effects) on the same paid plan (commercial use). Procedural WebAudio sounds in `src/sfx.js` remain as a fallback.
 
 ## Music
 

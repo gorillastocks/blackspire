@@ -44,16 +44,16 @@ const COMPANION_QUEST = { hammer: 'brambur', pages: 'fizzwick', spoons: 'pip', b
 
 /* ---------- Elowen's notes ---------- */
 export const NOTES = [
-  'Note 1: "If you are reading this, you followed. Good. They tied my hands but not my pencil. — E."',
+  'Note 1: "If you are reading this, you followed. Good. They tied my hands but not my pencil. Yours, E."',
   'Note 2: "The spider-rider is called Skarn. He talks to his mount. It does not answer. Neither do I."',
   'Note 3: "Water to my knees. Sister Vey sings to the old lizard. It is very bad singing."',
   'Note 4: "Malthrax says there are five seals and one breaks with every moonrise. Hurry. But eat something."',
   'Note 5: "The crystals hum when the basilisk looks at them. Mirrors, perhaps? Bring something shiny."',
   'Note 6: "Mushrooms that scream. I am not making this up. Kill the little ones first."',
-  'Note 7: "Ashforge. They chain smiths to the anvils. The chimera wears a collar — Brakk is afraid of it."',
+  'Note 7: "Ashforge. They chain smiths to the anvils. The chimera wears a collar. Brakk is afraid of it."',
   'Note 8: "Brakk carries a dwarf-made hammer far too fine for him. Brambur will know it."',
   'Note 9: "I can see the vault. Something very large is sleeping under the floor. Malthrax keeps saying \'Gorvax\'."',
-  'Note 10: "His staff is the anchor. Break it and I am free. I will be ready. — Your friend, E."',
+  'Note 10: "His staff is the anchor. Break it and I am free. I will be ready. Your friend, E."',
 ];
 
 /* ---------- Points of interest per floor ('Q' tiles, in scan order) ---------- */
@@ -249,19 +249,19 @@ export function talkTo(s, npc) {
   if (!st) {
     startQuest(s, q);
     const ask = {
-      rowan: 'Four of my guards chased the cultists into the Rat-Warrens and never came back. Bring them home and I\'ll see you paid — and they\'ll fight at your side.',
+      rowan: 'Four of my guards chased the cultists into the Rat-Warrens and never came back. Bring them home and I\'ll see you paid, and they\'ll fight at your side.',
       marga: 'Something\'s digging into my cellar from below. Scratching all night. Collapse that tunnel and you\'ll never pay for a room again.',
       osric: 'The princess carried a satchel of relics from this temple. If it survived, it fell in the Drowned Grotto. Bring it back and the Temple will owe you a life.',
       wren: 'Glowcaps! The Glimmerdeep is full of them. Three, and I can brew you something for basilisk trouble. Stone-to-flesh, dear. Very fashionable.',
       dobbin: 'They took my brother smiths to the Ashforge in chains. Free them and I\'ll forge you the finest blade in Emberhollow.',
-      tamsin: 'When I was a girl, the Warden kept a horn that woke the whole valley. It\'s down in the vault still. Sound it when the big lizard wakes — trust an old woman.',
+      tamsin: 'When I was a girl, the Warden kept a horn that woke the whole valley. It\'s down in the vault still. Sound it when the big lizard wakes. Trust an old woman.',
     }[npc];
     lines.push(L(npc, ask)); out.push({ log: `Quest accepted: ${QUESTS[q].title}.`, cls: 'sys' });
   } else if (st === 'ready') {
     s.quests[q] = 'done'; addJournal(s, `Completed: ${QUESTS[q].title}.`);
     if (npc === 'rowan') { s.gold += 75; s.flags.escort = true; lines.push(L('rowan', 'All four, alive! Here\'s 75 gold. They\'ll walk the Warrens with you from now on.')); out.push({ log: '+75 gp. Escort buff: guards fight beside you on B1.', cls: 'good' }); }
     if (npc === 'marga') { s.flags.freeInn = true; lines.push(L('marga', 'Quiet as a tomb down there now. Rooms are free for you, love. Forever. Don\'t tell the others.')); out.push({ log: 'The inn is now free for your party.', cls: 'good' }); }
-    if (npc === 'osric') { s.flags.freeRaise = 1; s.inventory.push('potionGreater', 'potionGreater'); lines.push(L('osric', 'Her relics! The Temple owes you a life — one Raise Dead, free. And take these.')); out.push({ log: 'Received 2 Potions of Greater Healing and one free Raise Dead.', cls: 'good' }); }
+    if (npc === 'osric') { s.flags.freeRaise = 1; s.inventory.push('potionGreater', 'potionGreater'); lines.push(L('osric', 'Her relics! The Temple owes you a life. One Raise Dead, free. And take these.')); out.push({ log: 'Received 2 Potions of Greater Healing and one free Raise Dead.', cls: 'good' }); }
     if (npc === 'wren') { s.inventory.push('potionStoneFlesh', 'potionStoneFlesh', 'potionStoneFlesh'); lines.push(L('wren', 'Perfect caps! Three Potions of Stone-to-Flesh. Drink one if you start feeling... gravelly.')); out.push({ log: 'Received 3 Potions of Stone-to-Flesh.', cls: 'good' }); }
     if (npc === 'dobbin') { s.inventory.push('weapon2'); lines.push(L('dobbin', 'My brothers are home. This blade took all six of us to forge. +2, and it sings when it cuts.')); out.push({ log: 'Received a +2 Smith-Blessed Blade. The smiths will be at the vault for the finale.', cls: 'good' }); }
   } else if (st === 'done') {
@@ -286,7 +286,7 @@ export function prologueScenes(s) {
   return {
     feast: { title: 'The Harvest Feast', lines: [
       L('narrator', 'Emberhollow, harvest night. The Boar & Spoon is packed to the rafters, and Princess Elowen herself is pouring the cider.'),
-      L('elowen', 'To Emberhollow — and to whoever finally finishes Marga\'s pie!'),
+      L('elowen', 'To Emberhollow, and to whoever finally finishes Marga\'s pie!'),
       L('marga', 'Nobody finishes my pie. That\'s the tradition.'),
       ...comp('brambur', 'I\'ll have a go. For Mum.'), ...comp('fizzwick', 'Fizzwick calculates the pie at forty percent gravy, sixty percent ambition.'), ...comp('pip', 'Has anyone counted the spoons? I\'m only asking. For a friend. I am the friend.'),
       L('narrator', 'Then the candles gutter out, all at once. Robed figures pour through the cellar door, with rats and wolf-spiders at their heels.'),
@@ -295,10 +295,10 @@ export function prologueScenes(s) {
       L('narrator', 'As the last cultist falls, the hearth fire turns violet. A tall shadow steps out of it, wearing a crown of black iron.'),
       L('malthrax', 'Princess. You will make a lovely key.'),
       L('narrator', 'Shadow-hands seize Elowen. As she is dragged into the fire, she wrenches her signet ring free and throws it to you.'),
-      L('elowen', 'Take it! Follow me down — I\'ll leave you a trail!'),
+      L('elowen', 'Take it! Follow me down, I\'ll leave you a trail!'),
       L('malthrax', 'Five moons, Emberhollow. Then you kneel before Blackspire.'),
       L('narrator', 'The fire goes out. Elowen is gone. The floor of the cellar has cracked open onto a stair leading down.'),
-      L('rowan', 'You. You fought like the Dawn\'s own knight. Take this writ — it gives you the Crown\'s authority below. Bring her back. I\'ll have work for you in town, too.'),
+      L('rowan', 'You. You fought like the Dawn\'s own knight. Take this writ. It gives you the Crown\'s authority below. Bring her back. I\'ll have work for you in town, too.'),
       ...comp('brambur', 'Right. Pie can wait. Princess can\'t.'), ...comp('fizzwick', 'Fizzwick has prepared a list of reasons to be afraid. It is long. Let us go anyway.'), ...comp('pip', 'He took the PRINCESS. And, I checked, three of Marga\'s spoons. This is personal now.'),
     ], choices: [{ id: 'vow', label: '“I will bring her home.”' }, { id: 'grim', label: '“Malthrax will kneel first.”' }] },
   };

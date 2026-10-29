@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
  * Record Blackspire dialogue via ElevenLabs.
- * Usage: node scripts/voice.mjs [--only speaker] [--ids id1,id2] [--spare N] [--force] [--dry]
+ * Usage: node scripts/voice.mjs [--only speaker] [--ids id1,id2] [--spare N] [--force] [--dry] [--raw DIR] [--skip a,b]
+ * --raw DIR also keeps the un-normalised MP3s there; then run `node scripts/voice-normalize.mjs DIR` to loudness-match public/voice.
+ * Per-speaker voice_settings can be set in cast.json ("settings"); mp3_44100_128 output, eleven_multilingual_v2.
  * Clips are recorded highest priority first. --spare keeps that many characters unspent (default 500).
  * Skips clips whose text+voice hash already matches the manifest.
  * Never prints the API key.
@@ -27,6 +29,9 @@ const only = args.includes('--only') ? args[args.indexOf('--only') + 1] : null;
 const force = args.includes('--force');
 const dry = args.includes('--dry');
 const ids = args.includes('--ids') ? new Set(args[args.indexOf('--ids') + 1].split(',')) : null;
+const skip = args.includes('--skip') ? new Set(args[args.indexOf('--skip') + 1].split(',')) : new Set();
+const rawDir = args.includes('--raw') ? args[args.indexOf('--raw') + 1] : null;
+if (rawDir) mkdirSync(rawDir, { recursive: true });
 const SPARE = args.includes('--spare') ? +args[args.indexOf('--spare') + 1] : 500;
 
 const hash = (voiceId, text) => createHash('sha1').update(`${voiceId}|${text}`).digest('hex').slice(0, 16);
@@ -39,14 +44,15 @@ async function subscription() {
   return r.json();
 }
 
-async function tts(voiceId, text) {
-  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_64`, {
+const DEFAULT_SETTINGS = { stability: 0.4, similarity_boost: 0.8, style: 0.5, use_speaker_boost: true };
+async function tts(voiceId, text, settings) {
+  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
     method: 'POST',
     headers: { 'xi-api-key': key, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
     body: JSON.stringify({
       text,
       model_id: 'eleven_multilingual_v2',
-      voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.5, use_speaker_boost: true },
+      voice_settings: { ...DEFAULT_SETTINGS, ...(settings || {}) },
     }),
   });
   if (!r.ok) {
@@ -58,11 +64,12 @@ async function tts(voiceId, text) {
 
 const sub = await subscription();
 const remaining = (sub.character_limit || 0) - (sub.character_count || 0);
-console.log(`ElevenLabs free plan: ${remaining} chars remaining (leave ${SPARE} spare)`);
+console.log(`ElevenLabs ${sub.tier || 'plan'}: ${remaining} chars remaining (leave ${SPARE} spare)`);
 let budget = Math.max(0, remaining - SPARE);
 
 const jobs = queue.map((L, i) => ({ L, i })).sort((a, b) => (b.L.priority || 0) - (a.L.priority || 0) || a.i - b.i).map((x) => x.L).filter((L) => {
   if (only && L.speaker !== only) return false;
+  if (skip.has(L.speaker)) return false;
   if (ids && !ids.has(L.id)) return false;
   const v = cast[L.speaker];
   if (!v) { console.warn(`skip ${L.id}: no cast voice for ${L.speaker}`); return false; }
@@ -79,7 +86,8 @@ for (const L of jobs) {
   if (dry) { console.log(`dry ${L.speaker}: ${L.chars} "${L.text.slice(0, 50)}…"`); used += L.chars; continue; }
   try {
     process.stdout.write(`rec ${L.speaker} ${L.chars}c ${L.id}… `);
-    const buf = await tts(v.id, L.text);
+    const buf = await tts(v.id, L.text, v.settings);
+    if (rawDir) writeFileSync(join(rawDir, `${L.id}.mp3`), buf);
     writeFileSync(join(outDir, `${L.id}.mp3`), buf);
     manifest.clips[L.id] = {
       speaker: L.speaker, voice: v.id, text: L.text, chars: L.chars,
