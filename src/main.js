@@ -220,9 +220,11 @@ function placeBanter() {
   const tight = R.monsterScreenRect?.(); // the band is short: try again just under the sprites' real outline (the padded box leaves room for lunges)
   if (tight) { let t2 = view.top + (tight.bottom / 100) * view.height + 3; if (cr && cr.height) t2 = Math.max(t2, cr.bottom + 6); if (t2 + hb <= bottom) { bn.style.top = `${t2 - view.top}px`; return; } }
   const hud = $('#hud').getBoundingClientRect(), mb = $('#btn-menu')?.getBoundingClientRect(), mTop = view.top + (r.top / 100) * view.height - 6;
-  for (const narrow of [false, true]) { // above the monsters; on a phone the top-right Menu button is dodged by narrowing the bubble to its left
+  const plateTop = Math.min(Infinity, ...[...document.querySelectorAll('#targets .mtag')].filter((e) => e.offsetParent).map((e) => e.getBoundingClientRect().top));
+  for (const withPlates of (Number.isFinite(plateTop) && plateTop < mTop ? [true, false] : [false])) for (const narrow of [false, true]) { // above the monsters (and, when there is room, above their name plates); on a phone the top-right Menu button is dodged by narrowing the bubble to its left
+    if (!narrow) { bn.style.left = ''; bn.style.transform = ''; bn.style.width = ''; }
     if (narrow) { if (!mb || !mb.width || mb.left < view.left + view.width * 0.4) break; bn.style.left = '8px'; bn.style.transform = 'none'; bn.style.width = `${mb.left - view.left - 14}px`; }
-    const h2 = bn.offsetHeight, above = mTop - h2, minTop = Math.max(view.top + 4, hud.bottom + 2);
+    const h2 = bn.offsetHeight, above = (withPlates ? plateTop - 4 : mTop) - h2, minTop = Math.max(view.top + 4, hud.bottom + 2);
     const clash = mb && mb.width && mb.bottom > above && mb.top < above + h2 && (narrow ? false : mb.right > bn.getBoundingClientRect().left && mb.left < bn.getBoundingClientRect().right);
     if (above >= minTop && !clash) { bn.style.top = `${above - view.top}px`; return; }
   }
