@@ -439,7 +439,7 @@ function showHelp() {
 function showCredits() {
   openModal([h('h2', {}, 'Credits'), h('div', { html: `<p>Rules content from the <b>System Reference Document 5.1</b> by Wizards of the Coast LLC, licensed under <a style="color:#22e6ff" href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">CC-BY-4.0</a>. Blackspire is unofficial Fan Content and is not affiliated with Wizards of the Coast.</p>
   <p>3D monster, chest and torch models by <b>Quaternius</b> (quaternius.com), CC0 1.0 — via the Easy Enemy, Animated Dinosaur, Ultimate Animated Animal, Platformer Game Kit, Cyberpunk Game Kit and Modular Dungeon packs.</p>
-  <p>Spoken dialogue voices by <a style="color:#22e6ff" href="https://elevenlabs.io" target="_blank" rel="noopener">elevenlabs.io</a>.</p>
+  <p>Spoken dialogue and battle sound effects by <a style="color:#22e6ff" href="https://elevenlabs.io" target="_blank" rel="noopener">elevenlabs.io</a>.</p>
   <p><b>Music</b> by Kevin MacLeod (<a style="color:#22e6ff" href="https://incompetech.com" target="_blank" rel="noopener">incompetech.com</a>), licensed under <a style="color:#22e6ff" href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>:</p>
   <ul style="text-align:left;font-size:0.92em;line-height:1.45;max-height:40vh;overflow:auto">
     <li>Title — <i>Darkest Child</i></li>
@@ -712,7 +712,7 @@ function showCamp(tab) {
 
 /* ---------- Spell selection (SRD) ---------- */
 function trainWithSpells(c, back) {
-  const prev = SC.snapshot(c), lv = c.level; const ev = G.train(S, c); autosave();
+  const prev = SC.snapshot(c), lv = c.level; const ev = G.train(S, c); autosave(); if (c.level > lv) sfx('levelup');
   const picks = c.level > lv && CLASSES[c.cls].caster && !c.ai && SC.hasChoices(c, 'levelup', prev);
   if (picks) { handle(ev); showSpellPicker(c, 'levelup', prev, () => { autosave(); back(); }); } else { back(); handle(ev); }
 }
@@ -1126,6 +1126,7 @@ async function startCombat(info) {
   combatInfo = info; lootBase = snapLoot();
   combat = new Combat(S.party, info.groups, { inventory: S.inventory, boss: !!info.boss, canFlee: !info.boss && !info.town, difficulty: S.difficulty || 'normal', story: info.town ? {} : G.combatOpts(S, info), elite: info.elite || null, lore: S.lore });
   combatStarting = false;
+  if (info.elite || info.boss) sfx('roar');
   R.setMode('combat');
   try { await R.showMonsters(combat.monsters, theme); } catch (e) { log('Could not draw the monsters: ' + (e && e.message || e), 'bad'); } // a failed model load must not leave the battle without its menu
   const names = {}; for (const m of combat.monsters) names[m.name] = (names[m.name] || 0) + 1;
@@ -1269,7 +1270,7 @@ async function flushCombat() {
       if (sp && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur());
       const wk = !sp && e.att.side === 'party' ? wpn.get(e.att) : null;
       if (wk) await R.weaponStrike(wk, e.tgt.id, e.crit, fxDur() * 0.6, idx(e.att));
-      R.monsterHit(e.tgt.id, e.crit, e.dtype || 'slashing', !sp && !wk); floater(e.tgt.id, e.dmg, e.crit, e.dtype);
+      R.monsterHit(e.tgt.id, e.crit, e.dtype || 'slashing', !sp && !wk); floater(e.tgt.id, e.dmg, e.crit, e.dtype); if (e.dmg > 0) sfx('mhurt');
       if (sp) dmgSfx(e, sp); else sfx(WEAPON_SFX[wk] && wk !== 'bow' && wk !== 'crossbow' ? WEAPON_SFX[wk] : e.dtype === 'bludgeoning' ? 'thud' : e.dtype === 'piercing' ? 'stab' : SPELL_SFX[e.dtype] || 'slash');
       if (e.crit) sfx('crit'); await wait((sp ? 160 : wk ? 200 : 260) * ANIM_SLOW + 90); // impact hold on the hit frame (sound already fired with the hit)
     }
@@ -1283,7 +1284,7 @@ async function flushCombat() {
       else if (look && e.who.side !== 'monster') pending = { spell: e.spell, who: e.who };
       else { pending = null; const col = { sleep: 0x80a0ff, spiritGuardians: 0xffe080, smite: 0xfff0a0, rage: 0xff3020, shield: 0x80c0ff }[e.spell] || 0x60ffb0; R.spellFx(col, null); await wait(300); }
     }
-    else if (e.type === 'heal') { healFx(e.who); cardFloat(e.who, e.amt ? '+' + e.amt : '+', false, 'good'); sfx('chime'); }
+    else if (e.type === 'heal') { healFx(e.who); cardFloat(e.who, e.amt ? '+' + e.amt : '+', false, 'good'); sfx('heal'); }
     else if (e.type === 'down') { say(banter(S.party.filter((p) => p !== e.who), 'down', { p: e.who.name }, 0.9)); await wait(200); }
     else if (e.type === 'lowHp') say(banter(S.party, 'lowHp', { who: e.who }, 0.35));
     renderParty(); renderTargets();
