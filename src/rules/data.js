@@ -411,7 +411,7 @@ for (const [k, t] of Object.entries(MONSTER_TRAITS)) if (MONSTERS[k]) Object.ass
  *  B1 is deliberately untouched (every B1 entry is 1 / 0 / absent): the floor-1 balance is signed off.
  *  bossHp: floor-boss and lieutenant hit points. eliteFloorHp: extra elite hit points by floor (B1..B5), on top of the 1.7x leader / 1.25x escort elite bonus. */
 export const TUNING = {
-  bossHp: { giantSpider: 1.5, skarn: 1, ankylosaurus: 1.95, glasshide: 4.2, brakk: 1.5, cindermaw: 2.8, malthrax: 2.6, tyrannosaurus: 2 },
+  bossHp: { giantSpider: 1.5, skarn: 1, ankylosaurus: 2.35, glasshide: 5.4, brakk: 1.5, cindermaw: 2.8, malthrax: 2.9, tyrannosaurus: 2 },
   eliteFloorHp: [1, 1.4, 1.8, 2.2, 2.0],
   /** B2-B5 pass: every monster on the floor (B1..B5) gets this HP multiplier / this damage multiplier against the party, on top of difficulty. */
   floorHp: [1, 1.15, 1.25, 1.2, 1.2],
@@ -422,5 +422,5 @@ export const TUNING = {
   legendary: { glasshide: 1, malthrax: 2, cindermaw: 1, tyrannosaurus: 1, ankylosaurus: 1, brakk: 1 },
   /** Per-monster-kind HP and damage multipliers, used on B2-B5 only (a kind may also appear on B1, which must stay as it is). */
   foeHp: { ochreJelly: 1.5, darkmantle: 1.3, violetFungus: 1.5, animatedArmor: 1.3, cultFanatic: 1.8, flyingSword: 1.2 },
-  foeDmg: { ochreJelly: 1.25, darkmantle: 1.8, violetFungus: 1.7, glasshide: 2.15, animatedArmor: 2.2, cultFanatic: 1.6, malthrax: 2.45, ankylosaurus: 0.95, brakk: 2, cindermaw: 1.3, tyrannosaurus: 1.1, giantWasp: 1, hellHound: 0.85, flyingSword: 1.4, allosaurus: 1.15, triceratops: 1.1, giantToad: 0.9 },
+  foeDmg: { ochreJelly: 1.25, darkmantle: 1.8, violetFungus: 1.7, glasshide: 2.4, animatedArmor: 2.2, cultFanatic: 1.6, malthrax: 2.8, ankylosaurus: 0.95, brakk: 2.25, cindermaw: 1.45, tyrannosaurus: 1.1, giantWasp: 1, hellHound: 0.85, flyingSword: 1.4, allosaurus: 1.15, triceratops: 1.1, giantToad: 0.9 },
 };

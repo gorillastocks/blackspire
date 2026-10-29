@@ -19,6 +19,8 @@ import { rankLayout, spriteRankLayout } from './ranks.js';
 import { spriteFor, spriteSize, buildSpriteMonster, updateSprites, disposeSprite } from './sprites.js';
 
 const CELL = 2, WALL_H = 2.6;
+/** Painted battle sprites are framed at this share of the size the fit would otherwise give them (d3aa5f8 filled the arena; half of that keeps big groups and bosses inside it and leaves room for the name plates). Bosses and elites scale the same way. */
+export const SPR_VIEW_SCALE = 0.5;
 const gltfCache = {};
 export function loadModel(name) {
   // retry with backoff: GitHub Pages' CDN occasionally answers 503 right after a deploy
@@ -434,7 +436,7 @@ export class Renderer {
       let need = Math.max(span / avail, wide, half);
       if (spr) { // painted sprites: the FRONT rank is fitted big (about 72% of the stage); back ranks may rise past the top edge a little (their heads tuck under the HUD) but stay visible
         const f = this.monsterRect(0) || r, fw = (f.right - f.left) / 97, fh = Math.max(50 - f.left, f.right - 50) / 48.5;
-        need = Math.max((f.bottom - f.top) / (0.72 * avail), span / (1.3 * avail), fw, wide / 1.3, fh, half / 1.2); } if (Math.abs(need - 0.97) < 0.03) break;
+        need = Math.max((f.bottom - f.top) / (0.72 * avail), span / (1.3 * avail), fw, wide / 1.3, fh, half / 1.2) / SPR_VIEW_SCALE; } if (Math.abs(need - 0.97) < 0.03) break;
       const nk = Math.max(kMin, k * Math.min(2.5, need * 1.03)); if (Math.abs(nk - k) < 0.002) break; k = nk; // pull back if too big, push in if small
     }
     const r = (spr && this.monsterRect(0)) || this.monsterRect(); this.arenaShift = 0;

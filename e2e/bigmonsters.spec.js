@@ -9,7 +9,7 @@ async function stage(page, groups) {
   await page.evaluate(async (groups) => {
     const g = window.__gw, S = g.state;
     for (const c of S.party) { c.maxHp = 999; c.hp = 999; c.ai = true; } S.party[0].ai = false; // the hero waits for input: a still frame
-    g.hideCaption?.(); g.startCombat({ groups });
+    g.hideCaption?.(); g.startCombat(Array.isArray(groups) ? { groups } : groups);
     await new Promise((r) => { const t = setInterval(() => { if (g.combat) { clearInterval(t); r(); } }, 50); });
     for (const m of g.combat.monsters) m.hp = m.maxHp = 9999;
   }, groups);
@@ -30,18 +30,21 @@ const SCENES = {
   b1: [{ key: 'giantRat', count: 3 }, { key: 'giantCentipede', count: 2 }],
   groups: [{ key: 'gargoyle', count: 2 }, { key: 'wolf', count: 2 }, { key: 'giantRat', count: 2 }, { key: 'cultFanatic', count: 1 }],
   boss: [{ key: 'tyrannosaurus', count: 1 }],
+  vessa: { groups: [{ key: 'giantWolfSpider', count: 1 }, { key: 'giantRat', count: 2 }], elite: { id: 'e-vessa', title: 'Webspinner Vessa', kind: 'patrol', floor: 0 }, fixed: true },
 };
 
 for (const [name, groups] of Object.entries(SCENES)) {
-  test(`big monsters: ${name} fills the arena`, async ({ page }, info) => {
+  test(`half-size monsters: ${name} stays inside the arena`, async ({ page }, info) => {
     const errors = trackErrors(page); const P = info.project.name; const ipad = P.startsWith('ipad');
     await newGame(page); await page.evaluate(() => localStorage.setItem('blackspire.settings', JSON.stringify({ battleSpeed: 'fast', battleSpeedSet: true })));
     await stage(page, groups);
     const hpct = await frontHeight(page); console.log(`${name} ${P}: tallest foe ${hpct}% of the arena`);
-    await shot(page, `/workspace/shots/big-${name}-${P}.png`);
-    if (P === 'iphone') await shot(page, `/workspace/shots/big-${name}.png`);
-    if (P === 'ipad-portrait' && name === 'boss') await shot(page, '/workspace/shots/big-ipad.png');
-    expect(hpct).toBeGreaterThan(name === 'groups' ? 45 : 55); expect(hpct).toBeLessThan(95);
+    await shot(page, `/workspace/shots/half-${name}-${P}.png`);
+    if (P === 'iphone') await shot(page, `/workspace/shots/half-${name}.png`);
+    if (P === 'ipad-portrait' && name === 'boss') await shot(page, '/workspace/shots/half-ipad.png');
+    expect(hpct).toBeGreaterThan(15); expect(hpct).toBeLessThan(45); // about half of the previous 50-75%
+    const plates = await page.evaluate(() => { const r = [...document.querySelectorAll('#targets .mtag')].map((e) => e.getBoundingClientRect()); const bad = []; for (let i = 0; i < r.length; i++) for (let j = i + 1; j < r.length; j++) if (r[i].left < r[j].right - 1 && r[i].right > r[j].left + 1 && r[i].top < r[j].bottom - 1 && r[i].bottom > r[j].top + 1) bad.push([i, j]); return { n: r.length, bad }; });
+    expect(plates.bad, `name plates overlapping (of ${plates.n})`).toEqual([]);
     expect(okErr(errors)).toEqual([]);
   });
 }

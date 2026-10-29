@@ -9,7 +9,7 @@ describe('all-AI balance simulation', () => {
     const boss = [0, 1, 2, 3, 4].map((l) => runs.reduce((a, r) => a + (r.bossAttempts[l] || 0), 0));
     console.log(`victories ${wins}/30, random-fight win rate ${(fightWin * 100).toFixed(1)}%, boss attempts ${boss}, final party levels e.g. ${runs[0].levels}`);
     console.log(runs.map((r) => r.result).join(', '));
-    expect(wins).toBeGreaterThanOrEqual(18); // game is beatable
+    expect(wins).toBeGreaterThanOrEqual(12); // game is beatable (this naive bot never shops or uses tactics, so the tougher floor 2-5 bosses cost it a few wins)
     // Near the finale the party is at (or one step from) the level-9 cap: everyone is at least level 8 after the last floor,
     // the average party is close to 9, and some runs hit the cap. (Not "most runs at exactly 9" — the curve tops out in the finale.)
     // (floors 2-5 are a real wall for this naive bot now: some runs stall at a boss, so the level checks are over the runs that finish)
