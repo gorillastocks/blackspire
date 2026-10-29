@@ -59,9 +59,49 @@ Object.assign(S, {
   mhit: () => { tone(70, 0.25, 'sawtooth', 0.07, -30); noise(0.18, { type: 'lowpass', f0: 800, f1: 160, vol: 0.12 }); },
   mdeath: () => { tone(180, 0.7, 'sawtooth', 0.06, -150); noise(0.6, { type: 'lowpass', f0: 1000, f1: 100, vol: 0.08, attack: 0.05 }); },
 });
-export function sfx(n) { if (!sfxOn) return; S[n]?.(); }
+// Studio-quality samples (ElevenLabs Sound Effects, public/sfx/*.mp3 + manifest.json). Decoded lazily after the first sound;
+// until a sample is ready (or if it fails to load) the procedural sound above plays instead. Names with several
+// takes alternate between them so repeated hits don't sound identical.
+const SAMPLES = {
+  slash: ['slash', 'slash2'], stab: ['stab'], thud: ['thud', 'thud2'], twang: ['twang', 'twang2'], punch: ['punch'],
+  swing: ['swing'], miss: ['miss'], crit: ['crit'], fire: ['fire'], cold: ['cold'], zap: ['zap'], boom: ['boom'],
+  radiant: ['radiant'], ping: ['ping'], arcane: ['arcane'], acid: ['acid'], necrotic: ['necrotic'], heal: ['heal'],
+  hurt: ['hurt'], mhit: ['mhit'], kill: ['kill'], mdeath: ['mdeath'], mhurt: ['mhurt'], roar: ['roar', 'roar2'],
+  levelup: ['levelup'], encounter: ['encounter'], hit: ['thud'],
+};
+const bufs = {}; let sampleLoad = null;
+const sfxUrl = (f) => { const base = import.meta.env?.BASE_URL || './'; try { return new URL(f, new URL(base, document.baseURI || location.href)).href; } catch { return base + f; } };
+function loadSamples() {
+  if (sampleLoad) return; const ctx = ac(); if (!ctx || typeof fetch !== 'function') return;
+  sampleLoad = true;
+  const files = [...new Set(Object.values(SAMPLES).flat())];
+  for (const f of files) {
+    fetch(sfxUrl(`sfx/${f}.mp3`)).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      .then((ab) => new Promise((ok, no) => ctx.decodeAudioData(ab, ok, no))).then((b) => { bufs[f] = b; }).catch(() => { /* keep procedural fallback */ });
+  }
+}
+const takeIdx = {};
+function playSample(n) {
+  const ids = (SAMPLES[n] || []).filter((f) => bufs[f]); if (!ids.length) return false;
+  try {
+    const ctx = ac(); if (!ctx || isMuted()) return true;
+    const f = ids[(takeIdx[n] = ((takeIdx[n] ?? -1) + 1) % ids.length)];
+    const src = ctx.createBufferSource(); src.buffer = bufs[f];
+    if (src.playbackRate) src.playbackRate.value = 0.97 + Math.random() * 0.06; // tiny pitch jitter
+    src.connect(out('sfx')); src.start(); return true;
+  } catch { return false; }
+}
+// Names that only exist as samples get a short procedural stand-in so SFX_NAMES stays fully playable.
+Object.assign(S, {
+  acid: () => { noise(0.4, { f0: 3500, f1: 900, q: 1.2, vol: 0.06, attack: 0.03 }); tone(240, 0.3, 'sawtooth', 0.025, -120); },
+  necrotic: () => { tone(90, 0.6, 'sawtooth', 0.05, -40); noise(0.5, { f0: 500, f1: 150, q: 2, vol: 0.06, attack: 0.1 }); },
+  roar: () => { tone(80, 0.7, 'sawtooth', 0.08, -30); noise(0.6, { type: 'lowpass', f0: 1200, f1: 200, vol: 0.12, attack: 0.1 }); },
+  mhurt: () => { tone(200, 0.2, 'sawtooth', 0.06, -90); noise(0.15, { type: 'lowpass', f0: 900, f1: 250, vol: 0.08 }); },
+  levelup: () => { [523, 659, 784, 1046, 1318].forEach((f, i) => later(i * 90, () => tone(f, 0.35, 'triangle', 0.05, 60))); },
+});
+export function sfx(n) { if (!sfxOn) return; loadSamples(); if (SAMPLES[n] && playSample(n)) return; S[n]?.(); }
 export const SFX_NAMES = Object.keys(S);
 /** Sound for a weapon hit, by weapon kind (see weaponKind in fx.js). */
 export const WEAPON_SFX = { sword: 'slash', axe: 'slash', dagger: 'stab', spear: 'stab', rapier: 'stab', mace: 'thud', bow: 'twang', crossbow: 'twang', fist: 'punch' };
 /** Sound for a spell (by key) or damage type. */
-export const SPELL_SFX = { fire: 'fire', cold: 'cold', lightning: 'zap', thunder: 'boom', radiant: 'radiant', force: 'ping', necrotic: 'arcane', poison: 'arcane', acid: 'arcane', psychic: 'arcane' };
+export const SPELL_SFX = { fire: 'fire', cold: 'cold', lightning: 'zap', thunder: 'boom', radiant: 'radiant', force: 'ping', necrotic: 'necrotic', poison: 'acid', acid: 'acid', psychic: 'arcane' };
