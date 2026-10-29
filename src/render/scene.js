@@ -16,6 +16,7 @@ import { Outdoor } from './outdoor.js';
 import { ANIM_SLOW } from '../menu.js';
 import { MONSTERS } from '../rules/data.js';
 import { rankLayout } from './ranks.js';
+import { spriteFor, buildSpriteMonster, updateSprites, disposeSprite } from './sprites.js';
 
 const CELL = 2, WALL_H = 2.6;
 const gltfCache = {};
@@ -340,7 +341,8 @@ export class Renderer {
     this.clearMonsters(); this.arenaRing.material.color.set(themeColor);
     const n = monsters.length; const lay = rankLayout(monsters.map((m) => ({ id: m.id, T: MONSTERS[m.key] })), ranks); const crowd = lay.crowd;
     await Promise.all(monsters.map(async (m, i) => {
-      const T = MONSTERS[m.key]; const g = await loadModel(T.model); if (!g) return;
+      const T = MONSTERS[m.key]; const spr = await spriteFor(m); if (spr) { buildSpriteMonster(this, m, T, spr, lay, n, crowd); return; } // hand-painted sprite, else the 3D model
+      const g = await loadModel(T.model); if (!g) return;
       const o = SkeletonUtils.clone(g.scene);
       const mats = [];
       o.traverse((ch) => { if (ch.isMesh) { ch.material = ch.material.clone(); ch.frustumCulled = false; if (T.tint) ch.material.color.lerp(new THREE.Color(T.tint), 0.55); ch.material.roughness = Math.min(ch.material.roughness ?? 0.6, 0.55); ch.material.metalness = Math.max(ch.material.metalness ?? 0, 0.08); ch.material.envMapIntensity = 1; ch.material.emissive = ch.material.color.clone().multiplyScalar(0.08); mats.push(ch.material); } });
@@ -410,7 +412,7 @@ export class Renderer {
       if (s) { cam.setViewOffset(w, h, 0, (s / 100) * h, w, h); this.arenaShift = s; } }
     cam.updateProjectionMatrix();
   }
-  clearMonsters() { this.aBump = 0; this.aShake = 0; this._co?.set(0, 0, 0); this.arenaCam?.clearViewOffset?.(); this.arenaShift = 0; this.cfx?.clear(); for (const [, v] of this.monsterObjs) { this.monsterGroup.remove(v.holder); const i = this.mixers.indexOf(v.mixer); if (i >= 0) this.mixers.splice(i, 1); } this.monsterObjs.clear(); }
+  clearMonsters() { this.aBump = 0; this.aShake = 0; this._co?.set(0, 0, 0); this.arenaCam?.clearViewOffset?.(); this.arenaShift = 0; this.cfx?.clear(); for (const [, v] of this.monsterObjs) { this.monsterGroup.remove(v.holder); disposeSprite(v); const i = this.mixers.indexOf(v.mixer); if (i >= 0) this.mixers.splice(i, 1); } this.monsterObjs.clear(); }
   playOnce(id, name, then = 'idle') {
     const v = this.monsterObjs.get(id); if (!v || v.dead && name !== 'death') return; const clip = v.clips[name]; if (!clip) return;
     const a = v.mixer.clipAction(clip); v.mixer.stopAllAction(); a.reset(); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.play();
@@ -446,6 +448,7 @@ export class Renderer {
     const f = Math.max(0.45, this.speedF);
     if (v.clips.death) { this.playOnce(id, 'death'); v.dieT = 0; v.dieDur = 1.5 * f; v.dissolveAt = 0.55; }
     else { v.dieT = 0; v.dieDur = 1.1 * f; v.dissolveAt = 0.35; v.collapse = true; }
+    if (v.spr) v.collapse = false; // sprites dissolve in place instead of tipping over
     for (const m of v.mats) { m.transparent = true; m.needsUpdate = true; }
     this.cfx.burst(this.monsterCenter(id), 0x9a70ff, 10, 1.2, 0.18);
   }
@@ -572,6 +575,7 @@ export class Renderer {
           if (k >= 1) { v.holder.visible = false; v.dieT = undefined; }
         }
       }
+      updateSprites(this, dt, t);
       for (const f of this.fx) { f.t += dt; f.m.scale.setScalar(1 + f.t * 8); f.m.material.opacity = Math.max(0, 1 - f.t * 2); f.l.intensity = Math.max(0, 40 * (1 - f.t * 2)); }
       this.fx = this.fx.filter((f) => { if (f.t > 0.6) { this.arena.remove(f.m, f.l); return false; } return true; });
     }
