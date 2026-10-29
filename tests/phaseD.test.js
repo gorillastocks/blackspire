@@ -110,8 +110,8 @@ describe('cut-ins', () => {
 
 describe('save v6', () => {
   it('new games are v6 with empty lore; v5 saves migrate and keep everything', () => {
-    const s = fresh(); expect(s.version).toBe(7); expect(s.lore).toEqual({});
+    const s = fresh(); expect(s.version).toBe(8); expect(s.lore).toEqual({});
     const t = JSON.parse(G.serialize(s)); delete t.lore; t.version = 5; t.gold = 321;
-    const d = G.deserialize(JSON.stringify(t)); expect(d.version).toBe(7); expect(d.lore).toEqual({}); expect(d.gold).toBe(321); expect(d.party.length).toBe(4);
+    const d = G.deserialize(JSON.stringify(t)); expect(d.version).toBe(8); expect(d.lore).toEqual({}); expect(d.gold).toBe(321); expect(d.party.length).toBe(4);
   });
 });

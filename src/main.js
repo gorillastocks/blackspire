@@ -78,9 +78,9 @@ function voiceOf(e) {
 /** Say a narrated/spoken line that has no card of its own, after whatever is speaking now. Narration obeys the ambient (no fight/menu/dialogue) gate. */
 function voiceLine(vz) {
   if (!vz || !hasVoice(vz.text, vz.who)) return;
-  if (vz.who === 'narrator') {
+  if (vz.who === 'narrator' || vz.who === 'dm') {
     const tok = ambientToken();
-    playVoiceLine(vz.text, 'narrator', { kind: 'ambient', ambient: true, queue: true, maxWait: 20000, token: tok, stillValid: (t) => ambientVoiceAllowed() && t?.move === ambientMoveToken && t?.level === S?.level && t?.mode === S?.mode });
+    playVoiceLine(vz.text, vz.who, { kind: 'ambient', ambient: true, queue: true, maxWait: 20000, token: tok, stillValid: (t) => ambientVoiceAllowed() && t?.move === ambientMoveToken && t?.level === S?.level && t?.mode === S?.mode });
   } else playVoiceLine(vz.text, vz.who, { kind: 'dialog', queue: true, maxWait: 20000 });
 }
 
@@ -89,13 +89,13 @@ function showDialogue(scene, { closable = false } = {}) {
   return new Promise((resolve) => {
     const lines = scene.lines || []; let i = 0;
     const draw = () => {
-      const ln = lines[Math.min(i, lines.length - 1)] || { who: 'narrator', text: '' }; const sp = scene.dm && ln.who === 'narrator' ? { name: 'Dungeon Master', icon: '🎲', color: '#d8c48a' } : Story.speaker(ln.who); const last = i >= lines.length - 1;
+      const ln = lines[Math.min(i, lines.length - 1)] || { who: 'narrator', text: '' }; const dmSpeaker = ln.who === 'dm' || (scene.dm && ln.who === 'narrator'); const sp = dmSpeaker ? { name: 'Dungeon Master', icon: '🎲', color: '#d8c48a' } : Story.speaker(ln.who); const last = i >= lines.length - 1;
       playVoiceLine(ln.text, ln.who, { kind: 'dialog', queue: true, maxWait: 12000 }); // queue: a hero reply or card that is still speaking is not cut off
       openModal([h('div', { class: 'dialogue' },
         scene.title ? h('h2', {}, scene.title) : null,
         scene.roll ? h('div', { class: `ttroll ${scene.roll.ok ? 'ok' : 'bad'}`, 'data-roll': scene.roll.ok ? 'success' : 'failure' }, scene.roll.text) : null,
         h('div', { class: 'dlgrow' }, speakerPortrait(sp),
-          h('div', { class: 'dlgtext' }, sp.name ? h('b', { style: `color:${sp.color}` }, sp.name) : null, h('p', { class: ln.who === 'narrator' ? 'lore' : '' }, ln.text))),
+          h('div', { class: `dlgtext${ln.who === 'dm' ? ' dmbox' : ''}` }, sp.name ? h('b', { style: `color:${sp.color}` }, ln.who === 'dm' ? '🎲 The Dungeon Master reads aloud' : sp.name) : null, h('p', { class: ln.who === 'narrator' || ln.who === 'dm' ? 'lore' : '' }, ln.text), ln.react ? h('small', { class: `rx ${ln.react}`, 'data-react': ln.react }, ln.bonus ? '💬 ' + (ln.react === 'approve' ? 'Warms to you' : 'Cools toward you') : ln.react === 'approve' ? '👍 Approves' : ln.react === 'object' ? '👎 Objects' : '😏 Quips') : null)),
         last && scene.fx?.length ? h('div', { class: 'fxlist' }, scene.fx.map((f) => h('div', { class: `fx ${f.cls}` }, f.t))) : null,
         h('div', { class: 'hint' }, `${Math.min(i + 1, lines.length)} / ${lines.length}`),
         h('div', { class: 'menu' }, last
@@ -135,6 +135,15 @@ async function afterPrologueFight() {
   handle(Story.finishPrologue(S, choice)); autosave(); showTown(); startTutorial();
 }
 let journalTab = 'quests';
+let journalOpen = null; // chapter ids the player has expanded (null: only the newest chapter starts open)
+/** The Entries tab: the whole log, grouped by chapter (newest chapter first), each chapter collapsible. */
+function journalChapters() {
+  const groups = Story.Journal.groupJournal(S); if (!groups.length) return [h('p', { class: 'hint' }, 'Nothing written yet.')];
+  const open = journalOpen || new Set([groups[0].id]);
+  return [h('p', { class: 'hint' }, `${(S.journal || []).length} entries across ${groups.length} chapter${groups.length === 1 ? '' : 's'}. Tap a chapter to fold it.`),
+    ...groups.map((g) => { const d = h('details', { class: 'jchap', 'data-chapter': g.id }, h('summary', {}, h('span', {}, `${g.icon} ${g.label}`), h('small', {}, ` · ${g.entries.length}`)), ...g.entries.map((j) => h('p', { class: 'hint jentry' }, j.text)));
+      d.open = open.has(g.id); d.addEventListener('toggle', () => { journalOpen ||= new Set([groups[0].id]); d.open ? journalOpen.add(g.id) : journalOpen.delete(g.id); }); return d; })];
+}
 function showJournal(back, tab) {
   if (tab) journalTab = tab;
   const qs = Story.questList(S), notes = S.notes || [], entries = S.journal || [];
@@ -144,17 +153,19 @@ function showJournal(back, tab) {
       h('div', { class: 'menu' }, qs.map((q) => h('p', {}, h('b', {}, `${q.status === 'done' ? '✔' : q.status === 'ready' ? '❗' : '•'} ${q.title || q.id}`), q.progress ? ` (${q.progress})` : '', q.desc ? h('br') : null, q.desc ? h('span', { class: 'hint' }, q.desc) : null)))],
     bonds: () => [bondsPanel()],
     notes: () => [h('h3', {}, `Elowen's notes (${notes.length}/10)`), ...notes.map((n) => h('p', { class: 'lore' }, typeof n === 'string' ? n : Story.NOTES[n - 1] || ''))],
-    entries: () => [...(entries.length ? entries.slice().reverse().map((j) => h('p', { class: 'hint' }, typeof j === 'string' ? j : j.text)) : [h('p', { class: 'hint' }, 'Nothing written yet.')])],
+    entries: () => journalChapters(),
   };
   const p = openModal(h('div', { class: 'tabpage', 'data-page': journalTab }, pages[journalTab]()), { title: '📖 Journal', tabs: tabBar(tabs, journalTab, (id) => showJournal(back, id)) });
   const cl = p.querySelector('.closebtn'); if (cl) cl.id = 'btn-journal-close'; // ✕ Close returns to wherever the Journal was opened from (town square or the maze)
 }
 /** Journal: companion bonds (hearts), Liora's story, curses and blessings, and what Emberhollow remembers. */
+/** A companion's approval of the party's choices: icon + word, e.g. "😊 Fond" (flavour only; it never changes a fight). */
+function approvalTag(k) { const n = G.RX.approval(S, k); return h('span', { class: 'approval', 'data-approval': k, title: `${COMPANIONS[k].short}'s approval of your choices: ${n}` }, `${G.RX.approvalIcon(n)} ${G.RX.approvalLabel(n)}`); }
 function bondsPanel() {
   const P = G.PC, kids = [h('h3', {}, 'Bonds & Omens')];
   const who = [...S.party, ...(S.roster || [])].filter((c) => c.companion);
   if (who.length) kids.push(h('div', { class: 'bonds' }, who.map((c) => h('div', { class: 'bondrow' }, h('b', { style: `color:${COMPANIONS[c.companion].color}` }, COMPANIONS[c.companion].short), ' ', h('span', { class: 'heart' }, P.hearts(S, c.companion)),
-    c.companion === 'liora' ? h('span', { class: 'hint' }, ` ${P.BOND_LABEL[P.bond(S)]}`) : null))));
+    c.companion === 'liora' ? h('span', { class: 'hint' }, ` ${P.BOND_LABEL[P.bond(S)]}`) : null, ' ', approvalTag(c.companion)))));
   const th = P.threadsHeard(S); if (th) kids.push(h('p', { class: 'hint' }, `Personal stories heard: ${th}`));
   for (const b of P.buffs(S)) kids.push(h('p', { class: P.BUFFS[b.id].kind === 'curse' ? 'bad' : 'good' }, `${P.BUFFS[b.id].kind === 'curse' ? '☾' : '✦'} ${P.BUFFS[b.id].label}: ${P.BUFFS[b.id].desc}`));
   const mem = P.knownMemories(S); if (mem.length) kids.push(h('p', { class: 'hint' }, `Emberhollow remembers: ${mem.map((m) => m.name).filter((v, i, a) => a.indexOf(v) === i).join(', ')}.`));
@@ -235,11 +246,14 @@ function handle(events) {
   const list = events || [];
   const willCombat = list.some((e) => e.combat) || combatStarting;
   for (const e of list) {
-    if (e.dm || e.ambient) {
+    if (e.pre) { // the DM's words before a boss fight: always read in full (never dropped), and the fight waits for them
+      log(e.log, e.cls);
+      if (loadSettings().areaDesc !== false && !combat) queueMessage({ text: e.log, cls: 'lore', dm: true, pre: true, voice: e.voice });
+    } else if (e.dm || e.ambient) {
       log(e.log, e.cls);
       // Never queue area narration into a fight, menu, or dialogue; keep the log line only.
       if (loadSettings().areaDesc !== false && !combat && !willCombat && !menuOpen() && !dialogueOpen()) {
-        queueMessage({ text: e.log, cls: 'lore', quip: e.quip, ambient: true, token: ambientToken() });
+        queueMessage({ text: e.log, cls: 'lore', dm: true, voice: e.voice, quip: e.quip, ambient: true, token: ambientToken() });
       } else if (e.quip && !combat && !willCombat) say(e.quip);
     } else if (e.log) {
       log(e.log, e.cls);
@@ -369,7 +383,8 @@ const outHour = () => R?.outdoor?.forceHour ?? hourAt(S?.steps || 0);
 let wasOutdoors = false;
 function outdoorEntry() {
   const r = outReg(), now = !!r && inRegion(r, S.x, S.y);
-  if (now && !wasOutdoors) { const t = todName(outHour()), w = WEATHER_INFO[r.weather]; toast(`${r.name} — open sky · ${t.icon} ${t.name} · ${w.icon} ${w.name}`); log(`🌳 ${r.name}: the roof has fallen in and the sky shows through. It is ${t.name}; ${r.weather === 'rain' ? 'rain patters on the grass' : 'a thin mist hangs over the ground'}.`, 'note'); }
+  if (now && !wasOutdoors) { const t = todName(outHour()), w = WEATHER_INFO[r.weather]; toast(`${r.name} — open sky · ${t.icon} ${t.name} · ${w.icon} ${w.name}`); log(`🌳 ${r.name}: the roof has fallen in and the sky shows through. It is ${t.name}; ${r.weather === 'rain' ? 'rain patters on the grass' : 'a thin mist hangs over the ground'}.`, 'note');
+    if (S.level === 2) for (const e of G.DM.beat(S, 'orchard')) { log(e.log, e.cls); if (loadSettings().areaDesc !== false && !combat && !combatStarting) queueMessage({ text: e.log, cls: 'lore', dm: true, voice: e.voice, ambient: true, token: ambientToken() }); } }
   wasOutdoors = now;
 }
 function refresh() { checkReady(); renderParty(); drawMinimap($('#minimap')); renderHud(); if (R) R.steps = S?.steps || 0; outdoorEntry(); syncAudio(); syncWorld(); }
@@ -964,7 +979,7 @@ function showSheet(c) {
     h('div', { class: 'row sheethead' }, h('button', { class: 'sheetport', id: 'btn-portrait', title: 'Change portrait', onclick: () => showPortraitPicker(c, () => showSheet(c)) }, portrait(c, 'bigport'), h('small', {}, 'Change')),
       h('h2', {}, `${c.name} — Level ${c.level} ${Rr.name} ${C.name} (${C.sub})`)),
     canLevelUp(c) ? h('p', { class: 'lvlready sheetready' }, `⬆ Ready to level up to ${c.level + 1}! Make camp (Camp → Level Up) or visit the Training Grounds.`) : null,
-    c.companion ? h('p', { class: 'hint' }, COMPANIONS[c.companion].blurb) : c.recruit ? h('p', { class: 'hint' }, 'A recruit you created at the Training Grounds.') : null,
+    c.companion ? h('p', { class: 'hint' }, COMPANIONS[c.companion].blurb, ' ', h('b', {}, 'Approval: '), approvalTag(c.companion)) : c.recruit ? h('p', { class: 'hint' }, 'A recruit you created at the Training Grounds.') : null,
     !G.isHero(c) ? btn(`🧠 Tactics: ${TACTIC_STYLES[tacticsOf(c).style].name}${c.ai ? '' : ' (when AI)'}`, () => showTactics(c, () => showSheet(c)), { class: 'small', id: 'btn-sheet-tactics' }) : null,
     h('div', { class: 'abil' }, ABILITIES.map((a) => h('div', { title: ABILITY_NAMES[a] }, h('small', {}, a.toUpperCase()), h('b', {}, c.scores[a]), h('small', {}, fmtMod(mod(c.scores[a])))))),
     h('div', { class: 'cols', style: 'margin-top:10px' },
@@ -1098,11 +1113,11 @@ function clearAmbientNarration() {
   invalidateAmbientVoices();
   for (let i = msgQueue.length - 1; i >= 0; i--) {
     const m = msgQueue[i];
-    if (m.ambient || m.cls === 'lore' || m.dm) msgQueue.splice(i, 1);
+    if (!m.pre && (m.ambient || m.cls === 'lore' || m.dm)) msgQueue.splice(i, 1);
   }
   // If a lore card is on screen (not loot), dismiss it so combat is not blocked behind it.
   const cap = $('#caption');
-  if (cap?.classList.contains('show') && cap.classList.contains('msg') && !cap.classList.contains('loot')) {
+  if (cap?.classList.contains('show') && cap.classList.contains('msg') && !cap.classList.contains('loot') && cap.dataset.pre !== '1') {
     hideCaption();
     if (tapPending) { try { tapPending(); } catch { /* ignore */ } }
   }
@@ -1120,12 +1135,13 @@ async function pumpMessages() {
       // Combat / menu started — abandon remaining ambient cards (loot still allowed if somehow queued).
       if (combat && msgQueue.every((x) => x.ambient || x.cls === 'lore')) { msgQueue.length = 0; break; }
       const m = msgQueue.shift();
-      if ((m.ambient || m.cls === 'lore') && (combat || menuOpen() || dialogueOpen() || (m.token && m.token.move !== ambientMoveToken))) {
+      if (!m.pre && (m.ambient || m.cls === 'lore') && (combat || menuOpen() || dialogueOpen() || (m.token && m.token.move !== ambientMoveToken))) {
         continue; // stale area description
       }
       const el = $('#caption'); clearTimeout(capTimer);
-      el.className = `show msg ${m.cls === 'rare' ? 'rare tier-' + m.tier : m.cls === 'loot' ? 'loot crit' + (m.tier ? ' tier-' + m.tier : '') : m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = ''; capShownAt = performance.now();
-      el.append(h('div', { class: 'captxt' }, m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l, i) => { const lt = m.cls === 'rare' ? (i === 0 ? m.lineTiers[0] : null) : m.lineTiers?.[i]; return h('div', { class: lt ? 'tl tier-' + lt : '' }, l); })) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
+      el.className = `${m.dm ? 'dmbox ' : ''}show msg ${m.cls === 'rare' ? 'rare tier-' + m.tier : m.cls === 'loot' ? 'loot crit' + (m.tier ? ' tier-' + m.tier : '') : m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = ''; capShownAt = performance.now();
+      el.dataset.pre = m.pre ? '1' : ''; if (m.dm) el.append(h('div', { class: 'dmhead' }, '🎲 The Dungeon Master reads aloud'));
+      el.append(h('div', { class: 'captxt' }, m.dm ? m.text.replace(/^🕯\s*/, '') : m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l, i) => { const lt = m.cls === 'rare' ? (i === 0 ? m.lineTiers[0] : null) : m.lineTiers?.[i]; return h('div', { class: lt ? 'tl tier-' + lt : '' }, l); })) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
       placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 400);
       if (m.cls === 'rare') { sfx('reveal_' + (m.rareSfx === 'common' ? 'uncommon' : m.rareSfx)); duckBed(0.3); playVoiceLine(m.text.replace('✨ ', ''), 'narrator', { kind: 'other' }); }
       else if (m.cls === 'loot') {
@@ -1134,11 +1150,13 @@ async function pumpMessages() {
         try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
         duckBed(0.15);
         playVictoryMusic();
+      } else if (m.pre) { // before a boss fight: spoken in full, not tied to the ambient gate
+        playVoiceLine((m.voice?.text || m.text).replace(/^🕯\s*/, ''), m.voice?.who || 'dm', { kind: 'other' });
       } else if (m.ambient || m.cls === 'lore') {
         const tok = m.token || ambientToken();
         if (currentVoice()?.kind === 'battle') stopVoice(); // a card the player advanced to is not held back by a passing companion remark
         playAmbientNarration(m.voice?.text || m.text, {
-          token: tok,
+          who: m.voice?.who || 'narrator', token: tok,
           stillValid: (token) => ambientVoiceAllowed() && token?.move === ambientMoveToken
             && token?.x === S?.x && token?.y === S?.y && token?.level === S?.level,
         });

@@ -6,6 +6,8 @@ import * as N from '../src/game/narration.js';
 import * as Story from '../src/game/story.js';
 import * as PC from '../src/game/phaseC.js';
 import * as G from '../src/game/game.js';
+import * as DM from '../src/game/dm.js';
+import * as RX from '../src/game/reactions.js';
 import { TT_SCENES } from '../src/game/tabletop_text.js';
 import { getLevel } from '../src/dungeon/levels.js';
 import { LORE } from '../src/dungeon/extras.js';
@@ -124,10 +126,14 @@ export function catalog() {
   // ---- wall writings, lore nooks, area narration ----
   for (let i = 0; i < 5; i++) getLevel(i).def.messages.forEach((t) => add('Wall writings and lore nooks', 'narrator', t, `wall.b${i + 1}`, 62));
   LORE.forEach((a, i) => a.forEach((t) => add('Wall writings and lore nooks', 'narrator', t, `nook.b${i + 1}`, 62)));
-  N.FLOOR_INTROS.forEach((t) => add('Area and floor narration', 'narrator', t, 'floor.intro', 58));
-  N.FLOOR_REMINDERS.forEach((t) => add('Area and floor narration', 'narrator', t, 'floor.reminder', 58));
-  N.AREAS.forEach((A, i) => { for (const [k, v] of Object.entries(A)) (Array.isArray(v) ? v : [v]).forEach((t) => add('Area and floor narration', 'narrator', t, `area.b${i + 1}.${k}`, 58)); });
-  Object.entries(N.TOWN).forEach(([k, t]) => add('Area and floor narration', 'narrator', t, `town.${k}`, 58));
+  N.FLOOR_INTROS.forEach((t) => add('Area and floor narration', 'dm', t, 'floor.intro', 58));
+  N.FLOOR_REMINDERS.forEach((t) => add('Area and floor narration', 'dm', t, 'floor.reminder', 58));
+  N.AREAS.forEach((A, i) => { for (const [k, v] of Object.entries(A)) (Array.isArray(v) ? v : [v]).forEach((t) => add('Area and floor narration', 'dm', t, `area.b${i + 1}.${k}`, 58)); });
+  Object.entries(N.TOWN).forEach(([k, t]) => add('Area and floor narration', 'dm', t, `town.${k}`, 58));
+
+  // ---- the Dungeon Master's beats (key places, boss lairs, discoveries, quest beats) and the party's reactions ----
+  for (const [id, t] of Object.entries(DM.BEATS)) add('Dungeon Master beats', 'dm', t, `dm.${id}`, id.startsWith('lair') || id === 'gorvax' || id === 'orchard' || id === 'kiln' ? 97 : 90);
+  for (const [k, t, id] of RX.allLines()) add('Party reactions', k, t, `react.${id}`, 88);
 
   // ---- branching events (run each card for every Liora / check variant) ----
   for (const E of PC.EVENT_LIST) for (const withL of [true, false]) {

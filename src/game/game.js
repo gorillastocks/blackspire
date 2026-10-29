@@ -11,11 +11,14 @@ import { randomPortrait, PORTRAIT_COUNT, PORTRAIT_TOTAL, LIORA_PORTRAIT } from '
 const goodPortrait = (c, i) => Number.isInteger(i) && i >= 0 && (i < PORTRAIT_COUNT || (c.companion === 'liora' && i < PORTRAIT_TOTAL));
 const givePortrait = (c, want = null) => { if (c.companion === 'liora') { c.portrait = LIORA_PORTRAIT; return c; } c.portrait = Number.isInteger(want) && want >= 0 && want < PORTRAIT_COUNT ? want : randomPortrait(c.race, c.cls); return c; };
 import * as Narr from './narration.js';
+import * as DM from './dm.js';
+import { migrateJournal } from './journal.js';
+import * as RX from './reactions.js';
 import * as PC from './phaseC.js';
 import * as Prog from './progress.js';
 import { isLevelLocked } from '../entitlements.js';
 import { Combat } from '../rules/combat.js';
-export { Narr, Prog, PC };
+export { Narr, Prog, PC, DM, RX };
 export { Story };
 export const NLEVELS = LEVEL_DEFS.length;
 
@@ -33,7 +36,7 @@ export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base =
   party.sort((a, b) => order[a.cls] - order[b.cls]);
   if (!party.slice(0, 2).includes(hero) && hero.cls !== 'wizard') { /* hero rogue goes 3rd; ok */ }
   return withPC(Prog.initProgress({
-    version: 7, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'],
+    version: 8, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'],
     mode: 'town', level: 0, x: 1, y: 1, dir: 1, mods: LEVEL_DEFS.map(() => ({})), explored: LEVEL_DEFS.map(() => []), maxDepth: 0,
     bossDead: LEVEL_DEFS.map(() => false), victory: false, steps: 0, sinceEncounter: 0, keys: [], playTime: 0,
     seeds: dseeds, randomDungeons: !!dseeds,
@@ -169,7 +172,7 @@ export function move(s, rel = 0) {
 function suppressAmbientForCombat(out) {
   if (!out?.some((e) => e.combat)) return out;
   for (const e of out) {
-    if (e.dm || e.ambient) { e.card = false; e.dm = false; e.ambient = false; delete e.quip; }
+    if (!e.pre && (e.dm || e.ambient)) { e.card = false; e.dm = false; e.ambient = false; delete e.quip; }
   }
   return out;
 }
@@ -177,8 +180,8 @@ function suppressAmbientForCombat(out) {
 const secretLine = (s) => PC.react(s, 'secret', () => banter(s.party, 'secret', {}, 0.25));
 
 export function enterTile(s) {
-  const ch = tile(s, s.x, s.y); const L = getLevel(s.level); const def = L.def; const out = [...Narr.areaAt(s, L, s.x, s.y)];
-  if (out.length) { for (const e of out) if (e.dm) e.quip = PC.onNewArea(s); out.push(...Prog.discover(s, 'room', `${s.x},${s.y}`, 'new area explored')); }
+  const ch = tile(s, s.x, s.y); const L = getLevel(s.level); const def = L.def; const out = [...Narr.areaAt(s, L, s.x, s.y)]; const lair = ch === 'B' && Narr.lairFirst(s, s.x, s.y);
+  if (out.length || lair) { for (const e of out) if (e.dm) e.quip = PC.onNewArea(s); if (lair) PC.onNewArea(s); out.push(...Prog.discover(s, 'room', `${s.x},${s.y}`, 'new area explored')); }
   const passivePerc = Math.max(...s.party.filter((c) => !isDown(c)).map((c) => passive(c, 'perception')));
   // Passive notice of adjacent secret doors
   for (const [dx, dy] of DIRS) if (tile(s, s.x + dx, s.y + dy) === 'S' && !isIllusion(s.level, s.x + dx, s.y + dy) && passivePerc >= def.secretDC + 3) { setTile(s, s.x + dx, s.y + dy, 'D'); out.push({ log: 'Your keen eyes notice a hidden door!', cls: 'good', card: true, banter: secretLine(s), reveal: true }, ...foundSecret(s, s.x + dx, s.y + dy, 'hidden door found', 'Hidden door')); }
@@ -208,7 +211,7 @@ export function enterTile(s) {
     case 'C': out.push({ prompt: 'chest' }); break;
     case 'K': {
       setTile(s, s.x, s.y, '.'); s.keys.push(def.key); s.inventory.push(def.key);
-      out.push({ log: `You found the ${ITEMS[def.key].name}!`, cls: 'good', banter: banter(s.party, 'loot', {}, 0.7) }, ...Prog.discover(s, 'key', `${s.x},${s.y}`, 'key found')); break;
+      out.push({ log: `You found the ${ITEMS[def.key].name}!`, cls: 'good', banter: banter(s.party, 'loot', {}, 0.7) }, ...Prog.discover(s, 'key', `${s.x},${s.y}`, 'key found'), ...DM.beat(s, DM.keyBeat(s.level))); break;
     }
     case 'Q': {
       const id = poiIdAt(L, s.x, s.y);
@@ -230,8 +233,8 @@ export function enterTile(s) {
     }
     case 'B': {
       if (!s.bossDead[s.level]) {
-        if (def.phase2 && s.flags?.boss4p1) { out.push({ log: 'The vault floor splits open. GORVAX THE TYRANT rises!', cls: 'bad', shake: true, combat: { groups: def.phase2.map((g) => ({ key: g.key, count: g.count[0] })), boss: true, phase2: true } }); return suppressAmbientForCombat(out); }
-        out.push({ log: `${def.bossName} blocks the way!`, cls: 'bad', combat: { groups: def.boss.map((g) => ({ key: g.key, count: g.count[0] })), boss: true } }); return suppressAmbientForCombat(out);
+        if (def.phase2 && s.flags?.boss4p1) { out.push(...DM.beat(s, DM.lairBeat(s.level, true), { pre: true })); out.push({ log: 'The vault floor splits open. GORVAX THE TYRANT rises!', cls: 'bad', shake: true, combat: { groups: def.phase2.map((g) => ({ key: g.key, count: g.count[0] })), boss: true, phase2: true } }); return suppressAmbientForCombat(out); }
+        out.push(...DM.beat(s, DM.lairBeat(s.level), { pre: true })); out.push({ log: `${def.bossName} blocks the way!`, cls: 'bad', combat: { groups: def.boss.map((g) => ({ key: g.key, count: g.count[0] })), boss: true } }); return suppressAmbientForCombat(out);
       }
       break;
     }
@@ -480,6 +483,18 @@ export function migrateV7(s) {
     if (s.flags?.prologue && [...(s.party || []), ...(s.roster || [])].some((c) => c.companion === 'pip')) Story.startQuest(s, 'debt');
   }
 }
+/** v8: the Dungeon Master's beats (told once, kept in `seen`) and companion approval. Beats for places the save has already been through are marked told, so a returning player is not read to about a lair they cleared. */
+export function migrateV8(s) {
+  s.seen ||= {}; s.approval ||= {}; migrateJournal(s); // every journal entry gets a chapter
+  if ((s.version | 0) < 8) {
+    s.version = 8;
+    for (let i = 0; i < 5; i++) {
+      if (s.bossDead?.[i]) s.seen['dm:' + DM.lairBeat(i)] = 1;
+      const key = getLevel(i).def.key; if (key && (s.keys || []).includes(key)) s.seen['dm:' + DM.keyBeat(i)] = 1;
+    }
+    if (s.flags?.boss4p1 || s.victory) s.seen['dm:' + DM.lairBeat(4, true)] = 1;
+  }
+}
 export function serialize(s) { return JSON.stringify(s); }
 export function deserialize(str) {
   const s = JSON.parse(str); if (!s || !Array.isArray(s.party) || !s.party.length) throw new Error('bad save');
@@ -504,6 +519,7 @@ export function deserialize(str) {
   PC.ensure(s); s.version = Math.max(s.version | 0, 5); // v5: companion threads, Liora, events, curses and blessings, town memory (all additive)
   if (!s.lore || typeof s.lore !== 'object' || Array.isArray(s.lore)) s.lore = {}; s.version = Math.max(s.version | 0, 6); // v6: monster lore (weaknesses the party has discovered); rows stay as party order
   migrateV7(s); // v7: the spoon storyline is gone; Pip's Lantern Row vengeance quest replaces it
+  migrateV8(s); // v8: Dungeon Master beats (once per save) and companion approval
   if (s.mode === 'dungeon' && !(Number.isInteger(s.x) && Number.isInteger(s.y))) s.mode = 'town';
   return s;
 }
@@ -620,7 +636,7 @@ export function grantRare(s, tier, from = 'elite') {
   const fresh = pool.filter((k) => !s.rareFound.includes(k)); const key = pick(fresh.length ? fresh : pool);
   if (tier !== 'uncommon' || key !== 'potionGreater') s.rareFound.push(key);
   s.inventory.push(key);
-  return [{ log: `✦ ${tierOf(key) === 'common' ? '' : tierOf(key).toUpperCase() + ' DROP: '}${ITEMS[key].name}! ${ITEMS[key].desc || ''}`.trim(), cls: tier === 'uncommon' ? 'good' : 'crit', rare: { key, tier: tierOf(key), from } }];
+  return [{ log: `✦ ${tierOf(key) === 'common' ? '' : tierOf(key).toUpperCase() + ' DROP: '}${ITEMS[key].name}! ${ITEMS[key].desc || ''}`.trim(), cls: tier === 'uncommon' ? 'good' : 'crit', rare: { key, tier: tierOf(key), from } }, ...(from !== 'elite' && tier !== 'uncommon' ? DM.beat(s, 'find:rare') : [])];
 }
 /** Drop the map's ☠ pin for any elite on this floor that has been defeated. */
 export function pruneElitePins(s) {
@@ -682,7 +698,7 @@ export function eliteSpotted(s) {
 function eliteSlain(s, el) {
   const out = []; const lvl = s.level; const e = (getLevel(lvl).elites || []).find((x) => x.id === el.id);
   out.push({ log: `${el.title} falls!`, cls: 'good' }, ...Prog.discover(s, 'elite', el.id, `${el.title} defeated`));
-  out.push(...grantRare(s, rollTier(lvl, 'elite'), 'elite'));
+  out.push(...grantRare(s, rollTier(lvl, 'elite'), 'elite'), ...DM.beat(s, 'find:elite'));
   if (rand() < 0.4) out.push(...grantRare(s, 'uncommon', 'elite'));
   const gold = Math.floor((60 + rand() * 60) * (lvl + 1)); s.gold += gold; out.push({ log: `The elite's hoard holds ${gold} gold.`, cls: 'good' });
   if (e) Prog.removePin(s, e.path[0][0], e.path[0][1]);

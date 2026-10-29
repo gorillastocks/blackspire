@@ -9,6 +9,9 @@ import * as PC from './phaseC.js';
 import * as Prog from './progress.js';
 import { hourAt, todName, weatherFor, OUTDOOR_LEVEL } from '../dungeon/outdoor.js';
 import { getLevel } from '../dungeon/levels.js';
+import { sceneLine } from './dm.js';
+import { addEntry } from './journal.js';
+import { react } from './reactions.js';
 
 export { TT_SCENES, TT_QUESTS };
 export const SKILL_NAME = { sleightOfHand: 'Sleight of Hand', animalHandling: 'Animal Handling' };
@@ -18,7 +21,7 @@ const live = (s) => (s.party || []).filter((c) => !c.dead && c.hp > 0);
 const prog = (s, q) => s.flags['n_' + q] || 0;
 export const stageOf = (s, q) => s.flags?.['tt_' + q] || null;
 export const stageText = (s, q) => TT_QUESTS[q]?.stages?.[stageOf(s, q)] || '';
-function journal(s, text) { (s.journal ||= []).push({ t: s.steps || 0, moon: s.moon, text }); if (s.journal.length > 120) s.journal.shift(); }
+function journal(s, text) { addEntry(s, text); } // filed under the current chapter; never trimmed
 function startQ(s, q) { s.quests ||= {}; if (!s.quests[q]) { s.quests[q] = 'active'; journal(s, `New quest: ${TT_QUESTS[q].title}. ${TT_QUESTS[q].desc}`); } }
 
 /** World flags (time of day and the Orchard's weather), refreshed whenever a scene is shown: w_night, w_day, w_rain, w_mist, w_night_rain, w_night_mist. */
@@ -116,6 +119,9 @@ export function show(s, sess) {
   sess.pendingRoll = null;
   view.fxLines = applyFx(s, sc.fx, view); worldFlags(s);
   view.lines = (sc.lines || []).filter((l) => cond(s, l[2])).map((l) => ({ who: l[0], text: l[1] }));
+  // The Dungeon Master's read-aloud box opens the scene (once per save); the companions who are present answer the choice that led here.
+  const dl = sceneLine(s, sess.id); if (dl) view.lines.unshift({ who: dl.who, text: dl.text, beat: dl.beat });
+  const rx = react(s, sess.id); if (rx.lines.length) view.lines.push(...rx.lines); view.fxLines.push(...rx.fx); view.reactions = rx.lines;
   if (sc.next) view.choices = [{ id: '__next', label: 'Continue ▶', go: sc.next }];
   else view.choices = (src.choices || []).filter((c) => cond(s, c.if, true) && !(c.ifNot && cond(s, c.ifNot, true))).map((c) => ({ id: c.id, label: c.label, check: c.check ? `${skillLabel(c.check.skill)} DC ${c.check.dc + Object.entries(c.check.dcAdj || {}).reduce((a, [f, d]) => a + (s.flags[f] ? d : 0), 0)}${c.check.adv && s.flags[c.check.adv] ? ', advantage' : ''}` : '', end: !!c.end, auto: !!c.auto }));
   if (!view.choices.length) view.choices = [{ id: '__end', label: 'Continue ▶', end: true }];

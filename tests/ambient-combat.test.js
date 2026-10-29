@@ -43,6 +43,9 @@ describe('enterTile suppresses ambient narration when combat starts', () => {
     s.x = bx; s.y = by; s.seen = {};
     const out = enterTile(s);
     expect(out.some((e) => e.combat)).toBe(true);
-    expect(out.some((e) => e.dm || e.ambient)).toBe(false);
+    expect(out.some((e) => !e.pre && (e.dm || e.ambient)), 'no ambient area card alongside the boss fight').toBe(false);
+    const pre = out.findIndex((e) => e.pre && e.dm); // the DM's lair beat is a pre-fight card: never dropped, and read before the fight starts
+    expect(pre).toBeGreaterThanOrEqual(0);
+    expect(pre).toBeLessThan(out.findIndex((e) => e.combat));
   });
 });

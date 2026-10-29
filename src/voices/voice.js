@@ -242,7 +242,7 @@ let byFile = null;
 
 const WHO = {
   elowen: 'elowen', 'princess elowen': 'elowen',
-  'dungeon master': 'narrator', narrator: 'narrator', dm: 'narrator',
+  narrator: 'narrator', 'dungeon master': 'dm', dm: 'dm',
   malthrax: 'malthrax', 'malthrax the dread': 'malthrax',
   grumsh: 'grumsh', vexrath: 'vexrath', brambur: 'brambur', pip: 'pip', fizzwick: 'fizzwick',
   liora: 'liora', 'liora wardenfall': 'liora', zizzy: 'zizzy', nettle: 'nettle',
@@ -264,7 +264,7 @@ export function playVoiceLine(text, who, opts = {}) {
 
 /** Area / DM read-aloud — always ambient, cancelled if combat/menu/dialogue begins before decode finishes. */
 export function playAmbientNarration(text, opts = {}) {
-  return playVoiceLine(text, 'narrator', { ...opts, ambient: true, kind: 'ambient' });
+  const { who = 'dm', ...rest } = opts; return playVoiceLine(text, who, { ...rest, ambient: true, kind: 'ambient' });
 }
 
 export function hasVoice(text, who) {

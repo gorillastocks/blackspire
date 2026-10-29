@@ -1,14 +1,15 @@
-// Dungeon Master read-aloud: area descriptions shown once per save, plus companion quips on reaching a new area.
+// Dungeon Master read-aloud: area descriptions shown once per save (spoken by the 'dm' voice), plus companion quips on reaching a new area.
+// Boss lairs, key places, discoveries and quest beats are in dm.js.
 import { COMPANIONS, banter } from './companions.js';
 
 const DM = '🕯 ';
 /** First arrival on each floor: 3-5 sentences of sights, sounds, smells, mood and danger. */
 export const FLOOR_INTROS = [
-  'Wet steps lead down into low, dripping tunnels that reek of damp straw and old cheese. Tiny claws scritch in every crack. Your torch catches dozens of red eyes that blink out the moment you look. Somewhere ahead a soup-tin bell tinkles once: the Rat-Warrens are awake.',
-  'Cold water closes over your boots, and the splash rolls away through vaulted caves. Pale fungus glows above black pools far deeper than they look. The air tastes of salt and rust. Something large shifts beneath the Drowned Grotto, then goes still.',
-  'The Glimmerdeep opens like the inside of a geode, its crystals humming one endless note. A hundred reflections march beside you, each a heartbeat out of step. The air smells of flint and ozone. Deeper in stand statues frozen in surprise. Nobody carved them.',
-  'Heat slaps your face. Slag crawls glowing through dwarf-cut channels, and hammers ring from forges that should be cold. Ash sifts down, bitter with sulphur, gritty between your teeth. Every shadow flickers, and some flicker back. Whatever feeds the Ashforge is still hungry.',
-  'Silence falls like a lid. Colossal pillars carved with roaring lizards rise into darkness above claw-scored floors. The air smells of warm scales and old blood, and trembles with slow, heavy breathing. Elowen\'s light lies somewhere beyond. So does the thing that guards it.',
+  'Down you go, brave souls, into the Rat Warrens, where the straw is damp and the cheese is older than the town. A thousand tiny eyes blink out as your torchlight finds them, and somewhere a bell no bigger than a soup tin begins to ring.',
+  'Cold water swallows your boots, and the Drowned Grotto yawns wide around you. Pale lights drift under the black pools, and something very large turns over in its sleep.',
+  'The Glimmerdeep opens like the inside of a jewel, and every crystal hums the same sorrowful note. A hundred reflections march beside you, and not one of them keeps step.',
+  'Heat strikes your face like an opened oven door. Slag crawls through the old dwarf channels, and the hammers of the Ashforge ring on, though no smith is left to swing them.',
+  'Silence falls over you like a coffin lid. Pillars carved with roaring lizards climb into the dark, and the air trembles with the slow breathing of something that has waited a very long age.',
 ];
 /** Returning to a floor: one line at most. */
 export const FLOOR_REMINDERS = [
@@ -21,7 +22,6 @@ export const FLOOR_REMINDERS = [
 /** Distinct areas within each floor (1-2 sentences). rooms[] are themed and picked per room. */
 export const AREAS = [
   { // B1
-    boss: 'The tunnel widens into a nest of chewed bones, gnawed armour and stolen cutlery, piled into a lopsided throne. Something big stirs on top of it and sniffs the air.',
     quest: 'Here the rat-sign stops, as if even the vermin give this spot a wide berth. Something waits here that is not a rat.',
     fountain: 'Clear water bubbles from a cracked basin carved with a smiling face. It smells, astonishingly, of mint.',
     down: 'A spiral stair corkscrews down into the dark. A cold draught rises from it, carrying the smell of standing water.',
@@ -34,7 +34,6 @@ export const AREAS = [
     ],
   },
   { // B2
-    boss: 'The cave drops into a drowned amphitheatre, water black and mirror-still. Ripples spread from the centre, where nothing should be.',
     quest: 'A ring of half-sunken lanterns marks this place, each one still somehow burning beneath the water.',
     fountain: 'A spring of warm, glowing water rises here, fizzing gently. The fungus around it grows in the shape of open hands.',
     down: 'Steps slick with algae lead down past a waterline carved with the warning "HIGH TIDE". The ink is fresh.',
@@ -47,7 +46,6 @@ export const AREAS = [
     ],
   },
   { // B3
-    boss: 'Crystals here grow in a perfect ring around a pedestal of black glass. Your reflections in them stop moving when you do. Then one of them smiles.',
     quest: 'The hum of the crystals drops to a low, almost-words murmur here, as if the cavern is trying to tell you something.',
     fountain: 'A pool of liquid starlight shimmers in a crystal bowl. Drinking it tastes like the first cold breath of winter.',
     down: 'A crystal stair spirals downward, each step chiming a note as you test it. The tune is not a happy one.',
@@ -60,7 +58,6 @@ export const AREAS = [
     ],
   },
   { // B4
-    boss: 'The forge-hall opens up around an anvil the size of a wagon, glowing white-hot. Heavy footsteps ring out from beyond the smoke.',
     quest: 'Here the hammer-song stops. Tools lie where they were dropped, mid-swing, and the air smells of a hasty departure.',
     fountain: 'Cool water pours from the mouth of a stone dwarf into a quenching trough. Steam curls up, smelling of iron and relief.',
     down: 'A brass-railed stair plunges into dark heat. Each step down is a little warmer, and the walls start to sweat.',
@@ -73,7 +70,6 @@ export const AREAS = [
     ],
   },
   { // B5
-    boss: 'The ground shakes. Bones of enormous beasts form an archway here, and the hot, rotten wind blowing through it is breath.',
     quest: 'Old murals here show tiny heroes fleeing a towering lizard. The last panel has been scratched out with claws.',
     fountain: 'A basin of violet light pulses slowly, like a resting heartbeat. The pain of the road drains away as you drink.',
     altar: 'Elowen\'s light pours from the altar ahead, golden and steady. Five keyholes wait around its rim.',
@@ -88,7 +84,7 @@ export const AREAS = [
 ];
 /** Emberhollow on first visit to each place. */
 export const TOWN = {
-  square: 'Emberhollow huddles in the long shadow of the Blackspire, a jumble of slate roofs and leaning chimneys. The square smells of woodsmoke and hot pies, and a bell tolls the hour a little nervously. Townsfolk hurry past, glancing at the dark tower the way you glance at a sleeping dog. Everyone here has lost someone to the maze.',
+  square: 'Emberhollow huddles beneath the black shadow of the Spire, all slate roofs and leaning chimneys. The bell tolls the hour a little nervously, and every face in the square has lost someone to the dark below.',
   tavern: 'The Boar & Spoon is warm, loud and smells of spilled ale, roast onions and wet dog. A fiddler saws at something cheerful in the corner while a mounted boar\'s head, wearing a spoon on a string, watches the door. Adventurers swap tall tales at long tables, and every one of them has a story about the Blackspire.',
   temple: 'The Temple of Cant is cool and hushed, lit by tall candles that never quite drip. Incense of cedar and myrrh drifts past a donation box the size of a coffin. Somewhere a priest is counting coins very quietly.',
   train: 'Straw dummies hang from posts in the Training Grounds, most of them missing their heads. The air rings with clashing steel, barked orders and the thud of arrows striking targets. A grizzled sergeant watches you sideways and mutters something about soft hands.',
@@ -111,9 +107,9 @@ const seen = (s) => (s.seen ||= {});
 /** One read-aloud card the first time; on return an optional one-line reminder (log only). */
 export function describe(s, key, text, reminder = null, quip = 0.35) {
   if (!text) return [];
-  if (seen(s)[key]) return reminder ? [{ log: reminder, cls: 'dim', voice: true }] : [];
+  if (seen(s)[key]) return reminder ? [{ log: reminder, cls: 'dim', voice: { text: reminder, who: 'dm' } }] : [];
   seen(s)[key] = 1;
-  return [{ log: DM + text, cls: 'lore', card: true, dm: true, ambient: true, quip: banter(s.party, 'newArea', {}, quip) }];
+  return [{ log: DM + text, cls: 'lore', card: true, dm: true, ambient: true, voice: { text, who: 'dm' }, quip: banter(s.party, 'newArea', {}, quip) }];
 }
 export const floorIntro = (s, lvl) => describe(s, `floor:${lvl}`, FLOOR_INTROS[lvl], FLOOR_REMINDERS[lvl], 0.6);
 export const townIntro = (s, sub) => describe(s, `town:${sub || 'square'}`, TOWN[sub || 'square'], null, 0.25);
@@ -129,11 +125,13 @@ function roomCentres(L) {
   }
   roomCache.set(L, out); return out;
 }
+/** First step onto a boss lair tile: true once per save. The lair's read-aloud is a pre-fight DM beat (dm.js); this keeps the old "new area explored" credit and the companion quip roll, so the seeded dice stream stays as it was. */
+export function lairFirst(s, x, y) { const key = `${s.level}:boss:${x},${y}`; if (seen(s)[key]) return false; seen(s)[key] = 1; banter(s.party, 'newArea', {}, 0.35); return true; }
 /** Area descriptions for the tile the party just stepped on. */
 export function areaAt(s, L, x, y) {
   const A = AREAS[s.level]; if (!A) return [];
   const base = L.tiles[y]?.[x], k = (kind) => `${s.level}:${kind}:${x},${y}`;
-  const kind = { B: 'boss', Q: 'quest', F: 'fountain', '>': 'down', A: 'altar' }[base];
+  const kind = { Q: 'quest', F: 'fountain', '>': 'down', A: 'altar' }[base];
   if (kind) return describe(s, k(kind), A[kind]);
   const rooms = roomCentres(L), i = rooms.findIndex(([cx, cy]) => Math.abs(cx - x) <= 1 && Math.abs(cy - y) <= 1);
   if (i >= 0) { const [cx, cy] = rooms[i]; return describe(s, `${s.level}:room:${cx},${cy}`, A.rooms[i % A.rooms.length]); }

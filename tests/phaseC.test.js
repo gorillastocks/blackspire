@@ -115,8 +115,8 @@ describe('Liora romance', () => {
 describe('save v5 migration', () => {
   it('v4 saves load with the Phase C block and keep their data', () => {
     const s = fresh(); const t = JSON.parse(G.serialize(s)); delete t.pc; t.version = 4; t.gold = 777;
-    const d = G.deserialize(JSON.stringify(t)); expect(d.version).toBe(7); expect(d.gold).toBe(777); expect(d.pc.said).toEqual({}); expect(d.pc.buffs).toEqual([]);
-    expect(G.deserialize(G.serialize(d)).version).toBe(7);
+    const d = G.deserialize(JSON.stringify(t)); expect(d.version).toBe(8); expect(d.gold).toBe(777); expect(d.pc.said).toEqual({}); expect(d.pc.buffs).toEqual([]);
+    expect(G.deserialize(G.serialize(d)).version).toBe(8);
   });
   it('the voice manifest lines all exist in the text data', () => { expect(norm('a…  b')).toBe('a... b'); });
 });

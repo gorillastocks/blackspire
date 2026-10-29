@@ -10,7 +10,8 @@ const idx = JSON.parse(readFileSync(new URL('../src/voices/index.json', import.m
 const cast = JSON.parse(readFileSync(new URL('../src/voices/cast.json', import.meta.url), 'utf8'));
 const queue = [];
 for (const r of catalog()) {
-  if (idx[`${r.speaker.toLowerCase()}|${normVoiceText(r.text)}`] || idx[normVoiceText(r.text)]) continue;
+  // The Dungeon Master voice ('dm') re-voices text an older narrator clip may already cover, so only an exact dm clip counts as recorded.
+  if (idx[`${r.speaker.toLowerCase()}|${normVoiceText(r.text)}`] || (r.speaker !== 'dm' && idx[normVoiceText(r.text)])) continue;
   if (!cast[r.speaker]) { console.warn('no cast voice for', r.speaker, r.text.slice(0, 40)); continue; }
   queue.push({ id: `${r.speaker}-${createHash('sha1').update(r.text).digest('hex').slice(0, 12)}`, speaker: r.speaker, text: r.text, priority: r.pri, source: `phaseE:${r.cat}:${r.src}`, chars: r.text.length });
 }

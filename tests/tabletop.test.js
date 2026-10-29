@@ -95,7 +95,7 @@ describe('save migration v7', () => {
   it('old spoon saves lose the spoon currency and quest, keep their items as junk, and Pip gets the new quest', () => {
     const s = fresh(); const t = JSON.parse(G.serialize(s)); t.version = 6; t.spoons = 4; t.inventory.push('goldSpoon', 'royalSpoon'); t.quests.spoons = 'active'; t.flags.n_spoons = 3; delete t.quests.debt;
     const d = G.deserialize(JSON.stringify(t));
-    expect(d.version).toBe(7); expect(d.spoons).toBeUndefined(); expect(d.quests.spoons).toBeUndefined(); expect(d.flags.n_spoons).toBeUndefined();
+    expect(d.version).toBe(8); expect(d.spoons).toBeUndefined(); expect(d.quests.spoons).toBeUndefined(); expect(d.flags.n_spoons).toBeUndefined();
     expect(d.inventory).toContain('gildedGoblet'); expect(d.inventory).toContain('jewelledChalice'); expect(d.inventory.some((k) => /poon|adle/.test(k))).toBe(false);
     expect(d.quests.debt).toBe('active');
   });

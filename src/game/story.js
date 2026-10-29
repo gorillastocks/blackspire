@@ -4,6 +4,15 @@ import { ITEMS } from '../rules/data.js';
 import { COMPANIONS } from './companions.js';
 import { memoryLines, liftCurses, lioraEnding } from './phaseC.js';
 import * as TT from './tabletop.js';
+import { addEntry } from './journal.js';
+import * as Journal from './journal.js';
+export { Journal };
+import { bubbles } from './reactions.js';
+/** A choice's reactions as dungeon-view events: the approval notes for the log, then the companions' spoken lines. */
+export function reactionEvents(s, id) {
+  const r = bubbles(s, id, (k) => COMPANIONS[k]?.color); const out = r.fx.map((f) => ({ log: f.t, cls: f.cls }));
+  if (r.say.length) out.push({ banter: r.say, react: true }); return out;
+}
 
 /* ---------- Cast (portraits are emoji on a coloured disc) ---------- */
 export const NPCS = {
@@ -108,7 +117,7 @@ export const hasComp = (s, k) => [...(s.party || []), ...(s.roster || [])].some(
 const inParty = (s, k) => (s.party || []).some((c) => c.companion === k);
 const prog = (s, q) => s.flags['n_' + q] || 0;
 const bump = (s, q) => (s.flags['n_' + q] = prog(s, q) + 1);
-export function addJournal(s, text) { initStory(s); s.journal.push({ t: s.steps || 0, moon: s.moon, text }); if (s.journal.length > 120) s.journal.shift(); }
+export function addJournal(s, text) { initStory(s); addEntry(s, text); } // filed under the current chapter; the log is never trimmed
 export function startQuest(s, q) { initStory(s); if (!s.quests[q]) { s.quests[q] = 'active'; addJournal(s, `New quest: ${QUESTS[q].title} — ${QUESTS[q].desc}`); return true; } return false; }
 const ready = (s, q) => s.quests[q] === 'ready';
 function progress(s, q, out, line) {
@@ -191,7 +200,7 @@ export function choosePoi(s, id, choice, checkFn) {
     if (choice !== 'pull') { out.push({ log: 'You leave the beam alone. Probably wise.', cls: 'dim' }); return out; }
     s.pois[id] = true; out.consumed = true;
     const ok = checkFn ? checkFn('athletics', 12) : true;
-    if (ok) { s.flags.collapsed = true; s.gold += 40; out.push({ log: 'CRACK! The ceiling caves in on the cultist side-passage. Silence — and a pouch of 40 gp rolls out of the dust.', cls: 'good', shake: true, voice: true }); }
+    if (ok) { s.flags.collapsed = true; s.gold += 40; out.push({ log: 'CRACK! The ceiling caves in on the cultist side-passage. Silence — and a pouch of 40 gp rolls out of the dust.', cls: 'good', shake: true, voice: true }); out.push(...reactionEvents(s, 'story.collapse')); }
     else { const v = s.party.find((c) => !c.dead && c.hp > 0); if (v) v.hp = Math.max(1, v.hp - 6); out.push({ log: `The beam slips! Rubble clips ${v ? v.name : 'you'} for 6 damage, and the cultists come running.`, cls: 'bad', shake: true, combat: { groups: [{ key: 'cultist', count: 3 }], fixed: true } }); }
   }
   return out;
@@ -316,7 +325,7 @@ export function finishPrologue(s, choice) {
   startQuest(s, 'guards');
   for (const [q, k] of Object.entries(COMPANION_QUEST)) if (hasComp(s, k)) startQuest(s, q);
   startQuest(s, 'notes');
-  return [{ log: 'Received Elowen\'s Signet Ring and Captain Rowan\'s Writ. Your journal (📖) tracks quests.', cls: 'good' }];
+  return [{ log: 'Received Elowen\'s Signet Ring and Captain Rowan\'s Writ. Your journal (📖) tracks quests.', cls: 'good' }, ...reactionEvents(s, choice === 'grim' ? 'story.grim' : 'story.vow')];
 }
 
 /* ---------- Ending ---------- */
