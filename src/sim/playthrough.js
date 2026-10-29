@@ -92,7 +92,7 @@ export function playthrough({ seed = 1, difficulty = 'normal', heroCls = 'fighte
       lost = false; G.enterDungeon(s, L);
       let r = 'ok';
       // 1) every point of interest (repeat: some, like the Seneschal's door and the Sergeant's roll, only open after others)
-      for (let pass = 0; pass < 3 && r === 'ok'; pass++) {
+      for (let pass = 0; pass < 6 && r === 'ok'; pass++) {
         const qs = find('Q').sort((a, b) => Math.abs(a[0] - s.x) + Math.abs(a[1] - s.y) - (Math.abs(b[0] - s.x) + Math.abs(b[1] - s.y)));
         for (const q of qs) {
           const needsKey = !path(q) && !s.keys.includes(getLevel(L).def.key);

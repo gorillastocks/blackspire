@@ -3,7 +3,7 @@ import { simulateCampaign, EXPECTED_BOSS } from '../src/sim/balance.js';
 
 // Guards for the balance pass (scripts/balance-sim.mjs has the full report). Small seeded samples of the REAL game played start to
 // finish by an all-AI party that walks the maze, camps, shops, trains and grinds when it is under the boss's expected level.
-const SEEDS = Array.from({ length: 16 }, (_, i) => 1 + i);
+const SEEDS = Array.from({ length: 32 }, (_, i) => 1 + i);
 const run = (comp, opts = {}) => SEEDS.map((seed) => simulateCampaign(seed, { comp, ...opts }));
 const fights = (runs) => runs.flatMap((r) => r.fights);
 const rate = (n, d) => (d ? n / d : 0);

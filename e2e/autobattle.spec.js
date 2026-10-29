@@ -1,5 +1,5 @@
 // The in-battle Auto toggle (replaces the old Skip button): on = every hero, the player's own character too, acts on the AI at the
-// current battle speed (nothing is skipped); off = control comes back at the next player turn. The menu's Auto-battle entry is the same switch.
+// current battle speed (nothing is skipped); off = control comes back at the next player turn. The action menu has no Auto-battle entry of its own: turning Auto on while the menu waits hands that turn to the AI.
 import { test, expect } from '@playwright/test';
 import { newGame, trackErrors } from './helpers.js';
 const shot = async (page, o) => { for (let i = 0; i < 3; i++) { try { await page.screenshot({ ...o, timeout: 8000 }); return; } catch { await page.mouse.move(1, 1); } } };
@@ -40,12 +40,12 @@ test('Auto button: shows off/on, the AI plays every hero (you too), and tapping 
   expect(okErr(errors)).toEqual([]);
 });
 
-test('the menu\'s Auto-battle entry is the same switch as the Auto button, and Auto resets with the fight', async ({ page }, info) => {
+test('turning Auto on while the action menu waits hands the turn to the AI, and Auto resets with the fight', async ({ page }, info) => {
   test.setTimeout(300000); const errors = trackErrors(page);
   await newGame(page); await setSpeed(page, 'double');
   await start(page, [{ key: 'giantRat', count: 2 }]);
   await expect(page.locator('#cmenu .combatmenu')).toBeVisible({ timeout: 60000 });
-  await page.locator('#cmenu .combatmenu button', { hasText: 'Auto-battle' }).first().click();
+  await page.locator('#autobtn').first().click();
   await expect(page.locator('#autobtn')).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => page.evaluate(() => !window.__gw.combat), { timeout: 180000 }).toBe(true);
   await expect(page.locator('#autobtn')).toHaveAttribute('aria-pressed', 'false'); // a new fight starts with Auto off

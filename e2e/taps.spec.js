@@ -46,7 +46,7 @@ test('pause mode: many rat fights with fast, double and mistimed taps always fin
         if (await page.locator('#gmenu:not(.hidden)').isVisible().catch(() => false)) await page.keyboard.press('Escape').catch(() => {});
         if (await page.locator('#gmenu').isVisible().catch(() => false)) { const close = page.locator('#gmenu button', { hasText: /Resume|Close|Back/ }).first(); if (await close.isVisible().catch(() => false)) await close.click().catch(() => {}); }
       } else if (await page.locator('.combatmenu').isVisible()) {
-        const b = page.locator('.combatmenu button', { hasText: rnd() < 0.5 ? 'Attack' : 'Auto-battle' }).first();
+        const b = (rnd() < 0.5 ? page.locator('.combatmenu button', { hasText: 'Attack' }).first() : page.locator('#autobtn'));
         if (await b.isVisible()) { if (touch) await b.tap().catch(() => {}); else await b.click().catch(() => {}); if (rnd() < 0.3) await tapAt(page, x, y, touch); }
         const pick = page.locator('.mtag.pick').first(); if (await pick.isVisible().catch(() => false)) await pick.click({ force: true }).catch(() => {});
         const m1 = page.locator('#cmenu .combatmenu button').first(); if (await page.locator('#cmenu .who', { hasText: /target|Which|ally/i }).isVisible().catch(() => false)) await m1.click().catch(() => {});
@@ -127,7 +127,7 @@ for (const speed of ['normal', 'fast', 'pause']) {
     await page.evaluate(() => { const s = window.__gw.state; s.inventory.push('potionHealing', 'potionHealing', 'potionGreater', 'antitoxin', 'tinCup'); s.party[1].xp += 5000; });
     const touch = !info.project.name.startsWith('desktop');
     for (let i = 0; i < 600 && await page.evaluate(() => !!window.__gw.combat); i++) {
-      if (await page.locator('.combatmenu').isVisible()) { await page.locator('.combatmenu button', { hasText: 'Auto-battle' }).first().click().catch(() => {}); }
+      if (await page.locator('.combatmenu').isVisible()) { await page.locator('#autobtn').first().click().catch(() => {}); }
       else if (speed === 'pause' && await capShown(page)) { await page.waitForTimeout(240); await page.keyboard.press('Enter'); }
       else await page.waitForTimeout(150);
     }

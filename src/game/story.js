@@ -23,6 +23,8 @@ export const NPCS = {
   ysolde: { name: 'Ysolde Verrin, glasswright', icon: '🔮', color: '#9fffd0' },
   tuck: { name: 'Tuck Harrow, gravedigger', icon: '⚰', color: '#b8a888' },
   crane: { name: 'Sergeant Aldous Crane', icon: '🛡', color: '#b8d8ff' },
+  maelis: { name: 'Maelis Dewbough, orchard keeper', icon: '🌳', color: '#a8e6a0' },
+  aelindra: { name: 'Aelindra, the Heartroot', icon: '🌙', color: '#c8d8ff' },
   hero: { name: 'You', icon: '⚔', color: '#ffa24a' },
 };
 const C = (k) => ({ name: COMPANIONS[k].short, icon: { brambur: '🔨', fizzwick: '⚙', pip: '🏮', grumsh: '🪓', zizzy: '🔥', vexrath: '🐉', nettle: '🎻', liora: '🌅' }[k], color: COMPANIONS[k].color, img: COMPANIONS[k].portrait });
@@ -73,6 +75,8 @@ export const LEVEL_POIS = [
   ['note7', 'smith1', 'powder', 'pip4', 'gate', 'verse4', 'smith2', 'crane1', 'tale3', 'tablet4', 'smith3', 'note8'],
   ['note9', 'horn', 'pip5', 'verse5', 'tale4', 'garrick', 'tablet5', 'note10', 'crane2', 'crane3'],
 ];
+// Extra points of interest that are NOT placed by scan order: they are dropped inside the outdoor region of the floor (the Sunken Orchard on B3).
+export const LEVEL_EXTRA_POIS = [[], [], ['orch1', 'orch2', 'orch3', 'orch4', 'orch5'], [], []];
 export const TABLETS = [
   'Lore tablet: "Emberhollow was founded on a sealed tower. The founders buried it, built an inn on top, and agreed never to mention it again."',
   'Lore tablet: "The First Warden bound the Tyrant-lizard Gorvax beneath the vault with five seals and a very large horn."',

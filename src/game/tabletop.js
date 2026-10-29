@@ -7,6 +7,8 @@ import { skillMod } from '../rules/character.js';
 import { d20 } from '../rules/dice.js';
 import * as PC from './phaseC.js';
 import * as Prog from './progress.js';
+import { hourAt, todName, weatherFor, OUTDOOR_LEVEL } from '../dungeon/outdoor.js';
+import { getLevel } from '../dungeon/levels.js';
 
 export { TT_SCENES, TT_QUESTS };
 export const SKILL_NAME = { sleightOfHand: 'Sleight of Hand', animalHandling: 'Animal Handling' };
@@ -18,6 +20,13 @@ export const stageOf = (s, q) => s.flags?.['tt_' + q] || null;
 export const stageText = (s, q) => TT_QUESTS[q]?.stages?.[stageOf(s, q)] || '';
 function journal(s, text) { (s.journal ||= []).push({ t: s.steps || 0, moon: s.moon, text }); if (s.journal.length > 120) s.journal.shift(); }
 function startQ(s, q) { s.quests ||= {}; if (!s.quests[q]) { s.quests[q] = 'active'; journal(s, `New quest: ${TT_QUESTS[q].title}. ${TT_QUESTS[q].desc}`); } }
+
+/** World flags (time of day and the Orchard's weather), refreshed whenever a scene is shown: w_night, w_day, w_rain, w_mist, w_night_rain, w_night_mist. */
+export function worldFlags(s) {
+  const night = todName(hourAt(s.steps || 0)).name === 'night'; let wx = 'rain'; try { wx = weatherFor(getLevel(OUTDOOR_LEVEL)); } catch { /* the default weather */ }
+  const f = (s.flags ||= {}); f.w_night = night; f.w_day = !night; f.w_rain = wx === 'rain'; f.w_mist = wx === 'mist'; f.w_night_rain = night && wx === 'rain'; f.w_night_mist = night && wx === 'mist';
+  return f;
+}
 
 /** Evaluate a condition: 'pip' (companion in party), '!x', 'f:flag', 'n>=2:a,b,c'. A bare name on a choice is a flag. */
 export function cond(s, c, isChoice = false) {
@@ -58,6 +67,7 @@ export function applyFx(s, fx = {}, view) {
   if (fx.bless) { const B = PC.addBuff(s, fx.bless); if (B) add(`Blessing: ${B.label}. ${B.desc}`); }
   if (fx.curse) { const B = PC.addBuff(s, fx.curse); if (B) add(`Curse: ${B.label}. ${B.desc}`, 'bad'); }
   if (fx.aff) for (const [k, n] of Object.entries(fx.aff)) { PC.addAff(s, k, n); if (s.party.some((c) => c.companion === k)) add(n > 0 ? `${k === 'pip' ? 'Pip' : k} warms to you` : `${k === 'pip' ? 'Pip' : k} is quiet`, n > 0 ? 'good' : 'bad'); }
+  if (fx.time === 'night') { const h = hourAt(s.steps || 0); if (todName(h).name !== 'night') { s.steps = (s.steps || 0) + Math.ceil(((21 - h + 24) % 24) * (360 / 24)); add('🌙 Hours pass. Night falls, and the sky opens.', 'sys'); } }
   if (fx.journal) journal(s, fx.journal);
   if (fx.consume && view) view.consume = true;
   return L;
@@ -77,11 +87,16 @@ export function entryFor(s, key) {
     case 'glass2': return 'glass.k.0';
     case 'crane1': return 'crane.0';
     case 'crane2': return 'crane.b.0';
+    case 'orch1': { if (qs('orchard') === 'done') return 'orch.done'; const x = st('orchard'); return !x ? 'orch.0' : x === 'asked' ? 'orch.wait' : x === 'heart' ? (s.flags.orch_tended ? 'orch.pay.a' : s.flags.orch_grafted ? 'orch.pay.b' : 'orch.pay.c') : 'orch.mid'; }
+    case 'orch2': return st('orchard') ? 'orch.t.0' : 'orch.t.cold';
+    case 'orch3': return st('orchard') ? 'orch.s.0' : 'orch.s.cold';
+    case 'orch4': { const x = st('orchard'); return !x ? 'orch.g.cold' : x === 'asked' && !(s.flags.orch_trees && s.flags.orch_sky) ? 'orch.g.dim' : 'orch.g.0'; }
+    case 'orch5': return ['restored', 'broken', 'bought'].includes(st('orchard')) ? 'orch.h.0' : 'orch.h.locked';
     case 'crane3': return s.flags.crane_roll ? 'crane.v.0' : 'crane.v.locked';
     default: return null;
   }
 }
-export const TT_POIS = ['pip1', 'pip2', 'pip3', 'pip4', 'pip5', 'garrick', 'choir1', 'choir2', 'glass1', 'glass2', 'crane1', 'crane2', 'crane3'];
+export const TT_POIS = ['pip1', 'pip2', 'pip3', 'pip4', 'pip5', 'garrick', 'choir1', 'choir2', 'glass1', 'glass2', 'crane1', 'crane2', 'crane3', 'orch1', 'orch2', 'orch3', 'orch4', 'orch5'];
 export const TT_NPCS = ['odalys', 'harl'];
 export const isTTPoi = (id) => TT_POIS.includes(id);
 export function npcStatus(s, npc) {
@@ -96,9 +111,10 @@ const sceneOf = (id) => { const sc = TT_SCENES[id]; if (!sc) throw new Error('un
 export function show(s, sess) {
   if (sess.view && sess.view.id === sess.id) return sess.view;
   const sc = sceneOf(sess.id); const src = sc.choicesFrom ? sceneOf(sc.choicesFrom) : sc;
+  worldFlags(s);
   const view = { id: sess.id, title: sc.title || src.title || '', lines: [], choices: [], consume: false, fxLines: [], roll: sess.pendingRoll || null };
   sess.pendingRoll = null;
-  view.fxLines = applyFx(s, sc.fx, view);
+  view.fxLines = applyFx(s, sc.fx, view); worldFlags(s);
   view.lines = (sc.lines || []).filter((l) => cond(s, l[2])).map((l) => ({ who: l[0], text: l[1] }));
   if (sc.next) view.choices = [{ id: '__next', label: 'Continue ▶', go: sc.next }];
   else view.choices = (src.choices || []).filter((c) => cond(s, c.if, true) && !(c.ifNot && cond(s, c.ifNot, true))).map((c) => ({ id: c.id, label: c.label, check: c.check ? `${skillLabel(c.check.skill)} DC ${c.check.dc + Object.entries(c.check.dcAdj || {}).reduce((a, [f, d]) => a + (s.flags[f] ? d : 0), 0)}${c.check.adv && s.flags[c.check.adv] ? ', advantage' : ''}` : '', end: !!c.end, auto: !!c.auto }));
@@ -125,5 +141,6 @@ export function autoRun(s, entry, { maxSteps = 80, choose = null } = {}) {
     const pickId = (choose && choose(v, s)) || (v.choices.find((c) => c.auto) || v.choices[0]).id;
     v = pick(s, sess, pickId); if (v) trail.push(v.id);
   }
+  if (process.env.TRACE && /orch/.test(entry)) console.log('TT', entry, trail.join('>'));
   return { consumed: sess.consumed, steps: n, trail, rolls: sess.rolls, aborted: !sess.done };
 }

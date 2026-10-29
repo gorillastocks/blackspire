@@ -2,7 +2,7 @@ import { PORTRAITS, portraitURL, randomPortrait } from './portraits.js';
 import './style.css';
 import * as G from './game/game.js';
 import { SLOT_KEYS, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS, ANIM_SLOW } from './menu.js';
-import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS } from './dungeon/levels.js';
+import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS, poiIdAt } from './dungeon/levels.js';
 import { outdoorRegion, inRegion, hourAt, todName, WEATHER_INFO } from './dungeon/outdoor.js';
 import { Combat, projectileCount, projectileNoun, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, TIER_COLOR, TIER_LABEL, tierOf, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
@@ -201,22 +201,32 @@ function say(b, o = {}) {
   else if (msSinceVoiceEnd() >= gap) playVoiceLine(b.text, b.who, { kind: 'battle', ifIdle: true });
   const el = h('div', { class: `bubble${b.thread ? ' thread' : ''}` }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
   $('#banter').append(el); log(`${b.who}: "${b.text}"`, b.thread ? 'good' : 'lore'); setTimeout(() => el.remove(), b.thread ? 6500 : 5200);
-  while ($('#banter').children.length > 2) $('#banter').firstChild.remove();
+  while ($('#banter').children.length > (combat ? 1 : 2)) $('#banter').firstChild.remove(); // one bubble at a time in a fight, so they never pile up over the stage
   placeBanter();
 }
 /** In combat, companion speech bubbles go in the free band under the monsters (and under any caption), or above the
  *  monsters if that band is full; if neither fits they stay hidden (the line is in the log anyway). Never over a monster. */
 function placeBanter() {
-  const bn = $('#banter'); bn.classList.remove('offband'); bn.style.top = '';
+  const bn = $('#banter'); bn.classList.remove('offband'); bn.style.top = ''; bn.style.left = ''; bn.style.transform = ''; bn.style.width = '';
   if (!combat || !R?.monsterRect || !bn.children.length) return;
   const view = $('#view').getBoundingClientRect(), r = R.monsterRect(); if (!r || !view.height) return;
   const hb = bn.offsetHeight; let bottom = view.bottom - 6;
+  // the acting-hero / foe portrait and the 2x / Auto chips sit along the bottom edge of the stage: the bubble stays above all of them
+  for (const sel of ['#turnport', '#foeport', '#combatchips']) { const e = document.querySelector(sel); if (!e || !e.offsetParent) continue; const b = e.getBoundingClientRect(); if (b.height >= 8 && b.top < bottom && b.bottom > view.top) bottom = Math.min(bottom, b.top - 6); }
   for (const sel of ['#cmenu', '#modal.combat .panel']) { const m = document.querySelector(sel); if (!m || !m.offsetParent) continue; const b = m.getBoundingClientRect(); if (b.height && b.top < bottom && b.bottom > view.top) bottom = Math.min(bottom, b.top - 6); }
   const cap = $('#caption'), cr = cap.classList.contains('show') ? cap.getBoundingClientRect() : null;
   let top = view.top + (r.bottom / 100) * view.height + 6; if (cr && cr.height) top = Math.max(top, cr.bottom + 6);
   if (top + hb <= bottom) { bn.style.top = `${top - view.top}px`; return; }
-  const above = view.top + (r.top / 100) * view.height - 6 - hb, hud = $('#hud').getBoundingClientRect();
-  if (above >= Math.max(view.top + 4, hud.bottom + 2)) { bn.style.top = `${above - view.top}px`; return; }
+  const tight = R.monsterScreenRect?.(); // the band is short: try again just under the sprites' real outline (the padded box leaves room for lunges)
+  if (tight) { let t2 = view.top + (tight.bottom / 100) * view.height + 3; if (cr && cr.height) t2 = Math.max(t2, cr.bottom + 6); if (t2 + hb <= bottom) { bn.style.top = `${t2 - view.top}px`; return; } }
+  const hud = $('#hud').getBoundingClientRect(), mb = $('#btn-menu')?.getBoundingClientRect(), mTop = view.top + (r.top / 100) * view.height - 6;
+  for (const narrow of [false, true]) { // above the monsters; on a phone the top-right Menu button is dodged by narrowing the bubble to its left
+    if (narrow) { if (!mb || !mb.width || mb.left < view.left + view.width * 0.4) break; bn.style.left = '8px'; bn.style.transform = 'none'; bn.style.width = `${mb.left - view.left - 14}px`; }
+    const h2 = bn.offsetHeight, above = mTop - h2, minTop = Math.max(view.top + 4, hud.bottom + 2);
+    const clash = mb && mb.width && mb.bottom > above && mb.top < above + h2 && (narrow ? false : mb.right > bn.getBoundingClientRect().left && mb.left < bn.getBoundingClientRect().right);
+    if (above >= minTop && !clash) { bn.style.top = `${above - view.top}px`; return; }
+  }
+  bn.style.left = ''; bn.style.transform = ''; bn.style.width = '';
   bn.classList.add('offband');
 }
 function handle(events) {
@@ -980,7 +990,7 @@ function showSheet(c) {
 function syncAutoBtn() { const b = document.getElementById('autobtn'); if (b) { b.classList.toggle('on', autoBattle); b.setAttribute('aria-pressed', autoBattle ? 'true' : 'false'); b.textContent = autoBattle ? '✅ Auto' : '🤖 Auto'; b.title = autoBattle ? 'Auto is ON: tap to take control again' : 'Auto is OFF: tap to let the AI play every hero'; } }
 function setAuto(on) {
   on = !!on; if (autoBattle === on) { syncAutoBtn(); return; } autoBattle = on; syncAutoBtn();
-  if (on && modal._options) { const o = modal._options.find((x) => x.id === 'auto'); if (o && modal._resolve) modal._resolve(o); } // a menu is waiting for the player: let the AI take this turn
+  if (on && modal._options && modal._resolve && (modal._kind === 'main' || modal._kind === 'more')) modal._resolve({ id: 'auto' }); // the action menu is waiting for the player: let the AI take this turn
 }
 let skipping = false; // legacy flag, now always false: nothing is skipped (Auto plays every animation at the current battle speed)
 const wait = (ms) => new Promise((r) => setTimeout(r, ms * speed().f));
@@ -1097,10 +1107,11 @@ function clearAmbientNarration() {
 }
 
 /* ---------- Exploration message cards: clues, notes, wall writings, discoveries ---------- */
-const msgQueue = []; let msgRunning = null;
-function queueMessage(text, cls = 'lore') { msgQueue.push(typeof text === 'object' ? text : { text, cls }); if (!msgRunning) msgRunning = pumpMessages(); return msgRunning; }
+const msgQueue = []; let msgRunning = null; let pumpFinished = true;
+// A pump that finishes before its first await (every card stale) must not leave msgRunning pointing at a spent promise: that froze walking.
+function queueMessage(text, cls = 'lore') { msgQueue.push(typeof text === 'object' ? text : { text, cls }); if (!msgRunning) { const p = pumpMessages(); if (!pumpFinished) msgRunning = p; else return p; } return msgRunning; }
 async function pumpMessages() {
-  document.body.classList.add('msgup');
+  pumpFinished = false; document.body.classList.add('msgup');
   const pumpToken = ambientMoveToken;
   try {
     while (msgQueue.length) {
@@ -1138,7 +1149,7 @@ async function pumpMessages() {
       if (combat && (m.ambient || m.cls === 'lore')) break;
       if (m.quip && !combat) say(m.quip); // a companion reacts once the card is read
     }
-  } finally { msgRunning = null; document.body.classList.remove('msgup'); }
+  } finally { msgRunning = null; pumpFinished = true; document.body.classList.remove('msgup'); }
 }
 /** Resolves once every queued message card has been read (combat waits for them). */
 const later_sfx = (n) => setTimeout(() => sfx(n), 450);
@@ -1257,7 +1268,7 @@ function showTurnPortrait(c) {
   if (turnWho === c && el.classList.contains('in') && !el.classList.contains('out')) return;
   turnWho = c; el.className = ''; el.style.cssText = ''; el.dataset.who = c.name; delete el.dataset.kind;
   el.replaceChildren(h('div', { class: 'tp-port' }, portrait(c, 'tp-img'), h('div', { class: 'tp-fx' }), h('div', { class: 'tp-flash' }), h('div', { class: 'tp-name' }, h('b', {}, c.name), h('span', { class: 'tp-act' }, ''))));
-  el.className = 'on'; void el.offsetWidth; el.classList.add('in');
+  el.className = 'on'; void el.offsetWidth; el.classList.add('in'); placeBanter();
 }
 function hideTurnPortrait(now = false) {
   const el = $('#turnport'); turnWho = null; clearTimeout(turnHideT); turnHideT = null; if (!el) return;
@@ -1315,7 +1326,7 @@ function showFoePortrait(heroes, foe) {
   if (key === foeKey && el.classList.contains('in') && !el.classList.contains('out')) return;
   hideTurnPortrait(true); foeKey = key; el.className = ''; el.dataset.from = foe.name; el.dataset.who = heroes.map((c) => c.name).join(',');
   el.replaceChildren(...heroes.map((c) => h('div', { class: 'fp-tile', 'data-id': c.id }, portrait(c, 'tp-img'), h('div', { class: 'fp-flash' }), h('div', { class: 'fp-num' }), h('div', { class: 'fp-name' }, h('b', {}, c.name), h('span', {}, heroes.length > 1 ? '' : `⚔ ${foe.name}`)))));
-  el.className = 'on ' + (heroes.length > 1 ? 'row' : 'single'); void el.offsetWidth; el.classList.add('in');
+  el.className = 'on ' + (heroes.length > 1 ? 'row' : 'single'); void el.offsetWidth; el.classList.add('in'); placeBanter();
 }
 /** kind: 'hurt' (amt, crit) or 'dodge'. Does nothing unless this hero's tile is on screen for the current monster strike. */
 function foeReact(c, kind, amt = 0, crit = false) {
@@ -1441,14 +1452,14 @@ function chooseFrom(title, options, kind = '') {
     const cm = $('#cmenu'); if (modal.classList.contains('combat')) closeModal();
     if (!tapPending) { const cap = $('#caption'); if (cap.querySelector('.captap')) hideCaption(); captionDown(true); } // never ask with the menu collapsed
     document.body.classList.add('incombat');
-    const done = (o) => { modal._options = null; curMenu = null; cm.innerHTML = ''; cm.append(h('div', { class: 'who dim' }, '…')); resolve(o); };
+    const done = (o) => { modal._options = null; modal._kind = ''; curMenu = null; cm.innerHTML = ''; cm.append(h('div', { class: 'who dim' }, '…')); resolve(o); };
     const draw = () => { cm.innerHTML = ''; cm.append(h('div', { class: 'panel' }, h('div', { class: 'who' }, title), h('div', { class: 'combatmenu' + (kind ? ' ' + kind : '') }, options.map((o, i) => btn(`${i + 1}. ${o.label}`, () => done(o), { disabled: o.disabled, class: (o.primary ? 'primary' : '') + (o.util ? ' util' : '') + (o.class ? ' ' + o.class : ''), info: o.info || null }))))); document.body.classList.add('incombat'); };
     draw(); curMenu = { draw, cm };
     cm.scrollTop = 0; requestAnimationFrame(() => { const l = $('#log'); l.scrollTop = l.scrollHeight; });
-    modal._resolve = done; modal._options = options;
+    modal._resolve = done; modal._options = options; modal._kind = kind;
   });
 }
-function endCombatUI() { document.body.classList.remove('logopen'); hideTurnPortrait(); hideFoePortrait(true); skipping = false; autoBattle = false; syncAutoBtn(); curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
+function endCombatUI() { document.body.classList.remove('logopen'); hideTurnPortrait(); hideFoePortrait(true); skipping = false; autoBattle = false; syncAutoBtn(); curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; modal._kind = ''; }
 function combatKey(e) {
   const n = parseInt(e.key, 10); if (!modal._options) return;
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
@@ -1554,7 +1565,7 @@ async function playerTurn() {
         { id: 'speed', label: `Battle speed: ${speed().short} ↻`, bonus: true, info: () => ['Battle speed', ...Object.values(BATTLE_SPEEDS).map((v) => v.label)] },
         { id: 'back', label: '← Back', back: true }];
     } else {
-      opts = [...core, { id: 'auto', label: 'Auto-battle', bonus: true, util: true, info: () => ['Auto-battle', 'Same as the Auto button: every hero, you included, acts on the AI for the rest of the fight. Tap Auto again to take control back.'] }];
+      opts = [...core];
       opts.push({ id: 'more', label: 'More… ▸', more: true, util: true, info: () => ['More actions', ...less.map(moreHint), 'Battle speed'] });
       if (end) opts.push(end);
     }
@@ -1690,10 +1701,10 @@ async function boot() {
   log('Loading the 3D engine…', 'dim');
   const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
   R = new Renderer($('#view')); R.onResize = () => { if (combat) { replaceOverlays(); renderTargets(); } else if ($('#caption').classList.contains('show')) replaceOverlays(); };
-  window.__gw = { sfx, SFX_NAMES, applyAudioSettings, playCutin, flushCombat, showFoePortrait, foeReact, hideFoePortrait, endCutinPhase() { cutinAbort = true; cutinStop?.(); }, closeModal, renderCombatUI() { renderParty(); renderTargets(); }, showHelp,
+  window.__gw = { say, sfx, SFX_NAMES, applyAudioSettings, playCutin, flushCombat, showFoePortrait, foeReact, hideFoePortrait, endCutinPhase() { cutinAbort = true; cutinStop?.(); }, closeModal, renderCombatUI() { renderParty(); renderTargets(); }, showHelp,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
-    outdoorInfo: () => ({ reg: outReg(), near: S ? outNear() : false, hour: S ? outHour() : null, tod: S ? todName(outHour()) : null, weather: R?.outdoor?.weather || null, state: R?.outState || null, counts: R?.outdoor?.counts || null }), look(p) { if (R) R.pitch = p; }, setHour(h) { if (R?.outdoor) R.outdoor.forceHour = h; refresh(); }, setWeather(k) { R?.outdoor?.setWeather(k); refresh(); },
+    outdoorInfo: () => ({ reg: outReg(), near: S ? outNear() : false, hour: S ? outHour() : null, tod: S ? todName(outHour()) : null, weather: R?.outdoor?.weather || null, state: R?.outState || null, counts: R?.outdoor?.counts || null }), look(p) { if (R) R.pitch = p; }, poiMap(lvl = 2) { const L = getLevel(lvl); const o = {}; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (L.tiles[y][x] === 'Q') o[poiIdAt(L, x, y)] = [x, y]; return o; }, setHour(h) { if (R?.outdoor) R.outdoor.forceHour = h; refresh(); }, setWeather(k) { R?.outdoor?.setWeather(k); refresh(); },
     showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, getLevel, refresh, showInventory, runTT, showJournal, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows

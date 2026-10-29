@@ -16,7 +16,7 @@ for (const rnd of [false, true]) for (const [i, difficulty] of ['story', 'normal
     if (i === 0 && !rnd) { // play the real tutorial fight once
       await page.click('#dlg-skip'); await page.click('[data-choice="fight"]');
       await page.waitForSelector('.combatmenu', { timeout: 60000 });
-      await page.locator('.combatmenu button', { hasText: 'Auto-battle' }).click();
+      await page.locator('#autobtn').click();
       for (let k = 0; k < 400 && !(await page.locator('#dlg-next').isVisible()); k++) { if (await page.locator('#caption.show').isVisible()) await page.keyboard.press('Enter'); await page.waitForTimeout(500); } // tap through the victory loot card
       await page.waitForSelector('#dlg-next', { timeout: 20000 }); await page.click('#dlg-skip'); await page.click('[data-choice="vow"]');
     } else await skipPrologue(page);

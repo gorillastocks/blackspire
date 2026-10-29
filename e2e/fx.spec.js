@@ -67,7 +67,7 @@ test('combat animations: projectiles, impacts, death, floaters — no errors, ac
   const active = await page.evaluate(() => window.__gw.R.cfx.activeCount);
   expect(active).toBeLessThanOrEqual(96);
   // real fights on Fast with auto-battle: floaters + spell flow, captions still advance
-  await page.locator('.combatmenu button', { hasText: 'Auto-battle' }).click();
+  await page.locator('#autobtn').click();
   await page.waitForSelector('.floater', { timeout: 60000 }); await shot('floater');
   console.log(`${info.project.name}: fps idle ${base.toFixed(1)} during fx ${during.toFixed(1)} pool ${active}`);
   expect(during).toBeGreaterThan(Math.min(24, base * 0.6));

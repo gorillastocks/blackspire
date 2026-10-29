@@ -96,7 +96,7 @@ test('outdoor: automap, secrets, elites, events and fights all still work in the
   await expect(page.locator('#cmenu .combatmenu, #combat-skip, .skipchip').first()).toBeVisible({ timeout: 60000 });
   await shot(page, { path: `/workspace/shots/phaseE-fight-${info.project.name}.png` });
   await page.evaluate(() => { for (const m of window.__gw.combat.monsters) m.hp = 1; });
-  const auto = page.locator('#cmenu .combatmenu button:has-text("Auto-battle")'); await auto.first().click({ timeout: 60000 }).catch(() => {});
+  const auto = page.locator('#autobtn'); await auto.first().click({ timeout: 60000 }).catch(() => {});
   await expect.poll(() => page.evaluate(() => !window.__gw.combat), { timeout: 120000 }).toBe(true);
   await page.evaluate(() => window.__gw.closeModal()); await page.waitForTimeout(1500);
   const after = await page.evaluate(() => ({ mode: window.__gw.state.mode, mix: window.__gw.outdoorInfo().state?.mix, x: window.__gw.state.x, y: window.__gw.state.y }));

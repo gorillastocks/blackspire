@@ -9,7 +9,7 @@ await p.click('#btn-begin'); await p.click('#dlg-next'); await p.click('#dlg-nex
 await p.click('#dlg-skip'); await p.click('[data-choice="fight"]');
 await p.waitForSelector('.combatmenu',{timeout:60000}); await p.waitForTimeout(3000); await shot('04-tutorial-fight-narration');
 await p.evaluate(()=>{ const c=window.__gw.combat; c.monsters.forEach(m=>m.hp=1); });
-await p.locator('.combatmenu button',{hasText:'Auto-battle'}).click();
+await p.locator('#autobtn').click();
 await p.waitForSelector('#dlg-next',{timeout:240000}); await p.click('#dlg-next'); await p.click('#dlg-next'); await p.click('#dlg-next'); await p.click('#dlg-next'); await shot('05-abduction-malthrax');
 await p.click('#dlg-skip'); await p.click('[data-choice="vow"]'); const s=p.locator('#tip-skip'); if (await s.isVisible()) await s.click();
 await p.click('#btn-folk'); await p.locator('[data-npc="rowan"]').click(); await shot('06-townfolk-rowan');

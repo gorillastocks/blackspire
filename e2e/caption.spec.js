@@ -59,7 +59,7 @@ for (const [name, groups] of [['Gorvax', [{ key: 'tyrannosaurus', count: 1 }]], 
     }
     // a real narration caption from the combat engine
     await page.evaluate(() => window.__gw.hideCaption());
-    await page.locator('.combatmenu button', { hasText: 'Auto-battle' }).click();
+    await page.locator('#autobtn').click();
     await page.waitForSelector('#caption.show', { timeout: 120000 });
     await checkAtRest(page, `${name}/live`);
     expect(errors).toEqual([]);

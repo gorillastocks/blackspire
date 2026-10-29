@@ -253,5 +253,25 @@
   "crane": {
     "id": "dUdaTcCeBJKScrY9EdRg",
     "name": "Jeff"
+  },
+  "maelis": {
+    "id": "KKqCgJEpQqvlGXepFfmn",
+    "name": "Evelyn",
+    "settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.8,
+      "style": 0.35,
+      "use_speaker_boost": true
+    }
+  },
+  "aelindra": {
+    "id": "hpp4J3VqNfWAUOO0d1Us",
+    "name": "Bella",
+    "settings": {
+      "stability": 0.6,
+      "similarity_boost": 0.75,
+      "style": 0.5,
+      "use_speaker_boost": true
+    }
   }
 }

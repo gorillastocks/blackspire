@@ -214,6 +214,9 @@ Object.assign(ITEMS, {
   tideClapper: { name: 'Drowned Bell Clapper', kind: 'weapon', base: 'mace', magic: 1, tier: 'rare', cost: 2500, fx: { elem: { dmg: '1d4', type: 'cold' } }, desc: 'Mace +1, the iron heart of a sunken bell. +1d4 cold damage on every hit.' },
   prismCirclet: { name: 'Prism Circlet', kind: 'helm', ac: 1, saves: 1, tier: 'rare', cost: 2500, desc: 'Verrin glass, ground to a lens. +1 AC and +1 to saves.' },
   wardenSignet: { name: "Warden's Signet", kind: 'ring', ac: 1, saves: 1, tier: 'rare', cost: 2500, fx: { healOnKill: 3 }, desc: 'The ring of a Watch sergeant. +1 AC and saves; heals the wearer 3 HP on a killing blow.' },
+  dewboughWreath: { name: 'Dewbough Wreath', kind: 'helm', ac: 1, saves: 1, tier: 'rare', cost: 2500, fx: { healOnKill: 2 }, desc: 'Silver leaves woven by the keeper of the Sunken Orchard. +1 AC and saves; heals the wearer 2 HP on a killing blow.' },
+  heartwoodStaff: { name: 'Heartwood Staff', kind: 'weapon', base: 'quarterstaff', magic: 1, tier: 'rare', cost: 2500, fx: { elem: { dmg: '1d4', type: 'radiant' } }, desc: 'Quarterstaff +1, cut from the Heartroot. +1d4 radiant damage on every hit. The orchard remembers who took it.' },
+  silverfruit: { name: 'Silverfruit', kind: 'potion', heal: '4d4+4', cost: 150, desc: 'A fruit of living moonlight. Heals like a Potion of Greater Healing.' },
   fennCloak: { name: "Fenn's Fine Cloak", kind: 'cloak', ac: 1, saves: 1, tier: 'uncommon', cost: 1500, desc: 'A pawnbroker\'s best unredeemed cloak. +1 AC and saves.' },
 });
 // Pools the drops come from, by tier

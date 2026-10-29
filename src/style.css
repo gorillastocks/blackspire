@@ -645,7 +645,7 @@ button.bigtab { width: 100%; min-height: 52px; margin-bottom: 4px; }
   body.incombat #party .card .nmw { display: flex; }
   body.incombat #party .card .nm > button.aitog, body.incombat #party .card .nm > .tag { position: absolute; right: 3px; top: 3px; bottom: 3px; width: 44px; min-width: 0; min-height: 0; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 12px; }
   body.incombat #party .card .bar { height: 6px; margin-top: 2px; }
-  body.incombat #banter .bubble { font-size: 14px; line-height: 1.3; padding: 5px 9px; border-radius: 10px; }
+  body.incombat #banter .bubble { font-size: 13px; line-height: 1.25; padding: 4px 9px; border-radius: 10px; }
   body.incombat #party .card .row { font-size: 10.5px; line-height: 1.25; gap: 6px; }
   body.incombat #party .card .slots { font-size: 10px; }
   body.incombat #party .card .conds { font-size: 10px; line-height: 1.1; }

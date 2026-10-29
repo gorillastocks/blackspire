@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LEVEL_POIS } from '../src/game/story.js';
+import { LEVEL_POIS, LEVEL_EXTRA_POIS } from '../src/game/story.js';
 import { generateLevel, getLevel, bfs, LEVEL_DEFS, W, H } from '../src/dungeon/levels.js';
 
 const find = (L, ch) => { const o = []; L.tiles.forEach((r, y) => [...r].forEach((c, x) => { if (c === ch) o.push([x, y]); })); return o; };
@@ -21,7 +21,7 @@ describe('dungeon levels are solvable', () => {
       // Has features
       expect(find(L, 'C').length).toBeGreaterThanOrEqual(2); expect(find(L, 'S').length).toBeGreaterThanOrEqual(1); expect(find(L, 'T').length).toBeGreaterThanOrEqual(1);
       // Every chest/fixed encounter reachable
-      expect(find(L, 'Q').length).toBe(LEVEL_POIS[i].length);
+      expect(find(L, 'Q').length).toBe(LEVEL_POIS[i].length + LEVEL_EXTRA_POIS[i].length);
       for (const ch of ['C', 'E', 'M', 'F', 'Q']) for (const [x, y] of find(L, ch)) expect(d2[y][x]).toBeGreaterThan(0);
       // Border is solid
       for (let x = 0; x < W; x++) { expect(L.tiles[0][x]).toBe('#'); expect(L.tiles[H - 1][x]).toBe('#'); }

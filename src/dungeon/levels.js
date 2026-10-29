@@ -2,7 +2,8 @@
 // '#' wall, '.' floor, '<' up stairs, '>' down stairs, 'D' door, 'L' locked door, 'S' secret door, 'T' trap,
 // 'C' chest, 'K' key, 'E' fixed encounter, 'B' boss, 'M' message, 'F' healing fountain, 'A' altar (final goal), 'Q' story point of interest
 import { seeded } from '../rules/dice.js';
-import { LEVEL_POIS } from '../game/story.js';
+import { LEVEL_POIS, LEVEL_EXTRA_POIS, poiAt } from '../game/story.js';
+import { outdoorRegion, inRegion } from './outdoor.js';
 import { decorate } from './extras.js';
 
 export const W = 21, H = 21;
@@ -185,17 +186,38 @@ export function validateLevel(L) {
   if (d2[exit[1]][exit[0]] <= d2[boss[1]][boss[0]]) bad.push('exit not beyond the boss');
   const d3 = bfs(t, st[0], st[1], (c) => c !== '#' && c !== 'B'); if (d3[exit[1]][exit[0]] !== -1) bad.push('exit bypasses the boss');
   for (const ch of ['C', 'E', 'M', 'F', 'Q', 'T', 'D', 'S']) for (const [x, y] of find(ch)) if (d2[y][x] <= 0) bad.push(`${ch} at ${x},${y} unreachable`);
-  if (find('Q').length !== (LEVEL_POIS[idx] || []).length) bad.push(`story POIs ${find('Q').length}/${(LEVEL_POIS[idx] || []).length}`);
+  const ex = Object.keys(L.extraPois || {}); const wantQ = (LEVEL_POIS[idx] || []).length + ex.length;
+  if (find('Q').length !== wantQ) bad.push(`story POIs ${find('Q').length}/${wantQ}`);
+  if (ex.length) { const reg = outdoorRegion(L); if (ex.length !== LEVEL_EXTRA_POIS[idx].length || !reg || ex.some((k) => !inRegion(reg, ...k.split(',').map(Number)))) bad.push('Orchard POIs are not all inside the outdoor region'); }
   if (def.fountain && !find('F').length) bad.push('no fountain');
   if (find('C').length < 2) bad.push('fewer than 2 chests');
   if (find('M').length < 1) bad.push('no messages');
   return bad;
 }
+/** The Sunken Orchard's points of interest (B3): dropped on open floor inside the outdoor region, after decoration (so the region is final).
+ *  The nearest to the stairs comes first; the rest are spread out. Returns the level with extraPois {'x,y': id}, or null when there is no room. */
+function placeExtraPois(L) {
+  const extra = LEVEL_EXTRA_POIS[L.idx] || []; if (!extra.length || !L.def.outdoor) return L;
+  const reg = outdoorRegion(L); if (!reg) return null;
+  const g = L.tiles.map((r) => [...r]);
+  const taken = new Set([...(L.events || []).map((e) => `${e.x},${e.y}`), ...(L.elites || []).flatMap((e) => e.path.map(([x, y]) => `${x},${y}`)), ...(L.nooks || []).map((n) => `${n.x},${n.y}`), ...(L.secretCells || [])]);
+  const d0 = bfs(g, L.start[0], L.start[1], (c) => c !== '#' && c !== 'L' && c !== 'S');
+  const cells = []; for (let y = reg.y0; y <= reg.y1; y++) for (let x = reg.x0; x <= reg.x1; x++) if (g[y][x] === '.' && d0[y][x] > 2 && !taken.has(`${x},${y}`)) cells.push([x, y]);
+  cells.sort((a, b) => d0[a[1]][a[0]] - d0[b[1]][b[0]] || a[1] - b[1] || a[0] - b[0]);
+  const chosen = cells.length ? [cells.shift()] : [];
+  while (chosen.length < extra.length && cells.length) {
+    let bi = 0, bs = -1; cells.forEach(([x, y], i) => { const m = Math.min(...chosen.map(([cx, cy]) => Math.abs(cx - x) + Math.abs(cy - y))); if (m > bs) { bs = m; bi = i; } });
+    chosen.push(cells.splice(bi, 1)[0]);
+  }
+  if (chosen.length < extra.length) return null;
+  const extraPois = {}; chosen.forEach(([x, y], i) => { g[y][x] = 'Q'; extraPois[`${x},${y}`] = extra[i]; });
+  return { ...L, tiles: g.map((r) => r.join('')), extraPois };
+}
 /** Build a level from a seed; if the layout fails validation, deterministically re-roll (seed + n). */
 export function generateLevel(idx, seed = LEVEL_DEFS[idx].seed) {
   for (let n = 0; n < 200; n++) {
     let L = null; try { L = buildLevel(idx, seed + n * 7919); } catch { L = null; }
-    if (L && !validateLevel(L).length) return decorate(L).L;
+    if (L && !validateLevel(L).length) { const D = decorate(L).L; const P = placeExtraPois(D); if (P && !validateLevel(P).length) return P; }
   }
   throw new Error(`could not build a valid level ${idx} from seed ${seed}`);
 }
@@ -212,6 +234,8 @@ export function randomSeeds() { return LEVEL_DEFS.map(() => 1 + Math.floor(Math.
 /** Index of a special tile among tiles of the same kind (row-major), used for messages / fixed encounters. */
 export function tileOrdinal(level, x, y) {
   const ch = level.tiles[y][x]; let n = 0;
-  for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) { if (yy === y && xx === x) return n; if (level.tiles[yy][xx] === ch) n++; }
+  for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) { if (yy === y && xx === x) return n; if (level.tiles[yy][xx] === ch && !level.extraPois?.[`${xx},${yy}`]) n++; }
   return n;
 }
+/** Which story point of interest a 'Q' tile is: a placed one (the Orchard's) by position, else by scan order. */
+export function poiIdAt(level, x, y) { return level.extraPois?.[`${x},${y}`] || poiAt(level.idx, tileOrdinal(level, x, y)); }

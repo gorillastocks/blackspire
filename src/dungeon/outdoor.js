@@ -14,7 +14,8 @@ export const inRegion = (R, x, y) => !!R && x >= R.x0 && x <= R.x1 && y >= R.y0 
 /** Pick (deterministically) a small window of the level to be outdoors: roomy, a few features, none of the key tiles. */
 export function outdoorRegion(L) {
   if (!L || L.idx !== OUTDOOR_LEVEL || !LEVEL_DEFS[L.idx]?.outdoor) return null;
-  const t = L.tiles;
+  // The Orchard's own points of interest sit inside the region and must not move it: look at the floor without them.
+  const t = L.extraPois ? L.tiles.map((row, y) => [...row].map((c, x) => (L.extraPois[`${x},${y}`] ? '.' : c)).join('')) : L.tiles;
   for (const size of [7, 6, 5]) {
     let best = null;
     for (let y0 = 0; y0 + size <= H; y0++) for (let x0 = 0; x0 + size <= W; x0++) {

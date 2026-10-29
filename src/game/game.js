@@ -1,6 +1,6 @@
 // Core game state & exploration logic (DOM-free, so it can be unit tested and simulated).
 import { packById, DEFAULT_PACK } from '../voices/packs.js';
-import { getLevel, DIRS, W, H, tileOrdinal, LEVEL_DEFS, setDungeonSeeds, randomSeeds } from '../dungeon/levels.js';
+import { getLevel, DIRS, W, H, tileOrdinal, poiIdAt, LEVEL_DEFS, setDungeonSeeds, randomSeeds } from '../dungeon/levels.js';
 import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor, isProficientWeapon, heavyPenalty, speedOf, skillMod, knownSpells, spellMod, heal } from '../rules/character.js';
 import { ITEMS, WEAPONS, ARMOR, CLASSES, RACES, XP_LEVELS, SPELLS, DROP_POOL, tierOf } from '../rules/data.js';
 import { elitePos, LORE } from '../dungeon/extras.js';
@@ -211,7 +211,7 @@ export function enterTile(s) {
       out.push({ log: `You found the ${ITEMS[def.key].name}!`, cls: 'good', banter: banter(s.party, 'loot', {}, 0.7) }, ...Prog.discover(s, 'key', `${s.x},${s.y}`, 'key found')); break;
     }
     case 'Q': {
-      const id = Story.poiAt(s.level, tileOrdinal(L, s.x, s.y));
+      const id = poiIdAt(L, s.x, s.y);
       const ev = Story.visitPoi(s, id); if (ev.consumed) setTile(s, s.x, s.y, '.');
       out.push(...ev); if (ev.some((e) => e.combat)) { s.sinceEncounter = 0; return suppressAmbientForCombat(out); }
       if (ev.some((e) => e.prompt)) return out;

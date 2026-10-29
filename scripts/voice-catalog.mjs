@@ -80,6 +80,7 @@ export function catalog() {
     s.flags = full ? { hammer: true, counterspell: true, gateBlown: true, weakPoint: true } : {}; s.quests = full ? { debt: 'done', ballad: 'done', decree: 'done' } : {};
     for (const aff of [0, 5, 9]) { PC.ensure(s).aff.liora = aff; ends.push(...Story.endingScene(s).lines); }
   }
+  for (const pf of ['pipMercy', 'pipVengeance']) { const s = mockState(); s.flags = { [pf]: true }; ends.push(...Story.endingScene(s).lines); } // Pip's two epilogues
   ends.forEach((l) => add('Story scenes', l.who, l.text, 'ending', 80));
 
   // ---- town folk ----

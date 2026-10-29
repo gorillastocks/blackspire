@@ -40,7 +40,7 @@ test('smoke: title → create → town → dungeon → combat → sheet, no cons
   await expect(page.locator('#cmenu .combatmenu button:has-text("Battle speed")')).toContainText('Fast');
   await page.locator('#cmenu .combatmenu button', { hasText: 'Back' }).click();
   await page.evaluate(() => { window.__caps = []; new MutationObserver(() => { const t = document.querySelector('#caption')?.textContent; if (t) window.__caps.push(t); }).observe(document.querySelector('#caption'), { childList: true, subtree: true, characterData: true }); });
-  const auto = page.locator('#cmenu .combatmenu button:has-text("Auto-battle")'); if (await auto.count()) await auto.first().click();
+  const auto = page.locator('#autobtn'); if (await auto.count()) await auto.first().click();
   await page.waitForFunction(() => !window.__gw.combat, null, { timeout: 120000 });
   expect(await page.evaluate(() => window.__caps.length), 'narration captions shown').toBeGreaterThan(0);
   await page.waitForTimeout(1000); await shot('06-after-combat');
