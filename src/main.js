@@ -172,7 +172,7 @@ function log(t, cls = '') {
   const el = $('#log'); el.append(h('div', { class: cls }, t)); while (el.children.length > 200) el.firstChild.remove(); el.scrollTop = el.scrollHeight;
   // while a dialog is open the log is underneath it, so also echo the message inside the dialog itself
   const out = !modal.classList.contains('hidden') && modal.querySelector('.dlgout');
-  if (out) { out.hidden = false; out.append(h('div', { class: cls }, t)); while (out.children.length > 8) out.firstChild.remove(); out.scrollTop = out.scrollHeight; out.scrollIntoView({ block: "nearest" }); }
+  if (out) { out.hidden = false; out.append(h('div', { class: cls }, t)); while (out.children.length > 8) out.firstChild.remove(); out.scrollTop = out.scrollHeight; if (!matchMedia('(max-width: 760px), (max-height: 520px) and (orientation: landscape)').matches) out.scrollIntoView({ block: 'nearest' }); } // on phones the message strip sticks to the bottom of the dialog, so the dialog never scrolls away from its buttons
 }
 function say(b, o = {}) {
   if (!b) return;
@@ -893,6 +893,7 @@ function askTrivial(info) {
   });
 }
 async function maybeAutoResolve(info) {
+$('#log').addEventListener('click', () => { if (document.body.classList.contains('incombat')) { document.body.classList.toggle('logopen'); requestAnimationFrame(() => { const l = $('#log'); l.scrollTop = l.scrollHeight; }); } }); // phone portrait: tap the short log strip to open or close it
   if (info.town || !S || S.mode !== 'dungeon' || !G.isTrivial(S, info)) return false;
   const mode = loadSettings().trivialFights || 'ask'; if (mode === 'off') return false;
   let go = mode === 'auto'; if (!go) { busy = true; go = await askTrivial(info); busy = false; } if (!go) return false;
@@ -1401,7 +1402,7 @@ function declutterTags() {
     return ok;
   };
   for (const t of tags) t.classList.remove('dense', 'tiny');
-  if (R.sprMode && tags.length >= 4) { // crowded painted-sprite fights: compact plates from the start (then without trait chips if they still collide) so they do not hide the smaller monsters
+  if (R.sprMode && tags.length >= (window.innerWidth <= 760 ? 3 : 4)) { // crowded painted-sprite fights: compact plates from the start (then without trait chips if they still collide) so they do not hide the smaller monsters
     for (const t of tags) t.classList.add('dense'); if (run(false) || run(true)) return;
     for (const t of tags) t.classList.add('tiny'); if (!run(false)) run(true); return; }
   if (run(false)) return;
@@ -1432,7 +1433,7 @@ function chooseFrom(title, options, kind = '') {
     modal._resolve = done; modal._options = options;
   });
 }
-function endCombatUI() { hideTurnPortrait(); hideFoePortrait(true); skipping = false; autoBattle = false; syncAutoBtn(); curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
+function endCombatUI() { document.body.classList.remove('logopen'); hideTurnPortrait(); hideFoePortrait(true); skipping = false; autoBattle = false; syncAutoBtn(); curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
 function combatKey(e) {
   const n = parseInt(e.key, 10); if (!modal._options) return;
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
