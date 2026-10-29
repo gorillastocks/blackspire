@@ -142,7 +142,7 @@ function journalChapters() {
   const open = journalOpen || new Set([groups[0].id]);
   return [h('p', { class: 'hint' }, `${(S.journal || []).length} entries across ${groups.length} chapter${groups.length === 1 ? '' : 's'}. Tap a chapter to fold it.`),
     ...groups.map((g) => { const d = h('details', { class: 'jchap', 'data-chapter': g.id }, h('summary', {}, h('span', {}, `${g.icon} ${g.label}`), h('small', {}, ` · ${g.entries.length}`)), ...g.entries.map((j) => h('p', { class: 'hint jentry' }, j.text)));
-      d.open = open.has(g.id); d.addEventListener('toggle', () => { journalOpen ||= new Set([groups[0].id]); d.open ? journalOpen.add(g.id) : journalOpen.delete(g.id); }); return d; })];
+      d.open = open.has(g.id); d.querySelector('summary').addEventListener('click', () => { journalOpen ||= new Set([groups[0].id]); d.open ? journalOpen.delete(g.id) : journalOpen.add(g.id); }); return d; })]; // the click runs before the browser flips `open`
 }
 function showJournal(back, tab) {
   if (tab) journalTab = tab;

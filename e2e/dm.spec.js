@@ -32,8 +32,8 @@ test('DM read-aloud: town, floor intro, rooms — once per save, reminders, sett
   if (await card(page).isVisible()) await dismiss(page);
   await page.click('#btn-enter');
   await page.waitForTimeout(800); await page.screenshot({ path: `/workspace/shots/dm-floor-${P}.png` });
-  await checkCard(page, 'B1 intro'); await expect(page.locator('#caption .captxt')).toContainText('the Rat-Warrens are awake');
-  expect(await page.locator('#log').textContent(), 'logged').toContain('the Rat-Warrens are awake');
+  await checkCard(page, 'B1 intro'); await expect(page.locator('#caption .captxt')).toContainText('into the Rat Warrens');
+  expect(await page.locator('#log').textContent(), 'logged').toContain('into the Rat Warrens');
   const pos = await page.evaluate(() => `${window.__gw.state.x},${window.__gw.state.y}`); await page.keyboard.press('ArrowUp'); await page.waitForTimeout(150);
   expect(await page.evaluate(() => `${window.__gw.state.x},${window.__gw.state.y}`), 'no movement under the card').toBe(pos);
   await dismiss(page);
@@ -50,6 +50,6 @@ test('DM read-aloud: town, floor intro, rooms — once per save, reminders, sett
   // setting off: B2 intro goes to the log only
   await page.evaluate(() => { const st = JSON.parse(localStorage.getItem('blackspire.settings') || '{}'); st.areaDesc = false; localStorage.setItem('blackspire.settings', JSON.stringify(st)); window.__gw.handle(window.__gw.G.goDown(window.__gw.state)); });
   await page.waitForTimeout(400); await expect(card(page), 'off = no card').toHaveCount(0);
-  expect(await page.locator('#log').textContent()).toContain('Drowned Grotto, then goes still');
+  expect(await page.locator('#log').textContent()).toContain('Drowned Grotto yawns wide');
   expect(errors).toEqual([]);
 });
