@@ -111,7 +111,7 @@ const seen = (s) => (s.seen ||= {});
 /** One read-aloud card the first time; on return an optional one-line reminder (log only). */
 export function describe(s, key, text, reminder = null, quip = 0.35) {
   if (!text) return [];
-  if (seen(s)[key]) return reminder ? [{ log: reminder, cls: 'dim' }] : [];
+  if (seen(s)[key]) return reminder ? [{ log: reminder, cls: 'dim', voice: true }] : [];
   seen(s)[key] = 1;
   return [{ log: DM + text, cls: 'lore', card: true, dm: true, ambient: true, quip: banter(s.party, 'newArea', {}, quip) }];
 }

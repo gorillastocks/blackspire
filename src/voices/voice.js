@@ -3,6 +3,7 @@
 import index from './index.json';
 import { ac, unlock as unlockAudio, duckBed } from '../audio.js';
 import { playVictorySynth } from '../victory-synth.js';
+import { normVoiceText } from './norm.js';
 
 const byText = index.byText || {};
 const cache = new Map(); // url → AudioBuffer | Promise
@@ -23,17 +24,7 @@ export function assetUrl(path) {
   }
 }
 
-function norm(t) {
-  if (!t) return '';
-  let s = String(t);
-  s = s.replace(/^Dungeon Master:\s*/i, '').replace(/^🕯\s*/, '').replace(/^\uD83D\uDD6F\uFE0F?\s*/, '');
-  const repl = {
-    '\u2014': '-', '\u2013': '-', '\u2018': "'", '\u2019': "'",
-    '\u201c': '"', '\u201d': '"', '\u2026': '...',
-  };
-  for (const [a, b] of Object.entries(repl)) s = s.replaceAll(a, b);
-  return s.replace(/\s+/g, ' ').trim().toLowerCase();
-}
+const norm = normVoiceText;
 
 function resolve(text, speaker) {
   const n = norm(text);
@@ -90,7 +81,7 @@ export function unlockVoices() {
   } catch { /* ignore */ }
 }
 
-export function setVoicesEnabled(on) { enabled = !!on; if (!enabled) stopVoice(); }
+export function setVoicesEnabled(on) { enabled = !!on; if (!enabled) { waiting.length = 0; stopVoice(); } }
 export function setVoiceVolume(v) {
   vol = Math.max(0, Math.min(1, +v || 0));
   if (current?.gain) {
@@ -103,11 +94,29 @@ export function voiceMisses() { return missLog.slice(-20); }
 export function currentVoice() { return current; }
 
 export function stopVoice() {
+  voiceGen++; // an explicit stop also cancels a clip that is still loading
   if (!current) return;
   try { current.src.stop?.(); } catch { /* ignore */ }
   try { current.src.pause?.(); } catch { /* ignore */ }
   try { current.gain.disconnect(); } catch { /* ignore */ }
   current = null;
+  if (waiting.length) setTimeout(drainWaiting, 0); // an explicit stop (tap to continue) lets a queued line follow
+}
+
+/** Lines waiting for the current clip to finish (opts.queue). Each expires so a stale reaction never plays late. */
+const waiting = [];
+let starting = 0; // clips whose decode/start is in flight
+const MAX_WAITING = 3;
+export function voiceBusy() { return !!current || starting > 0; }
+function drainWaiting() {
+  if (current || starting > 0) return;
+  while (waiting.length) {
+    const w = waiting.shift();
+    if (Date.now() > w.expires) continue;
+    if (w.opts.ambient && !ambientGate()) continue;
+    if (typeof w.opts.stillValid === 'function' && !w.opts.stillValid(w.opts.token)) continue;
+    if (startVoice(w.file, w.opts)) return;
+  }
 }
 
 /** Generation token: bump to cancel in-flight ambient/area loads before they reach src.start. */
@@ -126,6 +135,7 @@ export function voiceGeneration() { return { voiceGen, ambientGen }; }
  */
 export function invalidateAmbientVoices() {
   ambientGen++;
+  for (let i = waiting.length - 1; i >= 0; i--) if (waiting[i].opts.ambient) waiting.splice(i, 1);
   if (current?.ambient) stopVoice();
 }
 
@@ -151,10 +161,24 @@ export function playVoice(text, speaker = null, opts = {}) {
   const ambient = kind === 'ambient' || !!opts.ambient;
   // Ambient must not start while the host says we're in combat / menu / dialogue.
   if (ambient && !ambientGate()) return false;
-
+  const o = { ...opts, kind, ambient, speaker };
+  // ifIdle: a passing remark (companion bark) is simply dropped when something is already being said.
+  if (opts.ifIdle && voiceBusy()) return false;
+  // queue: wait for the current clip to finish instead of cutting it off (expires after maxWait ms).
+  if (opts.queue && voiceBusy()) {
+    if (waiting.some((w) => w.file === file)) return true;
+    while (waiting.length >= MAX_WAITING) waiting.shift();
+    waiting.push({ file, opts: o, expires: Date.now() + (opts.maxWait || 12000) });
+    return true;
+  }
   // Don't cut off a battle line with ambient, and vice-versa: ambient yields to non-ambient.
   if (ambient && current && !current.ambient) return false;
-  stopVoice();
+  return startVoice(file, o);
+}
+
+function startVoice(file, opts) {
+  const { kind, ambient } = opts;
+  stopVoiceNow();
   unlockVoices();
   const c = ac();
   const myVoiceGen = ++voiceGen;
@@ -162,6 +186,7 @@ export function playVoice(text, speaker = null, opts = {}) {
   const token = opts.token;
   const stillValid = opts.stillValid;
   const runWA = async () => {
+    starting++;
     try {
       if (c && c.state !== 'running') await c.resume().catch(() => {});
       const buf = await loadBuf(file);
@@ -180,17 +205,40 @@ export function playVoice(text, speaker = null, opts = {}) {
       src.buffer = buf;
       // Voice sits on destination (not music bus) so Music volume / ducking never mutes dialogue.
       src.connect(g).connect(ctx.destination);
-      src.onended = () => { if (current?.src === src) current = null; };
-      current = { src, gain: g, file, startedAt: ctx.currentTime, duration: buf.duration, ambient, kind, speaker, token };
+      src.onended = () => { if (current?.src === src) { current = null; lastEnd = Date.now(); } setTimeout(drainWaiting, 60); };
+      current = { src, gain: g, file, startedAt: ctx.currentTime, duration: buf.duration, ambient, kind, speaker: opts.speaker, token };
       src.start(0);
     } catch (e) {
       if (typeof console !== 'undefined') console.warn('[voice play fail]', file, e);
+    } finally {
+      starting--;
+      if (!current && starting === 0) setTimeout(drainWaiting, 0);
     }
   };
   if (c) runWA();
   else if (typeof console !== 'undefined') console.warn('[voice] no AudioContext');
   return true;
 }
+/** stopVoice without scheduling a queue drain (a new clip is about to start). */
+function stopVoiceNow() {
+  if (!current) return;
+  try { current.src.stop?.(); } catch { /* ignore */ }
+  try { current.src.pause?.(); } catch { /* ignore */ }
+  try { current.gain.disconnect(); } catch { /* ignore */ }
+  current = null;
+}
+let lastEnd = 0;
+/** Milliseconds since the last clip ended (Infinity if none yet): used to space out companion barks. */
+export function msSinceVoiceEnd() { return voiceBusy() ? 0 : (lastEnd ? Date.now() - lastEnd : Infinity); }
+
+/** Approximate length in seconds of the clip for this text (MP3 128 kbps = 16000 bytes/s), or null if unvoiced. */
+export function clipSeconds(text, speaker = null) {
+  const f = resolve(text, castKey(speaker));
+  if (!f) return null;
+  if (!byFile) { byFile = {}; for (const c of Object.values(index.clips || {})) byFile[c.file] = c.bytes; }
+  const bytes = byFile[f]; return bytes ? bytes / 16000 : null;
+}
+let byFile = null;
 
 const WHO = {
   elowen: 'elowen', 'princess elowen': 'elowen',

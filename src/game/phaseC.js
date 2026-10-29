@@ -47,7 +47,7 @@ export function reactive(s, trig, ctx = {}, chance = 1) {
   const spoken = (c) => Object.keys(p.said).filter((k) => k.startsWith(c.companion + ':')).length;
   const min = Math.min(...opts.map((o) => spoken(o.c))); const o = pick(opts.filter((x) => spoken(x.c) === min));
   p.said[lineKey(o.c.companion, trig, o.i)] = 1;
-  return say(o.c, o.t.replace('{p}', ctx.p || 'friend').replace('{m}', ctx.m || 'creature'));
+  return say(o.c, o.t.replaceAll('{p}', ctx.p || 'friend').replaceAll('{m}', ctx.m || 'creature'));
 }
 /** The reactive line if there is one, otherwise the old generic banter at a low chance (so familiar chatter never floods in). */
 export function react(s, trig, fallback, chance = 1, ctx = {}) {
@@ -78,7 +78,7 @@ export function leftTown(s) { ensure(s).inTown = false; }
 export function townArrive(s) {
   const p = ensure(s); if (p.inTown) return []; p.inTown = true; const out = [];
   const b = reactive(s, 'town', {}, 0.9); if (b) out.push({ banter: b });
-  const m = nextMemory(s); if (m) out.push({ log: `${m.name}: "${m.text}"`, cls: 'lore', toast: `${m.name} has something to say about you.` });
+  const m = nextMemory(s); if (m) out.push({ log: `${m.name}: "${m.text}"`, cls: 'lore', voice: { text: m.text, who: m.npc }, toast: `${m.name} has something to say about you.` });
   const mo = pendingMoment(s); if (mo != null) out.push({ log: '💬 Liora would like a word at the Boar & Spoon (Tavern → Talk with Liora).', cls: 'good' });
   return out;
 }
@@ -93,7 +93,7 @@ export function memoryLines(s, npc) {
 /** One untold memory from any NPC (for the town-arrival remark). */
 function nextMemory(s) {
   const p = ensure(s);
-  for (const npc of Object.keys(p.mem)) for (const tag of p.mem[npc]) { const k = `${npc}:${tag}`; if (!p.memSaid[k] && NPC_MEMORY[npc]?.[tag]) { p.memSaid[k] = 1; return { name: NPC_NAME[npc] || npc, text: NPC_MEMORY[npc][tag] }; } }
+  for (const npc of Object.keys(p.mem)) for (const tag of p.mem[npc]) { const k = `${npc}:${tag}`; if (!p.memSaid[k] && NPC_MEMORY[npc]?.[tag]) { p.memSaid[k] = 1; return { npc, name: NPC_NAME[npc] || npc, text: NPC_MEMORY[npc][tag] }; } }
   return null;
 }
 export const hasMemory = (s, npc) => (ensure(s).mem[npc] || []).some((t) => !ensure(s).memSaid[`${npc}:${t}`]);

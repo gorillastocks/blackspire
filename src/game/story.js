@@ -65,28 +65,28 @@ export const LEVEL_POIS = [
   ['note7', 'smith1', 'powder', 'pip4', 'gate', 'verse4', 'smith2', 'ladle', 'tale3', 'tablet4', 'smith3', 'note8'],
   ['note9', 'horn', 'pip5', 'verse5', 'tale4', 'armory', 'tablet5', 'note10'],
 ];
-const TABLETS = [
+export const TABLETS = [
   'Lore tablet: "Emberhollow was founded on a sealed tower. The founders buried it, built an inn on top, and agreed never to mention it again."',
   'Lore tablet: "The First Warden bound the Tyrant-lizard Gorvax beneath the vault with five seals and a very large horn."',
   'Lore tablet: "Glimmerdeep crystals drink light. Shatter them and the light they hoarded is set free."',
   'Lore tablet: "Ashforge was a dwarven forge-hall until Brakk sold it — and its smiths — to the Sovereign."',
   'Lore tablet: "MALTHRAX. Once court wizard of Emberhollow. Exiled for \'excessive candlelight\'. Took it personally."',
 ];
-const VERSES = [
+export const VERSES = [
   'Verse 1: "Down in the Warrens where the rat-kings sup, / Grumsh drew his axe and the rats gave up!"',
   'Verse 2: "In the Grotto deep where the waters sing, / a lizard with a club tail met a better thing!"',
   'Verse 3: "Through Glimmerdeep\'s glow where the toadstools scream, / Grumsh screamed louder (it was quite the scene)!"',
   'Verse 4: "In Ashforge\'s heat where the anvils ring, / Grumsh rang louder, being Grumsh, the king!"',
   'Verse 5: "In the Blackspire vault where the Tyrant lay — / [Grumsh: \'Last line comes after we win.\']"',
 ];
-const PIPCLUES = [
+export const PIPCLUES = [
   'Spoon clue 1: a spoon scratched into the wall, pointing down. "THE KEEPERS SLEEP BENEATH." Pip trembles with joy.',
   'Spoon clue 2: a tarnished teaspoon tied to a stalactite with a ribbon marked "II". Pip pockets it reverently.',
   'Spoon clue 3: crystal etchings of five spoons in a circle. One is a ladle. "That\'s cheating," says Pip.',
   'Spoon clue 4: an anvil stamped with a spoon. Under it, a riddle: "Where the Tyrant sleeps, the silver keeps."',
   'Spoon clue 5: the final clue — a spoon-shaped keyhole in the vault wall. Pip hums the Spoon-Keepers\' anthem.',
 ];
-const TALES = [
+export const TALES = [
   'Tall tale 1: "The staff was carved from a lightning-struck spire," Nettle writes. "Everyone agrees. Nobody saw it."',
   'Tall tale 2: "It hums when he lies," Nettle notes. "So it hums constantly."',
   'Tall tale 3: "A smith says the staff has a crack near the crystal — mended with cultist spit."',
@@ -124,8 +124,8 @@ export function onLongRest(s) {
   s.rests++;
   if (s.rests % RESTS_PER_MOON === 0) {
     s.moon++; const b = sealsBroken(s);
-    if (s.moon <= 5) { out.push({ log: `🌕 The moon rises over Emberhollow. A seal on the Blackspire cracks and breaks — ${b} of 5 broken.`, cls: 'crit' }); addJournal(s, `Moonrise ${s.moon}: seal ${b} of 5 broken.`); }
-    if (s.moon === 5) { out.push({ log: '“Five moons, Emberhollow.” Malthrax\'s laughter rolls up from below. He grows stronger (the finale is harder, but not lost).', cls: 'bad' }); addJournal(s, 'All five seals are broken. Malthrax is empowered.'); }
+    if (s.moon <= 5) { out.push({ log: `🌕 The moon rises over Emberhollow. A seal on the Blackspire cracks and breaks — ${b} of 5 broken.`, cls: 'crit', voice: { text: 'The moon rises over Emberhollow. A seal on the Blackspire cracks and breaks.', who: 'narrator' } }); addJournal(s, `Moonrise ${s.moon}: seal ${b} of 5 broken.`); }
+    if (s.moon === 5) { out.push({ log: '“Five moons, Emberhollow.” Malthrax\'s laughter rolls up from below. He grows stronger (the finale is harder, but not lost).', cls: 'bad', voice: { text: 'Five moons, Emberhollow.', who: 'malthrax' } }); addJournal(s, 'All five seals are broken. Malthrax is empowered.'); }
   }
   if (s.quests.ballad === 'done' && s.mode === 'town') { for (const c of s.party) if (!c.dead) c.tempHp = Math.max(c.tempHp || 0, 10); out.push({ log: 'Grumsh\'s ballad has the inn singing. Feast buff: 10 temporary HP each.', cls: 'good' }); }
   return out;
@@ -147,32 +147,32 @@ export function visitPoi(s, id) {
   const done = () => { s.pois[id] = true; out.consumed = true; };
   const m = /^(note|guard|pip|verse|tale|tablet|page|glowcap|smith|pylon)(\d+)$/.exec(id); const kind = m ? m[1] : id; const n = m ? +m[2] : 0;
   switch (kind) {
-    case 'note': { done(); s.notes.push(n); const t = NOTES[n - 1]; out.push({ log: `📜 You find a folded note in Elowen's hand. ${t}`, cls: 'lore', sfx: 'chest' }); addJournal(s, t); progress(s, 'notes', out, true);
-      if (s.notes.length >= 10) out.push({ log: 'You have every one of Elowen\'s notes. You know her plan — and she knows you are coming. (+1 initiative in the finale)', cls: 'good' }); break; }
-    case 'guard': { done(); startQuest(s, 'guards'); out.push({ log: `You cut a bound town guard free. "Captain Rowan sent you? Bless you!" (${prog(s, 'guards') + 1}/4)`, cls: 'good' }); progress(s, 'guards', out); break; }
+    case 'note': { done(); s.notes.push(n); const t = NOTES[n - 1]; out.push({ log: `📜 You find a folded note in Elowen's hand. ${t}`, cls: 'lore', sfx: 'chest', voice: { text: t, who: 'elowen' } }); addJournal(s, t); progress(s, 'notes', out, true);
+      if (s.notes.length >= 10) out.push({ log: 'You have every one of Elowen\'s notes. You know her plan — and she knows you are coming. (+1 initiative in the finale)', cls: 'good', voice: { text: 'You have every one of Elowen\'s notes. You know her plan, and she knows you are coming.', who: 'narrator' } }); break; }
+    case 'guard': { done(); startQuest(s, 'guards'); out.push({ log: `You cut a bound town guard free. "Captain Rowan sent you? Bless you!" (${prog(s, 'guards') + 1}/4)`, cls: 'good', voice: { text: 'You cut a bound town guard free. "Captain Rowan sent you? Bless you!"', who: 'narrator' } }); progress(s, 'guards', out); break; }
     case 'tablet': { done(); out.push({ log: TABLETS[n - 1], cls: 'lore' }); addJournal(s, TABLETS[n - 1]); s.flags.tablets = (s.flags.tablets || 0) + 1; break; }
     case 'pip': { done(); startQuest(s, 'spoons'); out.push({ log: PIPCLUES[n - 1], cls: 'lore', banter: inParty(s, 'pip') ? { who: 'Pip', color: COMPANIONS.pip.color, text: ['The prophecy is REAL!', 'Two! Two clues!', 'Three is a pattern. Patterns are destiny.', 'Four... I may cry.', 'FIVE. To the armory!'][n - 1] } : null }); addJournal(s, PIPCLUES[n - 1]); progress(s, 'spoons', out, true); break; }
     case 'verse': { done(); startQuest(s, 'ballad'); out.push({ log: `A drunken carving on the wall inspires Grumsh. ${VERSES[n - 1]}`, cls: 'lore' }); addJournal(s, VERSES[n - 1]); progress(s, 'ballad', out, true); if (ready(s, 'ballad')) { s.quests.ballad = 'done'; out.push({ log: 'Grumsh\'s ballad is complete! Inn rests now come with a feast (10 temp HP).', cls: 'good' }); } break; }
     case 'tale': { done(); startQuest(s, 'tale'); out.push({ log: TALES[n - 1], cls: 'lore' }); addJournal(s, TALES[n - 1]); progress(s, 'tale', out, true); if (ready(s, 'tale')) { s.quests.tale = 'done'; s.flags.weakPoint = true; out.push({ log: 'Nettle knows the weak point of the Sovereign\'s staff: one clean strike will shatter it.', cls: 'good' }); } break; }
     case 'page': { done(); startQuest(s, 'pages'); out.push({ log: `A torn spellbook page, covered in Fizzwick's tiny handwriting ("NOTE TO SELF: COUNTERSPELL. ALWAYS COUNTERSPELL.").`, cls: 'lore' }); progress(s, 'pages', out, true); if (ready(s, 'pages')) { s.quests.pages = 'done'; s.flags.counterspell = true; out.push({ log: 'Fizzwick\'s spellbook is whole. He can counterspell Malthrax once in the finale.', cls: 'good' }); } break; }
     case 'glowcap': { done(); startQuest(s, 'glowcaps'); out.push({ log: 'You pick a softly glowing glowcap mushroom.', cls: 'good' }); progress(s, 'glowcaps', out, true); break; }
-    case 'smith': { done(); startQuest(s, 'smiths'); out.push({ log: `You smash the chains of a captive smith. "Tell Dobbin we're coming home — and we'll be at the vault when you need us."`, cls: 'good' }); progress(s, 'smiths', out, true); break; }
-    case 'pylon': { done(); s.flags.pylons = (s.flags.pylons || 0) + 1; out.push({ log: `You shatter a humming crystal pylon. Stored dawn-light spills out and sinks into the floor, heading deeper. (${s.flags.pylons}/3)`, cls: 'good', sfx: 'crit' }); addJournal(s, `Crystal pylon ${s.flags.pylons}/3 shattered.`); break; }
-    case 'tunnel': { done(); startQuest(s, 'tunnel'); s.quests.tunnel = 'ready'; out.push({ log: 'A fresh tunnel, dug straight up toward the Boar & Spoon cellar. You kick out the supports and it caves in. Marga will want to hear.', cls: 'good' }); addJournal(s, 'Collapsed the tunnel under Marga\'s cellar.'); break; }
-    case 'hammerClue': { done(); startQuest(s, 'hammer'); s.flags.hammerClue = true; out.push({ log: 'Dwarven boot-prints, and a hammer-shaped dent in a rat. "That\'s Mum\'s hammer," Brambur whispers. "Someone took it deeper."', cls: 'lore' }); addJournal(s, 'Mum\'s hammer was carried deeper — toward Ashforge.'); break; }
+    case 'smith': { done(); startQuest(s, 'smiths'); out.push({ log: `You smash the chains of a captive smith. "Tell Dobbin we're coming home — and we'll be at the vault when you need us."`, cls: 'good', voice: true }); progress(s, 'smiths', out, true); break; }
+    case 'pylon': { done(); s.flags.pylons = (s.flags.pylons || 0) + 1; out.push({ log: `You shatter a humming crystal pylon. Stored dawn-light spills out and sinks into the floor, heading deeper. (${s.flags.pylons}/3)`, cls: 'good', sfx: 'crit', voice: { text: 'You shatter a humming crystal pylon. Stored dawn-light spills out and sinks into the floor, heading deeper.', who: 'narrator' } }); addJournal(s, `Crystal pylon ${s.flags.pylons}/3 shattered.`); break; }
+    case 'tunnel': { done(); startQuest(s, 'tunnel'); s.quests.tunnel = 'ready'; out.push({ log: 'A fresh tunnel, dug straight up toward the Boar & Spoon cellar. You kick out the supports and it caves in. Marga will want to hear.', cls: 'good', voice: true }); addJournal(s, 'Collapsed the tunnel under Marga\'s cellar.'); break; }
+    case 'hammerClue': { done(); startQuest(s, 'hammer'); s.flags.hammerClue = true; out.push({ log: 'Dwarven boot-prints, and a hammer-shaped dent in a rat. "That\'s Mum\'s hammer," Brambur whispers. "Someone took it deeper."', cls: 'lore', voice: true }); addJournal(s, 'Mum\'s hammer was carried deeper — toward Ashforge.'); break; }
     case 'collapse': { out.push({ prompt: 'poi', poi: id, title: 'A Rotten Support Beam', text: 'The ceiling here sags over a side-passage where you hear cultists chanting. One good pull would bring it down on them — or on you.', choices: [{ id: 'pull', label: '💪 Pull the beam (Athletics DC 12)' }, { id: 'leave', label: 'Leave it' }] }); break; }
-    case 'satchel': { done(); startQuest(s, 'satchel'); s.quests.satchel = 'ready'; out.push({ log: 'Half-sunk in the grotto: a satchel stitched with the royal sun. Elowen\'s temple relics, still dry inside. Brother Osric will want this.', cls: 'good' }); break; }
-    case 'decree': { done(); startQuest(s, 'decree'); s.quests.decree = 'done'; s.gold += 150; out.push({ log: 'A crystal-sealed royal decree — the ORIGINAL. It does not exile Vexrath\'s clan; it knights them. (+150 gp from the seal\'s gold leaf)', cls: 'good', banter: inParty(s, 'vexrath') ? { who: 'Vexrath', color: COMPANIONS.vexrath.color, text: 'My clan\'s honour... restored. I will carry this to the throne myself.' } : null }); addJournal(s, 'Found the true royal decree: Vexrath\'s clan was never exiled.'); break; }
+    case 'satchel': { done(); startQuest(s, 'satchel'); s.quests.satchel = 'ready'; out.push({ log: 'Half-sunk in the grotto: a satchel stitched with the royal sun. Elowen\'s temple relics, still dry inside. Brother Osric will want this.', cls: 'good', voice: true }); break; }
+    case 'decree': { done(); startQuest(s, 'decree'); s.quests.decree = 'done'; s.gold += 150; out.push({ log: 'A crystal-sealed royal decree — the ORIGINAL. It does not exile Vexrath\'s clan; it knights them. (+150 gp from the seal\'s gold leaf)', cls: 'good', voice: { text: 'A crystal-sealed royal decree. The ORIGINAL. It does not exile Vexrath\'s clan; it knights them.', who: 'narrator' }, banter: inParty(s, 'vexrath') ? { who: 'Vexrath', color: COMPANIONS.vexrath.color, text: 'My clan\'s honour... restored. I will carry this to the throne myself.' } : null }); addJournal(s, 'Found the true royal decree: Vexrath\'s clan was never exiled.'); break; }
     case 'crystalSpoon': done(); give(s, 'crystalSpoon', out, ' Pip insists it is "the important one".'); break;
     case 'ladle': done(); give(s, 'ironLadle', out, ' Technically a spoon. Pip has checked.'); break;
-    case 'powder': { done(); startQuest(s, 'powder'); s.flags.powder = true; s.quests.powder = 'done'; out.push({ log: `A keg of dwarven blasting powder.${hasComp(s, 'zizzy') ? ' Zizzy\'s eyes light up. "Oh, we are SO using this on the gate."' : ' It looks like the sort of thing a sorcerer would enjoy.'}`, cls: 'good' }); break; }
+    case 'powder': { done(); startQuest(s, 'powder'); s.flags.powder = true; s.quests.powder = 'done'; out.push({ log: `A keg of dwarven blasting powder.${hasComp(s, 'zizzy') ? ' Zizzy\'s eyes light up. "Oh, we are SO using this on the gate."' : ' It looks like the sort of thing a sorcerer would enjoy.'}`, cls: 'good', voice: true }); break; }
     case 'gate': {
-      if (s.flags.powder && hasComp(s, 'zizzy')) { done(); s.flags.gateBlown = true; out.push({ log: 'Zizzy packs the powder against the Ashforge gate. KA-BOOM! The gate — and its guards — are no longer a problem.', cls: 'good', shake: true }); break; }
+      if (s.flags.powder && hasComp(s, 'zizzy')) { done(); s.flags.gateBlown = true; out.push({ log: 'Zizzy packs the powder against the Ashforge gate. KA-BOOM! The gate — and its guards — are no longer a problem.', cls: 'good', shake: true, voice: true }); break; }
       out.push({ log: 'The Ashforge gate grinds open — and its guardians step out!', cls: 'bad', combat: { groups: [{ key: 'gargoyle', count: 2 }, { key: 'magmin', count: 2 }], fixed: true, poi: id } }); break;
     }
-    case 'horn': { done(); startQuest(s, 'horn'); s.quests.horn = 'done'; give(s, 'warhorn', out, ' Old Tamsin\'s tale was true. You will sound it when the Tyrant rises.'); break; }
+    case 'horn': { done(); startQuest(s, 'horn'); s.quests.horn = 'done'; give(s, 'warhorn', out, ' Old Tamsin\'s tale was true. You will sound it when the Tyrant rises.'); out[out.length - 1].voice = { text: 'Old Tamsin\'s tale was true. You will sound it when the Tyrant rises.', who: 'narrator' }; break; }
     case 'armory': {
-      if (prog(s, 'spoons') >= 5) { done(); s.quests.spoons = 'done'; out.push({ log: 'Pip fits the five clues into a spoon-shaped keyhole. A wall slides away: the SECRET ARMORY of the Spoon-Keepers!', cls: 'crit' }); give(s, 'royalSpoon', out); give(s, 'potionGreater', out); give(s, 'potionGreater', out); give(s, 'ringProtection', out); addJournal(s, 'Opened the Spoon-Keepers\' armory. Pip is now Royal Spoon-Keeper.'); }
+      if (prog(s, 'spoons') >= 5) { done(); s.quests.spoons = 'done'; out.push({ log: 'Pip fits the five clues into a spoon-shaped keyhole. A wall slides away: the SECRET ARMORY of the Spoon-Keepers!', cls: 'crit', voice: true }); give(s, 'royalSpoon', out); give(s, 'potionGreater', out); give(s, 'potionGreater', out); give(s, 'ringProtection', out); addJournal(s, 'Opened the Spoon-Keepers\' armory. Pip is now Royal Spoon-Keeper.'); }
       else out.push({ log: `A spoon-shaped keyhole in the wall. You have ${prog(s, 'spoons')}/5 spoon clues.`, cls: 'dim' });
       break;
     }
@@ -190,7 +190,7 @@ export function choosePoi(s, id, choice, checkFn) {
     if (choice !== 'pull') { out.push({ log: 'You leave the beam alone. Probably wise.', cls: 'dim' }); return out; }
     s.pois[id] = true; out.consumed = true;
     const ok = checkFn ? checkFn('athletics', 12) : true;
-    if (ok) { s.flags.collapsed = true; s.gold += 40; out.push({ log: 'CRACK! The ceiling caves in on the cultist side-passage. Silence — and a pouch of 40 gp rolls out of the dust.', cls: 'good', shake: true }); }
+    if (ok) { s.flags.collapsed = true; s.gold += 40; out.push({ log: 'CRACK! The ceiling caves in on the cultist side-passage. Silence — and a pouch of 40 gp rolls out of the dust.', cls: 'good', shake: true, voice: true }); }
     else { const v = s.party.find((c) => !c.dead && c.hp > 0); if (v) v.hp = Math.max(1, v.hp - 6); out.push({ log: `The beam slips! Rubble clips ${v ? v.name : 'you'} for 6 damage, and the cultists come running.`, cls: 'bad', shake: true, combat: { groups: [{ key: 'cultist', count: 3 }], fixed: true } }); }
   }
   return out;
@@ -202,8 +202,8 @@ export function onCombatWon(s, info, level) {
   initStory(s); const out = [];
   if (info?.poi && POI_GUARDS[info.poi]) { s.flags['guarded_' + info.poi] = true; out.push(...visitPoi(s, info.poi)); return out; } // guards beaten: use the spot
   if (info?.poi) s.pois[info.poi] = true; // fight-POIs are only used up once you win
-  if (info?.poi === 'vey') { out.push({ log: 'Sister Vey sinks beneath the water, her hymn ending in bubbles.', cls: 'good' }); give(s, 'potionGreater', out); }
-  if (info?.poi === 'sporegrave') { out.push({ log: 'Mother Sporegrave collapses into a heap of harmless puffballs.', cls: 'good' }); give(s, 'potionStoneFlesh', out); }
+  if (info?.poi === 'vey') { out.push({ log: 'Sister Vey sinks beneath the water, her hymn ending in bubbles.', cls: 'good', voice: true }); give(s, 'potionGreater', out); }
+  if (info?.poi === 'sporegrave') { out.push({ log: 'Mother Sporegrave collapses into a heap of harmless puffballs.', cls: 'good', voice: true }); give(s, 'potionStoneFlesh', out); }
   if (info?.boss && level === 4 && !info.phase2) { s.flags.boss4p1 = true; return out; } // phase 1 of the finale: the Tyrant comes next
   if (info?.boss && !s.flags['boss' + level]) {
     s.flags['boss' + level] = true;
@@ -211,7 +211,7 @@ export function onCombatWon(s, info, level) {
     if (level === 0) { out.push({ log: 'Skarn tumbles from the Broodmother\'s back. Among his things: Elowen\'s ribbon, and a map marked "B2".', cls: 'lore' }); addJournal(s, 'Defeated Skarn and the Broodmother. Dawnfang recovered.'); }
     if (level === 1) addJournal(s, 'Old Clubtail falls. The Sunshard Aegis gleams like a mirror.');
     if (level === 2) addJournal(s, 'Glasshide the basilisk is stone — its own gaze turned back on it.');
-    if (level === 3) { addJournal(s, 'Forgemaster Brakk is defeated in the ruins of Ashforge.'); if (s.quests.hammer) { s.quests.hammer = 'done'; s.flags.hammer = true; out.push({ log: 'Brambur pries his mother\'s hammer from Brakk\'s grip and weeps into his beard. (Free Bless at every boss fight)', cls: 'good' }); } }
+    if (level === 3) { addJournal(s, 'Forgemaster Brakk is defeated in the ruins of Ashforge.'); if (s.quests.hammer) { s.quests.hammer = 'done'; s.flags.hammer = true; out.push({ log: 'Brambur pries his mother\'s hammer from Brakk\'s grip and weeps into his beard. (Free Bless at every boss fight)', cls: 'good', voice: { text: 'Brambur pries his mother\'s hammer from Brakk\'s grip and weeps into his beard.', who: 'narrator' } }); } }
     if (level === 4) { give(s, 'dawnstoneAmulet', out); s.flags.finaleWon = true; }
   }
   return out;

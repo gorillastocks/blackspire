@@ -1,4 +1,5 @@
 // Core game state & exploration logic (DOM-free, so it can be unit tested and simulated).
+import { packById, DEFAULT_PACK } from '../voices/packs.js';
 import { getLevel, DIRS, W, H, tileOrdinal, LEVEL_DEFS, setDungeonSeeds, randomSeeds } from '../dungeon/levels.js';
 import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor, isProficientWeapon, heavyPenalty, speedOf, skillMod, knownSpells, spellMod, heal } from '../rules/character.js';
 import { ITEMS, WEAPONS, ARMOR, CLASSES, RACES, XP_LEVELS, SPELLS, DROP_POOL, tierOf } from '../rules/data.js';
@@ -21,10 +22,10 @@ export const NLEVELS = LEVEL_DEFS.length;
 export const SAVE_KEY = 'blackspire.save.v1';
 
 const withPC = (s) => { PC.ensure(s); return s; };
-export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base = null, randomDungeons = false, seeds = null, portrait = null } = {}) {
+export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base = null, randomDungeons = false, seeds = null, portrait = null, voicePack = null } = {}) {
   const dseeds = seeds || (randomDungeons ? randomSeeds() : null); setDungeonSeeds(dseeds);
   const hero = createCharacter({ name, race, cls, base: base || assignByPriority(cls) });
-  hero.ai = false; givePortrait(hero, portrait);
+  hero.ai = false; givePortrait(hero, portrait); hero.voicePack = packById(voicePack)?.id || DEFAULT_PACK;
   const comps = COMPANION_KEYS.map((k) => { const C = COMPANIONS[k]; return createCharacter({ name: C.short, race: C.race, cls: C.cls, base: C.base, companion: k, skills: C.skills }); }).map((c) => givePortrait(c));
   // Default marching order: fighter-types in front
   const party = [hero, ...comps];
@@ -70,9 +71,9 @@ export function recruitCompanion(s, key) {
   if (C.lines.recruit) out.push({ banter: { who: C.short, color: C.color, text: pick(C.lines.recruit) } });
   return out;
 }
-export function createRecruit(s, { name, race, cls, base, portrait = null }) {
+export function createRecruit(s, { name, race, cls, base, portrait = null, voicePack = null }) {
   const c = createCharacter({ name: (name || 'Recruit').trim().slice(0, 18) || 'Recruit', race, cls, base: base || assignByPriority(cls) });
-  c.recruit = true; c.ai = true; givePortrait(c, portrait); raiseTo(c, partyLevel(s));
+  c.recruit = true; c.ai = true; c.voicePack = packById(voicePack)?.id || undefined; givePortrait(c, portrait); raiseTo(c, partyLevel(s));
   const ev = [{ log: place(s, c), cls: 'good' }]; ev.char = c; return ev;
 }
 export function dismiss(s, c) {
@@ -265,7 +266,7 @@ export function afterCombat(s, combat, info = {}) {
     for (const c of s.party) if (!c.dead && c.hp <= 0) { c.hp = 1; delete c.conditions.unconscious; c.stable = false; c.deathSaves = { s: 0, f: 0 }; out.push({ log: `${c.name} is patched up and wakes with 1 HP.` }); }
     for (const c of s.party) delete c.conditions.grappled;
     if (chain) {
-      out.push({ log: 'Malthrax falls to his knees, laughing. "You think I came alone? WAKE, GORVAX!" The vault floor splits open...', cls: 'crit', shake: true });
+      out.push({ log: 'Malthrax falls to his knees, laughing. "You think I came alone? WAKE, GORVAX!" The vault floor splits open...', cls: 'crit', shake: true, voice: { text: 'You think I came alone? WAKE, GORVAX!', who: 'malthrax' } });
       out.push({ combat: { groups: def.phase2.map((g) => ({ key: g.key, count: g.count[0] })), boss: true, phase2: true } });
     }
   } else if (combat.state === 'lost') {
@@ -398,7 +399,7 @@ export function innRest(s) {
   const cost = s.flags?.freeInn ? 0 : 10; if (s.gold < cost) return [{ log: 'Not enough gold for a room (10 gp).', cls: 'bad' }];
   s.gold -= cost; for (const c of s.party) longRest(c); Prog.addRested(s, 'inn');
   const lifted = PC.liftCurses(s);
-  return [{ log: cost ? 'You rent rooms at the Boar & Spoon Inn and sleep soundly. (−10 gp)' : 'Marga waves you upstairs. "On the house, love." You sleep soundly.', cls: 'good' }, ...(lifted ? [{ log: '☾ A night of safe sleep lifts the curse upon you.', cls: 'good' }] : []), ...Story.onLongRest(s)];
+  return [{ log: cost ? 'You rent rooms at the Boar & Spoon Inn and sleep soundly. (−10 gp)' : 'Marga waves you upstairs. "On the house, love." You sleep soundly.', cls: 'good', voice: cost ? null : { text: 'On the house, love.', who: 'marga' } }, ...(lifted ? [{ log: '☾ A night of safe sleep lifts the curse upon you.', cls: 'good' }] : []), ...Story.onLongRest(s)];
 }
 /** Combat options derived from story state (lieutenant/boss set-pieces). */
 export function combatOpts(s, info = {}) { return { floor: s.level, ...Story.storyCombat(s, info, s.level), xpAward: (share) => Prog.awardCombatXp(s, Math.round(share * PC.fightXpMult(s)), info) }; }

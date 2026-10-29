@@ -234,6 +234,6 @@ export function banter(party, event, ctx = {}, chance = 0.6) {
   const now = Date.now();
   if (lastSaid[who.id] && now - lastSaid[who.id] < 2500 && event !== 'spoon') return null;
   lastSaid[who.id] = now;
-  const line = pick(C.lines[event]).replace('{m}', ctx.m || 'creature').replace('{p}', ctx.p || 'friend');
+  const line = pick(C.lines[event]).replaceAll('{m}', ctx.m || 'creature').replaceAll('{p}', ctx.p || 'friend');
   return { who: C.short, color: C.color, text: line };
 }

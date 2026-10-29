@@ -12,6 +12,7 @@ import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { normVoiceText } from '../src/voices/norm.js';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const root = join(__dir, '..');
@@ -105,7 +106,7 @@ for (const L of jobs) {
 
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 // slim runtime index (same normalisation as src/voices/voice.js): "speaker|text" and "text" -> file
-const norm = (t) => String(t || '').replace(/^Dungeon Master:\s*/i, '').replace(/^🕯\s*/, '').replace(/[—–]/g, '-').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/…/g, '...').replace(/\s+/g, ' ').trim().toLowerCase();
+const norm = normVoiceText;
 const byText = {}; const byHash = {};
 for (const c of Object.values(manifest.clips)) {
   byText[`${c.speaker.toLowerCase()}|${norm(c.text)}`] = c.file; byText[norm(c.text)] = c.file;

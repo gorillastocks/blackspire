@@ -109,5 +109,115 @@
     "id": "CHPhef6gfFNOkEUe49Yz",
     "name": "Captain Bramble",
     "note": "Nettle Quickstory, bard (Captain Bramble - Seasoned Scoundrel)"
+  },
+  "vp_gruffwarrior": {
+    "id": "SOYHLrjzK2X1ezoPC6cr",
+    "name": "Voice pack: Gruff Warrior",
+    "note": "A scarred veteran of too many fights.",
+    "settings": {
+      "stability": 0.4,
+      "similarity_boost": 0.8,
+      "style": 0.55,
+      "use_speaker_boost": true
+    }
+  },
+  "vp_youngheroine": {
+    "id": "cgSgspJ2msm6clMCkdW9",
+    "name": "Voice pack: Young Heroine",
+    "note": "Bright, brave and a little reckless.",
+    "settings": {
+      "stability": 0.4,
+      "similarity_boost": 0.8,
+      "style": 0.5,
+      "use_speaker_boost": true
+    }
+  },
+  "vp_wiseelder": {
+    "id": "pqHfZKP75CvOlQylNhV4",
+    "name": "Voice pack: Wise Elder",
+    "note": "Calm, slow and very old.",
+    "settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.8,
+      "style": 0.4,
+      "use_speaker_boost": true
+    }
+  },
+  "vp_slyrogue": {
+    "id": "N2lVS1w4EtoT3dr4eOWO",
+    "name": "Voice pack: Sly Rogue",
+    "note": "Smooth, quick and never quite honest.",
+    "settings": {
+      "stability": 0.4,
+      "similarity_boost": 0.8,
+      "style": 0.55,
+      "use_speaker_boost": true
+    }
+  },
+  "vp_nobleknight": {
+    "id": "onwK4e9ZLuTAKqWW03F9",
+    "name": "Voice pack: Noble Knight",
+    "note": "Formal, honourable and unshakeable.",
+    "settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.8,
+      "style": 0.35,
+      "use_speaker_boost": true
+    }
+  },
+  "vp_fierceshieldmaiden": {
+    "id": "XrExE9yKIg1WjnnlVkGX",
+    "name": "Voice pack: Fierce Shieldmaiden",
+    "note": "A northern warrior who loves a fight.",
+    "settings": {
+      "stability": 0.35,
+      "similarity_boost": 0.8,
+      "style": 0.7,
+      "use_speaker_boost": true
+    }
+  },
+  "vp_cheerfulbard": {
+    "id": "FGY2WhTYpPnrIDTdsKH5",
+    "name": "Voice pack: Cheerful Bard",
+    "note": "Quick with a joke and a tune.",
+    "settings": {
+      "stability": 0.35,
+      "similarity_boost": 0.8,
+      "style": 0.65,
+      "use_speaker_boost": true
+    }
+  },
+  "vp_dourdwarf": {
+    "id": "nPczCjzI2devNBz1zQrb",
+    "name": "Voice pack: Dour Dwarf",
+    "note": "Gloomy, gravelly and utterly dependable.",
+    "settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.8,
+      "style": 0.4,
+      "use_speaker_boost": true
+    }
+  },
+  "vp_mysticsorceress": {
+    "id": "ksryVoNAGZT8GxWCTiVm",
+    "name": "Voice pack: Mystic Sorceress",
+    "note": "Ethereal, calm and a little eerie.",
+    "settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.8,
+      "style": 0.45,
+      "use_speaker_boost": true
+    }
+  },
+  "vp_boomingbarbarian": {
+    "id": "pNInz6obpgDQGcFmaJgB",
+    "name": "Voice pack: Booming Barbarian",
+    "note": "Huge, loud and delighted by violence.",
+    "settings": {
+      "stability": 0.3,
+      "similarity_boost": 0.8,
+      "style": 0.75,
+      "use_speaker_boost": true
+    }
   }
 }

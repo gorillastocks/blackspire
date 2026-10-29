@@ -13,7 +13,8 @@ import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic, playVictorySting, victoryStingState, duckBed, ac, unlock as unlockAudio, isMuted } from './audio.js';
-import { playVoiceLine, playAmbientNarration, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt, invalidateAmbientVoices, setAmbientVoiceGate, voiceGeneration } from './voices/voice.js';
+import { voiceBusy, clipSeconds, msSinceVoiceEnd, playVoiceLine, playAmbientNarration, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt, invalidateAmbientVoices, setAmbientVoiceGate, voiceGeneration } from './voices/voice.js';
+import { PACKS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter } from './voices/packs.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 import * as ENT from './entitlements.js';
 // After a redeploy, an old tab's lazy chunks 404: reload once to pick up the new build.
@@ -47,20 +48,56 @@ function setSpeed(k) { const st = loadSettings(); st.battleSpeed = k; st.battleS
 const modal = $('#modal');
 const Story = G.Story;
 
+/* ---------- Voice helpers: the hero's quoted replies, narrated logs ---------- */
+/** The quoted words of a reply button ("I will bring her home.") are spoken by the hero when picked. */
+function heroSpeak(label) {
+  const m = String(label || '').match(/[“"]([^”"]+)[”"]/); if (!m || !S || heroPackVoice()) return;
+  playVoiceLine(m[1], 'serAldric', { kind: 'dialog' });
+}
+/** Hook for a hero voice pack (character creation): when the hero chose a pack the default Ser Aldric voice is not used. */
+function heroPackVoice() { const p = S && packOf(G.heroOf(S)); return p && p.id !== DEFAULT_PACK ? p : null; }
+
+/* ---------- Voice packs: short spoken reactions for player-created characters (combat + camp), rate limited ---------- */
+const barkLimiter = createBarkLimiter(); const lastPackLine = new Map(); const lowHpSaid = new Set();
+/** A reaction of `kind` from this character's voice pack (hero default: Ser Aldric). Rate limited and never interrupts another voice (except downed and level up). */
+function packBark(c, kind) {
+  const pack = c && packOf(c); if (!pack || (c.dead && kind !== 'downed')) return;
+  if (!barkLimiter.allow(performance.now(), c.id || c.name, kind, voiceBusy())) return;
+  const line = packLine(pack, kind, lastPackLine.get(c.id || c.name)); if (!line || !hasVoice(line, pack.cast)) return;
+  lastPackLine.set(c.id || c.name, line);
+  playVoiceLine(line, pack.cast, kind === 'downed' || kind === 'levelUp' || kind === 'select' ? { kind: 'battle' } : { kind: 'battle', ifIdle: true });
+}
+/** A random living pack character of the party reacts (victory, camp). */
+function packBarkAny(kind) { const a = (S?.party || []).filter((c) => !c.companion && !c.dead && !isDown(c)); if (a.length) packBark(a[Math.floor(Math.random() * a.length)], kind); }
+/** The text and speaker to voice for a log event: an explicit `voice`, else the log itself when it is a lore card. */
+function voiceOf(e) {
+  if (e.voice === true) return { text: e.log, who: 'narrator' };
+  if (e.voice) return e.voice;
+  return e.log && (e.cls === 'lore' || e.card) ? { text: e.log, who: 'narrator' } : null;
+}
+/** Say a narrated/spoken line that has no card of its own, after whatever is speaking now. Narration obeys the ambient (no fight/menu/dialogue) gate. */
+function voiceLine(vz) {
+  if (!vz || !hasVoice(vz.text, vz.who)) return;
+  if (vz.who === 'narrator') {
+    const tok = ambientToken();
+    playVoiceLine(vz.text, 'narrator', { kind: 'ambient', ambient: true, queue: true, maxWait: 20000, token: tok, stillValid: (t) => ambientVoiceAllowed() && t?.move === ambientMoveToken && t?.level === S?.level && t?.mode === S?.mode });
+  } else playVoiceLine(vz.text, vz.who, { kind: 'dialog', queue: true, maxWait: 20000 });
+}
+
 /* ---------- Story dialogue (portraits, line-by-line, choices) ---------- */
 function showDialogue(scene, { closable = false } = {}) {
   return new Promise((resolve) => {
     const lines = scene.lines || []; let i = 0;
     const draw = () => {
       const ln = lines[Math.min(i, lines.length - 1)] || { who: 'narrator', text: '' }; const sp = Story.speaker(ln.who); const last = i >= lines.length - 1;
-      playVoiceLine(ln.text, ln.who, { kind: 'dialog' });
+      playVoiceLine(ln.text, ln.who, { kind: 'dialog', queue: true, maxWait: 12000 }); // queue: a hero reply or card that is still speaking is not cut off
       openModal([h('div', { class: 'dialogue' },
         scene.title ? h('h2', {}, scene.title) : null,
         h('div', { class: 'dlgrow' }, speakerPortrait(sp),
           h('div', { class: 'dlgtext' }, sp.name ? h('b', { style: `color:${sp.color}` }, sp.name) : null, h('p', { class: ln.who === 'narrator' ? 'lore' : '' }, ln.text))),
         h('div', { class: 'hint' }, `${Math.min(i + 1, lines.length)} / ${lines.length}`),
         h('div', { class: 'menu' }, last
-          ? (scene.choices?.length ? scene.choices : [{ id: 'ok', label: 'Continue ▶' }]).map((c) => btn(c.label, () => { stopVoice(); closeModal(); resolve(c.id); }, { class: 'primary', 'data-choice': c.id, id: 'dlg-next' }))
+          ? (scene.choices?.length ? scene.choices : [{ id: 'ok', label: 'Continue ▶' }]).map((c) => btn(c.label, () => { stopVoice(); closeModal(); heroSpeak(c.label); resolve(c.id); }, { class: 'primary', 'data-choice': c.id, id: 'dlg-next' }))
           : [btn('Next ▶', () => { stopVoice(); i++; draw(); }, { class: 'primary', id: 'dlg-next' }), btn('Skip ⏭', () => { stopVoice(); i = lines.length - 1; draw(); }, { class: 'small', id: 'dlg-skip' })]))], { closable });
     };
     draw();
@@ -112,11 +149,17 @@ function bondsPanel() {
 }
 /** Camp / tavern talk: Liora's next conversation (hearts rise with your choices, nothing is ever lost), else a campfire remark. */
 async function campTalk(back) {
-  const r = G.campTalk(S); if (r.line) { log(r.line, 'lore'); return; }
+  const r = G.campTalk(S); if (r.line) { log(r.line, 'lore'); speakCamp(r.line); return; }
   const id = await showDialogue(r.scene);
   const res = G.lioraMoment(S, r.moment, id);
   await showDialogue({ title: r.scene.title, lines: res.lines });
   handle(res.out); autosave(); if (back) back();
+}
+/** A campfire remark: `Name: "words"` segments, each read by that companion in turn (an unvoiced fallback is read by the narrator). */
+function speakCamp(line) {
+  const segs = [...String(line).matchAll(/([A-Z][a-z]+): "([^"]*)"/g)].map((m) => ({ who: m[1], text: m[2] }));
+  if (!segs.length) segs.push({ who: 'narrator', text: line });
+  segs.filter((x) => hasVoice(x.text, x.who)).forEach((x, i) => playVoiceLine(x.text, x.who, i ? { kind: 'dialog', queue: true, maxWait: 30000 } : { kind: 'dialog' }));
 }
 function showTownFolk() {
   openModal([h('h2', {}, 'Emberhollow Folk'), h('div', { class: 'menu' }, Story.TOWNFOLK.map((k) => { const sp = Story.speaker(k);
@@ -131,10 +174,18 @@ function log(t, cls = '') {
   const out = !modal.classList.contains('hidden') && modal.querySelector('.dlgout');
   if (out) { out.hidden = false; out.append(h('div', { class: cls }, t)); while (out.children.length > 8) out.firstChild.remove(); out.scrollTop = out.scrollHeight; out.scrollIntoView({ block: "nearest" }); }
 }
-function say(b) {
+function say(b, o = {}) {
   if (!b) return;
-  if (Array.isArray(b)) { b.filter(Boolean).forEach((x, i) => (i ? setTimeout(() => S && say(x), 2600 * i) : say(x))); return; } // a personal thread beat: lines follow one another
-  playVoiceLine(b.text, b.who, { kind: 'battle' }); const el = h('div', { class: `bubble${b.thread ? ' thread' : ''}` }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
+  if (Array.isArray(b)) { // a personal thread beat: lines follow one another, each after the previous clip ends
+    let t = 0;
+    b.filter(Boolean).forEach((x, i) => { if (i) setTimeout(() => S && say(x, { queue: true }), t); else say(x, { queue: true }); t += Math.round((clipSeconds(x.text, x.who) ?? 1.8) * 1000) + 700; });
+    return;
+  }
+  // Barks never cut another voice off and are spaced out (about 5s in a fight, 3s outside); queued ones (after a card or a thread beat) wait their turn.
+  const gap = combat ? 5000 : 3000;
+  if (b.thread || o.queue) playVoiceLine(b.text, b.who, { kind: 'battle', queue: true, maxWait: 14000 });
+  else if (msSinceVoiceEnd() >= gap) playVoiceLine(b.text, b.who, { kind: 'battle', ifIdle: true });
+  const el = h('div', { class: `bubble${b.thread ? ' thread' : ''}` }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
   $('#banter').append(el); log(`${b.who}: "${b.text}"`, b.thread ? 'good' : 'lore'); setTimeout(() => el.remove(), b.thread ? 6500 : 5200);
   while ($('#banter').children.length > 2) $('#banter').firstChild.remove();
   placeBanter();
@@ -166,11 +217,12 @@ function handle(events) {
       } else if (e.quip && !combat && !willCombat) say(e.quip);
     } else if (e.log) {
       log(e.log, e.cls);
+      const vz = voiceOf(e);
       if (!combat && !willCombat && S?.mode === 'dungeon' && (e.card || e.cls === 'lore')) {
-        queueMessage({ text: e.log, cls: e.cls || 'lore', ambient: true, token: ambientToken() });
-      }
+        queueMessage({ text: e.log, cls: e.cls || 'lore', ambient: true, token: ambientToken(), voice: vz });
+      } else if (vz && !combat && (!willCombat || vz.who !== 'narrator') && (S?.mode !== 'dungeon' || !menuOpen())) voiceLine(vz); // narrated outcome or a character's words, spoken after any card
     }
-    if (e.banter) say(e.banter); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
+    if (e.banter) say(e.banter, { queue: !!(e.card || e.voice || e.cls === 'lore') }); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
     if (e.sfx) sfx(e.sfx);
     if (e.toast) toast(e.toast);
     if (e.rare && !combat && !willCombat && S?.mode === 'dungeon') revealRare(e.rare);
@@ -205,6 +257,13 @@ function portrait(c, cls = 'portrait') {
   return h('img', { class: cls + ' pimg', src: portraitURL(c.portrait), alt: `${c.name} portrait`, draggable: 'false' });
 }
 /** Portrait grid. sel = index or null (Random). onPick(index|null). */
+/** The Voice step of character creation: a list of voice packs; tapping one selects it and plays its "select" line as a preview. */
+function voiceGrid(sel, onPick) {
+  const preview = (p) => { unlockAudio(); unlockVoices(); const l = packLine(p, 'select'); if (l) playVoiceLine(l, p.cast, { kind: 'dialog' }); };
+  return h('div', { class: 'voicelist', id: 'voice-list', role: 'listbox', 'aria-label': 'Voice' }, PACKS.map((p) => h('div', { class: `voiceopt${p.id === sel ? ' sel' : ''}`, role: 'option', 'aria-selected': p.id === sel ? 'true' : 'false', 'data-voice': p.id, tabindex: 0,
+    onclick: () => { preview(p); if (p.id !== sel) onPick(p.id); } },
+  h('span', { class: 'vplay', 'aria-hidden': 'true' }, '▶'), h('span', { class: 'vtxt' }, h('b', {}, p.name + (p.id === DEFAULT_PACK ? ' (default)' : '')), h('small', {}, p.blurb)))));
+}
 function portraitGrid(sel, onPick, { random = true } = {}) {
   return h('div', { class: 'pgrid', id: 'pgrid', role: 'listbox', 'aria-label': 'Choose a portrait' },
     random ? h('button', { class: `pick prand ${sel === null ? 'on' : ''}`, id: 'pick-random', title: 'Random portrait', onclick: () => onPick(null) }, '🎲') : null,
@@ -458,7 +517,7 @@ function showCredits() {
 }
 function showCreate(asRecruit = false) {
   const recruit = asRecruit === true;
-  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Aldric', method = 'array', diff = 'normal', randomDun = false, pic = null;
+  let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Aldric', method = 'array', diff = 'normal', randomDun = false, pic = null, voicePack = recruit ? PACKS[1].id : DEFAULT_PACK;
   const draw = () => {
     const p = openModal([], { closable: true });
     const R_ = RACES[race], C = CLASSES[cls];
@@ -467,6 +526,7 @@ function showCreate(asRecruit = false) {
       h('div', { class: 'cols' },
         h('div', {}, h('h3', {}, 'Name'), h('input', { id: 'cname', value: name, maxlength: 18, oninput: (e) => { name = e.target.value; } }),
           h('h3', {}, 'Portrait'), portraitGrid(pic, (i) => { pic = i; draw(); }),
+          h('h3', {}, 'Voice'), voiceGrid(voicePack, (id) => { voicePack = id; draw(); }),
           h('h3', {}, 'Race'), h('select', { id: 'crace', onchange: (e) => { race = e.target.value; draw(); } }, Object.entries(RACES).map(([k, r]) => h('option', { value: k, selected: k === race }, r.name))),
           h('p', { class: 'hint' }, `+${Object.entries(R_.bonus).map(([a, v]) => `${v} ${a.toUpperCase()}`).join(', +')} · Speed ${R_.speed} · ${R_.traits.join(', ')}`),
           h('h3', {}, 'Class'), h('select', { id: 'ccls', onchange: (e) => { cls = e.target.value; base = method === 'array' ? assignByPriority(cls) : assignByPriority(cls, Object.values(base)); draw(); } }, Object.entries(CLASSES).map(([k, c]) => h('option', { value: k, selected: k === cls }, `${c.name} (${c.sub})`))),
@@ -484,8 +544,8 @@ function showCreate(asRecruit = false) {
           recruit ? null : h('p', { class: 'hint' }, 'Off: the classic hand-tuned layouts. On: every floor is freshly generated for this game (saved with it), always with reachable stairs, keys, bosses and quest spots.'),
           recruit ? null : h('h3', {}, 'Your Companions'),
           ...(recruit ? [] : COMPANION_KEYS.map((k) => COMPANIONS[k])).map((c) => h('p', { class: 'hint' }, h('b', { style: `color:${c.color}` }, c.name + ' — '), c.blurb)))),
-      h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, recruit ? btn('Recruit ▶', () => { const ev = G.createRecruit(S, { name, race, cls, base, portrait: pic }); handle(ev); autosave(); spellStep(ev.char, 'create', null, () => { autosave(); showTown(townSub); }); }, { class: 'primary', id: 'btn-recruit-create' }) : btn('Begin Adventure ▶', () => {
-        S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base, randomDungeons: randomDun, portrait: pic }); S.difficulty = diff;
+      h('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, recruit ? btn('Recruit ▶', () => { const ev = G.createRecruit(S, { name, race, cls, base, portrait: pic, voicePack }); handle(ev); autosave(); spellStep(ev.char, 'create', null, () => { autosave(); showTown(townSub); }); }, { class: 'primary', id: 'btn-recruit-create' }) : btn('Begin Adventure ▶', () => {
+        S = G.newGame({ name: (name || 'Hero').trim().slice(0, 18), race, cls, base, randomDungeons: randomDun, portrait: pic, voicePack }); S.difficulty = diff;
         log(`Welcome to Emberhollow, ${name}. Three oddballs have agreed to join you…`, 'sys');
         for (const c of S.party.filter((c) => c.companion)) say({ who: COMPANIONS[c.companion].short, color: COMPANIONS[c.companion].color, text: COMPANIONS[c.companion].lines.combatStart[0] });
         spellStep(G.heroOf(S), 'create', null, () => runPrologue());
@@ -595,8 +655,9 @@ function showEvent(card) {
   openModal([h('div', { class: 'evcard', 'data-event': card.id },
     h('h2', {}, card.title),
     h('div', { class: 'dlgrow' }, speakerPortrait(sp), h('div', { class: 'dlgtext' }, h('b', { style: `color:${card.color}` }, card.who), h('p', { class: 'lore' }, card.text))),
-    h('div', { class: 'menu' }, ...card.choices.map((c) => btn(`${c.label}${c.check ? `  [${c.check}]` : ''}${c.note ? `  (${c.note})` : ''}`, () => resolveEvent(card, c), { class: 'primary', 'data-choice': c.id })),
+    h('div', { class: 'menu' }, ...card.choices.map((c) => btn(`${c.label}${c.check ? `  [${c.check}]` : ''}${c.note ? `  (${c.note})` : ''}`, () => { stopVoice(); heroSpeak(c.label); resolveEvent(card, c); }, { class: 'primary', 'data-choice': c.id })),
       btn('Not now (it will wait)', later, { id: 'ev-later', class: 'small' })))], { closable: false });
+  playVoiceLine(card.text, 'narrator', { kind: 'dialog' });
 }
 function resolveEvent(card, c) {
   const r = G.chooseEvent(S, card.id, c.id); autosave();
@@ -606,6 +667,7 @@ function resolveEvent(card, c) {
     h('p', { class: 'lore evres' }, r.result.text),
     h('div', { class: 'fxlist' }, r.result.fx.map((f) => h('div', { class: `fx ${f.cls}` }, f.t))),
     h('div', { class: 'menu' }, btn('Continue ▶', () => { closeModal(); handle(r.events); rebuild(); }, { class: 'primary', id: 'ev-continue' })))], { closable: false });
+  playVoiceLine(r.result.text, 'narrator', { kind: 'dialog', queue: true, maxWait: 9000 }); // after the hero's spoken reply, if any
 }
 function prompt(kind, e = {}) {
   if (kind === 'poi') {
@@ -613,10 +675,12 @@ function prompt(kind, e = {}) {
       closeModal(); const ev = Story.choosePoi(S, e.poi, c.id, (sk, dc) => G.partyCheck(S, sk, dc));
       if (ev.consumed) G.setTile(S, S.x, S.y, '.'); handle(ev); rebuild();
     })))], { closable: false });
+    playVoiceLine(e.text, 'narrator', { kind: 'dialog' });
     return;
   }
   if (kind === 'paywall') {
     const go = async () => { if (e.then) return e.then(); handle(G.goDown(S)); await startDungeon(); autosave(); };
+    if (e.cliffhanger) playVoiceLine('Torchlight gutters on the stair below. Something vast breathes in the dark, and it says your names. Skarn was only the doorman.', 'narrator', { kind: 'dialog' });
     openModal([h('h2', {}, e.cliffhanger ? 'The Stairs Go Deeper…' : 'The Way Is Sealed'),
       h('p', { class: 'lore' }, e.cliffhanger ? 'Torchlight gutters on the stair below. Something vast breathes in the dark, and it says your names. Skarn was only the doorman.' : 'The deeper levels of the Blackspire are part of the full game.'),
       h('div', { class: 'paywall' }, h('h3', {}, ENT.PRODUCT.title), h('p', {}, ENT.PRODUCT.blurb), h('p', { class: 'price' }, `${ENT.PRODUCT.price} — no real purchase yet`)),
@@ -641,6 +705,8 @@ function prompt(kind, e = {}) {
     if (!S.victory) { log('The amulet is sealed while the Tyrant lives.', 'dim'); return; }
     if (!S.flags.ending) { S.flags.ending = true; autosave(); playMusic('ending'); showDialogue(Story.endingScene(S)).then(() => prompt('altar')); return; }
     sfx('victory');
+    playVoiceLine('The Blackspire is dark. Princess Elowen is home, and Emberhollow is free. Arise, Knight of the Dawn.', 'narrator', { kind: 'dialog' });
+    playVoiceLine('Somewhere far below, a sixth seal stirs. And Malthrax\'s staff was never found…', 'narrator', { kind: 'dialog', queue: true, maxWait: 30000 });
     openModal([h('h1', {}, 'VICTORY!'), h('p', {}, 'The Blackspire is dark. Princess Elowen is home, and Emberhollow is free. Arise, Knight of the Dawn.'),
       h('p', { class: 'lore' }, 'Somewhere far below, a sixth seal stirs. And Malthrax\'s staff was never found…'),
       h('p', { class: 'hint' }, `Steps taken: ${S.steps} · Spoons: ${S.spoons} · Party levels: ${S.party.map((c) => c.level).join('/')}`),
@@ -686,7 +752,7 @@ function campHealSection() {
 // Four short pages instead of one long scroll: Rest (the everyday actions + level-ups + save/load), Heal, Spells, Party.
 let campTab = 'rest';
 function showCamp(tab) {
-  if (typeof tab === 'string') { campTab = tab; healSel = null; }
+  if (typeof tab === 'string') { campTab = tab; healSel = null; } else setTimeout(() => packBarkAny('camp'), 700); // opening camp: someone remarks (rate limited)
   const tabs = [['rest', '⛺ Rest'], ['heal', '✚ Heal', S.party.filter(G.hurt).length || null], ['spells', '📖 Spells'], ['party', '👥 Party']];
   const go = (id) => { healSel = null; showCamp(id); };
   const pages = {
@@ -712,7 +778,7 @@ function showCamp(tab) {
 
 /* ---------- Spell selection (SRD) ---------- */
 function trainWithSpells(c, back) {
-  const prev = SC.snapshot(c), lv = c.level; const ev = G.train(S, c); autosave(); if (c.level > lv) sfx('levelup');
+  const prev = SC.snapshot(c), lv = c.level; const ev = G.train(S, c); autosave(); if (c.level > lv) { sfx('levelup'); packBark(c, 'levelUp'); }
   const picks = c.level > lv && CLASSES[c.cls].caster && !c.ai && SC.hasChoices(c, 'levelup', prev);
   if (picks) { handle(ev); showSpellPicker(c, 'levelup', prev, () => { autosave(); back(); }); } else { back(); handle(ev); }
 }
@@ -1038,7 +1104,8 @@ async function pumpMessages() {
         playVictoryMusic();
       } else if (m.ambient || m.cls === 'lore') {
         const tok = m.token || ambientToken();
-        playAmbientNarration(m.text, {
+        if (currentVoice()?.kind === 'battle') stopVoice(); // a card the player advanced to is not held back by a passing companion remark
+        playAmbientNarration(m.voice?.text || m.text, {
           token: tok,
           stillValid: (token) => ambientVoiceAllowed() && token?.move === ambientMoveToken
             && token?.x === S?.x && token?.y === S?.y && token?.level === S?.level,
@@ -1267,7 +1334,7 @@ async function flushCombat() {
     if (e.type === 'wait') continue;
     if (e.type === 'study') { renderTargets(); sfx(e.ok ? 'chime' : 'miss'); if (e.ok) await wait(200); continue; }
     if (e.type === 'monsterAttack') { pending = null; if (e.tgt?.side === 'party') showFoePortrait(foeTargets(events, events.indexOf(e)), e.who); R.monsterAttack(e.who.id); sfx('swing'); await wait(560 * ANIM_SLOW); }
-    else if (e.type === 'partyAttack') { pending = null; const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait((k === 'bow' || k === 'crossbow' ? 60 : 150) * ANIM_SLOW); }
+    else if (e.type === 'partyAttack') { pending = null; packBark(e.who, 'attack'); const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait((k === 'bow' || k === 'crossbow' ? 60 : 150) * ANIM_SLOW); }
     else if (e.type === 'hit' && e.tgt.side === 'monster') {
       const sp = pending && pending.who === e.att ? pending.spell : null;
       if (sp && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur());
@@ -1277,19 +1344,20 @@ async function flushCombat() {
       if (sp) dmgSfx(e, sp); else sfx(WEAPON_SFX[wk] && wk !== 'bow' && wk !== 'crossbow' ? WEAPON_SFX[wk] : e.dtype === 'bludgeoning' ? 'thud' : e.dtype === 'piercing' ? 'stab' : SPELL_SFX[e.dtype] || 'slash');
       if (e.crit) sfx('crit'); await wait((sp ? 160 : wk ? 200 : 260) * ANIM_SLOW + 90); // impact hold on the hit frame (sound already fired with the hit)
     }
-    else if (e.type === 'miss') { const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else { cardFloat(e.tgt, 'Miss'); foeReact(e.tgt, 'dodge'); } sfx('miss'); await wait(160 * ANIM_SLOW); }
-    else if (e.type === 'partyHurt') { renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); foeReact(e.who, 'hurt', e.amt ?? e.dmg, e.crit); sfx('mhit'); if (e.crit) sfx('crit'); await wait(260 * ANIM_SLOW + 90); }
+    else if (e.type === 'miss') { if (e.att?.side === 'party') packBark(e.att, 'miss'); const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else { cardFloat(e.tgt, 'Miss'); foeReact(e.tgt, 'dodge'); } sfx('miss'); await wait(160 * ANIM_SLOW); }
+    else if (e.type === 'partyHurt') { packBark(e.who, 'hit'); renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); foeReact(e.who, 'hurt', e.amt ?? e.dmg, e.crit); sfx('mhit'); if (e.crit) sfx('crit'); await wait(260 * ANIM_SLOW + 90); }
     else if (e.type === 'kill') { if (e.who.side === 'party') sfx('kill'); else { R.monsterDie(e.who.id); sfx('mdeath'); } say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(300); }
-    else if (e.type === 'crit') { if (e.att.side === 'party') say(banter(S.party, 'crit', { who: e.att }, 0.8)); else say(banter(S.party, 'enemyCrit', { who: e.tgt }, 0.8)); }
+    else if (e.type === 'crit') { if (e.att.side === 'party') packBark(e.att, 'crit'); if (e.att.side === 'party') say(banter(S.party, 'crit', { who: e.att }, 0.8)); else say(banter(S.party, 'enemyCrit', { who: e.tgt }, 0.8)); }
     else if (e.type === 'spell') {
+      if (e.who.side === 'party') packBark(e.who, 'spell');
       const look = SPELL_FX[e.spell]; sfx(look?.kind === 'area' ? (/fire|burn|breath/.test(e.spell) ? 'fire' : /ice/.test(e.spell) ? 'cold' : 'boom') : e.spell === 'magicMissile' ? 'ping' : /fire|flame/i.test(e.spell) ? 'fire' : /frost|ice/i.test(e.spell) ? 'cold' : /lightning|shock/i.test(e.spell) ? 'zap' : /sacred|guiding|bless|smite/i.test(e.spell) ? 'radiant' : 'arcane');
       if (look?.kind === 'area' && e.who.side !== 'monster') { pending = { spell: e.spell, who: e.who }; await R.spellCast(e.spell, null, idx(e.who), fxDur()); }
       else if (look && e.who.side !== 'monster') pending = { spell: e.spell, who: e.who };
       else { pending = null; const col = { sleep: 0x80a0ff, spiritGuardians: 0xffe080, smite: 0xfff0a0, rage: 0xff3020, shield: 0x80c0ff }[e.spell] || 0x60ffb0; R.spellFx(col, null); await wait(300); }
     }
-    else if (e.type === 'heal') { healFx(e.who); cardFloat(e.who, e.amt ? '+' + e.amt : '+', false, 'good'); sfx('heal'); }
-    else if (e.type === 'down') { say(banter(S.party.filter((p) => p !== e.who), 'down', { p: e.who.name }, 0.9)); await wait(200); }
-    else if (e.type === 'lowHp') say(banter(S.party, 'lowHp', { who: e.who }, 0.35));
+    else if (e.type === 'heal') { packBark(e.who, 'heal'); healFx(e.who); cardFloat(e.who, e.amt ? '+' + e.amt : '+', false, 'good'); sfx('heal'); }
+    else if (e.type === 'down') { packBark(e.who, 'downed'); say(banter(S.party.filter((p) => p !== e.who), 'down', { p: e.who.name }, 0.9)); await wait(200); }
+    else if (e.type === 'lowHp') { packBark(e.who, 'lowHp'); say(banter(S.party, 'lowHp', { who: e.who }, 0.35)); }
     renderParty(); renderTargets();
   }
 }
@@ -1304,6 +1372,35 @@ const rankLabel = (m) => { const g = combat.groupOf(m); return g ? `G${g.rank + 
 const reachable = (m) => !pickKind || !combat || combat.canTarget(combat.current(), m, pickKind);
 let aimState = null; // multi-projectile aiming in progress: array of monsters, one per assigned dart/ray/beam
 const aimCount = (m) => (aimState ? aimState.filter((x) => x === m).length : 0);
+/** Name plates sit above each head; where neighbours' plates would pile onto each other, push the back ones up (or aside) so every plate stays readable. */
+/** Keep the name plates from piling on each other: front plates keep their spot, the rest move up or sideways into free space; if it still cannot fit, every plate shrinks to a compact form. */
+function declutterTags() {
+  const host = $('#targets'); const tags = [...host.querySelectorAll('.mtag')]; if (tags.length < 2) return;
+  const hr = host.getBoundingClientRect(); if (!hr.width) return;
+  const hit = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
+  const run = (down) => {
+    const items = tags.map((el) => { el.style.marginTop = el.style.marginLeft = ''; return { el, r: el.getBoundingClientRect() }; }).sort((a, b) => b.r.bottom - a.r.bottom || a.r.left - b.r.left); // front (lowest) first
+    const placed = []; let ok = true;
+    for (const it of items) {
+      const w = it.r.width, hgt = it.r.height; let best = null;
+      const need = Math.max(0, Math.ceil((hr.top + 2 - it.r.top) / (hgt * 0.5))); // plates anchored above the view slide down just enough to get in
+      for (let ky = down ? Math.min(-4, -need) : -need; ky <= 14; ky++) for (const kx of [0, 1, -1, 2, -2, 3, -3]) {
+        const dx = kx * w * 0.55, dy = -ky * (hgt * 0.5);
+        const b = { left: it.r.left + dx, right: it.r.right + dx, top: it.r.top + dy, bottom: it.r.bottom + dy };
+        if (b.left < hr.left || b.right > hr.right || b.top < hr.top + 2) continue;
+        if (placed.some((p) => hit(b, p))) continue;
+        const cost = Math.abs(dx) * 0.8 + Math.abs(dy); if (!best || cost < best.cost) best = { dx, dy, cost, b };
+      }
+      if (!best) { ok = false; best = { dx: 0, dy: 0, b: { left: it.r.left, right: it.r.right, top: it.r.top, bottom: it.r.bottom } }; }
+      if (best.dy) it.el.style.marginTop = `${best.dy}px`; if (best.dx) it.el.style.marginLeft = `${best.dx}px`; placed.push(best.b);
+    }
+    return ok;
+  };
+  for (const t of tags) t.classList.remove('dense');
+  if (run(false)) return;
+  for (const t of tags) t.classList.add('dense');
+  if (!run(false)) run(true);
+}
 function renderTargets() {
   const el = $('#targets'); el.innerHTML = ''; if (!combat || combat.state !== 'running') return;
   for (const m of combat.monsters) {
@@ -1312,6 +1409,7 @@ function renderTargets() {
     el.append(h('div', { class: `mtag ${targetPick && !far ? 'pick' : ''} ${far ? 'far' : ''} ${combat.current() === m ? 'sel' : ''}`, style: `left:${Math.min(86, Math.max(14, p.x))}%;top:${Math.max(8, p.y)}%`, onclick: () => { if (!targetPick) return; if (far) { toast(`${m.name}: out of reach`); return; } targetPick(m); }, info: () => monsterInfo(m) },
       h('div', {}, h('b', { class: 'rk' }, combat.liveRanks().length > 1 ? rankLabel(m) + ' ' : ''), m.name, aimCount(m) ? h('b', { class: 'aimn' }, ` ×${aimCount(m)}`) : ''), h('div', { class: 'bar' }, h('i', { style: `width:${m.hp / m.maxHp * 100}%` })), traitChips(m), condChips(m.conditions)));
   }
+  declutterTags();
 }
 let curMenu = null; // the combat menu being waited on (so the watchdog can redraw it if it ever goes missing)
 function chooseFrom(title, options, kind = '') {
@@ -1518,7 +1616,7 @@ function lootCard(ev, info) {
 async function endCombat() {
   await flushCombat(); await wait(500);
   const st = combat.state; const info = combatInfo;
-  if (st === 'won') say(banter(S.party, 'victory', {}, 0.8));
+  if (st === 'won') { say(banter(S.party, 'victory', {}, 0.8)); setTimeout(() => packBarkAny('victory'), 1200); }
   const ev = G.afterCombat(S, combat, info);
   combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI(); hideCaption();
   if (st === 'won') {
@@ -1539,7 +1637,7 @@ async function endCombat() {
   if (info.boss) await rebuild();
   if (!combat) R.setMode('dungeon'); // a fight that began during the rebuild keeps its arena on screen
   handle(ev);
-  if (S.victory && info.boss) log('Gorvax the Tyrant falls! The Blackspire\'s lights go dark. The altar beyond awaits.', 'crit');
+  if (S.victory && info.boss) { log('Gorvax the Tyrant falls! The Blackspire\'s lights go dark. The altar beyond awaits.', 'crit'); playVoiceLine('Gorvax the Tyrant falls! The Blackspire\'s lights go dark.', 'narrator', { kind: 'dialog', queue: true, maxWait: 15000 }); }
   autosave();
 }
 
