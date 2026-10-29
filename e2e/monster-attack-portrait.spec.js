@@ -62,18 +62,19 @@ test('a monster attack shows the hit hero: hit = red flash, shake, damage; miss 
   expect(okErr(errors)).toEqual([]);
 });
 
-test('monster-attack portrait honors 2x speed and Skip, and leaves when the next hero acts', async ({ page }) => {
+test('monster-attack portrait honors 2x speed and Auto, and leaves when the next hero acts', async ({ page }) => {
   test.setTimeout(240000); const errors = trackErrors(page);
   await newGame(page); await setSpeed(page, 'slow');
   await start(page, [{ key: 'giantRat', count: 1 }]); await expect(page.locator('#cmenu .combatmenu')).toBeVisible({ timeout: 60000 });
   const time = async (k) => { await setSpeed(page, k); await strike(page, { kind: 'hit', targets: [0], dmg: 5 }); await page.evaluate(() => window.__flush); const dt = await page.evaluate(() => window.__dt); await page.evaluate(() => window.__gw.hideFoePortrait(true)); return dt; };
   const slow = await time('slow'), dbl = await time('double');
   expect(dbl).toBeLessThan(slow * 0.6);
-  // Skip: the strike resolves at once, the portrait is still shown with its damage number, no animation left running
+  // Auto: the strike still plays out in full, the portrait is shown with its damage number
   await setSpeed(page, 'slow'); await strike(page, { kind: 'hit', targets: [0], dmg: 5 });
   await expect(page.locator('#foeport.on')).toBeAttached({ timeout: 8000 });
-  await page.locator('#skipbtn').dispatchEvent('pointerdown'); await page.locator('#skipbtn').click().catch(() => {});
-  await page.evaluate(() => window.__flush); const dtSkip = await page.evaluate(() => window.__dt); expect(dtSkip).toBeLessThan(slow * 0.7);
+  // the Auto button never skips animations: toggling it on and off leaves the strike playing at the battle speed
+  await page.locator('#autobtn').dispatchEvent('pointerdown'); await expect(page.locator('#autobtn')).toHaveAttribute('aria-pressed', 'true'); await page.locator('#autobtn').dispatchEvent('pointerdown'); await expect(page.locator('#autobtn')).toHaveAttribute('aria-pressed', 'false');
+  await page.evaluate(() => window.__flush); const dtAuto = await page.evaluate(() => window.__dt); expect(dtAuto).toBeGreaterThan(dbl * 0.8);
   expect(okErr(errors)).toEqual([]);
 });
 

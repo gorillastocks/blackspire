@@ -136,7 +136,7 @@ test('outdoor: shots of the arch entrance and the combat menu on this device', a
 });
 
 /* ---------------- Part 3: the hero's turn portrait persists for the whole turn ---------------- */
-test('turn portrait: shows when the hero\'s turn starts, stays through menu, strike and result, never covers monsters or the menu, survives Skip', async ({ page }, info) => {
+test('turn portrait: shows when the hero\'s turn starts, stays through menu, strike and result, never covers monsters or the menu, survives 2x', async ({ page }, info) => {
   test.setTimeout(400000); const errors = trackErrors(page); const P = info.project.name;
   await newGame(page); await setSpeed(page, 'slow');
   await start(page, [{ key: 'giantRat', count: 2 }, { key: 'wolf', count: 1 }], 'for (const c of S.party) c.ai = true; S.party[0].ai = false;');
@@ -182,13 +182,13 @@ test('turn portrait: shows when the hero\'s turn starts, stays through menu, str
   await setSpeed(page, 'double');
   await page.waitForFunction(() => window.__gw.combat.current() === window.__gw.state.party[0] && window.__gw.combat.needsInput(), null, { timeout: 120000 });
   await expect(tp).toHaveAttribute('data-who', hero); await expect(page.locator('#cmenu .combatmenu')).toBeVisible();
+  await setSpeed(page, 'double');
   await page.evaluate(() => { window.__s2 = []; window.__sam2 = setInterval(() => { const e = document.querySelector('#turnport'); window.__s2.push({ on: e.classList.contains('on') && !e.classList.contains('out'), who: e.dataset.who || '', cur: window.__gw.combat?.current() === window.__gw.state.party[0] }); }, 25); });
   await page.locator('#cmenu .combatmenu button', { hasText: /^1\. Attack|^1\. Shoot|^1\. Cast/ }).first().click();
   if (await pick.waitFor({ timeout: 3000 }).then(() => true).catch(() => false)) await pick.click();
-  await page.locator('#skipbtn').click({ timeout: 5000 }).catch(() => {});
   await expect(endBtn).toBeVisible({ timeout: 120000 }); await page.waitForTimeout(400); await expect(tp).toHaveClass(/\bon\b/); await endBtn.click();
   await expect.poll(() => page.evaluate(() => { const s = window.__s2; return s.length > 5 && !s[s.length - 1].cur; }), { timeout: 120000 }).toBe(true);
   const sk = await page.evaluate((hero) => { clearInterval(window.__sam2); const s = window.__s2.filter((x) => x.cur); return { n: s.length, allOn: s.every((x) => x.on && x.who === hero) }; }, hero);
-  console.log(P, 'skip samples', JSON.stringify(sk)); expect(sk.n).toBeGreaterThan(3); expect(sk.allOn, 'portrait shows for the whole turn with Skip / 2x').toBe(true);
+  console.log(P, 'skip samples', JSON.stringify(sk)); expect(sk.n).toBeGreaterThan(3); expect(sk.allOn, 'portrait shows for the whole turn at 2x').toBe(true);
   expect(okErr(errors)).toEqual([]);
 });

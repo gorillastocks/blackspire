@@ -482,7 +482,7 @@ function showHelp() {
   <tr><th>Search</th><td>F / Space — find secret doors & traps, pick or force locks</td></tr>
   <tr><th>Camp</th><td>C — short/long rest, party talk, reorder, save/load</td></tr>
   <tr><th>Map / Sheet / Items</th><td>M / I / B</td></tr>
-  <tr><th>Combat</th><td>Number keys pick menu entries; click monster tags to target. Each hero acts on their turn with a short cut-in; <b>⏭ Skip</b> cuts every animation and <b>⏩</b> changes battle speed (cut-ins follow it).</td></tr></table>
+  <tr><th>Combat</th><td>Number keys pick menu entries; click monster tags to target. Each hero acts on their turn with a short cut-in; <b>🤖 Auto</b> lets the AI play every hero (you too) until you tap it again, and <b>⏩</b> changes battle speed (cut-ins follow it).</td></tr></table>
   <h3>Rows: front and back</h3>
   <p>Your party order is your formation. The <b>first two heroes are the front row</b> (⚔); everyone else is the <b>back row</b> (🏹). Only the front row can attack in melee. A back-row hero needs a <b>ranged weapon, a spell</b> or a <b>reach weapon</b> (glaive, halberd, pike, whip). Monsters aim at the front row about <b>9 times in 10</b>, but fliers and archers pick anyone. A downed front-row hero is replaced by the next hero in line.</p>
   <p>Change rows in <b>Camp → Formation</b> (or the Tavern): tap a hero, then tap a hero in the other row to swap them. In a fight, <b>Swap rows</b> costs a <b>bonus action</b>.</p>
@@ -878,7 +878,7 @@ $('#minimap').addEventListener('click', (e) => {
   const path = G.Prog.findPath(S, x, y, (a, b) => G.tile(S, a, b)); if (!path) { toast('No known route there'); return; } autoWalk(path);
 });
 $('#minimap').title = 'Tap an explored tile to walk there · tap yourself for the full map';
-$('#skipbtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); if (skipSticky) { skipSticky = false; skipping = false; } else { skipSticky = true; skipNow(); } syncSkipBtn(); });
+$('#autobtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); setAuto(!autoBattle); });
 $('#speedbtn').addEventListener('click', cycleSpeed);
 
 /* ---------- Easy fights: offer to auto-resolve ---------- */
@@ -960,11 +960,14 @@ function showSheet(c) {
 }
 
 /* ---------- Combat ---------- */
-let skipSticky = false; // ⏭ Skip stays on for the rest of the fight until tapped again
-function syncSkipBtn() { const b = document.getElementById('skipbtn'); if (b) { b.classList.toggle('on', skipSticky); b.textContent = skipSticky ? '⏭ Skipping' : '⏭ Skip'; } }
-let skipping = false; // the player tapped ⏭ Skip: animations and captions collapse until the next menu / fight
-const wait = (ms) => new Promise((r) => setTimeout(r, skipping ? 0 : ms * speed().f));
-function skipNow() { skipping = true; tapPending?.(); cutinStop?.(); hideCutin(); document.querySelectorAll('#foeport .fp-tile.hurt, #foeport .fp-tile.dodge').forEach((t) => { t.style.setProperty('--fd', '0ms'); t.dataset.static = '1'; }); }
+/** Auto: every hero (the player's own character too) acts on the AI for the rest of the fight, at the current battle speed. Tapping it again hands control back at the next player turn. */
+function syncAutoBtn() { const b = document.getElementById('autobtn'); if (b) { b.classList.toggle('on', autoBattle); b.setAttribute('aria-pressed', autoBattle ? 'true' : 'false'); b.textContent = autoBattle ? '✅ Auto' : '🤖 Auto'; b.title = autoBattle ? 'Auto is ON: tap to take control again' : 'Auto is OFF: tap to let the AI play every hero'; } }
+function setAuto(on) {
+  on = !!on; if (autoBattle === on) { syncAutoBtn(); return; } autoBattle = on; syncAutoBtn();
+  if (on && modal._options) { const o = modal._options.find((x) => x.id === 'auto'); if (o && modal._resolve) modal._resolve(o); } // a menu is waiting for the player: let the AI take this turn
+}
+let skipping = false; // legacy flag, now always false: nothing is skipped (Auto plays every animation at the current battle speed)
+const wait = (ms) => new Promise((r) => setTimeout(r, ms * speed().f));
 function cycleSpeed() { const ks = Object.keys(BATTLE_SPEEDS); const cur = loadSettings().battleSpeed || 'pause'; setSpeed(ks[(ks.indexOf(cur) + 1) % ks.length]); syncFxSettings(); syncCombatChips(); }
 function syncCombatChips() { const b = $('#speedbtn'); if (b) b.textContent = `⏩ ${speed().short}`; }
 /* ---------- Action captions (large, centered narration of each action) ---------- */
@@ -1178,7 +1181,7 @@ async function startCombat(info) {
   if (combat || combatStarting) return;
   combatStarting = true;
   clearAmbientNarration(); // stop delayed DM/area voice and drop pending lore cards
-  takeSuspendSnap(info); skipping = false; syncCombatChips();
+  takeSuspendSnap(info); skipping = false; autoBattle = false; syncAutoBtn(); syncCombatChips();
   try {
     await messagesDone(); if (combat) { combatStarting = false; return; }
     clearAmbientNarration();
@@ -1206,7 +1209,7 @@ async function startCombat(info) {
 }
 let looping = false, loopFor = null; // loopFor: the Combat the running loop belongs to
 let loopGen = 0;
-function abandonCombat() { hideTurnPortrait(true); hideFoePortrait(true); suspendSnap = null; skipping = false; skipSticky = false; syncSkipBtn(); loopGen++; looping = false; combat = null; autoBattle = false; endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
+function abandonCombat() { hideTurnPortrait(true); hideFoePortrait(true); suspendSnap = null; skipping = false; loopGen++; looping = false; combat = null; autoBattle = false; syncAutoBtn(); endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
 async function combatLoop() {
   // A new fight can begin while the previous fight's loop is still unwinding inside endCombat (town/boss paths await the loot card or a
   // rebuild there): the stale `looping` flag used to make this call a no-op, so the new battle never got a turn and no menu appeared.
@@ -1227,7 +1230,7 @@ async function combatLoop() {
   } finally { if (gen === loopGen) looping = false; }
 }
 /* ---------- Phase D: hero cut-ins (portrait slides in, strike, hit flash). Honors battle speed, Reduce motion and Skip. ---------- */
-let cutinStop = null, cutinBusy = false;
+let cutinStop = null, cutinBusy = false, cutinAbort = false; // cutinAbort: test hook, ends a running cut-in at once
 function hideCutin() { const el = $('#turnport'), fl = $('#cutflash'); if (el) { el.classList.remove('strike', 'flash', 'melee', 'ranged', 'spell', 'heal'); el.style.removeProperty('--acc'); delete el.dataset.kind; const fx = el.querySelector('.tp-fx'); if (fx) fx.innerHTML = ''; } if (fl) fl.className = ''; }
 /* The acting hero's painted portrait stays at the bottom of the arena for the whole turn (menu, strike, result) and slides away when the
    next actor's turn begins. Effects from playCutin play over it. Skip / 2x only shorten the effects; the portrait always shows. */
@@ -1260,8 +1263,8 @@ async function playCutin(e) {
   const el = $('#turnport'); const label = el.querySelector('.tp-act'); if (label) label.textContent = `${CUTIN_GLYPH[e.kind]} ${cutinLabel(e)}`;
   if (skipping) return; // Skip: no effects, the portrait stays
   const T = D.cutinTimes(speed().f, { skipping, reduce: reduceMotion() }); if (!T.total) return;
-  cutinBusy = true;
-  const sleepC = (ms) => new Promise((r) => { if (ms <= 0) return r(); const t = setTimeout(r, ms); cutinStop = () => { clearTimeout(t); r(); }; });
+  cutinBusy = true; cutinAbort = false;
+  const sleepC = (ms) => new Promise((r) => { if (ms <= 0 || cutinAbort) return r(); const t = setTimeout(r, ms); cutinStop = () => { clearTimeout(t); r(); }; });
   const sp = e.spell ? SPELLS[e.spell] : null; const col = sp?.type && DTYPE_CSS(sp.type);
   const fx = { melee: [h('i', { class: 'sl s1' }), h('i', { class: 'sl s2' })], ranged: [h('i', { class: 'trail' }), h('i', { class: 'arrow' })],
     spell: [h('i', { class: 'ring r1' }), h('i', { class: 'ring r2' }), ...[0, 1, 2, 3, 4, 5].map((i) => h('i', { class: 'spk', style: `--i:${i}` }))],
@@ -1271,11 +1274,11 @@ async function playCutin(e) {
   el.dataset.kind = e.kind; el.dataset.who = e.who.name;
   const box = el.querySelector('.tp-fx'); box.replaceChildren(...fx); el.classList.add(e.kind); void el.offsetWidth;
   try {
-    await sleepC(Math.round(T.slide * 0.4)); if (skipping) return;
+    await sleepC(Math.round(T.slide * 0.4)); if (skipping || cutinAbort) return;
     el.classList.add('strike');
-    await sleepC(T.strike + (e.hold || 0)); if (skipping) return; // hold: test hook only, freezes the strike phase for a screenshot
+    await sleepC(T.strike + (e.hold || 0)); if (skipping || cutinAbort) return; // hold: test hook only, freezes the strike phase for a screenshot
     el.classList.add('flash'); const fl = $('#cutflash'); fl.style.cssText = `--acc:${col || ''}`; fl.className = 'on ' + e.kind;
-    await sleepC(T.flash); if (skipping) return;
+    await sleepC(T.flash); if (skipping || cutinAbort) return;
     await sleepC(Math.round(110 * Math.max(0.3, speed().f)));
   } finally { cutinStop = null; cutinBusy = false; hideCutin(); } // effects end; the portrait stays until the next turn
 }
@@ -1429,7 +1432,7 @@ function chooseFrom(title, options, kind = '') {
     modal._resolve = done; modal._options = options;
   });
 }
-function endCombatUI() { hideTurnPortrait(); hideFoePortrait(true); skipping = false; skipSticky = false; syncSkipBtn(); curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
+function endCombatUI() { hideTurnPortrait(); hideFoePortrait(true); skipping = false; autoBattle = false; syncAutoBtn(); curMenu = null; captionDown(true); document.body.classList.remove('incombat'); $('#banter').style.top = ''; $('#banter').classList.remove('offband'); $('#cmenu').innerHTML = ''; modal._options = null; }
 function combatKey(e) {
   const n = parseInt(e.key, 10); if (!modal._options) return;
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
@@ -1523,7 +1526,7 @@ const LESS_COMMON = new Set(['swap', 'study', 'item', 'dodge', 'flee']);
 const SHORT_LABEL = { swap: 'Swap rows (bonus)', study: 'Study a foe (bonus)' };
 const moreHint = (a) => ({ swap: 'Swap rows', study: 'Study', item: 'Items', dodge: 'Dodge', flee: 'Run' })[a.id] || a.label;
 async function playerTurn() {
-  const c = combat.current(); if (!autoBattle && !skipSticky) skipping = false; let page = 'main';
+  const c = combat.current(); let page = 'main';
   while (combat && combat.state === 'running' && combat.current() === c && !combat.turn.done) {
     renderParty();
     const acts = combat.actionsFor(c).map((a) => ({ ...a, primary: a.id === 'attack' || a.id === 'shoot', util: a.id === 'end', ...(SHORT_LABEL[a.id] ? { label: SHORT_LABEL[a.id], info: () => [SHORT_LABEL[a.id], a.label] } : {}) }));
@@ -1535,14 +1538,14 @@ async function playerTurn() {
         { id: 'speed', label: `Battle speed: ${speed().short} ↻`, bonus: true, info: () => ['Battle speed', ...Object.values(BATTLE_SPEEDS).map((v) => v.label)] },
         { id: 'back', label: '← Back', back: true }];
     } else {
-      opts = [...core, { id: 'auto', label: 'Auto-battle', bonus: true, util: true, info: () => ['Auto-battle', 'Every hero acts on AI for the rest of the fight.'] }];
+      opts = [...core, { id: 'auto', label: 'Auto-battle', bonus: true, util: true, info: () => ['Auto-battle', 'Same as the Auto button: every hero, you included, acts on the AI for the rest of the fight. Tap Auto again to take control back.'] }];
       opts.push({ id: 'more', label: 'More… ▸', more: true, util: true, info: () => ['More actions', ...less.map(moreHint), 'Battle speed'] });
       if (end) opts.push(end);
     }
     const o = await chooseFrom(page === 'more' ? `${c.name}: more actions` : title, opts, page === 'more' ? 'more' : 'main');
     if (o.id === 'more') { page = 'more'; continue; }
     if (o.id === 'back') { page = 'main'; continue; }
-    if (o.id === 'auto') { autoBattle = true; closeModal(); return; }
+    if (o.id === 'auto') { autoBattle = true; syncAutoBtn(); closeModal(); return; }
     if (o.id === 'speed') { const ks = Object.keys(BATTLE_SPEEDS); setSpeed(ks[(ks.indexOf(loadSettings().battleSpeed) + 1) % ks.length]); log(`Battle speed: ${speed().label}`, 'sys'); continue; }
     page = 'main';
     let args = {};
@@ -1671,7 +1674,7 @@ async function boot() {
   log('Loading the 3D engine…', 'dim');
   const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
   R = new Renderer($('#view')); R.onResize = () => { if (combat) { replaceOverlays(); renderTargets(); } else if ($('#caption').classList.contains('show')) replaceOverlays(); };
-  window.__gw = { sfx, SFX_NAMES, applyAudioSettings, playCutin, flushCombat, showFoePortrait, foeReact, hideFoePortrait, endCutinPhase() { cutinStop?.(); }, closeModal, renderCombatUI() { renderParty(); renderTargets(); }, showHelp,
+  window.__gw = { sfx, SFX_NAMES, applyAudioSettings, playCutin, flushCombat, showFoePortrait, foeReact, hideFoePortrait, endCutinPhase() { cutinAbort = true; cutinStop?.(); }, closeModal, renderCombatUI() { renderParty(); renderTargets(); }, showHelp,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
     outdoorInfo: () => ({ reg: outReg(), near: S ? outNear() : false, hour: S ? outHour() : null, tod: S ? todName(outHour()) : null, weather: R?.outdoor?.weather || null, state: R?.outState || null, counts: R?.outdoor?.counts || null }), look(p) { if (R) R.pitch = p; }, setHour(h) { if (R?.outdoor) R.outdoor.forceHour = h; refresh(); }, setWeather(k) { R?.outdoor?.setWeather(k); refresh(); },
@@ -1765,7 +1768,7 @@ function openMenu(view = 'main', custom = null) {
       game: () => [
         h('h3', {}, 'Battle speed'),
         h('div', { class: 'seg', role: 'radiogroup' }, Object.entries(BATTLE_SPEEDS).map(([k, v]) => btn(v.label, () => { setSpeed(k); openMenu('settings'); }, { class: (st.battleSpeed || 'pause') === k ? 'on' : '', 'data-speed': k, role: 'radio', 'aria-checked': String((st.battleSpeed || 'pause') === k) }))),
-        h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action. In a fight, ⏩ cycles the speed and ⏭ Skip fast-forwards the animations.'),
+        h('p', { class: 'hint' }, 'Each action is described in large text in the middle of the screen. "Pause" waits for a tap after every action. In a fight, ⏩ cycles the speed and 🤖 Auto lets the AI play every hero until you tap it again.'),
         h('h3', {}, 'Easy fights'),
         h('div', { class: 'seg', role: 'radiogroup' }, [['ask', 'Ask me'], ['auto', 'Auto-resolve'], ['off', 'Always fight']].map(([k, l]) => btn(l, () => { st.trivialFights = k; saveSettings(st); openMenu('settings'); }, { class: (st.trivialFights || 'ask') === k ? 'on' : '', 'data-trivial': k, role: 'radio' }))),
         h('p', { class: 'hint' }, 'When the party is far stronger than the foes, you can resolve the fight instantly (it still pays XP and loot).'),

@@ -609,7 +609,7 @@ button.bigtab { width: 100%; min-height: 52px; margin-bottom: 4px; }
   .partyrow button.aitog, .partyrow button.dismiss { flex: 0 0 auto; }
   .formation .fhero small { flex-basis: auto; }
 }
-#skipbtn.on{background:#c9a227;color:#111;}
+#autobtn.on{background:#c9a227;color:#111;border-color:#ffe08a;box-shadow:0 0 10px #ffd34daa;}
 
 /* Multi-projectile aiming (Magic Missile / Scorching Ray / Eldritch Blast) */
 .mtag .aimn { color: var(--gold); font-size: 13px; }

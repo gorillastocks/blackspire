@@ -30,14 +30,14 @@ test('cut-ins: four variants, readable, finish on their own, and 2x is faster th
   const time = async (k) => { await setSpeed(page, k); return page.evaluate(async () => { const g = window.__gw; const t0 = performance.now(); await g.playCutin({ kind: 'melee', who: g.state.party[0], id: 'attack', weapon: 'longsword' }); return performance.now() - t0; }); };
   const slow = await time('slow'), normal = await time('normal'), dbl = await time('double');
   expect(slow).toBeGreaterThan(normal); expect(dbl).toBeLessThan(normal * 0.7); expect(dbl).toBeLessThan(slow * 0.45);
-  // Skip cancels a running cut-in at once
+  // ending the cut-in phase cancels a running cut-in at once
   await setSpeed(page, 'slow');
-  const skipped = await page.evaluate(async () => { const g = window.__gw; const t0 = performance.now(); const p = g.playCutin({ kind: 'spell', who: g.state.party[0], id: 'cast', spell: 'fireBolt' }); await new Promise((r) => setTimeout(r, 120)); document.querySelector('#skipbtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); await p; return performance.now() - t0; });
+  const skipped = await page.evaluate(async () => { const g = window.__gw; const t0 = performance.now(); const p = g.playCutin({ kind: 'spell', who: g.state.party[0], id: 'cast', spell: 'fireBolt' }); await new Promise((r) => setTimeout(r, 120)); g.endCutinPhase(); await p; return performance.now() - t0; });
   expect(skipped).toBeLessThan(500); await expect(page.locator('#turnport.strike')).toHaveCount(0); await expect(page.locator('#turnport.on')).toHaveCount(1);
   expect(okErr(errors)).toEqual([]);
 });
 
-test('a real attack plays the cut-in before the hit, and Skip leaves none behind', async ({ page }) => {
+test('a real attack plays the cut-in before the hit, and Auto can take over afterwards', async ({ page }) => {
   test.setTimeout(240000); const errors = trackErrors(page);
   await newGame(page); await setSpeed(page, 'normal');
   await start(page, [{ key: 'giantRat', count: 1 }], 'for (const c of S.party) c.ai = true; S.party[0].ai = false;');
@@ -47,7 +47,7 @@ test('a real attack plays the cut-in before the hit, and Skip leaves none behind
   await page.locator('#cmenu .combatmenu button', { hasText: /^1\. Attack|^1\. Shoot|^1\. Cast/ }).first().click();
   await expect.poll(() => page.evaluate(() => window.__seen.length), { timeout: 20000 }).toBeGreaterThan(0);
   const who = await page.evaluate(() => window.__gw.state.party[0].name); expect((await page.evaluate(() => window.__seen)).some((s) => s.endsWith(':' + who))).toBe(true);
-  await page.locator('#skipbtn').click(); await page.waitForTimeout(400); await expect(page.locator('#turnport.strike')).toHaveCount(0);
+  await page.locator('#autobtn').click(); await expect(page.locator('#autobtn')).toHaveAttribute('aria-pressed', 'true'); await page.waitForTimeout(400); await page.locator('#autobtn').click({ timeout: 5000 }).catch(() => {}); // Auto takes over for the rest of the fight; the portrait keeps working
   expect(okErr(errors)).toEqual([]);
 });
 

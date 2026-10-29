@@ -67,14 +67,14 @@ test('easy fight: offer to auto-resolve; 2x speed chip and Skip are in the fight
   expect(await page.evaluate(() => window.__gw.combat)).toBeNull();
   await page.waitForTimeout(1300); for (let i = 0; i < 6 && await card.isVisible(); i++) { await page.locator('#tapcatch').click({ force: true }).catch(() => {}); await page.waitForTimeout(500); }
   await page.evaluate(() => { for (const c of window.__gw.state.party) c.hp = c.maxHp; });
-  // decline: the real fight begins with the speed chip and Skip button on screen
+  // decline: the real fight begins with the speed chip and Auto button on screen
   await page.evaluate(() => { window.__gw.startCombat({ groups: [{ key: 'giantRat', count: 2 }], random: true }); });
   await page.click('#btn-fightit');
-  await expect(page.locator('#skipbtn')).toBeVisible({ timeout: 60000 }); await expect(page.locator('#speedbtn')).toBeVisible();
+  await expect(page.locator('#autobtn')).toBeVisible({ timeout: 60000 }); await expect(page.locator('#speedbtn')).toBeVisible();
   const before = await page.locator('#speedbtn').textContent(); await page.click('#speedbtn'); expect(await page.locator('#speedbtn').textContent()).not.toBe(before);
   await shot(page, { path: `/workspace/shots/phaseA-fight-chips-${info.project.name}.png` });
   for (let i = 0; i < 6 && !(await page.locator('#speedbtn').textContent()).includes('2×'); i++) await page.click('#speedbtn'); await expect(page.locator('#speedbtn')).toContainText('2×');
-  await page.evaluate(() => document.querySelector('#skipbtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))); // Skip (the fight may already be over: level-5 AI is quick)
+  await page.evaluate(() => document.querySelector('#autobtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))); // Auto (the fight may already be over: level-5 AI is quick)
   await expect.poll(() => page.evaluate(() => !window.__gw.combat || !!document.querySelector('#cmenu .combatmenu')), { timeout: 60000 }).toBe(true);
   expect(errors.filter((e) => !/favicon|WebGL|GPU/.test(e))).toEqual([]);
 });
