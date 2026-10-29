@@ -1344,7 +1344,6 @@ async function pickAims(c, key, n) {
   try {
     for (;;) {
       const left = n - aimState.length;
-      const sum = live.filter((m) => aimCount(m)).map((m) => `${m.name}${aimCount(m) > 1 ? ' ×' + aimCount(m) : ''}`).join(', ');
       const opts = [
         { id: 'cast', label: `Cast ▶ (${aimState.length}/${n})`, disabled: left > 0, primary: true, aim: true },
         { id: 'back', label: '← Back', back: true, aim: true },
@@ -1355,7 +1354,7 @@ async function pickAims(c, key, n) {
       ];
       let resolveTap; const tap = new Promise((r) => (resolveTap = r));
       targetPick = (m) => resolveTap({ id: 'mon', m }); renderTargets();
-      const o = await Promise.race([chooseFrom(`${c.name}: ${title} — ${aimState.length}/${n} ${nouns} aimed${sum ? ': ' + sum : ''}. Tap foes to aim; the same foe can take several.`, opts, 'aim'), tap]);
+      const o = await Promise.race([chooseFrom(`${c.name}: ${title} — ${aimState.length}/${n} ${nouns} aimed. Tap foes to aim; the same foe can take several.`, opts, 'aim'), tap]);
       if (o.id === 'back') return null;
       if (o.id === 'cast') return aimState.slice();
       if (o.id === 'undo') aimState.pop();
