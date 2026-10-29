@@ -50,38 +50,37 @@ export const COMPANIONS = {
     },
     camp: [
       "Fizzwick: \"Fizzwick once lectured to a hall of three hundred. Two hundred ninety were asleep. Fizzwick counts that as a Sleep spell.\"",
-      "Fizzwick: \"Pip, Fizzwick will trade you one spoon for a signed portrait of Fizzwick. No? Your loss.\"",
+      "Fizzwick: \"Pip, Fizzwick has noticed you never sleep. Fizzwick finds this suspicious, and quietly admirable.\"",
       "Fizzwick: \"The Dawnstone Amulet is said to know everything. Fizzwick merely wishes to confirm it knows about Fizzwick.\"",
       "Fizzwick: \"Brambur, stop apologizing to the campfire. It is a chemical reaction.\" Brambur: \"Sorry.\" Fizzwick: \"...\"",
       "Fizzwick: \"Fizzwick's spellbook is bound in genuine dragon leather. Fine — lizard. A very confident lizard.\"",
     ],
   },
   pip: {
-    name: 'Pip "Silverspoon" Tealeaf', short: 'Pip', race: 'lightfootHalfling', cls: 'rogue', color: '#ffd34d',
+    name: 'Pip Tealeaf', short: 'Pip', race: 'lightfootHalfling', cls: 'rogue', color: '#ffd34d',
     base: { str: 8, dex: 15, con: 14, int: 12, wis: 13, cha: 10 }, skills: ['stealth', 'perception', 'sleightOfHand', 'investigation', 'acrobatics'],
-    blurb: 'A lightfoot halfling thief obsessed with collecting spoons. Rates every dungeon by its cutlery.',
+    blurb: 'A sarcastic lightfoot halfling thief of the Lantern Row Crew, hunting the partner who sold the whole crew to the cult. Dry as dust and twice as sharp.',
     lines: {
-      combatStart: ["Does it have spoons? Ask it if it has spoons.", "Right, stabbing time. Then spoon time.", "If anyone sees a spoon during this, call it out."],
-      kill: ["Dibs on its spoons. It didn't have spoons? Tragic.", "{m} down! Checking pockets for cutlery…"],
-      crit: ["Straight in the soup-hole!", "Like a spoon through custard."],
-      enemyCrit: ["Oi! I bruise like a ripe pear!", "Not the hands! These hands hold spoons!"],
-      lowHp: ["If I die, bury me with my spoons. ALL of them.", "Feeling a bit… ladle-headed."],
-      down: ["{p}! You can't die, you owe me a teaspoon!", "Get up {p}, I'll let you hold a spoon!"],
-      loot: ["Ooh, shiny. Not a spoon, but shiny.", "Gold? Fine. Spoons would've been better."],
-      spoon: ["A SPOON! A beautiful, perfect spoon! Nobody touch it!", "This is the best day of my life. Again!", "Look at the curve on this one. Exquisite."],
-      stairs: ["Deeper means older spoons. Let's GO.", "Stairs! I bet the boss has a silverware drawer."],
-      rest: ["I'll polish the collection. Again.", "Goodnight, spoons. Goodnight, everyone else, I suppose."],
-      trap: ["Who puts a trap HERE? Amateurs.", "Ow. That's coming out of someone's cutlery budget."],
-      victory: ["Excellent! Now, the important part — looting.", "Another win for Team Spoon!"],
-      levelUp: ["Faster fingers, more spoons. Simple maths."],
-      secret: ["A secret door! Secret doors always lead to secret spoons."],
+      combatStart: ["Another fight. Finally, someone who says what they mean.", "Stay behind me. Not because I'm brave. Because I'm cheaper to replace.", "Right. Stab first, feelings never."],
+      kill: ["One down. A few thousand grudges to go.", "Don't look so surprised. I've had practice."],
+      crit: ["Right between the ribs. I'd say sorry, but I'd be lying.", "Lovely. I'd call it personal, but it never is."],
+      enemyCrit: ["Ow. Noted. Adding it to the list.", "Oi! That was my good side. I have one."],
+      lowHp: ["I'm fine. It's a flesh wound and a moral failing.", "Not dying today. I have an appointment."],
+      down: ["Get up. You don't get to die before I get my revenge. Wait, that's my line.", "Hey. Hey! Stay with us. I've buried enough friends."],
+      loot: ["Money. The only friend who never sold me out.", "Shiny. Mine. Ours. Fine, ours, but I'm holding it."],
+      stairs: ["Down we go. Every step is closer to a conversation I've rehearsed for three years.", "Stairs. Of course. Nothing good ever lives upstairs."],
+      rest: ["I'll take first watch. I don't sleep much anyway.", "Wake me if anything dies. Or if anything's about to."],
+      trap: ["Oh, wonderful. Someone's been busy.", "Ow. Whoever built this, I'd love to shake their hand. Slowly. Around the neck."],
+      victory: ["Told you. I'm a delight in a crisis.", "That's that. Anyone have a list of who's next?"],
+      levelUp: ["Sharper, faster, angrier. A balanced diet."],
+      secret: ["A hidden door. I love hidden doors. They never pretend to be anything else."],
     },
     camp: [
-      "Pip: \"I've got eighty-three spoons. Eighty-four if you count the spork, which I don't, because I have standards.\"",
-      "Pip: \"A runcible spoon is a fork with a spoon's soul. There's one down here. I can FEEL it.\"",
-      "Pip: \"Brambur keeps apologizing to the monsters. I keep apologizing to their spoons. We're not so different.\"",
-      "Pip: \"Fizzwick talks about himself in third person. Pip thinks that's weird. …Oh no. It's contagious.\"",
-      "Pip: \"My nan said 'never trust a man with no spoons.' Then she stole mine. Complicated woman.\"",
+      "Pip: \"Lantern Row Crew. Eleven of us. Best pockets in Emberhollow. We never robbed anybody who couldn't afford it. Mostly.\"",
+      "Pip: \"Do you know the worst part of being betrayed? It isn't the betrayal. It's that I admired his handwriting.\"",
+      "Pip: \"Brambur keeps apologising to the monsters. I keep not apologising to anyone. We balance out.\"",
+      "Pip: \"Fizzwick talks about himself in the third person. I talk about everyone else in the past tense. We're both coping.\"",
+      "Pip: \"My sister used to say revenge is a dish best served warm, because cold food gives you indigestion. She was seven. She was right.\"",
     ],
   },
   grumsh: {
@@ -106,7 +105,7 @@ export const COMPANIONS = {
     },
     camp: [
       'Grumsh: "My mother wanted me to be a bard. My father wanted me to be a warlord. I became a sad man with a big axe. Everyone is disappointed."',
-      'Grumsh: "Pip, if I die, you may have my spoon. It is the only thing I own that has never let me down."',
+      'Grumsh: "Pip does not speak of what was lost. I know that silence. I have written four hundred lines about the same one."',
       'Grumsh: "I wrote a poem about the rats. It is four hundred lines. Shall I begin?" (Everyone: "No.")',
       'Grumsh: "Zizzy says every problem looks better on fire. I have tried this with my problems. They are now on fire AND problems."',
     ],
@@ -171,7 +170,7 @@ export const COMPANIONS = {
     blurb: 'A half-elf bard and shameless teller of tall tales who has "definitely" fought a dragon, married a queen and invented the door.',
     lines: {
       recruit: ['Have I ever told you about the time I joined a party and saved the world? Well, here we go again.', "Nettle's in! Fun fact: I once robbed a lich. Twice. Same lich."],
-      combatStart: ['This reminds me of the Battle of Nine Badgers. I was all nine badgers.', 'Easy. I once fought a hundred of these with a spoon.', 'Watch closely, this is the move I invented. Everyone uses it now.'],
+      combatStart: ['This reminds me of the Battle of Nine Badgers. I was all nine badgers.', 'Easy. I once fought a hundred of these with a teapot.', 'Watch closely, this is the move I invented. Everyone uses it now.'],
       kill: ['That {m}? Distant cousin of one I beat in an arm-wrestle. True story.', 'Down goes the {m}! That is two thousand and four, by my count.'],
       crit: ['Learned that one from a dragon. It owed me money.', 'See? I TOLD you I was famous for that.'],
       enemyCrit: ['Ow! That has never happened to me before. Ever. Not once.', 'Lucky shot! I once dodged a falling castle!'],
@@ -187,7 +186,7 @@ export const COMPANIONS = {
     },
     camp: [
       'Nettle: "Did I ever tell you I invented the door? Before me it was all just walls. Very awkward times."',
-      'Nettle: "I was married to a queen for a week. It ended over a disagreement about spoons. Pip would have understood."',
+      'Nettle: "I was married to a queen for a week. It ended over a disagreement about a throne. Hers. It was a very good throne."',
       'Nettle: "Grumsh, I once met a bard sadder than you." Grumsh: "Impossible." Nettle: "…You are right. I made that up."',
       'Nettle: "Vexrath asked me for proof of my dragon fight. I gave him a scale. It was off a fish. He filed it anyway."',
     ],
@@ -232,7 +231,7 @@ export function banter(party, event, ctx = {}, chance = 0.6) {
   const who = ctx.who && ctx.who.companion && COMPANIONS[ctx.who.companion].lines[event] && !ctx.who.dead ? ctx.who : pick(speakers);
   const C = COMPANIONS[who.companion];
   const now = Date.now();
-  if (lastSaid[who.id] && now - lastSaid[who.id] < 2500 && event !== 'spoon') return null;
+  if (lastSaid[who.id] && now - lastSaid[who.id] < 2500) return null;
   lastSaid[who.id] = now;
   const line = pick(C.lines[event]).replaceAll('{m}', ctx.m || 'creature').replaceAll('{p}', ctx.p || 'friend');
   return { who: C.short, color: C.color, text: line };

@@ -15,8 +15,8 @@ export const LEVEL_DEFS = [
     table: [[{ key: 'giantRat', count: [2, 3] }], [{ key: 'giantPoisonousSnake', count: [1, 1] }], [{ key: 'giantFrog', count: [1, 2] }], [{ key: 'wolf', count: [2, 2] }], [{ key: 'giantRat', count: [1, 1] }, { key: 'giantWolfSpider', count: [1, 1] }], [{ key: 'giantWolfSpider', count: [1, 1] }], [{ key: 'cultist', count: [2, 3] }]],
     fixed: [[{ key: 'wolf', count: [2, 2] }], [{ key: 'giantFrog', count: [2, 2] }, { key: 'giantRat', count: [2, 2] }]],
     boss: [{ key: 'giantSpider', count: [1, 1] }, { key: 'skarn', count: [1, 1] }], bossName: 'Skarn and the Broodmother',
-    messages: ['Scratched into the wall: "SKARN RIDES THE SPIDER QUEEN. THE RUSTY KEY OPENS HER DEN."', 'A faded mural shows a lizard as big as a cathedral. Someone has drawn a mustache on it.', 'A note: "Pip was here. Took spoon. Not sorry."'],
-    loot: { gold: [10, 60], items: ['potionHealing', 'potionHealing', 'antitoxin', 'spoon', 'shortsword1', 'studded1'] },
+    messages: ['Scratched into the wall: "SKARN RIDES THE SPIDER QUEEN. THE RUSTY KEY OPENS HER DEN."', 'A faded mural shows a lizard as big as a cathedral. Someone has drawn a mustache on it.', 'A note: "Lantern Row was here. Do not follow. Not sorry."'],
+    loot: { gold: [10, 60], items: ['potionHealing', 'potionHealing', 'antitoxin', 'tinCup', 'shortsword1', 'studded1'] },
   },
   {
     name: 'B2: The Drowned Grotto', seed: 4242, music: 'dungeon1', color: 0xff3df0, fog: 0x0c0414, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '2d10', trapKind: 'darts', key: 'key2', rooms: 3, loops: 8, secrets: 2, fountain: true,
@@ -24,7 +24,7 @@ export const LEVEL_DEFS = [
     fixed: [[{ key: 'direWolf', count: [1, 1] }, { key: 'wolf', count: [1, 1] }], [{ key: 'giantToad', count: [2, 2] }], [{ key: 'flyingSword', count: [3, 3] }]],
     boss: [{ key: 'ankylosaurus', count: [1, 1] }, { key: 'giantWasp', count: [3, 3] }], bossName: 'Old Clubtail',
     messages: ['Dripping water spells nothing in particular. Brambur apologizes to it anyway.', 'An inscription: "BEYOND THE CORAL DOOR SLEEPS OLD CLUBTAIL. BRING SNACKS."', 'A cracked mirror. Professor Fizzwick spends some time admiring it.'],
-    loot: { gold: [40, 160], items: ['potionHealing', 'potionGreater', 'goldSpoon', 'longsword1', 'mace1', 'quarterstaff1', 'chainMail1', 'rapier1'] },
+    loot: { gold: [40, 160], items: ['potionHealing', 'potionGreater', 'gildedGoblet', 'longsword1', 'mace1', 'quarterstaff1', 'chainMail1', 'rapier1'] },
   },
   {
     name: 'B3: The Glimmerdeep', seed: 3131, color: 0x40ffd0, fog: 0x021410, trapDC: 14, secretDC: 14, lockDC: 15, trapDmg: '3d8', trapKind: 'pit', key: 'key3', rooms: 3, loops: 9, secrets: 2, fountain: true, music: 'dungeon2', outdoor: true,
@@ -32,7 +32,7 @@ export const LEVEL_DEFS = [
     fixed: [[{ key: 'gelatinousCube', count: [1, 1] }, { key: 'ochreJelly', count: [1, 1] }], [{ key: 'violetFungus', count: [3, 3] }, { key: 'shrieker', count: [2, 2] }], [{ key: 'darkmantle', count: [4, 4] }]],
     boss: [{ key: 'glasshide', count: [1, 1] }, { key: 'gargoyle', count: [2, 2] }, { key: 'darkmantle', count: [2, 2] }], bossName: 'Glasshide the Basilisk',
     messages: ['The crystals here show your reflection a half-second late. Fizzwick waves at his. It waves back early.', 'Scratched in a crystal: "DO NOT LOOK THE LIZARD IN THE EYE. USE A MIRROR. — a statue, probably"', 'A circle of mushrooms. Grumsh steps in it and refuses to say what he saw.'],
-    loot: { gold: [80, 220], items: ['potionGreater', 'potionStoneFlesh', 'goldSpoon', 'greatsword1', 'chainMail1', 'longbow1', 'rapier1', 'cloakProtection'] },
+    loot: { gold: [80, 220], items: ['potionGreater', 'potionStoneFlesh', 'gildedGoblet', 'greatsword1', 'chainMail1', 'longbow1', 'rapier1', 'cloakProtection'] },
   },
   {
     name: 'B4: The Ashforge', seed: 5150, color: 0xff5020, fog: 0x160400, trapDC: 15, secretDC: 15, lockDC: 16, trapDmg: '3d10', trapKind: 'darts', key: 'key4', rooms: 3, loops: 10, secrets: 2, fountain: true, music: 'dungeon3',
@@ -49,7 +49,7 @@ export const LEVEL_DEFS = [
     boss: [{ key: 'malthrax', count: [1, 1] }, { key: 'gargoyle', count: [2, 2] }, { key: 'animatedArmor', count: [2, 2] }], bossName: 'Malthrax, the Dread Sovereign of Blackspire',
     phase2: [{ key: 'tyrannosaurus', count: [1, 1] }],
     messages: ['Carved in gold: "HE WHO TAKES THE DAWNSTONE AMULET SHALL HOLD THE FIVE SEALS."', 'Enormous footprints. Fizzwick measures one. "Fizzwick estimates: large."', 'A shrine to a forgotten god of cutlery. Pip weeps openly.'],
-    loot: { gold: [150, 400], items: ['potionGreater', 'potionGreater', 'runcibleSpoon', 'greatsword1', 'plate1', 'ringProtection', 'cloakProtection', 'longbow1'] },
+    loot: { gold: [150, 400], items: ['potionGreater', 'potionGreater', 'jewelledChalice', 'greatsword1', 'plate1', 'ringProtection', 'cloakProtection', 'longbow1'] },
   },
 ];
 // Deeper floors: the party is level 5–9 by now, so every wandering group brings one more monster.

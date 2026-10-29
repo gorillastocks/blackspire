@@ -6,6 +6,7 @@ import * as N from '../src/game/narration.js';
 import * as Story from '../src/game/story.js';
 import * as PC from '../src/game/phaseC.js';
 import * as G from '../src/game/game.js';
+import { TT_SCENES } from '../src/game/tabletop_text.js';
 import { getLevel } from '../src/dungeon/levels.js';
 import { LORE } from '../src/dungeon/extras.js';
 import { MONSTERS } from '../src/rules/data.js';
@@ -76,7 +77,7 @@ export function catalog() {
   const ends = [];
   for (const full of [true, false]) {
     const s = mockState(); s.inventory = full ? ['warhorn'] : []; s.notes = full ? Array(10).fill(1) : [];
-    s.flags = full ? { hammer: true, counterspell: true, gateBlown: true, weakPoint: true } : {}; s.quests = full ? { spoons: 'done', ballad: 'done', decree: 'done' } : {};
+    s.flags = full ? { hammer: true, counterspell: true, gateBlown: true, weakPoint: true } : {}; s.quests = full ? { debt: 'done', ballad: 'done', decree: 'done' } : {};
     for (const aff of [0, 5, 9]) { PC.ensure(s).aff.liora = aff; ends.push(...Story.endingScene(s).lines); }
   }
   ends.forEach((l) => add('Story scenes', l.who, l.text, 'ending', 80));
@@ -96,18 +97,14 @@ export function catalog() {
   add('Boss and finale lines', 'narrator', 'The Blackspire is dark. Princess Elowen is home, and Emberhollow is free. Arise, Knight of the Dawn.', 'victory.screen', 84);
   add('Boss and finale lines', 'narrator', "Somewhere far below, a sixth seal stirs. And Malthrax's staff was never found…", 'victory.screen', 84);
   add('Boss and finale lines', 'narrator', 'Torchlight gutters on the stair below. Something vast breathes in the dark, and it says your names. Skarn was only the doorman.', 'paywall.cliffhanger', 83);
-  add('Boss and finale lines', 'pip', 'You SOLD a SPOON? I need a moment.', 'shop.sellspoon', 90);
   add('Boss and finale lines', 'narrator', 'The camp is quiet. Too quiet.', 'camp.empty', 60);
-  add('Boss and finale lines', 'pip', 'The prophecy is REAL!', 'pip.clue', 95); // (also reached through the companion list; here for the POI banter)
-  const pipB = ['The prophecy is REAL!', 'Two! Two clues!', 'Three is a pattern. Patterns are destiny.', 'Four... I may cry.', 'FIVE. To the armory!'];
-  pipB.forEach((t) => add('Party companions: banter', 'pip', t, 'pip.clue', 95));
   add('Party companions: banter', 'vexrath', "My clan's honour... restored. I will carry this to the throne myself.", 'poi.decree', 95);
   add('Party companions: banter', 'zizzy', 'Oh, we are SO using this on the gate.', 'poi.powder', 95);
 
   // ---- POI narration (run the real code) ----
   const poiIds = [...new Set(Object.values(Story.LEVEL_POIS).flat())];
   for (const id of poiIds) for (const variant of ['all', 'bare', 'ready']) {
-    const s = mockState(variant === 'bare' ? ['brambur'] : CK); s.level = 0; if (variant === 'ready') { s.flags.powder = true; s.flags.n_spoons = 5; }
+    const s = mockState(variant === 'bare' ? ['brambur'] : CK); s.level = 0; if (variant === 'ready') { s.flags.powder = true; s.flags.n_debt = 5; }
     let ev = []; try { ev = Story.visitPoi(s, id) || []; } catch { continue; }
     if (id === 'collapse') { ev.forEach((e) => e.prompt && add('POI and quest narration', 'narrator', e.text, 'poi.collapse.prompt', 70)); try { const s2 = mockState(); (Story.choosePoi(s2, 'collapse', 'pull', () => true) || []).forEach((e) => e.voice && add('POI and quest narration', 'narrator', e.voice === true ? e.log : e.voice.text, 'poi.collapse', 70)); } catch { /* */ } }
     for (const e of ev) { const v = e.voice === true ? { text: e.log, who: 'narrator' } : e.voice || (e.cls === 'lore' && e.log ? { text: e.log, who: 'narrator' } : null); if (v) add(v.who === 'elowen' ? 'Elowen notes' : 'POI and quest narration', v.who, v.text, `poi.${id}`, v.who === 'elowen' ? 75 : 70); if (e.banter) add('Party companions: banter', SHORT[Object.keys(SHORT).find((c) => SHORT[c] === e.banter.who)].toLowerCase(), e.banter.text, `poi.${id}.banter`, 95); }
@@ -119,7 +116,8 @@ export function catalog() {
   }
   for (const n of [1, 2, 3, 4, 5]) { const s = mockState(); s.moon = n - 1; s.rests = n * 3 - 1; for (const e of Story.onLongRest(s)) { const v = e.voice; if (v) add('POI and quest narration', v.who, v.text, 'moonrise', 72); } }
   Story.NOTES.forEach((t) => add('Elowen notes', 'elowen', t, 'notes', 75));
-  [...Story.TABLETS, ...Story.PIPCLUES, ...Story.TALES].forEach((t) => add('Lore tablets, clues and tales', 'narrator', t, 'lore', 66));
+  [...Story.TABLETS, ...Story.TALES].forEach((t) => add('Lore tablets, clues and tales', 'narrator', t, 'lore', 66));
+  for (const [id, sc] of Object.entries(TT_SCENES)) for (const l of sc.lines || []) add('Tabletop quests', l[0], l[1], `tt.${id}`, l[0] === 'narrator' ? 94 : 96);
   Story.VERSES.forEach((t, i) => add('Lore tablets, clues and tales', 'narrator', `A drunken carving on the wall inspires Grumsh. ${t}`, 'verse', 66));
 
   // ---- wall writings, lore nooks, area narration ----

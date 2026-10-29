@@ -73,7 +73,13 @@
   "pip": {
     "id": "P7fAh4p4xVfEzGgihOit",
     "name": "Sam",
-    "note": "Halfling (Sam - British Female)"
+    "note": "Halfling (Sam - British Female)",
+    "settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.8,
+      "style": 0.3,
+      "use_speaker_boost": true
+    }
   },
   "fizzwick": {
     "id": "ouL9IsyrSnUkCmfnD02u",
@@ -219,5 +225,33 @@
       "style": 0.75,
       "use_speaker_boost": true
     }
+  },
+  "garrick": {
+    "id": "50lF5fQMqcxbDQOW6qOs",
+    "name": "Sarcastic Nigel"
+  },
+  "odalys": {
+    "id": "m0MqfGOWTAfVVEaz4KxX",
+    "name": "Alexandra"
+  },
+  "harl": {
+    "id": "rZbZnXAJrO5SpeFzEHvF",
+    "name": "Seafarer Wisdom"
+  },
+  "anselma": {
+    "id": "7NsaqHdLuKNFvEfjpUno",
+    "name": "Seer Morganna"
+  },
+  "ysolde": {
+    "id": "rWArYo7a2NWuBYf5BE4V",
+    "name": "Annabel"
+  },
+  "tuck": {
+    "id": "0lp4RIz96WD1RUtvEu3Q",
+    "name": "Grandfather Joe"
+  },
+  "crane": {
+    "id": "dUdaTcCeBJKScrY9EdRg",
+    "name": "Jeff"
   }
 }

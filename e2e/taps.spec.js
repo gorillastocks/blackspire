@@ -124,7 +124,7 @@ for (const speed of ['normal', 'fast', 'pause']) {
     await page.evaluate(() => { for (const c of window.__gw.state.party) { c.maxHp = 999; c.hp = 999; } window.__gw.startCombat({ groups: [{ key: 'giantRat', count: 2 }] }); });
     await expect.poll(() => page.evaluate(() => !!window.__gw.combat)).toBe(true);
     // a big haul (long card): loot picked up during the fight shows on the card
-    await page.evaluate(() => { const s = window.__gw.state; s.inventory.push('potionHealing', 'potionHealing', 'potionGreater', 'antitoxin', 'spoon'); s.party[1].xp += 5000; });
+    await page.evaluate(() => { const s = window.__gw.state; s.inventory.push('potionHealing', 'potionHealing', 'potionGreater', 'antitoxin', 'tinCup'); s.party[1].xp += 5000; });
     const touch = !info.project.name.startsWith('desktop');
     for (let i = 0; i < 600 && await page.evaluate(() => !!window.__gw.combat); i++) {
       if (await page.locator('.combatmenu').isVisible()) { await page.locator('.combatmenu button', { hasText: 'Auto-battle' }).first().click().catch(() => {}); }

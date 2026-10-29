@@ -5,6 +5,7 @@
 // Used by the vitest quest suite and, in the browser, by the Playwright playthrough (window.__gw.playthrough).
 import * as G from '../game/game.js';
 import * as Story from '../game/story.js';
+import * as TT from '../game/tabletop.js';
 import { Combat } from '../rules/combat.js';
 import { getLevel, LEVEL_DEFS, DIRS, W, H } from '../dungeon/levels.js';
 import { ITEMS } from '../rules/data.js';
@@ -21,7 +22,7 @@ export function playthrough({ seed = 1, difficulty = 'normal', heroCls = 'fighte
   Story.finishPrologue(s, 'vow');
   for (const k of COMPANION_KEYS) G.recruitCompanion(s, k); // the extra companions wait on the roster (their quests still count)
   for (const k of G.availableCompanions(s)) G.recruitCompanion(s, k);
-  const talkAll = () => { for (const k of Story.TOWNFOLK) G.Story.talkTo(s, k); };
+  const talkAll = () => { for (const k of Story.TOWNFOLK) { const r = G.Story.talkTo(s, k); if (r.tt) { const t = TT.autoRun(s, r.tt); if (t.aborted) R.problems.push(`tabletop scene ${r.tt} did not finish`); } } };
   const equipBest = () => {
     for (let i = s.inventory.length - 1; i >= 0; i--) {
       const k = s.inventory[i]; if (!(ITEMS[k]?.set || k === 'weapon2')) continue;
@@ -50,6 +51,7 @@ export function playthrough({ seed = 1, difficulty = 'normal', heroCls = 'fighte
       if (lost) return;
       if (e.combat) fight(e.combat);
       else if (e.prompt === 'poi') { const r = Story.choosePoi(s, e.poi, 'pull', (sk, dc) => G.partyCheck(s, sk, dc)); if (r.consumed) G.setTile(s, s.x, s.y, '.'); handle(r); }
+      else if (e.prompt === 'tt') { const t = TT.autoRun(s, e.scene); if (t.aborted) R.problems.push(`tabletop scene ${e.scene} did not finish`); if (Story.finishTT(s, e.poi, { consumed: t.consumed })) G.setTile(s, s.x, s.y, '.'); }
       else if (e.prompt === 'chest') handle(G.openChest(s, true));
     }
   }
@@ -89,7 +91,7 @@ export function playthrough({ seed = 1, difficulty = 'normal', heroCls = 'fighte
       if (fl.losses > maxLossesPerLevel) { R.problems.push(`B${L + 1}: party could not clear the floor (${fl.losses} wipes)`); break; }
       lost = false; G.enterDungeon(s, L);
       let r = 'ok';
-      // 1) every point of interest (repeat: some, like the spoon armory, only open after others)
+      // 1) every point of interest (repeat: some, like the Seneschal's door and the Sergeant's roll, only open after others)
       for (let pass = 0; pass < 3 && r === 'ok'; pass++) {
         const qs = find('Q').sort((a, b) => Math.abs(a[0] - s.x) + Math.abs(a[1] - s.y) - (Math.abs(b[0] - s.x) + Math.abs(b[1] - s.y)));
         for (const q of qs) {
@@ -117,7 +119,7 @@ export function playthrough({ seed = 1, difficulty = 'normal', heroCls = 'fighte
   R.victory = !!s.victory;
   if (s.victory) { const end = Story.endingScene(s); R.ending = end.lines.length; s.flags.ended = true; }
   R.quests = Object.fromEntries(Object.entries(Story.QUESTS).map(([q]) => [q, s.quests[q] || 'not started']));
-  R.notes = s.notes.length; R.seals = Story.sealsBroken(s); R.elowen = !!s.flags.elowenRescued; R.spoons = s.spoons;
+  R.notes = s.notes.length; R.seals = Story.sealsBroken(s); R.elowen = !!s.flags.elowenRescued;
   R.finalLevels = s.party.map((c) => c.level).join('/');
   setRng(null);
   Object.defineProperty(R, 'state', { value: s, enumerable: false });

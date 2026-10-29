@@ -3,6 +3,7 @@
 import { ITEMS } from '../rules/data.js';
 import { COMPANIONS } from './companions.js';
 import { memoryLines, liftCurses, lioraEnding } from './phaseC.js';
+import * as TT from './tabletop.js';
 
 /* ---------- Cast (portraits are emoji on a coloured disc) ---------- */
 export const NPCS = {
@@ -15,9 +16,16 @@ export const NPCS = {
   wren: { name: 'Wren the herbalist', icon: '🌿', color: '#8fe388' },
   dobbin: { name: 'Dobbin Varr, smith', icon: '⚒', color: '#ff8a4a' },
   tamsin: { name: 'Old Tamsin', icon: '🧓', color: '#d0c0ff' },
+  garrick: { name: 'Garrick Vane, Seneschal of Keys', icon: '🗝', color: '#c9a0ff' },
+  odalys: { name: 'Odalys Fenn, pawnbroker', icon: '🪙', color: '#e8c98a' },
+  harl: { name: 'Harl Tollow, fisherman', icon: '🎣', color: '#7fd0e8' },
+  anselma: { name: 'Anselma Tollow', icon: '🔔', color: '#9fe0e0' },
+  ysolde: { name: 'Ysolde Verrin, glasswright', icon: '🔮', color: '#9fffd0' },
+  tuck: { name: 'Tuck Harrow, gravedigger', icon: '⚰', color: '#b8a888' },
+  crane: { name: 'Sergeant Aldous Crane', icon: '🛡', color: '#b8d8ff' },
   hero: { name: 'You', icon: '⚔', color: '#ffa24a' },
 };
-const C = (k) => ({ name: COMPANIONS[k].short, icon: { brambur: '🔨', fizzwick: '⚙', pip: '🥄', grumsh: '🪓', zizzy: '🔥', vexrath: '🐉', nettle: '🎻', liora: '🌅' }[k], color: COMPANIONS[k].color, img: COMPANIONS[k].portrait });
+const C = (k) => ({ name: COMPANIONS[k].short, icon: { brambur: '🔨', fizzwick: '⚙', pip: '🏮', grumsh: '🪓', zizzy: '🔥', vexrath: '🐉', nettle: '🎻', liora: '🌅' }[k], color: COMPANIONS[k].color, img: COMPANIONS[k].portrait });
 export function speaker(who) { return NPCS[who] || (COMPANIONS[who] ? C(who) : NPCS.narrator); }
 const L = (who, text) => ({ who, text });
 
@@ -33,14 +41,14 @@ export const QUESTS = {
   // companion quests
   hammer: { title: "Mum's Hammer", giver: 'brambur', floor: 'B1, B4', desc: 'Brambur\'s mother\'s hammer was stolen. Its trail starts in the Rat-Warrens and ends with Forgemaster Brakk.', reward: 'Brambur blesses the party at every boss fight' },
   pages: { title: 'The Scattered Spellbook', giver: 'fizzwick', floor: 'B2, B3', need: 2, desc: 'Fizzwick\'s spellbook pages were stolen by cultists. Two are missing.', reward: 'Fizzwick counterspells Malthrax once' },
-  spoons: { title: 'The Spoon Prophecy', giver: 'pip', floor: 'Every floor', need: 5, desc: 'A spoon clue is hidden on every floor. Together they reveal the secret armory of the Spoon-Keepers.', reward: 'Secret armory on B5; Pip becomes Royal Spoon-Keeper' },
   ballad: { title: 'The Ballad of Blackspire', giver: 'grumsh', floor: 'Every floor', need: 5, desc: 'Grumsh is writing a ballad. One verse waits on every floor.', reward: 'Feast buff: 10 temporary HP after every inn rest' },
   powder: { title: 'Big Boom', giver: 'zizzy', floor: 'B4', desc: 'Find Zizzy some blasting powder in the Ashforge.', reward: 'Blow open the Ashforge gate and skip its guards' },
   decree: { title: 'The Royal Decree', giver: 'vexrath', floor: 'B3', desc: 'Vexrath swears a royal decree exiling his clan was forged. Find the original.', reward: 'Vexrath\'s honour restored' },
   tale: { title: 'A Tall Tale', giver: 'nettle', floor: 'B2–B5', need: 4, desc: 'Nettle collects the legend of the Sovereign\'s staff, one fragment per floor.', reward: 'Reveals the weak point of Malthrax\'s staff' },
   notes: { title: "Elowen's Trail", giver: 'elowen', floor: 'Every floor', need: 10, desc: 'Elowen is leaving notes for you as she is dragged deeper — 2 per floor.', reward: 'A last word from Elowen and +1 initiative in the finale' },
 };
-const COMPANION_QUEST = { hammer: 'brambur', pages: 'fizzwick', spoons: 'pip', ballad: 'grumsh', powder: 'zizzy', decree: 'vexrath', tale: 'nettle' };
+const COMPANION_QUEST = { hammer: 'brambur', pages: 'fizzwick', debt: 'pip', ballad: 'grumsh', powder: 'zizzy', decree: 'vexrath', tale: 'nettle' };
+for (const [q, d] of Object.entries(TT.TT_QUESTS)) QUESTS[q] = { title: d.title, giver: d.giver, floor: d.floor, need: d.need, desc: d.desc, reward: d.reward };
 
 /* ---------- Elowen's notes ---------- */
 export const NOTES = [
@@ -60,10 +68,10 @@ export const NOTES = [
 // Each entry is an id; the behaviour lives in visitPoi below.
 export const LEVEL_POIS = [
   ['note1', 'guard1', 'tablet1', 'pip1', 'guard2', 'tunnel', 'verse1', 'hammerClue', 'guard3', 'collapse', 'note2', 'guard4'],
-  ['note3', 'page1', 'pip2', 'satchel', 'verse2', 'tale1', 'tablet2', 'vey', 'note4'],
-  ['note5', 'pylon1', 'glowcap1', 'page2', 'pip3', 'decree', 'pylon2', 'verse3', 'glowcap2', 'crystalSpoon', 'tale2', 'sporegrave', 'pylon3', 'glowcap3', 'tablet3', 'note6'],
-  ['note7', 'smith1', 'powder', 'pip4', 'gate', 'verse4', 'smith2', 'ladle', 'tale3', 'tablet4', 'smith3', 'note8'],
-  ['note9', 'horn', 'pip5', 'verse5', 'tale4', 'armory', 'tablet5', 'note10'],
+  ['note3', 'page1', 'pip2', 'satchel', 'verse2', 'tale1', 'tablet2', 'vey', 'note4', 'choir1', 'choir2'],
+  ['note5', 'pylon1', 'glowcap1', 'page2', 'pip3', 'decree', 'pylon2', 'verse3', 'glowcap2', 'glass1', 'tale2', 'sporegrave', 'pylon3', 'glowcap3', 'tablet3', 'note6', 'glass2'],
+  ['note7', 'smith1', 'powder', 'pip4', 'gate', 'verse4', 'smith2', 'crane1', 'tale3', 'tablet4', 'smith3', 'note8'],
+  ['note9', 'horn', 'pip5', 'verse5', 'tale4', 'garrick', 'tablet5', 'note10', 'crane2', 'crane3'],
 ];
 export const TABLETS = [
   'Lore tablet: "Emberhollow was founded on a sealed tower. The founders buried it, built an inn on top, and agreed never to mention it again."',
@@ -78,13 +86,6 @@ export const VERSES = [
   'Verse 3: "Through Glimmerdeep\'s glow where the toadstools scream, / Grumsh screamed louder (it was quite the scene)!"',
   'Verse 4: "In Ashforge\'s heat where the anvils ring, / Grumsh rang louder, being Grumsh, the king!"',
   'Verse 5: "In the Blackspire vault where the Tyrant lay — / [Grumsh: \'Last line comes after we win.\']"',
-];
-export const PIPCLUES = [
-  'Spoon clue 1: a spoon scratched into the wall, pointing down. "THE KEEPERS SLEEP BENEATH." Pip trembles with joy.',
-  'Spoon clue 2: a tarnished teaspoon tied to a stalactite with a ribbon marked "II". Pip pockets it reverently.',
-  'Spoon clue 3: crystal etchings of five spoons in a circle. One is a ladle. "That\'s cheating," says Pip.',
-  'Spoon clue 4: an anvil stamped with a spoon. Under it, a riddle: "Where the Tyrant sleeps, the silver keeps."',
-  'Spoon clue 5: the final clue — a spoon-shaped keyhole in the vault wall. Pip hums the Spoon-Keepers\' anthem.',
 ];
 export const TALES = [
   'Tall tale 1: "The staff was carved from a lightning-struck spire," Nettle writes. "Everyone agrees. Nobody saw it."',
@@ -112,7 +113,7 @@ function progress(s, q, out, line) {
   else if (line) out.push({ log: `${QUESTS[q].title}: ${Math.min(n, need)}/${need}.`, cls: 'sys' });
   return n;
 }
-function give(s, key, out, note = '') { s.inventory.push(key); if (ITEMS[key]?.spoon) s.spoons = (s.spoons || 0) + 1; out.push({ log: `Received ${ITEMS[key].name}!${note}`, cls: 'good' }); }
+function give(s, key, out, note = '') { s.inventory.push(key); out.push({ log: `Received ${ITEMS[key].name}!${note}`, cls: 'good' }); }
 
 /* ---------- Ritual clock: 5 seals, one breaks per moonrise (every third long rest) ---------- */
 export const RESTS_PER_MOON = 3;
@@ -144,14 +145,14 @@ function poiXp(s, kind, out) { const n = POI_XP[kind]; if (!n) return; for (cons
 export function visitPoi(s, id) {
   initStory(s); const out = []; if (!id || s.pois[id]) return out;
   if (POI_GUARDS[id] && !s.flags['guarded_' + id]) { out.push({ log: POI_GUARDS[id].log, cls: 'bad', combat: { groups: POI_GUARDS[id].groups, fixed: true, poi: id, guard: true } }); return out; }
+  if (TT.isTTPoi(id)) { const sc = TT.entryFor(s, id); if (sc) out.push({ prompt: 'tt', scene: sc, poi: id }); return out; }
   const done = () => { s.pois[id] = true; out.consumed = true; };
-  const m = /^(note|guard|pip|verse|tale|tablet|page|glowcap|smith|pylon)(\d+)$/.exec(id); const kind = m ? m[1] : id; const n = m ? +m[2] : 0;
+  const m = /^(note|guard|verse|tale|tablet|page|glowcap|smith|pylon)(\d+)$/.exec(id); const kind = m ? m[1] : id; const n = m ? +m[2] : 0;
   switch (kind) {
     case 'note': { done(); s.notes.push(n); const t = NOTES[n - 1]; out.push({ log: `📜 You find a folded note in Elowen's hand. ${t}`, cls: 'lore', sfx: 'chest', voice: { text: t, who: 'elowen' } }); addJournal(s, t); progress(s, 'notes', out, true);
       if (s.notes.length >= 10) out.push({ log: 'You have every one of Elowen\'s notes. You know her plan — and she knows you are coming. (+1 initiative in the finale)', cls: 'good', voice: { text: 'You have every one of Elowen\'s notes. You know her plan, and she knows you are coming.', who: 'narrator' } }); break; }
     case 'guard': { done(); startQuest(s, 'guards'); out.push({ log: `You cut a bound town guard free. "Captain Rowan sent you? Bless you!" (${prog(s, 'guards') + 1}/4)`, cls: 'good', voice: { text: 'You cut a bound town guard free. "Captain Rowan sent you? Bless you!"', who: 'narrator' } }); progress(s, 'guards', out); break; }
     case 'tablet': { done(); out.push({ log: TABLETS[n - 1], cls: 'lore' }); addJournal(s, TABLETS[n - 1]); s.flags.tablets = (s.flags.tablets || 0) + 1; break; }
-    case 'pip': { done(); startQuest(s, 'spoons'); out.push({ log: PIPCLUES[n - 1], cls: 'lore', banter: inParty(s, 'pip') ? { who: 'Pip', color: COMPANIONS.pip.color, text: ['The prophecy is REAL!', 'Two! Two clues!', 'Three is a pattern. Patterns are destiny.', 'Four... I may cry.', 'FIVE. To the armory!'][n - 1] } : null }); addJournal(s, PIPCLUES[n - 1]); progress(s, 'spoons', out, true); break; }
     case 'verse': { done(); startQuest(s, 'ballad'); out.push({ log: `A drunken carving on the wall inspires Grumsh. ${VERSES[n - 1]}`, cls: 'lore' }); addJournal(s, VERSES[n - 1]); progress(s, 'ballad', out, true); if (ready(s, 'ballad')) { s.quests.ballad = 'done'; out.push({ log: 'Grumsh\'s ballad is complete! Inn rests now come with a feast (10 temp HP).', cls: 'good' }); } break; }
     case 'tale': { done(); startQuest(s, 'tale'); out.push({ log: TALES[n - 1], cls: 'lore' }); addJournal(s, TALES[n - 1]); progress(s, 'tale', out, true); if (ready(s, 'tale')) { s.quests.tale = 'done'; s.flags.weakPoint = true; out.push({ log: 'Nettle knows the weak point of the Sovereign\'s staff: one clean strike will shatter it.', cls: 'good' }); } break; }
     case 'page': { done(); startQuest(s, 'pages'); out.push({ log: `A torn spellbook page, covered in Fizzwick's tiny handwriting ("NOTE TO SELF: COUNTERSPELL. ALWAYS COUNTERSPELL.").`, cls: 'lore' }); progress(s, 'pages', out, true); if (ready(s, 'pages')) { s.quests.pages = 'done'; s.flags.counterspell = true; out.push({ log: 'Fizzwick\'s spellbook is whole. He can counterspell Malthrax once in the finale.', cls: 'good' }); } break; }
@@ -163,19 +164,12 @@ export function visitPoi(s, id) {
     case 'collapse': { out.push({ prompt: 'poi', poi: id, title: 'A Rotten Support Beam', text: 'The ceiling here sags over a side-passage where you hear cultists chanting. One good pull would bring it down on them — or on you.', choices: [{ id: 'pull', label: '💪 Pull the beam (Athletics DC 12)' }, { id: 'leave', label: 'Leave it' }] }); break; }
     case 'satchel': { done(); startQuest(s, 'satchel'); s.quests.satchel = 'ready'; out.push({ log: 'Half-sunk in the grotto: a satchel stitched with the royal sun. Elowen\'s temple relics, still dry inside. Brother Osric will want this.', cls: 'good', voice: true }); break; }
     case 'decree': { done(); startQuest(s, 'decree'); s.quests.decree = 'done'; s.gold += 150; out.push({ log: 'A crystal-sealed royal decree — the ORIGINAL. It does not exile Vexrath\'s clan; it knights them. (+150 gp from the seal\'s gold leaf)', cls: 'good', voice: { text: 'A crystal-sealed royal decree. The ORIGINAL. It does not exile Vexrath\'s clan; it knights them.', who: 'narrator' }, banter: inParty(s, 'vexrath') ? { who: 'Vexrath', color: COMPANIONS.vexrath.color, text: 'My clan\'s honour... restored. I will carry this to the throne myself.' } : null }); addJournal(s, 'Found the true royal decree: Vexrath\'s clan was never exiled.'); break; }
-    case 'crystalSpoon': done(); give(s, 'crystalSpoon', out, ' Pip insists it is "the important one".'); break;
-    case 'ladle': done(); give(s, 'ironLadle', out, ' Technically a spoon. Pip has checked.'); break;
     case 'powder': { done(); startQuest(s, 'powder'); s.flags.powder = true; s.quests.powder = 'done'; out.push({ log: `A keg of dwarven blasting powder.${hasComp(s, 'zizzy') ? ' Zizzy\'s eyes light up. "Oh, we are SO using this on the gate."' : ' It looks like the sort of thing a sorcerer would enjoy.'}`, cls: 'good', voice: true }); break; }
     case 'gate': {
       if (s.flags.powder && hasComp(s, 'zizzy')) { done(); s.flags.gateBlown = true; out.push({ log: 'Zizzy packs the powder against the Ashforge gate. KA-BOOM! The gate — and its guards — are no longer a problem.', cls: 'good', shake: true, voice: true }); break; }
       out.push({ log: 'The Ashforge gate grinds open — and its guardians step out!', cls: 'bad', combat: { groups: [{ key: 'gargoyle', count: 2 }, { key: 'magmin', count: 2 }], fixed: true, poi: id } }); break;
     }
     case 'horn': { done(); startQuest(s, 'horn'); s.quests.horn = 'done'; give(s, 'warhorn', out, ' Old Tamsin\'s tale was true. You will sound it when the Tyrant rises.'); out[out.length - 1].voice = { text: 'Old Tamsin\'s tale was true. You will sound it when the Tyrant rises.', who: 'narrator' }; break; }
-    case 'armory': {
-      if (prog(s, 'spoons') >= 5) { done(); s.quests.spoons = 'done'; out.push({ log: 'Pip fits the five clues into a spoon-shaped keyhole. A wall slides away: the SECRET ARMORY of the Spoon-Keepers!', cls: 'crit', voice: true }); give(s, 'royalSpoon', out); give(s, 'potionGreater', out); give(s, 'potionGreater', out); give(s, 'ringProtection', out); addJournal(s, 'Opened the Spoon-Keepers\' armory. Pip is now Royal Spoon-Keeper.'); }
-      else out.push({ log: `A spoon-shaped keyhole in the wall. You have ${prog(s, 'spoons')}/5 spoon clues.`, cls: 'dim' });
-      break;
-    }
     case 'vey': out.push({ log: 'Sister Vey rises from the black water, singing. "The princess passed this way. You will not."', cls: 'bad', combat: { groups: [{ key: 'sisterVey', count: 1 }, { key: 'cultist', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
     case 'sporegrave': out.push({ log: 'The cavern floor heaves. Mother Sporegrave unfurls, shriekers wailing around her!', cls: 'bad', combat: { groups: [{ key: 'motherSporegrave', count: 1 }, { key: 'shrieker', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
     default: break;
@@ -183,6 +177,9 @@ export function visitPoi(s, id) {
   if (out.consumed) poiXp(s, kind, out);
   return out;
 }
+/** A tabletop session at a POI ended: use the spot up when the scene said so. Returns true if the tile should be cleared. */
+export function finishTT(s, poi, sess) { if (poi && sess?.consumed) { s.pois[poi] = true; return true; } return false; }
+export { TT };
 /** Resolve a choice prompt from a POI. */
 export function choosePoi(s, id, choice, checkFn) {
   const out = []; if (s.pois[id]) return out;
@@ -223,6 +220,7 @@ export function storyCombat(s, info, level) {
   if (info?.boss || info?.lieutenant) {
     if (s.flags.hammer && hasComp(s, 'brambur')) o.bless = 'Brambur raises his mother\'s hammer: "Bless us, Mum!"';
   }
+  if ((info?.boss || info?.lieutenant) && s.flags.craneAid && !o.bless) o.bless = 'Sergeant Crane\'s ghost raises a pale sword: "Hold the line!"';
   if (level === 0 && s.flags.escort) o.guards = true; // escort buff on B1 (applied in game logic)
   if (info?.boss && level === 2) o.aegis = true;
   if (info?.boss && level === 3) o.collar = true;
@@ -236,15 +234,17 @@ export function storyCombat(s, info, level) {
     o.crystals = s.flags.pylons || 0; o.smiths = s.quests.smiths === 'done' || prog(s, 'smiths') >= 3; o.warhorn = s.inventory.includes('warhorn');
     o.elowen = true; if (s.notes.length >= 10) o.initBonus = 1; if (empowered(s)) o.empowered = true;
   }
+  if (info?.boss && level === 4 && s.flags.mirrorShattered) o.initBonus = (o.initBonus || 0) + 1;
   return o;
 }
 
 /* ---------- Town folk ---------- */
-export const TOWNFOLK = ['rowan', 'marga', 'osric', 'wren', 'dobbin', 'tamsin'];
+export const TOWNFOLK = ['rowan', 'marga', 'osric', 'wren', 'dobbin', 'tamsin', 'odalys', 'harl'];
 const OFFERS = { rowan: 'guards', marga: 'tunnel', osric: 'satchel', wren: 'glowcaps', dobbin: 'smiths', tamsin: 'horn' };
 /** Talk to a townsperson: gives or completes their quest. Returns a dialogue scene + events. */
 export function talkTo(s, npc) {
-  initStory(s); const q = OFFERS[npc]; const out = []; const lines = [];
+  initStory(s);
+  if (TT.TT_NPCS.includes(npc)) return { scene: { lines: [] }, out: [], tt: TT.entryFor(s, npc), npc }; const q = OFFERS[npc]; const out = []; const lines = [];
   const st = s.quests[q];
   if (!st) {
     startQuest(s, q);
@@ -274,10 +274,10 @@ export function talkTo(s, npc) {
   if (npc === 'osric') { const n = liftCurses(s); if (n) { lines.push(L('osric', 'You carry shadows, child. Hold still... There. The Temple has lifted what clung to you.')); out.push({ log: 'Brother Osric lifts the curse upon you.', cls: 'good' }); } }
   return { scene: { lines }, out };
 }
-export function townfolkStatus(s, npc) { const st = s.quests?.[OFFERS[npc]]; return st === 'ready' ? '❗ quest ready' : st === 'done' ? '✔' : st ? '…' : '❓ new quest'; }
+export function townfolkStatus(s, npc) { if (TT.TT_NPCS.includes(npc)) return TT.npcStatus(s, npc); const st = s.quests?.[OFFERS[npc]]; return st === 'ready' ? '❗ quest ready' : st === 'done' ? '✔' : st ? '…' : '❓ new quest'; }
 export function questList(s) {
   initStory(s);
-  return Object.entries(s.quests).map(([q, st]) => ({ id: q, ...QUESTS[q], status: st, progress: QUESTS[q].need ? `${Math.min(prog(s, q), QUESTS[q].need)}/${QUESTS[q].need}` : '' }));
+  return Object.entries(s.quests).filter(([q]) => QUESTS[q]).map(([q, st]) => ({ id: q, ...QUESTS[q], desc: (st !== 'done' && TT.stageText(s, q)) || QUESTS[q].desc, status: st, progress: QUESTS[q].need ? `${Math.min(prog(s, q), QUESTS[q].need)}/${QUESTS[q].need}` : '' }));
 }
 
 /* ---------- Opening scene ---------- */
@@ -288,7 +288,7 @@ export function prologueScenes(s) {
       L('narrator', 'Emberhollow, harvest night. The Boar & Spoon is packed to the rafters, and Princess Elowen herself is pouring the cider.'),
       L('elowen', 'To Emberhollow, and to whoever finally finishes Marga\'s pie!'),
       L('marga', 'Nobody finishes my pie. That\'s the tradition.'),
-      ...comp('brambur', 'I\'ll have a go. For Mum.'), ...comp('fizzwick', 'Fizzwick calculates the pie at forty percent gravy, sixty percent ambition.'), ...comp('pip', 'Has anyone counted the spoons? I\'m only asking. For a friend. I am the friend.'),
+      ...comp('brambur', 'I\'ll have a go. For Mum.'), ...comp('fizzwick', 'Fizzwick calculates the pie at forty percent gravy, sixty percent ambition.'), ...comp('pip', 'Lovely party. Everyone smiling. I never trust a room where everyone is smiling.'),
       L('narrator', 'Then the candles gutter out, all at once. Robed figures pour through the cellar door, with rats and wolf-spiders at their heels.'),
     ], choices: [{ id: 'fight', label: '⚔ Defend the feast!' }, { id: 'skip', label: '⏩ Skip the fight (I know how this goes)' }] },
     abduction: { title: 'The Dread Sovereign', lines: [
@@ -299,7 +299,7 @@ export function prologueScenes(s) {
       L('malthrax', 'Five moons, Emberhollow. Then you kneel before Blackspire.'),
       L('narrator', 'The fire goes out. Elowen is gone. The floor of the cellar has cracked open onto a stair leading down.'),
       L('rowan', 'You. You fought like the Dawn\'s own knight. Take this writ. It gives you the Crown\'s authority below. Bring her back. I\'ll have work for you in town, too.'),
-      ...comp('brambur', 'Right. Pie can wait. Princess can\'t.'), ...comp('fizzwick', 'Fizzwick has prepared a list of reasons to be afraid. It is long. Let us go anyway.'), ...comp('pip', 'He took the PRINCESS. And, I checked, three of Marga\'s spoons. This is personal now.'),
+      ...comp('brambur', 'Right. Pie can wait. Princess can\'t.'), ...comp('fizzwick', 'Fizzwick has prepared a list of reasons to be afraid. It is long. Let us go anyway.'), ...comp('pip', 'He took the Princess. Fine. I have been waiting years for a reason to go down there.'),
     ], choices: [{ id: 'vow', label: '“I will bring her home.”' }, { id: 'grim', label: '“Malthrax will kneel first.”' }] },
   };
 }
@@ -322,11 +322,13 @@ export function endingScene(s) {
     L('narrator', 'Gorvax the Tyrant crashes down, and the Blackspire shudders. One by one its violet lights go dark.'),
     ...(s.inventory.includes('warhorn') ? [L('narrator', 'You raise the Warden\'s Warhorn and blow. The note rolls up through five floors of stone, and far above, Emberhollow\'s bells answer.')] : []),
     L('elowen', s.notes.length >= 10 ? 'You found every note. Every single one. I kept writing because I knew you would.' : 'You came. I knew you would.'),
-    L('narrator', 'Back in Emberhollow, in the Boar & Spoon, which is still missing a few spoons, Elowen draws Dawnfang and lays it on your shoulder.'),
+    L('narrator', 'Back in Emberhollow, in the Boar & Spoon, which still smells faintly of smoke, Elowen draws Dawnfang and lays it on your shoulder.'),
     L('elowen', 'Rise, Knight of the Dawn.'),
     ...comp('brambur', s.flags.hammer ? 'Mum\'s hammer is going over the fireplace. Next to the pie.' : 'I\'m having that pie now. All of it.'),
     ...comp('fizzwick', s.flags.counterspell ? 'Fizzwick counterspelled a Dread Sovereign. Fizzwick will be insufferable for a decade.' : 'Fizzwick will be writing a book. You are in a footnote.'),
-    ...comp('pip', s.quests.spoons === 'done' ? 'Royal. Spoon. Keeper. Say it again. Slower.' : 'No armory, but I did find a ladle. A win is a win.'),
+    ...comp('pip', s.flags.pipMercy ? 'I would say I forgive him. I would be lying. I am just tired of carrying it.' : s.flags.pipVengeance ? 'Garrick is dead, and the Row is paid. I thought I would feel lighter. Ask me again in a year.' : 'Malthrax is down. Garrick is still out there somewhere. Do not look so worried. I am patient.'),
+    ...(hasComp(s, 'pip') && s.flags.pipMercy ? [L('narrator', 'At a corner table of the Boar & Spoon, a small halfling girl with a scorched blue ribbon pretends she has not been crying. Pip crosses the whole room without a word, and then says several.')] : []),
+    ...(hasComp(s, 'pip') && s.flags.pipVengeance ? [L('narrator', 'That night, Pip hangs a lantern in the window of the Boar & Spoon. It burns for the eleven of the Row, and for one more, Pip hopes.')] : []),
     ...comp('grumsh', s.quests.ballad === 'done' ? 'Final verse: "And the Tyrant fell, and the town sang along — and that is the end of Grumsh\'s song!"' : 'Grumsh will finish the ballad. Someday.'),
     ...comp('zizzy', s.flags.gateBlown ? 'Best. Explosion. Ever.' : 'Next time, more explosions.'),
     ...comp('vexrath', s.quests.decree === 'done' ? 'My clan returns to Emberhollow with honour. Thanks to you.' : 'Honour is earned. Today, we earned it.'),

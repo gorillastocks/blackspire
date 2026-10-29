@@ -34,7 +34,7 @@ test('chest + trap search, companion talk and banter text is crisp and readable'
   await page.screenshot({ path: `screenshots/text-${info.project.name}-camp-talk.png` });
   await page.keyboard.press('Escape'); await page.evaluate(() => { const m = document.querySelector('#modal'); if (!m.classList.contains('hidden')) m.querySelector('.closebtn')?.click(); });
   // banter bubbles over the 3D view
-  await page.evaluate(() => { window.__gw.banter('loot'); window.__gw.banter('spoon'); });
+  await page.evaluate(() => { window.__gw.banter('loot'); window.__gw.banter('secret'); });
   await page.waitForTimeout(300);
   await auditText(page, '#banter', minPx);
   await page.screenshot({ path: `screenshots/text-${info.project.name}-banter.png` });

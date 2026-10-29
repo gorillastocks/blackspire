@@ -28,7 +28,7 @@ export const AREAS = [
     secret: 'The hidden passage is lined with tiny claw-marked tallies. Someone, or several someones, has been counting days here.',
     rooms: [
       'A low chamber stacked with mouldy grain sacks, every one of them gnawed open. The floor crunches underfoot, and you decide not to look down.',
-      'Dozens of tiny shrines line this room: thimbles, buttons and bent spoons arranged with real devotion around a portrait of a very fat rat.',
+      'Dozens of tiny shrines line this room: thimbles, buttons and bent nails arranged with real devotion around a portrait of a very fat rat.',
       'Water pools in the middle of this chamber, and the walls are furred with nests of shredded cloth. The smell is magnificent, in the worst way.',
       'Old smuggler\'s crates rot in the corners, stamped with the crest of Emberhollow. One still rattles faintly when you pass.',
     ],
@@ -99,7 +99,7 @@ export const TOWN = {
 const QUIPS = {
   brambur: ['Lovely. Lovely, lovely place. I hate it. Sorry.', 'I\'ll just say a small prayer for whoever lived here. And for us.'],
   fizzwick: ['Fizzwick has catalogued this room. It is unworthy of Fizzwick.', 'Note the architecture. Note also Fizzwick, noting it.'],
-  pip: ['Ooh, new room! Anyone see any spoons?', 'I\'ll check the corners. Corners are where the good stuff hides.'],
+  pip: ['I\'ll check the corners. People hide things there. I used to.', 'New room. Same old tower. Same old liars.'],
   grumsh: ['Another room. Another reminder that all rooms end.', 'This place has seen sorrow. I relate.'],
   zizzy: ['New place! Does anything here explode? Can I check?', 'I love it. It smells like danger and singed eyebrows.'],
   vexrath: ['My clan built halls like this. Better ones, mind you.', 'Keep your blades ready. Places this quiet are rarely empty.'],

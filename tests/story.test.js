@@ -31,7 +31,7 @@ describe('story systems', () => {
   });
   it('townsfolk give and track quests', () => {
     const s = fresh();
-    for (const k of Story.TOWNFOLK) { const r = Story.talkTo(s, k); expect(r.scene.lines.length).toBeGreaterThan(0); }
+    for (const k of Story.TOWNFOLK) { const r = Story.talkTo(s, k); if (r.tt) { expect(Story.TT.autoRun(s, r.tt).aborted).toBe(false); } else expect(r.scene.lines.length).toBeGreaterThan(0); }
     expect(Story.questList(s).length).toBeGreaterThanOrEqual(6);
   });
   it('Q tiles in the dungeon trigger story points of interest', () => {

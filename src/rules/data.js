@@ -170,9 +170,9 @@ export const ITEMS = {
   plate1: { name: 'Plate Armor +1', kind: 'armor', base: 'plate', magic: 1, cost: 4000 },
   chainMail1: { name: 'Chain Mail +1', kind: 'armor', base: 'chainMail', magic: 1, cost: 1500 },
   studded1: { name: 'Studded Leather +1', kind: 'armor', base: 'studdedLeather', magic: 1, cost: 1500 },
-  spoon: { name: 'Silver Spoon', kind: 'junk', cost: 1, spoon: true },
-  goldSpoon: { name: 'Gilded Soup Spoon', kind: 'junk', cost: 25, spoon: true },
-  runcibleSpoon: { name: 'Legendary Runcible Spoon', kind: 'junk', cost: 100, spoon: true },
+  tinCup: { name: 'Dented Tin Cup', kind: 'junk', cost: 1 },
+  gildedGoblet: { name: 'Gilded Goblet', kind: 'junk', cost: 25 },
+  jewelledChalice: { name: 'Jewelled Chalice', kind: 'junk', cost: 100 },
   key1: { name: 'Rusty Iron Key', kind: 'key', level: 0, cost: 0 },
   key2: { name: 'Coral Key', kind: 'key', level: 1, cost: 0 },
   key3: { name: 'Glimmer Key', kind: 'key', level: 2, cost: 0 },
@@ -191,9 +191,6 @@ export const ITEMS = {
   warhorn: { name: "The Warden's Warhorn", kind: 'quest', cost: 0, desc: 'Sounded in the final battle, it rallies all of Emberhollow.' },
   potionStoneFlesh: { name: 'Potion of Stone-to-Flesh', kind: 'potion', cure: 'restrained', heal: '1d4', cost: 100 },
   weapon2: { name: '+2 Smith-Blessed Blade', kind: 'weapon', base: 'longsword', magic: 2, cost: 4000 },
-  crystalSpoon: { name: 'Crystal Spoon', kind: 'junk', cost: 50, spoon: true },
-  ironLadle: { name: 'Iron Ladle', kind: 'junk', cost: 40, spoon: true },
-  royalSpoon: { name: 'Royal Silver Spoon', kind: 'junk', cost: 500, spoon: true, desc: 'The spoon of the Spoon-Keepers. Pip is beside himself.' },
 };
 // ---- Rare loot (Phase B): named items with small special effects. fx.elem = bonus damage on every hit; fx.healOnKill = HP restored on a killing blow ----
 Object.assign(ITEMS, {
@@ -208,6 +205,16 @@ Object.assign(ITEMS, {
   hollowCrownRing: { name: 'Ring of the Hollow Crown', kind: 'ring', ac: 1, saves: 1, tier: 'epic', cost: 6000, fx: { healOnKill: 4 }, desc: '+1 AC and saves. Heals the wearer 4 HP on a killing blow.' },
   thunderlordFang: { name: "Thunderlord's Fang", kind: 'weapon', base: 'greatsword', magic: 2, tier: 'legendary', cost: 12000, fx: { elem: { dmg: '1d8', type: 'lightning' }, healOnKill: 5 }, desc: 'Greatsword +2 torn from a thunder-lizard\'s jaw. +1d8 lightning on every hit; heals 5 HP on a killing blow.' },
   blackspireHeart: { name: 'Heart of the Blackspire', kind: 'ring', ac: 2, saves: 2, tier: 'legendary', cost: 12000, fx: { healOnKill: 6 }, desc: '+2 AC and saves. A cold gold heart that beats for you: heals 6 HP on a killing blow.' },
+});
+// ---- Quest rewards (Phase F: tabletop quests). Named, never in the drop pools. ----
+Object.assign(ITEMS, {
+  lanternEdge: { name: 'Lantern Edge', kind: 'weapon', base: 'dagger', magic: 1, tier: 'rare', cost: 2500, fx: { elem: { dmg: '1d4', type: 'fire' } }, desc: 'Dagger +1, forged from a Lantern Row crew lamp. +1d4 fire damage on every hit.' },
+  posyRibbon: { name: "Posy's Ribbon", kind: 'ring', ac: 1, saves: 1, tier: 'rare', cost: 2500, fx: { healOnKill: 2 }, desc: 'A scorched blue ribbon braided into a ring. +1 AC and saves; heals the wearer 2 HP on a killing blow.' },
+  choirMantle: { name: "Chorister's Mantle", kind: 'cloak', ac: 1, saves: 1, tier: 'rare', cost: 2500, fx: { healOnKill: 2 }, desc: 'Sea-green wool that hums faintly. +1 AC and saves; heals the wearer 2 HP on a killing blow.' },
+  tideClapper: { name: 'Drowned Bell Clapper', kind: 'weapon', base: 'mace', magic: 1, tier: 'rare', cost: 2500, fx: { elem: { dmg: '1d4', type: 'cold' } }, desc: 'Mace +1, the iron heart of a sunken bell. +1d4 cold damage on every hit.' },
+  prismCirclet: { name: 'Prism Circlet', kind: 'helm', ac: 1, saves: 1, tier: 'rare', cost: 2500, desc: 'Verrin glass, ground to a lens. +1 AC and +1 to saves.' },
+  wardenSignet: { name: "Warden's Signet", kind: 'ring', ac: 1, saves: 1, tier: 'rare', cost: 2500, fx: { healOnKill: 3 }, desc: 'The ring of a Watch sergeant. +1 AC and saves; heals the wearer 3 HP on a killing blow.' },
+  fennCloak: { name: "Fenn's Fine Cloak", kind: 'cloak', ac: 1, saves: 1, tier: 'uncommon', cost: 1500, desc: 'A pawnbroker\'s best unredeemed cloak. +1 AC and saves.' },
 });
 // Pools the drops come from, by tier
 export const TIERS = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
@@ -224,9 +231,8 @@ export function tierOf(key) {
   const I = ITEMS[key]; if (!I) return 'common';
   if (I.tier) return I.tier;
   if (I.set) return 'legendary';
-  if (key === 'runcibleSpoon') return 'legendary';
   if (I.magic >= 2 || I.cost >= 4000) return 'rare';
-  if (I.magic || I.kind === 'ring' || I.kind === 'cloak' || key === 'potionGreater' || key === 'goldSpoon') return 'uncommon';
+  if (I.magic || I.kind === 'ring' || I.kind === 'cloak' || key === 'potionGreater' || key === 'gildedGoblet') return 'uncommon';
   return 'common';
 }
 // Buyable gear in the town shop

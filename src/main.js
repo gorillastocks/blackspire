@@ -89,19 +89,33 @@ function showDialogue(scene, { closable = false } = {}) {
   return new Promise((resolve) => {
     const lines = scene.lines || []; let i = 0;
     const draw = () => {
-      const ln = lines[Math.min(i, lines.length - 1)] || { who: 'narrator', text: '' }; const sp = Story.speaker(ln.who); const last = i >= lines.length - 1;
+      const ln = lines[Math.min(i, lines.length - 1)] || { who: 'narrator', text: '' }; const sp = scene.dm && ln.who === 'narrator' ? { name: 'Dungeon Master', icon: '🎲', color: '#d8c48a' } : Story.speaker(ln.who); const last = i >= lines.length - 1;
       playVoiceLine(ln.text, ln.who, { kind: 'dialog', queue: true, maxWait: 12000 }); // queue: a hero reply or card that is still speaking is not cut off
       openModal([h('div', { class: 'dialogue' },
         scene.title ? h('h2', {}, scene.title) : null,
+        scene.roll ? h('div', { class: `ttroll ${scene.roll.ok ? 'ok' : 'bad'}`, 'data-roll': scene.roll.ok ? 'success' : 'failure' }, scene.roll.text) : null,
         h('div', { class: 'dlgrow' }, speakerPortrait(sp),
           h('div', { class: 'dlgtext' }, sp.name ? h('b', { style: `color:${sp.color}` }, sp.name) : null, h('p', { class: ln.who === 'narrator' ? 'lore' : '' }, ln.text))),
+        last && scene.fx?.length ? h('div', { class: 'fxlist' }, scene.fx.map((f) => h('div', { class: `fx ${f.cls}` }, f.t))) : null,
         h('div', { class: 'hint' }, `${Math.min(i + 1, lines.length)} / ${lines.length}`),
         h('div', { class: 'menu' }, last
-          ? (scene.choices?.length ? scene.choices : [{ id: 'ok', label: 'Continue ▶' }]).map((c) => btn(c.label, () => { stopVoice(); closeModal(); heroSpeak(c.label); resolve(c.id); }, { class: 'primary', 'data-choice': c.id, id: 'dlg-next' }))
+          ? (scene.choices?.length ? scene.choices : [{ id: 'ok', label: 'Continue ▶' }]).map((c) => btn(c.check ? `🎲 ${c.label} · ${c.check}` : c.label, () => { stopVoice(); closeModal(); heroSpeak(c.label); resolve(c.id); }, { class: 'primary', 'data-choice': c.id, id: 'dlg-next' }))
           : [btn('Next ▶', () => { stopVoice(); i++; draw(); }, { class: 'primary', id: 'dlg-next' }), btn('Skip ⏭', () => { stopVoice(); i = lines.length - 1; draw(); }, { class: 'small', id: 'dlg-skip' })]))], { closable });
     };
     draw();
   });
+}
+/** A tabletop quest scene: the Dungeon Master narrates, d20 checks are rolled in the open, choices branch (see game/tabletop.js). */
+async function runTT(entry, { poi = null } = {}) {
+  const TT = Story.TT; const sess = TT.begin(S, entry); let view = TT.show(S, sess);
+  while (view) {
+    if (view.roll) sfx('dice');
+    for (const f of view.fxLines) log(f.t, f.cls === 'bad' ? 'bad' : f.cls === 'sys' ? 'sys' : 'good');
+    const id = await showDialogue({ title: view.title, lines: view.lines, choices: view.choices, roll: view.roll, fx: view.fxLines, dm: true });
+    view = TT.pick(S, sess, id);
+  }
+  if (Story.finishTT(S, poi, sess)) G.setTile(S, S.x, S.y, '.');
+  autosave(); rebuild();
 }
 /** Round portrait for a dialogue speaker: a painted image when they have one (Liora, event guests), else the emoji disc. */
 function speakerPortrait(sp) {
@@ -163,7 +177,7 @@ function speakCamp(line) {
 }
 function showTownFolk() {
   openModal([h('h2', {}, 'Emberhollow Folk'), h('div', { class: 'menu' }, Story.TOWNFOLK.map((k) => { const sp = Story.speaker(k);
-    return btn(`${sp.icon} ${sp.name} — ${Story.townfolkStatus(S, k)}`, async () => { const r = Story.talkTo(S, k); handle(r.out); autosave(); await showDialogue({ lines: r.scene.lines }, { closable: true }); showTownFolk(); }, { 'data-npc': k }); })),
+    return btn(`${sp.icon} ${sp.name} — ${Story.townfolkStatus(S, k)}`, async () => { const r = Story.talkTo(S, k); handle(r.out); autosave(); if (r.tt) { await runTT(r.tt); showTownFolk(); return; } await showDialogue({ lines: r.scene.lines }, { closable: true }); showTownFolk(); }, { 'data-npc': k }); })),
     btn('← Back', () => showTown(), { class: 'backbtn' })], { closable: false, cls: 'transparent' });
 }
 
@@ -358,7 +372,7 @@ function syncWorld() {
 function renderHud() {
   const el = $('#hud'); if (!S) { el.innerHTML = ''; return; }
   if (S.mode === 'dungeon') { const sc = G.Prog.secretCount(S, S.level); const oreg = outNear() ? outReg() : null, otod = oreg ? todName(outHour()) : null; el.innerHTML = `<span>${getLevel(S.level).def.name}${oreg ? ` · <b class="outdoor" title="${oreg.name}: ${otod.name}, ${oreg.weather}">${otod.icon}${WEATHER_INFO[oreg.weather].icon}</b>` : ''} · <b class="secrets" title="Secrets found on this floor">🔍 ${sc.found}/${sc.total}</b></span><span>⌖ ${S.x},${S.y} · ${DIR_NAMES[S.dir]} · ${S.gold} gp</span>`; }
-  else el.innerHTML = `<span>Emberhollow</span><span>${S.gold} gp · 🥄 ${S.spoons}</span>`;
+  else el.innerHTML = `<span>Emberhollow</span><span>${S.gold} gp</span>`;
 }
 
 /* ---------- Minimap ---------- */
@@ -670,6 +684,7 @@ function resolveEvent(card, c) {
   playVoiceLine(r.result.text, 'narrator', { kind: 'dialog', queue: true, maxWait: 9000 }); // after the hero's spoken reply, if any
 }
 function prompt(kind, e = {}) {
+  if (kind === 'tt') { runTT(e.scene, { poi: e.poi }); return; }
   if (kind === 'poi') {
     openModal([h('h2', {}, e.title), h('p', { class: 'lore' }, e.text), h('div', { class: 'menu' }, e.choices.map((c) => btn(c.label, () => {
       closeModal(); const ev = Story.choosePoi(S, e.poi, c.id, (sk, dc) => G.partyCheck(S, sk, dc));
@@ -709,7 +724,7 @@ function prompt(kind, e = {}) {
     playVoiceLine('Somewhere far below, a sixth seal stirs. And Malthrax\'s staff was never found…', 'narrator', { kind: 'dialog', queue: true, maxWait: 30000 });
     openModal([h('h1', {}, 'VICTORY!'), h('p', {}, 'The Blackspire is dark. Princess Elowen is home, and Emberhollow is free. Arise, Knight of the Dawn.'),
       h('p', { class: 'lore' }, 'Somewhere far below, a sixth seal stirs. And Malthrax\'s staff was never found…'),
-      h('p', { class: 'hint' }, `Steps taken: ${S.steps} · Spoons: ${S.spoons} · Party levels: ${S.party.map((c) => c.level).join('/')}`),
+      h('p', { class: 'hint' }, `Steps taken: ${S.steps} · Party levels: ${S.party.map((c) => c.level).join('/')}`),
       h('div', { class: 'menu' }, btn('Return to town as heroes', () => { S.mode = 'town'; closeModal(); showTown(); }), btn('Keep exploring', closeModal))]);
   }
 }
@@ -878,6 +893,7 @@ $('#minimap').addEventListener('click', (e) => {
   const path = G.Prog.findPath(S, x, y, (a, b) => G.tile(S, a, b)); if (!path) { toast('No known route there'); return; } autoWalk(path);
 });
 $('#minimap').title = 'Tap an explored tile to walk there · tap yourself for the full map';
+$('#log').addEventListener('click', () => { if (document.body.classList.contains('incombat')) { document.body.classList.toggle('logopen'); requestAnimationFrame(() => { const l = $('#log'); l.scrollTop = l.scrollHeight; }); } }); // phone portrait: tap the short log strip to open or close it
 $('#autobtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); setAuto(!autoBattle); });
 $('#speedbtn').addEventListener('click', cycleSpeed);
 
@@ -893,7 +909,6 @@ function askTrivial(info) {
   });
 }
 async function maybeAutoResolve(info) {
-$('#log').addEventListener('click', () => { if (document.body.classList.contains('incombat')) { document.body.classList.toggle('logopen'); requestAnimationFrame(() => { const l = $('#log'); l.scrollTop = l.scrollHeight; }); } }); // phone portrait: tap the short log strip to open or close it
   if (info.town || !S || S.mode !== 'dungeon' || !G.isTrivial(S, info)) return false;
   const mode = loadSettings().trivialFights || 'ask'; if (mode === 'off') return false;
   let go = mode === 'auto'; if (!go) { busy = true; go = await askTrivial(info); busy = false; } if (!go) return false;
@@ -923,7 +938,7 @@ function inventoryList(redraw, shop = false) {
       shop && kind !== 'key' ? btn(`Sell ${Math.floor(G.priceOf(k) / 2)}gp`, () => { handle(G.sell(S, i)); redraw(); }, { class: 'small' }) : null);
   }));
 }
-function showInventory() { const draw = () => openModal([h('h2', {}, `🎒 Party Inventory — ${S.gold} gp · 🥄 ${S.spoons}`), inventoryList(draw)]); draw(); }
+function showInventory() { const draw = () => openModal([h('h2', {}, `🎒 Party Inventory — ${S.gold} gp`), inventoryList(draw)]); draw(); }
 
 /* ---------- Character sheet ---------- */
 function showSheet(c) {
@@ -1596,7 +1611,7 @@ function chestStep(fn) {
   for (const e of ev) if (e.log && e.cls === 'bad') lines.push(`☠ ${e.log}`);
   const gold = S.gold - b.gold; if (gold > 0) lines.push(`💰 +${gold} gold`);
   const left = [...b.inv], got = {}; for (const k of S.inventory) { const i = left.indexOf(k); if (i >= 0) left.splice(i, 1); else got[k] = (got[k] || 0) + 1; }
-  for (const [k, n] of Object.entries(got)) lines.push(`${ITEMS[k]?.spoon || ITEMS[k]?.quest ? '📜' : '🎒'} ${n > 1 ? n + '× ' : ''}${ITEMS[k]?.name || k}`);
+  for (const [k, n] of Object.entries(got)) lines.push(`${ITEMS[k]?.quest ? '📜' : '🎒'} ${n > 1 ? n + '× ' : ''}${ITEMS[k]?.name || k}`);
   for (const e of ev) if (e.log && e.cls === 'crit') lines.push(`📜 ${e.log}`);
   if (gold <= 0 && !Object.keys(got).length) lines.push('The chest is empty. Someone got here first.');
   chestNotes = [];
@@ -1679,7 +1694,7 @@ async function boot() {
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
     outdoorInfo: () => ({ reg: outReg(), near: S ? outNear() : false, hour: S ? outHour() : null, tod: S ? todName(outHour()) : null, weather: R?.outdoor?.weather || null, state: R?.outState || null, counts: R?.outdoor?.counts || null }), look(p) { if (R) R.pitch = p; }, setHour(h) { if (R?.outdoor) R.outdoor.forceHour = h; refresh(); }, setWeather(k) { R?.outdoor?.setWeather(k); refresh(); },
-    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, getLevel, refresh, showInventory, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, getLevel, refresh, showInventory, runTT, showJournal, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)

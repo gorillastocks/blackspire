@@ -33,7 +33,7 @@ export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base =
   party.sort((a, b) => order[a.cls] - order[b.cls]);
   if (!party.slice(0, 2).includes(hero) && hero.cls !== 'wizard') { /* hero rogue goes 3rd; ok */ }
   return withPC(Prog.initProgress({
-    version: 6, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'], spoons: 0,
+    version: 7, party, roster: [], gold: 120, inventory: ['potionHealing', 'potionHealing', 'potionHealing'],
     mode: 'town', level: 0, x: 1, y: 1, dir: 1, mods: LEVEL_DEFS.map(() => ({})), explored: LEVEL_DEFS.map(() => []), maxDepth: 0,
     bossDead: LEVEL_DEFS.map(() => false), victory: false, steps: 0, sinceEncounter: 0, keys: [], playTime: 0,
     seeds: dseeds, randomDungeons: !!dseeds,
@@ -260,7 +260,7 @@ export function afterCombat(s, combat, info = {}) {
     out.push(...Story.onCombatWon(s, info, s.level));
     if (info.elite) out.push(...eliteSlain(s, info.elite));
     if (rand() < 0.2) { s.inventory.push('potionHealing'); out.push({ log: 'Found a Potion of Healing among the remains.', cls: 'good' }); }
-    if (rand() < 0.06) { s.inventory.push('spoon'); s.spoons++; out.push({ log: 'Found a Silver Spoon!', cls: 'good', banter: banter(s.party, 'spoon', {}, 1) }); }
+    if (rand() < 0.06) { s.inventory.push('tinCup'); out.push({ log: 'Found a Dented Tin Cup. Someone will pay a copper for it.', cls: 'good' }); }
     if (info.boss && def.final && !chain) { s.victory = true; s.quests.main = 'done'; s.flags.elowenRescued = true; if (s.notes?.length >= 10 && s.quests.notes) s.quests.notes = 'done'; }
     // Unconscious survivors wake with 1 HP
     for (const c of s.party) if (!c.dead && c.hp <= 0) { c.hp = 1; delete c.conditions.unconscious; c.stable = false; c.deathSaves = { s: 0, f: 0 }; out.push({ log: `${c.name} is patched up and wakes with 1 HP.` }); }
@@ -354,11 +354,10 @@ export function openChest(s, skipTrap = false) {
   const gold = (def.loot.gold[0] + Math.floor(rand() * (def.loot.gold[1] - def.loot.gold[0]))) * lucky;
   s.gold += gold;
   const n = 1 + (rand() < 0.5 ? 1 : 0); const items = [];
-  for (let i = 0; i < n; i++) { const it = pick(def.loot.items); s.inventory.push(it); items.push(it); if (ITEMS[it].spoon) s.spoons++; }
+  for (let i = 0; i < n; i++) { const it = pick(def.loot.items); s.inventory.push(it); items.push(it); }
   setTile(s, s.x, s.y, 'o');
   out.push({ log: `The chest holds ${gold} gold and: ${items.map((i) => ITEMS[i].name).join(', ')}.`, cls: 'good', sfx: 'chest' }, ...Prog.discover(s, 'chest', `${s.x},${s.y}`, 'chest opened'));
-  const spoon = items.some((i) => ITEMS[i].spoon);
-  out.push({ banter: spoon ? banter(s.party, 'spoon', {}, 1) : PC.react(s, 'loot', () => banter(s.party, 'loot', {}, 0.25), 0.8) });
+  out.push({ banter: PC.react(s, 'loot', () => banter(s.party, 'loot', {}, 0.25), 0.8) });
   if (rand() < 0.07 + 0.03 * s.level + (lucky > 1 ? 0.3 : 0)) out.push(...grantRare(s, rollTier(s.level, 'chest'), 'chest')); // after the chest card, so the reveal follows it
   return out;
 }
@@ -427,9 +426,8 @@ export function nameOf(key) {
 export function buy(s, key) { const p = priceOf(key); if (s.gold < p) return [{ log: 'Not enough gold.', cls: 'bad' }]; s.gold -= p; s.inventory.push(key); return [{ log: `Bought ${nameOf(key)} for ${p} gp.`, cls: 'good' }]; }
 export function sell(s, idx) {
   const key = s.inventory[idx]; if (!key || ITEMS[key]?.kind === 'key') return [];
-  const p = Math.floor(priceOf(key) / 2); s.inventory.splice(idx, 1); s.gold += p; if (ITEMS[key]?.spoon) s.spoons = Math.max(0, s.spoons - 1);
+  const p = Math.floor(priceOf(key) / 2); s.inventory.splice(idx, 1); s.gold += p;
   const out = [{ log: `Sold ${nameOf(key)} for ${p} gp.` }];
-  if (ITEMS[key]?.spoon && s.party.some((c) => c.companion === 'pip')) out.push({ banter: { who: 'Pip', color: COMPANIONS.pip.color, text: 'You SOLD a SPOON? I need a moment.' } });
   return out;
 }
 /** Equip an inventory item on a character. */
@@ -469,6 +467,19 @@ export function usePotion(s, idx, c) {
 }
 
 /* ---------- Save / Load ---------- */
+/** v7: drop the old spoon currency, quest and items; Pip gets his new quest. Safe to run on any save, any number of times. */
+const OLD_SPOON_ITEMS = { spoon: 'tinCup', ironLadle: 'tinCup', goldSpoon: 'gildedGoblet', crystalSpoon: 'gildedGoblet', runcibleSpoon: 'jewelledChalice', royalSpoon: 'jewelledChalice' };
+export function migrateV7(s) {
+  delete s.spoons;
+  s.inventory = (s.inventory || []).map((k) => OLD_SPOON_ITEMS[k] || k);
+  if (s.quests) delete s.quests.spoons;
+  if (s.flags) delete s.flags.n_spoons;
+  if (s.pois) for (const k of ['crystalSpoon', 'ladle', 'armory']) delete s.pois[k];
+  if ((s.version | 0) < 7) {
+    s.version = 7;
+    if (s.flags?.prologue && [...(s.party || []), ...(s.roster || [])].some((c) => c.companion === 'pip')) Story.startQuest(s, 'debt');
+  }
+}
 export function serialize(s) { return JSON.stringify(s); }
 export function deserialize(str) {
   const s = JSON.parse(str); if (!s || !Array.isArray(s.party) || !s.party.length) throw new Error('bad save');
@@ -492,6 +503,7 @@ export function deserialize(str) {
   if (old3) migrateV4(s); // v4: secrets, elites, rare loot
   PC.ensure(s); s.version = Math.max(s.version | 0, 5); // v5: companion threads, Liora, events, curses and blessings, town memory (all additive)
   if (!s.lore || typeof s.lore !== 'object' || Array.isArray(s.lore)) s.lore = {}; s.version = Math.max(s.version | 0, 6); // v6: monster lore (weaknesses the party has discovered); rows stay as party order
+  migrateV7(s); // v7: the spoon storyline is gone; Pip's Lantern Row vengeance quest replaces it
   if (s.mode === 'dungeon' && !(Number.isInteger(s.x) && Number.isInteger(s.y))) s.mode = 'town';
   return s;
 }

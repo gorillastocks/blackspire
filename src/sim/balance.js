@@ -126,6 +126,7 @@ function play(seed, comp, heroCls, difficulty, grindOn, doAuto, maxWipes, grindC
     for (const e of ev || []) {
       if (e.combat) fight(e.combat);
       else if (e.prompt === 'poi') { const r = Story.choosePoi(s, e.poi, 'pull', (sk, dc) => G.partyCheck(s, sk, dc)); if (r.consumed) G.setTile(s, s.x, s.y, '.'); handle(r); }
+      else if (e.prompt === 'tt') { const t = Story.TT.autoRun(s, e.scene); if (Story.finishTT(s, e.poi, { consumed: t.consumed })) G.setTile(s, s.x, s.y, '.'); }
       else if (e.prompt === 'chest') openChest();
     }
   }
@@ -208,7 +209,7 @@ function play(seed, comp, heroCls, difficulty, grindOn, doAuto, maxWipes, grindC
   function town() {
     s.mode = 'town'; fl && fl.townTrips++;
     const spend = (fn) => { const g0 = s.gold; fn(); if (s.gold < g0) fl && (fl.goldSpent += g0 - s.gold); };
-    // raise the dead first (sell spoons and spare junk if needed)
+    // raise the dead first (sell spare junk if needed)
     for (const c of [...s.party]) if (c.dead) {
       const cost = G.templeCost(c);
       if (s.gold < cost) for (let i = s.inventory.length - 1; i >= 0 && s.gold < cost; i--) { const I = ITEMS[s.inventory[i]]; if (I?.kind === 'junk') G.sell(s, i); }
@@ -216,7 +217,7 @@ function play(seed, comp, heroCls, difficulty, grindOn, doAuto, maxWipes, grindC
     }
     for (const c of s.party) { let g = 0; while (canLevelUp(c) && g++ < 9) G.train(s, c); }
     spend(() => G.innRest(s));
-    if (s.gold > 10) for (const k of Story.TOWNFOLK) { try { G.Story.talkTo(s, k); } catch { /* quest givers are optional */ } }
+    if (s.gold > 10) for (const k of Story.TOWNFOLK) { try { const r = G.Story.talkTo(s, k); if (r.tt) Story.TT.autoRun(s, r.tt); } catch { /* quest givers are optional */ } }
     equipBest();
     spend(() => {
       while (potCount('potionHealing') < 4 && s.gold >= G.priceOf('potionHealing') + 20) G.buy(s, 'potionHealing');
