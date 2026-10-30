@@ -1,0 +1,33 @@
+{
+  "identifier" : "B1AC0501",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "6746000001",
+      "localizations" : [
+        {
+          "description" : "One purchase. Every deeper level, forever. No consumables, no timers, no pulls.",
+          "displayName" : "Blackspire: Levels 2–5",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.gorillastocks.blackspire.fullgame",
+      "referenceName" : "Blackspire Full Game",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
