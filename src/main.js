@@ -737,6 +737,19 @@ function resolveEvent(card, c) {
     h('div', { class: 'menu' }, btn('Continue ▶', () => { closeModal(); handle(r.events); rebuild(); }, { class: 'primary', id: 'ev-continue' })))], { closable: false });
   playVoiceLine(r.result.text, 'narrator', { kind: 'dialog', queue: true, maxWait: 9000 }); // after the hero's spoken reply, if any
 }
+const paywallPrice = () => { const p = ENT.priceLabel(); return p ? `${p} · one-time purchase` : 'Price unavailable. Check your connection and try again.'; };
+/** Paywall buttons: run a store call, show the outcome in the modal (purchased / pending / cancelled / failed / restored / nothing). */
+async function runStore(kind, fn, go) {
+  const st = $('#paywall-status'); const say = (m) => { if (st) st.textContent = m; };
+  const btns = [...document.querySelectorAll('#btn-unlock, #btn-restore, #btn-notnow')]; btns.forEach((b) => { b.disabled = true; });
+  say(kind === 'buy' ? 'Contacting the App Store…' : 'Checking your App Store purchases…');
+  const r = await fn(); btns.forEach((b) => { b.disabled = false; });
+  if (r.status === 'purchased' || r.status === 'restored') { closeModal(); log(r.status === 'purchased' ? 'Full game unlocked. Thank you!' : 'Purchases restored.', 'sys'); await go(); return; }
+  say(r.status === 'pending' ? 'Purchase pending approval (Ask to Buy). The game unlocks once it is approved.'
+    : r.status === 'cancelled' ? 'Purchase cancelled. You have not been charged.'
+    : r.status === 'nothing' ? 'No purchase found for this Apple Account.'
+    : `That didn't work${r.message ? ` (${r.message})` : ''}. Please try again.`);
+}
 function prompt(kind, e = {}) {
   if (kind === 'tt') { runTT(e.scene, { poi: e.poi }); return; }
   if (kind === 'poi') {
@@ -749,13 +762,14 @@ function prompt(kind, e = {}) {
   }
   if (kind === 'paywall') {
     const go = async () => { if (e.then) return e.then(); handle(G.goDown(S)); await startDungeon(); autosave(); };
+    if (ENT.isNativeIOS() && !ENT.PRODUCT.price) ENT.initStore(3000).then(() => { const el = $('#paywall-price'); if (el) el.textContent = paywallPrice(); });
     if (e.cliffhanger) playVoiceLine('Torchlight gutters on the stair below. Something vast breathes in the dark, and it says your names. Skarn was only the doorman.', 'narrator', { kind: 'dialog' });
     openModal([h('h2', {}, e.cliffhanger ? 'The Stairs Go Deeper…' : 'The Way Is Sealed'),
       h('p', { class: 'lore' }, e.cliffhanger ? 'Torchlight gutters on the stair below. Something vast breathes in the dark, and it says your names. Skarn was only the doorman.' : 'The deeper levels of the Blackspire are part of the full game.'),
-      h('div', { class: 'paywall' }, h('h3', {}, ENT.PRODUCT.title), h('p', {}, ENT.PRODUCT.blurb), h('p', { class: 'price' }, `${ENT.PRODUCT.price} — no real purchase yet`)),
+      h('div', { class: 'paywall' }, h('h3', {}, ENT.PRODUCT.title), h('p', {}, ENT.PRODUCT.blurb), h('p', { class: 'price', id: 'paywall-price' }, paywallPrice()), h('p', { class: 'hint', id: 'paywall-status', role: 'status' }, '')),
       h('div', { class: 'menu' },
-        btn('🔓 Unlock (placeholder)', async () => { ENT.purchase(); closeModal(); log('Full game unlocked (placeholder purchase).', 'sys'); await go(); }, { id: 'btn-unlock', class: 'primary' }),
-        btn('♻ Restore Purchases', async () => { if (ENT.restore()) { closeModal(); log('Purchases restored.', 'sys'); await go(); } else toast('No purchase found on this device'); }, { id: 'btn-restore' }),
+        btn(ENT.isNativeIOS() ? '🔓 Unlock the full game' : '🔓 Unlock (test build)', async () => { await runStore('buy', ENT.purchase, go); }, { id: 'btn-unlock', class: 'primary' }),
+        btn('♻ Restore Purchases', async () => { await runStore('restore', ENT.restore, go); }, { id: 'btn-restore' }),
         btn('Not now', closeModal, { id: 'btn-notnow' }))], { closable: false });
     return;
   }
@@ -1758,6 +1772,8 @@ async function boot() {
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
   const where = await initStorage([G.SAVE_KEY, ...SLOT_KEYS]);
+  ENT.onEntitlementChange((owned) => { toast(owned ? '🔓 Full game unlocked' : 'Full game purchase is no longer active'); });
+  await ENT.initStore(); // iOS: localized price + re-verify Transaction.currentEntitlements before any save is loaded
   if (where === 'icloud') log('Saves sync with iCloud.', 'dim');
   if (!isNative() && 'serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('./sw.js').then((reg) => { try { reg.update(); } catch { /* ignore */ } }).catch(() => {});
@@ -1858,9 +1874,14 @@ function openMenu(view = 'main', custom = null) {
         h('h3', {}, 'Help'),
         h('div', { class: 'menu' }, btn('💡 Show the tutorial tips again', () => { st.tutorialDone = false; saveSettings(st); closeMenu(); startTutorial(); }, { id: 'set-tutorial' })),
         h('h3', {}, 'Full game'),
-        h('div', { class: 'menu grid2' }, btn('♻ Restore Purchases', () => { log(ENT.restore() ? 'Purchases restored.' : (ENT.paywallActive() ? 'No purchase found on this device.' : 'Nothing to restore — this build is fully unlocked.'), 'sys'); }, { id: 'set-restore' }),
-          btn(`🧪 Dev: free-version paywall ${ENT.paywallActive() ? 'On' : 'Off'}`, () => { ENT.setPaywallDev(!ENT.paywallActive()); if (!ENT.paywallActive()) ENT.resetEntitlement(); openMenu('settings'); }, { id: 'set-paywall' })),
-        h('p', { class: 'hint' }, 'The web build is unlocked. The paywall switch simulates the free version (B1 free, B2–B5 behind one unlock) for testing.')],
+        h('div', { class: 'menu grid2' }, btn('♻ Restore Purchases', async () => {
+          if (!ENT.paywallActive()) { log('Nothing to restore — this build is fully unlocked.', 'sys'); return; }
+          const r = await ENT.restore();
+          log(r.status === 'restored' ? 'Purchases restored. The full game is unlocked.' : r.status === 'nothing' ? 'No purchase found for this Apple Account.' : `Couldn't reach the App Store${r.message ? ` (${r.message})` : ''}. Please try again.`, 'sys');
+          toast(r.status === 'restored' ? '🔓 Purchases restored' : r.status === 'nothing' ? 'No purchase found' : 'Restore failed');
+        }, { id: 'set-restore' }),
+          ENT.isNativeIOS() ? null : btn(`🧪 Dev: free-version paywall ${ENT.paywallActive() ? 'On' : 'Off'}`, () => { ENT.setPaywallDev(!ENT.paywallActive()); if (!ENT.paywallActive()) ENT.resetEntitlement(); openMenu('settings'); }, { id: 'set-paywall' })),
+        h('p', { class: 'hint' }, ENT.isNativeIOS() ? 'B1 is free. One purchase unlocks B2–B5 forever. Restore Purchases re-checks your Apple Account (for a new device or a reinstall).' : 'The web build is unlocked. The paywall switch simulates the free version (B1 free, B2–B5 behind one unlock) for testing.')],
     };
     barTabs = tabBar([['audio', '🔊 Audio'], ['game', '⚔ Game'], ['more', '⚙ More']], settingsTab, (id) => { settingsTab = id; openMenu('settings'); });
     body = [h('h2', {}, '⚙ Settings'), h('div', { class: 'tabpage', 'data-page': settingsTab }, pages[settingsTab]())];

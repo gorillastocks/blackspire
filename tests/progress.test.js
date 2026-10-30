@@ -94,11 +94,11 @@ describe('save migration', () => {
 describe('entitlements', () => {
   beforeEach(() => { const m = new Map(); globalThis.localStorage = { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) }; });
   it('web build is unlocked by default', () => { expect(E.paywallActive()).toBe(false); expect(E.isLevelLocked(3)).toBe(false); });
-  it('dev flag locks levels 2-5 until the placeholder purchase / restore', () => {
+  it('dev flag locks levels 2-5 until the placeholder purchase / restore', async () => {
     E.setPaywallDev(true); expect(E.isLevelLocked(0)).toBe(false); expect(E.isLevelLocked(1)).toBe(true);
     const s = fresh(); expect(goDown(s)).toEqual([{ paywall: true, cliffhanger: true }].length ? expect.arrayContaining([expect.objectContaining({ paywall: true })]) : []);
     expect(enterDungeon(newGame(), 2)[0].paywall).toBe(true);
-    expect(E.restore()).toBe(false); E.purchase(); expect(E.restore()).toBe(true); expect(E.isLevelLocked(1)).toBe(false);
+    expect((await E.restore()).status).toBe("nothing"); await E.purchase(); expect((await E.restore()).status).toBe("restored"); expect(E.isLevelLocked(1)).toBe(false);
     E.resetEntitlement(); expect(E.isLevelLocked(1)).toBe(true);
   });
 });
