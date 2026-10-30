@@ -18,7 +18,7 @@ test('chest + trap search, companion talk and banter text is crisp and readable'
     for (let i = 0; i < 4 && await page.locator('.dialogue').count(); i++) { await page.locator('#dlg-next').click(); await page.waitForTimeout(150); }
   }
   await expect(page.locator('#modal .dlgout')).toBeVisible();
-  await auditText(page, '#modal .panel', phone ? 13 : minPx); // the phone layout keeps the in-dialog log compact (13px, sticky, style.css Job A)
+  await auditText(page, '#modal .panel', minPx);
   await page.locator('#modal .backbtn').first().click();
   // dungeon: stand on a chest and search it for traps
   await page.locator('#modal button', { hasText: 'Edge of Town' }).click(); await page.click('#btn-enter');

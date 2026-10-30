@@ -686,7 +686,7 @@ button.bigtab { width: 100%; min-height: 52px; margin-bottom: 4px; }
 }
 /* phones: the in-dialog message strip sticks to the bottom edge of the dialog and stays short, so a message never scrolls the buttons out of view */
 @media (max-width: 760px), (max-height: 520px) and (orientation: landscape) {
-  .panel > .dlgout { position: sticky; bottom: -14px; z-index: 2; max-height: 13dvh; font-size: 13px; line-height: 1.3; margin-top: 8px; }
+  .panel > .dlgout { position: sticky; bottom: -14px; z-index: 2; max-height: 16dvh; font-size: 16px; line-height: 1.3; margin-top: 8px; }
 }
 /* iPhone landscape: the same compact party cards and short log, so the whole action menu fits; the hero portrait and the Menu button no longer stack */
 @media (max-height: 520px) and (orientation: landscape) {
