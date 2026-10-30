@@ -15625,411 +15625,6 @@
       "file": "voice/narrator-3a2e7d23bf74.mp3",
       "bytes": 188124
     },
-    "dm-80c9a7e9f9ca": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The roof of the world has fallen away, and open sky pours down on the Sunken Orchard. Rain whispers through old silver trees, and an elven gate waits among them, patient as a held breath.",
-      "chars": 187,
-      "hash": "5c4d3c3b90f345f5",
-      "file": "voice/dm-80c9a7e9f9ca.mp3",
-      "bytes": 235772
-    },
-    "dm-40027d3ebca5": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The old kiln is a cavern of warm brick, and in its heart stands the Mirror, tall as a door and framed in black iron. It shows you the room as it will be in an hour, and it does not blink.",
-      "chars": 187,
-      "hash": "4dfc2a755bb99ad1",
-      "file": "voice/dm-40027d3ebca5.mp3",
-      "bytes": 236607
-    },
-    "dm-27511ef9b220": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The tunnel widens into a nest of gnawed bones and stolen cutlery, heaped into a lopsided throne. Something large and orcish stirs on top of it, and beside it the Broodmother clicks her fangs. Roll for initiative.",
-      "chars": 212,
-      "hash": "9368fcb8f3edf9da",
-      "file": "voice/dm-27511ef9b220.mp3",
-      "bytes": 279657
-    },
-    "dm-6b4d55d95c1d": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The cave drops into a drowned amphitheatre, black and mirror still. Then the water parts, and Old Clubtail rises with his wasps humming round him like a crown. Steady now, heroes.",
-      "chars": 179,
-      "hash": "71b4d38d4caa02bb",
-      "file": "voice/dm-6b4d55d95c1d.mp3",
-      "bytes": 238279
-    },
-    "dm-5eccd7490063": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Crystals grow in a perfect ring around a pedestal of black glass. Gargoyles lean from the shadows, and in the centre Glasshide the Basilisk lifts her eyes. Do not look her in the face.",
-      "chars": 184,
-      "hash": "db0d0338debcecef",
-      "file": "voice/dm-5eccd7490063.mp3",
-      "bytes": 265029
-    },
-    "dm-c9de2f2e1f15": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The forge hall opens around an anvil the size of a wagon, glowing white hot. Forgemaster Brakk steps out of the smoke with Cindermaw at his heel, and the hammer in his fist is far too fine for him.",
-      "chars": 197,
-      "hash": "225d30861687271e",
-      "file": "voice/dm-c9de2f2e1f15.mp3",
-      "bytes": 238279
-    },
-    "dm-e8d2ff760a51": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "At the heart of the vault, a crown of black iron rises from the dark, and beneath it sits Malthrax, the Dread Sovereign himself. He smiles like a man who has been expecting you. Every die at this table is about to matter.",
-      "chars": 221,
-      "hash": "49f938fbe050df79",
-      "file": "voice/dm-e8d2ff760a51.mp3",
-      "bytes": 264193
-    },
-    "dm-29ecfa755709": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The floor splits like rotten wood, and the Tyrant of the Blackspire climbs up out of the dark. Gorvax is awake, and he is hungry. Steel yourselves, for this is the last roll.",
-      "chars": 174,
-      "hash": "6d432a16a0f54b01",
-      "file": "voice/dm-29ecfa755709.mp3",
-      "bytes": 249146
-    },
-    "dm-757544ea3a6b": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "In the dust lies an iron key, cold and heavy with purpose. The way down is yours to open.",
-      "chars": 89,
-      "hash": "a960a8ea8a0b5977",
-      "file": "voice/dm-757544ea3a6b.mp3",
-      "bytes": 132536
-    },
-    "dm-e670f6097bb9": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "From the silt of the grotto you lift a key, green with weed and still as sharp as the day it was cut.",
-      "chars": 101,
-      "hash": "916219388d74c43c",
-      "file": "voice/dm-e670f6097bb9.mp3",
-      "bytes": 111638
-    },
-    "dm-127ba40252cf": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A key of pale crystal rests in your palm, and it hums, very softly, in the same sad tune as the cavern.",
-      "chars": 103,
-      "hash": "3d7e660c1b881f4f",
-      "file": "voice/dm-127ba40252cf.mp3",
-      "bytes": 155523
-    },
-    "dm-7bb2a4687152": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Ashforge key is still warm from the fire that made it. Someone left in a hurry.",
-      "chars": 83,
-      "hash": "e1e37512f0982f8e",
-      "file": "voice/dm-7bb2a4687152.mp3",
-      "bytes": 104950
-    },
-    "dm-fde561337e64": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The final key is black and heavy as a verdict. Beyond it, one door remains.",
-      "chars": 75,
-      "hash": "6f08ad8ea29d9b23",
-      "file": "voice/dm-fde561337e64.mp3",
-      "bytes": 107458
-    },
-    "dm-cf7cd6ebd9e5": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Light spills from the treasure like a promise kept. Not every adventurer lives long enough to hold something so fine.",
-      "chars": 117,
-      "hash": "8be8257423346bd8",
-      "file": "voice/dm-cf7cd6ebd9e5.mp3",
-      "bytes": 145074
-    },
-    "dm-b9e0a5116e6a": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The named brute lies still. Somewhere in the Spire, someone is going to hear about this.",
-      "chars": 88,
-      "hash": "0fcb232f0b038eee",
-      "file": "voice/dm-b9e0a5116e6a.mp3",
-      "bytes": 102025
-    },
-    "dm-43ada74f67aa": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A halfling's grudge is a quiet thing, until it is not. Lantern Row left its mark on these halls, and the road to Garrick Vane runs through every floor.",
-      "chars": 151,
-      "hash": "c7529aaec5d11501",
-      "file": "voice/dm-43ada74f67aa.mp3",
-      "bytes": 198573
-    },
-    "dm-6d1afb470a1b": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "In Emberhollow, a pawnbroker is being robbed in her own name. Somebody forged her hand, and somebody else is digging up the dead.",
-      "chars": 129,
-      "hash": "e2114990a01b1ee6",
-      "file": "voice/dm-6d1afb470a1b.mp3",
-      "bytes": 134207
-    },
-    "dm-f21e7f2a06c7": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A fisherman's wife went down to the grotto shrine to sing, and the water kept her songs. Harl Tollow waits on the shore, and he has almost stopped hoping.",
-      "chars": 154,
-      "hash": "2131c8bf282421b0",
-      "file": "voice/dm-f21e7f2a06c7.mp3",
-      "bytes": 192722
-    },
-    "dm-51f8c0d79fc1": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A glasswright asks you to destroy her finest work. It stands in the old kiln, and it has been watching since the day it was made.",
-      "chars": 129,
-      "hash": "0900b35fc8d30f0b",
-      "file": "voice/dm-51f8c0d79fc1.mp3",
-      "bytes": 135461
-    },
-    "dm-953dd0c0af5a": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A sergeant dead three years still keeps his post, and he cannot rest until he knows what became of his three missing soldiers.",
-      "chars": 126,
-      "hash": "3282b564706df0e0",
-      "file": "voice/dm-953dd0c0af5a.mp3",
-      "bytes": 150508
-    },
-    "dm-89c82abd1e99": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Maelis Dewbough tends the Orchard like a garden of old graves. Something is rotting its heartwood, and the grey fruit is telling her so.",
-      "chars": 136,
-      "hash": "2574ed4b1a519217",
-      "file": "voice/dm-89c82abd1e99.mp3",
-      "bytes": 147582
-    },
-    "dm-76ae95b4e0ff": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Seneschal of Keys turns from his ledger, unhurried, and he is smiling. Behind him a small voice cries out, and everyone at this table knows whose it is.",
-      "chars": 156,
-      "hash": "6e3cb6a55c32ae92",
-      "file": "voice/dm-76ae95b4e0ff.mp3",
-      "bytes": 203171
-    },
-    "dm-c6a8bb7d468b": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Roots as old as the Spire coil round a pool of black water, and in it a pale light turns, slowly, like an eye. The Heartroot is listening. Choose your words with care.",
-      "chars": 167,
-      "hash": "f86475ed96b1122b",
-      "file": "voice/dm-c6a8bb7d468b.mp3",
-      "bytes": 253744
-    },
-    "dm-f099fa498dba": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The hammer falls, and the Mirror sighs rather than shatters. Ten eyes go dark one by one, and far below, something loses its sight.",
-      "chars": 131,
-      "hash": "f211f6493eda49af",
-      "file": "voice/dm-f099fa498dba.mp3",
-      "bytes": 172660
-    },
-    "dm-9db3f7fcdb3c": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "You look, and the Mirror shows you everything it has ever seen. Now you know where the staff will break, and the Sovereign knows your face. A seal cracks in the dark.",
-      "chars": 166,
-      "hash": "a7a0e701fa21ddd3",
-      "file": "voice/dm-9db3f7fcdb3c.mp3",
-      "bytes": 205261
-    },
-    "dm-4a12b669a911": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The release verse rings out, and the Sisters of the Tide rise from the black water, singing. They go home at last.",
-      "chars": 114,
-      "hash": "82ecef4be343ae7f",
-      "file": "voice/dm-4a12b669a911.mp3",
-      "bytes": 133372
-    },
-    "dm-97a07df479b4": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Choir's song bends to your will, and the Sisters fall silent, bound. The water shivers as though it were weeping.",
-      "chars": 117,
-      "hash": "f2471d66fe38bbe9",
-      "file": "voice/dm-97a07df479b4.mp3",
-      "bytes": 151344
-    },
-    "dm-ba9b49e742f4": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The old rite sounds, and the Gate of the Silver Court wakes. One by one the trees light up, and a stair of roots leads down.",
-      "chars": 124,
-      "hash": "2d9fec0c5fed7b13",
-      "file": "voice/dm-ba9b49e742f4.mp3",
-      "bytes": 160121
-    },
-    "dm-5c9923a5e309": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The seal breaks with a crack like a bone, and the gate stands open, but crooked. Something beneath it is very angry.",
-      "chars": 116,
-      "hash": "8fede20b1e5af29b",
-      "file": "voice/dm-5c9923a5e309.mp3",
-      "bytes": 141313
-    },
-    "dm-3607c308ff75": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The brine key turns, and the gate opens as if it had always belonged to the cult. Far below, a bell rings, and a seal cracks.",
-      "chars": 125,
-      "hash": "f4b368351716daee",
-      "file": "voice/dm-3607c308ff75.mp3",
-      "bytes": 157195
-    },
-    "dm-bcb921054ba5": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Garrick Vane falls, and a debt of three long years is paid in a single breath. Pip does not speak, and the table is very quiet.",
-      "chars": 127,
-      "hash": "9f3b243710f572cc",
-      "file": "voice/dm-bcb921054ba5.mp3",
-      "bytes": 148836
-    },
-    "dm-406c5cbc1e66": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "You lower the blade, and a sparrow of hope flies out of a three year cage. Somewhere on Cant Street, a girl named Posy is waiting to be found.",
-      "chars": 142,
-      "hash": "4da872e9caf266c3",
-      "file": "voice/dm-406c5cbc1e66.mp3",
-      "bytes": 194394
-    },
-    "dm-bf05cb39f6c2": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The law takes its due, and Odalys Fenn's name is clean again. Justice has been served, cold and tidy.",
-      "chars": 101,
-      "hash": "52065d275f56be67",
-      "file": "voice/dm-bf05cb39f6c2.mp3",
-      "bytes": 163047
-    },
-    "dm-301f06ed6f79": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A forger repays his debt with honest work, and the town never learns the tale. Sometimes mercy is the better coin.",
-      "chars": 114,
-      "hash": "45445a6473bc1ada",
-      "file": "voice/dm-301f06ed6f79.mp3",
-      "bytes": 160957
-    },
-    "dm-994ce82d1da7": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The forger bolts into the night, and the pawnbroker's name is cleared, though her purse is lighter. Not every story ends with a bow.",
-      "chars": 132,
-      "hash": "16bf26adef6e1759",
-      "file": "voice/dm-994ce82d1da7.mp3",
-      "bytes": 182273
-    },
-    "dm-5476b4bea462": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The silver is heavy in your hand, and the silence you bought is heavier still. Some coins leave a stain.",
-      "chars": 104,
-      "hash": "21bd8ab0bb734158",
-      "file": "voice/dm-5476b4bea462.mp3",
-      "bytes": 112474
-    },
-    "dm-d6e800322886": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Harl Tollow weeps on the shore, and for the first time in years, it is a good weeping. The Sisters are free.",
-      "chars": 108,
-      "hash": "1b13667df68e8675",
-      "file": "voice/dm-d6e800322886.mp3",
-      "bytes": 145074
-    },
-    "dm-43fa855537ad": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Harl Tollow learns what became of the Choir, and he does not thank you. A bargain has been struck, and its price is not yet paid.",
-      "chars": 129,
-      "hash": "66372609c41dabd0",
-      "file": "voice/dm-43fa855537ad.mp3",
-      "bytes": 173496
-    },
-    "dm-0ea92ba7b919": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Ysolde Verrin is free of her Mirror, and a thousand shards of silver lie across the kiln floor. She presses a circlet into your hand and does not look back.",
-      "chars": 156,
-      "hash": "b229334ab1e04ce8",
-      "file": "voice/dm-0ea92ba7b919.mp3",
-      "bytes": 199409
-    },
-    "dm-abfb1cfae35a": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Ysolde listens to what you saw, and she does not lecture. A glasswright knows exactly what a mirror costs.",
-      "chars": 106,
-      "hash": "f682c9ff69b85033",
-      "file": "voice/dm-abfb1cfae35a.mp3",
-      "bytes": 137133
-    },
-    "dm-69f8d781143d": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The truth is a hard coin, but Sergeant Crane takes it gladly. His ghost will stand beside you at the end.",
-      "chars": 105,
-      "hash": "fbb7ed87ac0632a3",
-      "file": "voice/dm-69f8d781143d.mp3",
-      "bytes": 129610
-    },
-    "dm-c85a3d8e673a": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A kind lie is told, and a restless soldier is finally at peace. The Wardens' last roll is settled.",
-      "chars": 98,
-      "hash": "2a36df5b8a1527ae",
-      "file": "voice/dm-c85a3d8e673a.mp3",
-      "bytes": 131282
-    },
-    "dm-91588ca91774": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Spring comes early to the Sunken Orchard. Silver blossom drifts through the rain, and Maelis Dewbough laughs aloud.",
-      "chars": 115,
-      "hash": "9041445c72ef8852",
-      "file": "voice/dm-91588ca91774.mp3",
-      "bytes": 134207
-    },
-    "dm-80d6a9a0824f": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Heartroot trusts you with its fruit, and Maelis trusts you with her mother's wreath. A rare thing, in any age.",
-      "chars": 114,
-      "hash": "0ea6c5e4eb1678f0",
-      "file": "voice/dm-80d6a9a0824f.mp3",
-      "bytes": 133372
-    },
-    "dm-1dbf2c9f3d34": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The trees groan as you leave. Maelis takes your coin, but she will not meet your eye, and you will not be welcome here in spring.",
-      "chars": 129,
-      "hash": "f68368d45ecdfa6a",
-      "file": "voice/dm-1dbf2c9f3d34.mp3",
-      "bytes": 158031
-    },
     "pip-61ce7fb63231": {
       "speaker": "pip",
       "voice": "P7fAh4p4xVfEzGgihOit",
@@ -16966,510 +16561,6 @@
       "file": "voice/liora-c9d80b15c6b5.mp3",
       "bytes": 78201
     },
-    "dm-3b78239ec1e6": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Down you go, brave souls, into the Rat Warrens, where the straw is damp and the cheese is older than the town. A thousand tiny eyes blink out as your torchlight finds them, and somewhere a bell no bigger than a soup tin begins to ring.",
-      "chars": 235,
-      "hash": "6248386fc0506283",
-      "file": "voice/dm-3b78239ec1e6.mp3",
-      "bytes": 319781
-    },
-    "dm-7d3a8b8eaf25": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Cold water swallows your boots, and the Drowned Grotto yawns wide around you. Pale lights drift under the black pools, and something very large turns over in its sleep.",
-      "chars": 168,
-      "hash": "0cef7427797c4a0b",
-      "file": "voice/dm-7d3a8b8eaf25.mp3",
-      "bytes": 200245
-    },
-    "dm-daccd98a8a85": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Glimmerdeep opens like the inside of a jewel, and every crystal hums the same sorrowful note. A hundred reflections march beside you, and not one of them keeps step.",
-      "chars": 169,
-      "hash": "f506b30140efd497",
-      "file": "voice/dm-daccd98a8a85.mp3",
-      "bytes": 214874
-    },
-    "dm-bf1646cb0752": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Heat strikes your face like an opened oven door. Slag crawls through the old dwarf channels, and the hammers of the Ashforge ring on, though no smith is left to swing them.",
-      "chars": 172,
-      "hash": "e8657eba63a881fc",
-      "file": "voice/dm-bf1646cb0752.mp3",
-      "bytes": 197319
-    },
-    "dm-df929242fcce": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Silence falls over you like a coffin lid. Pillars carved with roaring lizards climb into the dark, and the air trembles with the slow breathing of something that has waited a very long age.",
-      "chars": 189,
-      "hash": "ebcd7994e12fa8b0",
-      "file": "voice/dm-df929242fcce.mp3",
-      "bytes": 266283
-    },
-    "dm-3ed82cf32abb": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Back in the Rat-Warrens. The scratching starts up again.",
-      "chars": 56,
-      "hash": "91cc22df65c2f7ce",
-      "file": "voice/dm-3ed82cf32abb.mp3",
-      "bytes": 65662
-    },
-    "dm-f5c72615823b": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Drowned Grotto. Cold water closes over your boots once more.",
-      "chars": 64,
-      "hash": "61aa59e1d9b4198c",
-      "file": "voice/dm-f5c72615823b.mp3",
-      "bytes": 94501
-    },
-    "dm-27beacd47762": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Glimmerdeep hums its single note. Your reflections are waiting.",
-      "chars": 67,
-      "hash": "1f3bcc474faa8514",
-      "file": "voice/dm-27beacd47762.mp3",
-      "bytes": 96173
-    },
-    "dm-92bfd56cf939": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Ashforge heat greets you like an old, bad-tempered friend.",
-      "chars": 62,
-      "hash": "4de6a80383bdfa6e",
-      "file": "voice/dm-92bfd56cf939.mp3",
-      "bytes": 75275
-    },
-    "dm-be06dc8a2a14": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Vault. The breathing has not stopped.",
-      "chars": 41,
-      "hash": "eca95db8494d1391",
-      "file": "voice/dm-be06dc8a2a14.mp3",
-      "bytes": 48526
-    },
-    "dm-00a876dd1952": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Here the rat-sign stops, as if even the vermin give this spot a wide berth. Something waits here that is not a rat.",
-      "chars": 115,
-      "hash": "8593d56f9d2cb316",
-      "file": "voice/dm-00a876dd1952.mp3",
-      "bytes": 158031
-    },
-    "dm-fdeddfde6919": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Clear water bubbles from a cracked basin carved with a smiling face. It smells, astonishingly, of mint.",
-      "chars": 103,
-      "hash": "4681c0d35777272d",
-      "file": "voice/dm-fdeddfde6919.mp3",
-      "bytes": 134207
-    },
-    "dm-b4d1c4c33c02": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A spiral stair corkscrews down into the dark. A cold draught rises from it, carrying the smell of standing water.",
-      "chars": 113,
-      "hash": "92932c86c5cf9ac8",
-      "file": "voice/dm-b4d1c4c33c02.mp3",
-      "bytes": 149672
-    },
-    "dm-e7b40c694e6a": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The hidden passage is lined with tiny claw-marked tallies. Someone, or several someones, has been counting days here.",
-      "chars": 117,
-      "hash": "6297b1444d697bc8",
-      "file": "voice/dm-e7b40c694e6a.mp3",
-      "bytes": 124594
-    },
-    "dm-327b80946f51": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A low chamber stacked with mouldy grain sacks, every one of them gnawed open. The floor crunches underfoot, and you decide not to look down.",
-      "chars": 140,
-      "hash": "8f368d4a87de6e5a",
-      "file": "voice/dm-327b80946f51.mp3",
-      "bytes": 160957
-    },
-    "dm-f45e1ef5e9d7": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Dozens of tiny shrines line this room: thimbles, buttons and bent nails arranged with real devotion around a portrait of a very fat rat.",
-      "chars": 136,
-      "hash": "eb3d71bce23edfae",
-      "file": "voice/dm-f45e1ef5e9d7.mp3",
-      "bytes": 188124
-    },
-    "dm-8d398a0537ca": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Water pools in the middle of this chamber, and the walls are furred with nests of shredded cloth. The smell is magnificent, in the worst way.",
-      "chars": 141,
-      "hash": "56cf9ccda4d4f150",
-      "file": "voice/dm-8d398a0537ca.mp3",
-      "bytes": 190632
-    },
-    "dm-d9f30bfe51c0": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Old smuggler's crates rot in the corners, stamped with the crest of Emberhollow. One still rattles faintly when you pass.",
-      "chars": 121,
-      "hash": "6eba9af879310f62",
-      "file": "voice/dm-d9f30bfe51c0.mp3",
-      "bytes": 147582
-    },
-    "dm-9d6badccf754": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A ring of half-sunken lanterns marks this place, each one still somehow burning beneath the water.",
-      "chars": 98,
-      "hash": "2ba877b7cd5bd8f5",
-      "file": "voice/dm-9d6badccf754.mp3",
-      "bytes": 130446
-    },
-    "dm-ed9ae9d40880": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A spring of warm, glowing water rises here, fizzing gently. The fungus around it grows in the shape of open hands.",
-      "chars": 114,
-      "hash": "efe8f9baed80a017",
-      "file": "voice/dm-ed9ae9d40880.mp3",
-      "bytes": 154687
-    },
-    "dm-e09c7b2b93d5": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Steps slick with algae lead down past a waterline carved with the warning \"HIGH TIDE\". The ink is fresh.",
-      "chars": 104,
-      "hash": "9dd0765fcc29e313",
-      "file": "voice/dm-e09c7b2b93d5.mp3",
-      "bytes": 146746
-    },
-    "dm-8a9ebb9efd23": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Behind the false wall is a dry pocket of air that smells of old parchment. Someone hid here while the water rose.",
-      "chars": 113,
-      "hash": "4c3a6b5337faa0bc",
-      "file": "voice/dm-8a9ebb9efd23.mp3",
-      "bytes": 131700
-    },
-    "dm-0569952d3f06": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A flooded hall where bioluminescent eels drift between broken columns, lighting the water in slow blue pulses.",
-      "chars": 110,
-      "hash": "bcdad2fe236e88af",
-      "file": "voice/dm-0569952d3f06.mp3",
-      "bytes": 150508
-    },
-    "dm-8e51f5cf02f0": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Shipwreck timbers jut from the walls of this cave, though the sea is miles away. A barnacled figurehead watches you pass.",
-      "chars": 121,
-      "hash": "763655c3b1c47292",
-      "file": "voice/dm-8e51f5cf02f0.mp3",
-      "bytes": 163047
-    },
-    "dm-c7450fdaf8aa": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Stalactites drip in this grotto like a broken water clock. The pools below are full of tiny white crabs that click in unison.",
-      "chars": 125,
-      "hash": "7c9c8fd5c985830c",
-      "file": "voice/dm-c7450fdaf8aa.mp3",
-      "bytes": 155523
-    },
-    "dm-9a1ea6db9271": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Nets heavy with old catches hang from the ceiling here. Some of the catches are wearing boots.",
-      "chars": 94,
-      "hash": "88780812e05336ad",
-      "file": "voice/dm-9a1ea6db9271.mp3",
-      "bytes": 118325
-    },
-    "dm-75f9ddc8e0b8": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The hum of the crystals drops to a low, almost-words murmur here, as if the cavern is trying to tell you something.",
-      "chars": 115,
-      "hash": "f56abc384ca32e4b",
-      "file": "voice/dm-75f9ddc8e0b8.mp3",
-      "bytes": 153434
-    },
-    "dm-ae00794a10da": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A pool of liquid starlight shimmers in a crystal bowl. Drinking it tastes like the first cold breath of winter.",
-      "chars": 111,
-      "hash": "b0a0fb06943012ce",
-      "file": "voice/dm-ae00794a10da.mp3",
-      "bytes": 135461
-    },
-    "dm-7de588c09d6b": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A crystal stair spirals downward, each step chiming a note as you test it. The tune is not a happy one.",
-      "chars": 103,
-      "hash": "adcca850aa834714",
-      "file": "voice/dm-7de588c09d6b.mp3",
-      "bytes": 154687
-    },
-    "dm-22e454f641f3": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The concealed grotto is dark: no crystals, no reflections, no hum. The silence is the loudest thing you have heard all day.",
-      "chars": 123,
-      "hash": "4c9b7f8ef31787b0",
-      "file": "voice/dm-22e454f641f3.mp3",
-      "bytes": 173496
-    },
-    "dm-bc62f88d53d3": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A gallery of statues frozen mid-stride, each one carrying a mirror that was raised a moment too late.",
-      "chars": 101,
-      "hash": "c109e82ace0eeafe",
-      "file": "voice/dm-bc62f88d53d3.mp3",
-      "bytes": 138387
-    },
-    "dm-369fdb67673f": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Huge amethyst columns split the light into slow purple rainbows. The floor is warm, and faintly ticks like cooling glass.",
-      "chars": 121,
-      "hash": "37ba0cb5f2c649a3",
-      "file": "voice/dm-369fdb67673f.mp3",
-      "bytes": 156359
-    },
-    "dm-ac3d17dd266b": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A garden of luminous mushrooms grows in a perfect spiral here. Stepping off the path makes them all turn to face you.",
-      "chars": 117,
-      "hash": "a44723fa8bf2bfe6",
-      "file": "voice/dm-ac3d17dd266b.mp3",
-      "bytes": 146746
-    },
-    "dm-e000cba1c7c8": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Shards of a shattered geode the size of a cottage litter this chamber, still humming with whatever broke out of it.",
-      "chars": 115,
-      "hash": "2525647e8099b438",
-      "file": "voice/dm-e000cba1c7c8.mp3",
-      "bytes": 122923
-    },
-    "dm-0e20c41ef8de": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Here the hammer-song stops. Tools lie where they were dropped, mid-swing, and the air smells of a hasty departure.",
-      "chars": 114,
-      "hash": "354054b355fc1b9e",
-      "file": "voice/dm-0e20c41ef8de.mp3",
-      "bytes": 141313
-    },
-    "dm-449c0988ab03": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Cool water pours from the mouth of a stone dwarf into a quenching trough. Steam curls up, smelling of iron and relief.",
-      "chars": 118,
-      "hash": "10da90834410cab5",
-      "file": "voice/dm-449c0988ab03.mp3",
-      "bytes": 143821
-    },
-    "dm-53ab77840203": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A brass-railed stair plunges into dark heat. Each step down is a little warmer, and the walls start to sweat.",
-      "chars": 109,
-      "hash": "9c4d35413ecdea5e",
-      "file": "voice/dm-53ab77840203.mp3",
-      "bytes": 150508
-    },
-    "dm-02eb08231bba": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A hidden smithy, its tools neatly hung and its coals banked as if the smith stepped out for lunch a hundred years ago.",
-      "chars": 118,
-      "hash": "76d70116ffaf9902",
-      "file": "voice/dm-02eb08231bba.mp3",
-      "bytes": 157195
-    },
-    "dm-e63192e04923": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A chamber of cooling moulds, each one shaped like a different weapon. Several of the moulds are empty and still warm.",
-      "chars": 117,
-      "hash": "2ed27a476da198c1",
-      "file": "voice/dm-e63192e04923.mp3",
-      "bytes": 113310
-    },
-    "dm-f32bc1223e42": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Bellows the size of houses wheeze in this hall, pushed by nothing you can see. Embers dance in the draught.",
-      "chars": 107,
-      "hash": "8ae1e4fe3990532d",
-      "file": "voice/dm-f32bc1223e42.mp3",
-      "bytes": 145074
-    },
-    "dm-9dc1240b2637": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "An ore-cart track loops through this cavern, and a cart full of glowing slag still creaks slowly along it.",
-      "chars": 106,
-      "hash": "5b4e5fce435dbb09",
-      "file": "voice/dm-9dc1240b2637.mp3",
-      "bytes": 137969
-    },
-    "dm-93c7575fa67e": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Racks of half-finished armour line the walls here, helmets turned so that every empty visor watches the door.",
-      "chars": 109,
-      "hash": "5da109b804cbed8c",
-      "file": "voice/dm-93c7575fa67e.mp3",
-      "bytes": 127938
-    },
-    "dm-4f41071a3f73": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Old murals here show tiny heroes fleeing a towering lizard. The last panel has been scratched out with claws.",
-      "chars": 109,
-      "hash": "25950f6ce6f212c7",
-      "file": "voice/dm-4f41071a3f73.mp3",
-      "bytes": 132536
-    },
-    "dm-9bc1cef621ce": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A basin of violet light pulses slowly, like a resting heartbeat. The pain of the road drains away as you drink.",
-      "chars": 111,
-      "hash": "564d233a952153ac",
-      "file": "voice/dm-9bc1cef621ce.mp3",
-      "bytes": 151344
-    },
-    "dm-87cdec04142e": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Elowen's light pours from the altar ahead, golden and steady. Five keyholes wait around its rim.",
-      "chars": 96,
-      "hash": "e62f850505d6d555",
-      "file": "voice/dm-87cdec04142e.mp3",
-      "bytes": 120833
-    },
-    "dm-c9384da7cdcf": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "This hidden alcove holds the bones of a knight in mirrored armour, one hand still pointing toward the vault.",
-      "chars": 108,
-      "hash": "d57b45e828d9884e",
-      "file": "voice/dm-c9384da7cdcf.mp3",
-      "bytes": 163047
-    },
-    "dm-a77256f6cb40": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Eggshells as big as barrels lie cracked open across this chamber. Whatever hatched has had a long time to grow.",
-      "chars": 111,
-      "hash": "81d3fb86b4028059",
-      "file": "voice/dm-a77256f6cb40.mp3",
-      "bytes": 126684
-    },
-    "dm-73bd2dd724d8": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Carved pillars of roaring lizards hold up a ceiling lost in darkness. Rain-sound echoes from far above, though there is no sky.",
-      "chars": 127,
-      "hash": "84492a72469fcb1e",
-      "file": "voice/dm-73bd2dd724d8.mp3",
-      "bytes": 163047
-    },
-    "dm-639a646642ca": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "A trophy hall of crushed shields and bent swords, each tagged with a name in neat, patient handwriting.",
-      "chars": 103,
-      "hash": "c120d8b4d0e2d29b",
-      "file": "voice/dm-639a646642ca.mp3",
-      "bytes": 127520
-    },
-    "dm-8bba228827e7": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The floor here is scorched in a long, perfect line, as if lightning once ran along it on four legs.",
-      "chars": 99,
-      "hash": "0c8532306f7c13e0",
-      "file": "voice/dm-8bba228827e7.mp3",
-      "bytes": 148000
-    },
-    "dm-7b4c6e5d13e0": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Emberhollow huddles beneath the black shadow of the Spire, all slate roofs and leaning chimneys. The bell tolls the hour a little nervously, and every face in the square has lost someone to the dark below.",
-      "chars": 205,
-      "hash": "b823cc91010ce3ae",
-      "file": "voice/dm-7b4c6e5d13e0.mp3",
-      "bytes": 241623
-    },
-    "dm-8f8a670b8d08": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Boar & Spoon is warm, loud and smells of spilled ale, roast onions and wet dog. A fiddler saws at something cheerful in the corner while a mounted boar's head, wearing a spoon on a string, watches the door. Adventurers swap tall tales at long tables, and every one of them has a story about the Blackspire.",
-      "chars": 310,
-      "hash": "bcf00899ab94192f",
-      "file": "voice/dm-8f8a670b8d08.mp3",
-      "bytes": 393342
-    },
-    "dm-28f49355f55e": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The Temple of Cant is cool and hushed, lit by tall candles that never quite drip. Incense of cedar and myrrh drifts past a donation box the size of a coffin. Somewhere a priest is counting coins very quietly.",
-      "chars": 208,
-      "hash": "25d131556679339e",
-      "file": "voice/dm-28f49355f55e.mp3",
-      "bytes": 302645
-    },
-    "dm-8bd3cbc0ad78": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Straw dummies hang from posts in the Training Grounds, most of them missing their heads. The air rings with clashing steel, barked orders and the thud of arrows striking targets. A grizzled sergeant watches you sideways and mutters something about soft hands.",
-      "chars": 259,
-      "hash": "96b4adde5b7add26",
-      "file": "voice/dm-8bd3cbc0ad78.mp3",
-      "bytes": 328558
-    },
-    "dm-ae9bdf17af22": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "Fizzbang's Trading Post is an avalanche of goods waiting to happen: ropes, lanterns, potions and at least one suspicious barrel. It smells of lamp oil and lavender soap. A gnome peers at you over a counter piled high with \"bargains\".",
-      "chars": 233,
-      "hash": "9ec29ce858b9d98c",
-      "file": "voice/dm-ae9bdf17af22.mp3",
-      "bytes": 319781
-    },
-    "dm-a0714f6b37db": {
-      "speaker": "dm",
-      "voice": "b1A9OAVD1Yu0SjoFdv4A",
-      "text": "The cobbles end at a ring of standing stones around a gaping stair. Cold air breathes up from below, carrying faint echoes: a drip, a scratch, something like distant laughter. The town's last lantern swings above the entrance, and nobody has ever bothered to light it.",
-      "chars": 268,
-      "hash": "d261df630b29f5fc",
-      "file": "voice/dm-a0714f6b37db.mp3",
-      "bytes": 340679
-    },
     "narrator-497674faf539": {
       "speaker": "narrator",
       "voice": "7p1Ofvcwsv7UBPoFNcpI",
@@ -17478,6 +16569,2418 @@
       "hash": "316d40b7d0c507fb",
       "file": "voice/narrator-497674faf539.mp3",
       "bytes": 73185
+    },
+    "dmj-80c9a7e9f9ca": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The roof of the world has fallen away, and open sky pours down on the Sunken Orchard. Rain whispers through old silver trees, and an elven gate waits among them, patient as a held breath.",
+      "chars": 187,
+      "hash": "c7d150788effc5c0",
+      "file": "voice/dmj-80c9a7e9f9ca.mp3",
+      "bytes": 243295
+    },
+    "dmj-40027d3ebca5": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The old kiln is a cavern of warm brick, and in its heart stands the Mirror, tall as a door and framed in black iron. It shows you the room as it will be in an hour, and it does not blink.",
+      "chars": 187,
+      "hash": "feb13ed7751ba4df",
+      "file": "voice/dmj-40027d3ebca5.mp3",
+      "bytes": 211530
+    },
+    "dmj-27511ef9b220": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The tunnel widens into a nest of gnawed bones and stolen cutlery, heaped into a lopsided throne. Something large and orcish stirs on top of it, and beside it the Broodmother clicks her fangs. Roll for initiative.",
+      "chars": 212,
+      "hash": "d5d4b19add369f32",
+      "file": "voice/dmj-27511ef9b220.mp3",
+      "bytes": 249146
+    },
+    "dmj-6b4d55d95c1d": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The cave drops into a drowned amphitheatre, black and mirror still. Then the water parts, and Old Clubtail rises with his wasps humming round him like a crown. Steady now, heroes.",
+      "chars": 179,
+      "hash": "d83382ea91a23fff",
+      "file": "voice/dmj-6b4d55d95c1d.mp3",
+      "bytes": 212784
+    },
+    "dmj-5eccd7490063": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Crystals grow in a perfect ring around a pedestal of black glass. Gargoyles lean from the shadows, and in the centre Glasshide the Basilisk lifts her eyes. Do not look her in the face.",
+      "chars": 184,
+      "hash": "a96a3fbb3cad58e7",
+      "file": "voice/dmj-5eccd7490063.mp3",
+      "bytes": 235772
+    },
+    "dmj-c9de2f2e1f15": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The forge hall opens around an anvil the size of a wagon, glowing white hot. Forgemaster Brakk steps out of the smoke with Cindermaw at his heel, and the hammer in his fist is far too fine for him.",
+      "chars": 197,
+      "hash": "a68291c875b671ea",
+      "file": "voice/dmj-c9de2f2e1f15.mp3",
+      "bytes": 227830
+    },
+    "dmj-e8d2ff760a51": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "At the heart of the vault, a crown of black iron rises from the dark, and beneath it sits Malthrax, the Dread Sovereign himself. He smiles like a man who has been expecting you. Every die at this table is about to matter.",
+      "chars": 221,
+      "hash": "1121f3777c1935b1",
+      "file": "voice/dmj-e8d2ff760a51.mp3",
+      "bytes": 251654
+    },
+    "dmj-29ecfa755709": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The floor splits like rotten wood, and the Tyrant of the Blackspire climbs up out of the dark. Gorvax is awake, and he is hungry. Steel yourselves, for this is the last roll.",
+      "chars": 174,
+      "hash": "24ead133679fe655",
+      "file": "voice/dmj-29ecfa755709.mp3",
+      "bytes": 183109
+    },
+    "dmj-757544ea3a6b": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "In the dust lies an iron key, cold and heavy with purpose. The way down is yours to open.",
+      "chars": 89,
+      "hash": "9969191171b1b0a0",
+      "file": "voice/dmj-757544ea3a6b.mp3",
+      "bytes": 123758
+    },
+    "dmj-e670f6097bb9": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "From the silt of the grotto you lift a key, green with weed and still as sharp as the day it was cut.",
+      "chars": 101,
+      "hash": "b0c0d0b57e1416ae",
+      "file": "voice/dmj-e670f6097bb9.mp3",
+      "bytes": 108712
+    },
+    "dmj-127ba40252cf": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A key of pale crystal rests in your palm, and it hums, very softly, in the same sad tune as the cavern.",
+      "chars": 103,
+      "hash": "987448ec40d69437",
+      "file": "voice/dmj-127ba40252cf.mp3",
+      "bytes": 123758
+    },
+    "dmj-7bb2a4687152": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Ashforge key is still warm from the fire that made it. Someone left in a hurry.",
+      "chars": 83,
+      "hash": "cbe7063118127c04",
+      "file": "voice/dmj-7bb2a4687152.mp3",
+      "bytes": 101189
+    },
+    "dmj-fde561337e64": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The final key is black and heavy as a verdict. Beyond it, one door remains.",
+      "chars": 75,
+      "hash": "77444860d7c1c911",
+      "file": "voice/dmj-fde561337e64.mp3",
+      "bytes": 98263
+    },
+    "dmj-cf7cd6ebd9e5": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Light spills from the treasure like a promise kept. Not every adventurer lives long enough to hold something so fine.",
+      "chars": 117,
+      "hash": "5682f29ce3172780",
+      "file": "voice/dmj-cf7cd6ebd9e5.mp3",
+      "bytes": 114563
+    },
+    "dmj-b9e0a5116e6a": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The named brute lies still. Somewhere in the Spire, someone is going to hear about this.",
+      "chars": 88,
+      "hash": "bb0fb53c0e859cab",
+      "file": "voice/dmj-b9e0a5116e6a.mp3",
+      "bytes": 102861
+    },
+    "dmj-43ada74f67aa": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A halfling's grudge is a quiet thing, until it is not. Lantern Row left its mark on these halls, and the road to Garrick Vane runs through every floor.",
+      "chars": 151,
+      "hash": "6a1e95c9333d0143",
+      "file": "voice/dmj-43ada74f67aa.mp3",
+      "bytes": 175585
+    },
+    "dmj-6d1afb470a1b": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "In Emberhollow, a pawnbroker is being robbed in her own name. Somebody forged her hand, and somebody else is digging up the dead.",
+      "chars": 129,
+      "hash": "b7850f75ac358ab1",
+      "file": "voice/dmj-6d1afb470a1b.mp3",
+      "bytes": 131282
+    },
+    "dmj-f21e7f2a06c7": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A fisherman's wife went down to the grotto shrine to sing, and the water kept her songs. Harl Tollow waits on the shore, and he has almost stopped hoping.",
+      "chars": 154,
+      "hash": "27f527275ee636e5",
+      "file": "voice/dmj-f21e7f2a06c7.mp3",
+      "bytes": 154270
+    },
+    "dmj-51f8c0d79fc1": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A glasswright asks you to destroy her finest work. It stands in the old kiln, and it has been watching since the day it was made.",
+      "chars": 129,
+      "hash": "f64dbbbbd019ce6a",
+      "file": "voice/dmj-51f8c0d79fc1.mp3",
+      "bytes": 148000
+    },
+    "dmj-953dd0c0af5a": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A sergeant dead three years still keeps his post, and he cannot rest until he knows what became of his three missing soldiers.",
+      "chars": 126,
+      "hash": "2f460f89544dd138",
+      "file": "voice/dmj-953dd0c0af5a.mp3",
+      "bytes": 129610
+    },
+    "dmj-89c82abd1e99": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Maelis Dewbough tends the Orchard like a garden of old graves. Something is rotting its heartwood, and the grey fruit is telling her so.",
+      "chars": 136,
+      "hash": "0cc7098459d82461",
+      "file": "voice/dmj-89c82abd1e99.mp3",
+      "bytes": 148000
+    },
+    "dmj-76ae95b4e0ff": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Seneschal of Keys turns from his ledger, unhurried, and he is smiling. Behind him a small voice cries out, and everyone at this table knows whose it is.",
+      "chars": 156,
+      "hash": "cd56ed203d048417",
+      "file": "voice/dmj-76ae95b4e0ff.mp3",
+      "bytes": 171406
+    },
+    "dmj-c6a8bb7d468b": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Roots as old as the Spire coil round a pool of black water, and in it a pale light turns, slowly, like an eye. The Heartroot is listening. Choose your words with care.",
+      "chars": 167,
+      "hash": "724cca90058a9183",
+      "file": "voice/dmj-c6a8bb7d468b.mp3",
+      "bytes": 216545
+    },
+    "dmj-f099fa498dba": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The hammer falls, and the Mirror sighs rather than shatters. Ten eyes go dark one by one, and far below, something loses its sight.",
+      "chars": 131,
+      "hash": "b00a25a7b16d468f",
+      "file": "voice/dmj-f099fa498dba.mp3",
+      "bytes": 185198
+    },
+    "dmj-9db3f7fcdb3c": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You look, and the Mirror shows you everything it has ever seen. Now you know where the staff will break, and the Sovereign knows your face. A seal cracks in the dark.",
+      "chars": 166,
+      "hash": "a7f5fac3c07ee64b",
+      "file": "voice/dmj-9db3f7fcdb3c.mp3",
+      "bytes": 163883
+    },
+    "dmj-4a12b669a911": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The release verse rings out, and the Sisters of the Tide rise from the black water, singing. They go home at last.",
+      "chars": 114,
+      "hash": "ffc9dcbb4ef5fa3c",
+      "file": "voice/dmj-4a12b669a911.mp3",
+      "bytes": 122923
+    },
+    "dmj-97a07df479b4": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Choir's song bends to your will, and the Sisters fall silent, bound. The water shivers as though it were weeping.",
+      "chars": 117,
+      "hash": "745b38abda0f4d73",
+      "file": "voice/dmj-97a07df479b4.mp3",
+      "bytes": 146746
+    },
+    "dmj-ba9b49e742f4": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The old rite sounds, and the Gate of the Silver Court wakes. One by one the trees light up, and a stair of roots leads down.",
+      "chars": 124,
+      "hash": "8b1bb427c3dd8096",
+      "file": "voice/dmj-ba9b49e742f4.mp3",
+      "bytes": 147582
+    },
+    "dmj-5c9923a5e309": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The seal breaks with a crack like a bone, and the gate stands open, but crooked. Something beneath it is very angry.",
+      "chars": 116,
+      "hash": "cbb55895ac3917c5",
+      "file": "voice/dmj-5c9923a5e309.mp3",
+      "bytes": 147582
+    },
+    "dmj-3607c308ff75": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The brine key turns, and the gate opens as if it had always belonged to the cult. Far below, a bell rings, and a seal cracks.",
+      "chars": 125,
+      "hash": "e2fda0a5570215e9",
+      "file": "voice/dmj-3607c308ff75.mp3",
+      "bytes": 163883
+    },
+    "dmj-bcb921054ba5": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Garrick Vane falls, and a debt of three long years is paid in a single breath. Pip does not speak, and the table is very quiet.",
+      "chars": 127,
+      "hash": "49d16c7dd74b8586",
+      "file": "voice/dmj-bcb921054ba5.mp3",
+      "bytes": 156359
+    },
+    "dmj-406c5cbc1e66": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You lower the blade, and a sparrow of hope flies out of a three year cage. Somewhere on Cant Street, a girl named Posy is waiting to be found.",
+      "chars": 142,
+      "hash": "48af7c9379337b9b",
+      "file": "voice/dmj-406c5cbc1e66.mp3",
+      "bytes": 197319
+    },
+    "dmj-bf05cb39f6c2": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The law takes its due, and Odalys Fenn's name is clean again. Justice has been served, cold and tidy.",
+      "chars": 101,
+      "hash": "e0b9842339c22f69",
+      "file": "voice/dmj-bf05cb39f6c2.mp3",
+      "bytes": 122087
+    },
+    "dmj-301f06ed6f79": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A forger repays his debt with honest work, and the town never learns the tale. Sometimes mercy is the better coin.",
+      "chars": 114,
+      "hash": "b90a41328a559905",
+      "file": "voice/dmj-301f06ed6f79.mp3",
+      "bytes": 132536
+    },
+    "dmj-994ce82d1da7": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The forger bolts into the night, and the pawnbroker's name is cleared, though her purse is lighter. Not every story ends with a bow.",
+      "chars": 132,
+      "hash": "6dfc647aa253dfeb",
+      "file": "voice/dmj-994ce82d1da7.mp3",
+      "bytes": 139223
+    },
+    "dmj-5476b4bea462": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The silver is heavy in your hand, and the silence you bought is heavier still. Some coins leave a stain.",
+      "chars": 104,
+      "hash": "870dd37be429a6a7",
+      "file": "voice/dmj-5476b4bea462.mp3",
+      "bytes": 117907
+    },
+    "dmj-d6e800322886": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Harl Tollow weeps on the shore, and for the first time in years, it is a good weeping. The Sisters are free.",
+      "chars": 108,
+      "hash": "40f954fd1584b77b",
+      "file": "voice/dmj-d6e800322886.mp3",
+      "bytes": 134207
+    },
+    "dmj-43fa855537ad": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Harl Tollow learns what became of the Choir, and he does not thank you. A bargain has been struck, and its price is not yet paid.",
+      "chars": 129,
+      "hash": "e580c18bf95e47b6",
+      "file": "voice/dmj-43fa855537ad.mp3",
+      "bytes": 134625
+    },
+    "dmj-0ea92ba7b919": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Ysolde Verrin is free of her Mirror, and a thousand shards of silver lie across the kiln floor. She presses a circlet into your hand and does not look back.",
+      "chars": 156,
+      "hash": "68cdfe2d4b9c81bd",
+      "file": "voice/dmj-0ea92ba7b919.mp3",
+      "bytes": 180183
+    },
+    "dmj-abfb1cfae35a": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Ysolde listens to what you saw, and she does not lecture. A glasswright knows exactly what a mirror costs.",
+      "chars": 106,
+      "hash": "3d3f4cb1da5b3506",
+      "file": "voice/dmj-abfb1cfae35a.mp3",
+      "bytes": 117907
+    },
+    "dmj-69f8d781143d": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The truth is a hard coin, but Sergeant Crane takes it gladly. His ghost will stand beside you at the end.",
+      "chars": 105,
+      "hash": "2634a073f838a22a",
+      "file": "voice/dmj-69f8d781143d.mp3",
+      "bytes": 134207
+    },
+    "dmj-c85a3d8e673a": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A kind lie is told, and a restless soldier is finally at peace. The Wardens' last roll is settled.",
+      "chars": 98,
+      "hash": "e6f6320dbd1fe401",
+      "file": "voice/dmj-c85a3d8e673a.mp3",
+      "bytes": 140059
+    },
+    "dmj-91588ca91774": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Spring comes early to the Sunken Orchard. Silver blossom drifts through the rain, and Maelis Dewbough laughs aloud.",
+      "chars": 115,
+      "hash": "4e0596bdeb151790",
+      "file": "voice/dmj-91588ca91774.mp3",
+      "bytes": 122923
+    },
+    "dmj-80d6a9a0824f": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Heartroot trusts you with its fruit, and Maelis trusts you with her mother's wreath. A rare thing, in any age.",
+      "chars": 114,
+      "hash": "1544efb500a6ffd7",
+      "file": "voice/dmj-80d6a9a0824f.mp3",
+      "bytes": 117907
+    },
+    "dmj-1dbf2c9f3d34": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The trees groan as you leave. Maelis takes your coin, but she will not meet your eye, and you will not be welcome here in spring.",
+      "chars": 129,
+      "hash": "35857e7e6c63b095",
+      "file": "voice/dmj-1dbf2c9f3d34.mp3",
+      "bytes": 145910
+    },
+    "dmj-3b78239ec1e6": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Down you go, brave souls, into the Rat Warrens, where the straw is damp and the cheese is older than the town. A thousand tiny eyes blink out as your torchlight finds them, and somewhere a bell no bigger than a soup tin begins to ring.",
+      "chars": 235,
+      "hash": "3b9a73bb584b2404",
+      "file": "voice/dmj-3b78239ec1e6.mp3",
+      "bytes": 282583
+    },
+    "dmj-7d3a8b8eaf25": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Cold water swallows your boots, and the Drowned Grotto yawns wide around you. Pale lights drift under the black pools, and something very large turns over in its sleep.",
+      "chars": 168,
+      "hash": "9e63b3ba93c0e5dc",
+      "file": "voice/dmj-7d3a8b8eaf25.mp3",
+      "bytes": 191886
+    },
+    "dmj-daccd98a8a85": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Glimmerdeep opens like the inside of a jewel, and every crystal hums the same sorrowful note. A hundred reflections march beside you, and not one of them keeps step.",
+      "chars": 169,
+      "hash": "5ad7407d0c150f6c",
+      "file": "voice/dmj-daccd98a8a85.mp3",
+      "bytes": 184781
+    },
+    "dmj-bf1646cb0752": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Heat strikes your face like an opened oven door. Slag crawls through the old dwarf channels, and the hammers of the Ashforge ring on, though no smith is left to swing them.",
+      "chars": 172,
+      "hash": "aaac215ad4aed0d5",
+      "file": "voice/dmj-bf1646cb0752.mp3",
+      "bytes": 191886
+    },
+    "dmj-df929242fcce": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Silence falls over you like a coffin lid. Pillars carved with roaring lizards climb into the dark, and the air trembles with the slow breathing of something that has waited a very long age.",
+      "chars": 189,
+      "hash": "cc3f4162ee78c737",
+      "file": "voice/dmj-df929242fcce.mp3",
+      "bytes": 260431
+    },
+    "dmj-3ed82cf32abb": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Back in the Rat-Warrens. The scratching starts up again.",
+      "chars": 56,
+      "hash": "fc684d39b5c36695",
+      "file": "voice/dmj-3ed82cf32abb.mp3",
+      "bytes": 51452
+    },
+    "dmj-f5c72615823b": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Drowned Grotto. Cold water closes over your boots once more.",
+      "chars": 64,
+      "hash": "2d0d2c2ed258bac3",
+      "file": "voice/dmj-f5c72615823b.mp3",
+      "bytes": 87814
+    },
+    "dmj-27beacd47762": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Glimmerdeep hums its single note. Your reflections are waiting.",
+      "chars": 67,
+      "hash": "deb7728d440be222",
+      "file": "voice/dmj-27beacd47762.mp3",
+      "bytes": 77783
+    },
+    "dmj-92bfd56cf939": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Ashforge heat greets you like an old, bad-tempered friend.",
+      "chars": 62,
+      "hash": "34d6b0a5ae807eb6",
+      "file": "voice/dmj-92bfd56cf939.mp3",
+      "bytes": 62736
+    },
+    "dmj-be06dc8a2a14": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Vault. The breathing has not stopped.",
+      "chars": 41,
+      "hash": "2e3fed0df2fd9dff",
+      "file": "voice/dmj-be06dc8a2a14.mp3",
+      "bytes": 40585
+    },
+    "dmj-00a876dd1952": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Here the rat-sign stops, as if even the vermin give this spot a wide berth. Something waits here that is not a rat.",
+      "chars": 115,
+      "hash": "dfcf65263aa17e55",
+      "file": "voice/dmj-00a876dd1952.mp3",
+      "bytes": 127520
+    },
+    "dmj-fdeddfde6919": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Clear water bubbles from a cracked basin carved with a smiling face. It smells, astonishingly, of mint.",
+      "chars": 103,
+      "hash": "08946ccda61d7f4d",
+      "file": "voice/dmj-fdeddfde6919.mp3",
+      "bytes": 131282
+    },
+    "dmj-b4d1c4c33c02": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A spiral stair corkscrews down into the dark. A cold draught rises from it, carrying the smell of standing water.",
+      "chars": 113,
+      "hash": "681f6bfa57cc31dc",
+      "file": "voice/dmj-b4d1c4c33c02.mp3",
+      "bytes": 137969
+    },
+    "dmj-e7b40c694e6a": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The hidden passage is lined with tiny claw-marked tallies. Someone, or several someones, has been counting days here.",
+      "chars": 117,
+      "hash": "00f144c755367e46",
+      "file": "voice/dmj-e7b40c694e6a.mp3",
+      "bytes": 139223
+    },
+    "dmj-327b80946f51": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A low chamber stacked with mouldy grain sacks, every one of them gnawed open. The floor crunches underfoot, and you decide not to look down.",
+      "chars": 140,
+      "hash": "10c5ac4c86112c1f",
+      "file": "voice/dmj-327b80946f51.mp3",
+      "bytes": 158449
+    },
+    "dmj-f45e1ef5e9d7": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Dozens of tiny shrines line this room: thimbles, buttons and bent nails arranged with real devotion around a portrait of a very fat rat.",
+      "chars": 136,
+      "hash": "0d2c7fe31a439e6b",
+      "file": "voice/dmj-f45e1ef5e9d7.mp3",
+      "bytes": 158449
+    },
+    "dmj-8d398a0537ca": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Water pools in the middle of this chamber, and the walls are furred with nests of shredded cloth. The smell is magnificent, in the worst way.",
+      "chars": 141,
+      "hash": "4d8496ba16b378a4",
+      "file": "voice/dmj-8d398a0537ca.mp3",
+      "bytes": 159285
+    },
+    "dmj-d9f30bfe51c0": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Old smuggler's crates rot in the corners, stamped with the crest of Emberhollow. One still rattles faintly when you pass.",
+      "chars": 121,
+      "hash": "88c0f0fd98135e8c",
+      "file": "voice/dmj-d9f30bfe51c0.mp3",
+      "bytes": 134207
+    },
+    "dmj-9d6badccf754": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A ring of half-sunken lanterns marks this place, each one still somehow burning beneath the water.",
+      "chars": 98,
+      "hash": "9e304c43d4d12efe",
+      "file": "voice/dmj-9d6badccf754.mp3",
+      "bytes": 112474
+    },
+    "dmj-ed9ae9d40880": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A spring of warm, glowing water rises here, fizzing gently. The fungus around it grows in the shape of open hands.",
+      "chars": 114,
+      "hash": "dca5acb4b39cd545",
+      "file": "voice/dmj-ed9ae9d40880.mp3",
+      "bytes": 142985
+    },
+    "dmj-e09c7b2b93d5": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Steps slick with algae lead down past a waterline carved with the warning \"HIGH TIDE\". The ink is fresh.",
+      "chars": 104,
+      "hash": "eeb658ac7c07a83b",
+      "file": "voice/dmj-e09c7b2b93d5.mp3",
+      "bytes": 145910
+    },
+    "dmj-8a9ebb9efd23": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Behind the false wall is a dry pocket of air that smells of old parchment. Someone hid here while the water rose.",
+      "chars": 113,
+      "hash": "e62a8a177a486ce5",
+      "file": "voice/dmj-8a9ebb9efd23.mp3",
+      "bytes": 125012
+    },
+    "dmj-0569952d3f06": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A flooded hall where bioluminescent eels drift between broken columns, lighting the water in slow blue pulses.",
+      "chars": 110,
+      "hash": "aa50abac556699a8",
+      "file": "voice/dmj-0569952d3f06.mp3",
+      "bytes": 128774
+    },
+    "dmj-8e51f5cf02f0": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Shipwreck timbers jut from the walls of this cave, though the sea is miles away. A barnacled figurehead watches you pass.",
+      "chars": 121,
+      "hash": "672b24ac2c1e9e39",
+      "file": "voice/dmj-8e51f5cf02f0.mp3",
+      "bytes": 135461
+    },
+    "dmj-c7450fdaf8aa": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Stalactites drip in this grotto like a broken water clock. The pools below are full of tiny white crabs that click in unison.",
+      "chars": 125,
+      "hash": "43e3fd7f7847e7dd",
+      "file": "voice/dmj-c7450fdaf8aa.mp3",
+      "bytes": 145074
+    },
+    "dmj-9a1ea6db9271": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Nets heavy with old catches hang from the ceiling here. Some of the catches are wearing boots.",
+      "chars": 94,
+      "hash": "77c21cd9d554a92f",
+      "file": "voice/dmj-9a1ea6db9271.mp3",
+      "bytes": 96173
+    },
+    "dmj-75f9ddc8e0b8": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The hum of the crystals drops to a low, almost-words murmur here, as if the cavern is trying to tell you something.",
+      "chars": 115,
+      "hash": "d67b9312c8f1e8b2",
+      "file": "voice/dmj-75f9ddc8e0b8.mp3",
+      "bytes": 121251
+    },
+    "dmj-ae00794a10da": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A pool of liquid starlight shimmers in a crystal bowl. Drinking it tastes like the first cold breath of winter.",
+      "chars": 111,
+      "hash": "5c4a2a41428a4615",
+      "file": "voice/dmj-ae00794a10da.mp3",
+      "bytes": 113310
+    },
+    "dmj-7de588c09d6b": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A crystal stair spirals downward, each step chiming a note as you test it. The tune is not a happy one.",
+      "chars": 103,
+      "hash": "e67e5aa4e0ee1827",
+      "file": "voice/dmj-7de588c09d6b.mp3",
+      "bytes": 117907
+    },
+    "dmj-22e454f641f3": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The concealed grotto is dark: no crystals, no reflections, no hum. The silence is the loudest thing you have heard all day.",
+      "chars": 123,
+      "hash": "8b8ac92f3df57da4",
+      "file": "voice/dmj-22e454f641f3.mp3",
+      "bytes": 145074
+    },
+    "dmj-bc62f88d53d3": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A gallery of statues frozen mid-stride, each one carrying a mirror that was raised a moment too late.",
+      "chars": 101,
+      "hash": "806afbddf9f79234",
+      "file": "voice/dmj-bc62f88d53d3.mp3",
+      "bytes": 117071
+    },
+    "dmj-369fdb67673f": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Huge amethyst columns split the light into slow purple rainbows. The floor is warm, and faintly ticks like cooling glass.",
+      "chars": 121,
+      "hash": "65a30303737e462a",
+      "file": "voice/dmj-369fdb67673f.mp3",
+      "bytes": 139223
+    },
+    "dmj-ac3d17dd266b": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A garden of luminous mushrooms grows in a perfect spiral here. Stepping off the path makes them all turn to face you.",
+      "chars": 117,
+      "hash": "0040c5b0f15fcdbd",
+      "file": "voice/dmj-ac3d17dd266b.mp3",
+      "bytes": 122923
+    },
+    "dmj-e000cba1c7c8": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Shards of a shattered geode the size of a cottage litter this chamber, still humming with whatever broke out of it.",
+      "chars": 115,
+      "hash": "3bca814c051f0526",
+      "file": "voice/dmj-e000cba1c7c8.mp3",
+      "bytes": 112474
+    },
+    "dmj-0e20c41ef8de": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Here the hammer-song stops. Tools lie where they were dropped, mid-swing, and the air smells of a hasty departure.",
+      "chars": 114,
+      "hash": "703f4396bead9c1c",
+      "file": "voice/dmj-0e20c41ef8de.mp3",
+      "bytes": 127938
+    },
+    "dmj-449c0988ab03": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Cool water pours from the mouth of a stone dwarf into a quenching trough. Steam curls up, smelling of iron and relief.",
+      "chars": 118,
+      "hash": "5981f5f0573ddd4f",
+      "file": "voice/dmj-449c0988ab03.mp3",
+      "bytes": 139223
+    },
+    "dmj-53ab77840203": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A brass-railed stair plunges into dark heat. Each step down is a little warmer, and the walls start to sweat.",
+      "chars": 109,
+      "hash": "35ea1f481002b7bd",
+      "file": "voice/dmj-53ab77840203.mp3",
+      "bytes": 122087
+    },
+    "dmj-02eb08231bba": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A hidden smithy, its tools neatly hung and its coals banked as if the smith stepped out for lunch a hundred years ago.",
+      "chars": 118,
+      "hash": "a4771b1e870a92b0",
+      "file": "voice/dmj-02eb08231bba.mp3",
+      "bytes": 129610
+    },
+    "dmj-e63192e04923": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A chamber of cooling moulds, each one shaped like a different weapon. Several of the moulds are empty and still warm.",
+      "chars": 117,
+      "hash": "523a0323860275b5",
+      "file": "voice/dmj-e63192e04923.mp3",
+      "bytes": 125012
+    },
+    "dmj-f32bc1223e42": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Bellows the size of houses wheeze in this hall, pushed by nothing you can see. Embers dance in the draught.",
+      "chars": 107,
+      "hash": "6983cdf1dfa62230",
+      "file": "voice/dmj-f32bc1223e42.mp3",
+      "bytes": 122923
+    },
+    "dmj-9dc1240b2637": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "An ore-cart track loops through this cavern, and a cart full of glowing slag still creaks slowly along it.",
+      "chars": 106,
+      "hash": "14968f4473c4b18b",
+      "file": "voice/dmj-9dc1240b2637.mp3",
+      "bytes": 127520
+    },
+    "dmj-93c7575fa67e": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Racks of half-finished armour line the walls here, helmets turned so that every empty visor watches the door.",
+      "chars": 109,
+      "hash": "08ec3b43ab60d895",
+      "file": "voice/dmj-93c7575fa67e.mp3",
+      "bytes": 111638
+    },
+    "dmj-4f41071a3f73": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Old murals here show tiny heroes fleeing a towering lizard. The last panel has been scratched out with claws.",
+      "chars": 109,
+      "hash": "65a2d87c56b1e68b",
+      "file": "voice/dmj-4f41071a3f73.mp3",
+      "bytes": 137133
+    },
+    "dmj-9bc1cef621ce": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A basin of violet light pulses slowly, like a resting heartbeat. The pain of the road drains away as you drink.",
+      "chars": 111,
+      "hash": "f1be06631b3a2552",
+      "file": "voice/dmj-9bc1cef621ce.mp3",
+      "bytes": 123758
+    },
+    "dmj-87cdec04142e": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elowen's light pours from the altar ahead, golden and steady. Five keyholes wait around its rim.",
+      "chars": 96,
+      "hash": "9d5f8dc950e7f021",
+      "file": "voice/dmj-87cdec04142e.mp3",
+      "bytes": 115399
+    },
+    "dmj-c9384da7cdcf": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "This hidden alcove holds the bones of a knight in mirrored armour, one hand still pointing toward the vault.",
+      "chars": 108,
+      "hash": "4b2dd1d16b4bab77",
+      "file": "voice/dmj-c9384da7cdcf.mp3",
+      "bytes": 109548
+    },
+    "dmj-a77256f6cb40": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Eggshells as big as barrels lie cracked open across this chamber. Whatever hatched has had a long time to grow.",
+      "chars": 111,
+      "hash": "da13756331fdabd2",
+      "file": "voice/dmj-a77256f6cb40.mp3",
+      "bytes": 115399
+    },
+    "dmj-73bd2dd724d8": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Carved pillars of roaring lizards hold up a ceiling lost in darkness. Rain-sound echoes from far above, though there is no sky.",
+      "chars": 127,
+      "hash": "be18a806f934bf91",
+      "file": "voice/dmj-73bd2dd724d8.mp3",
+      "bytes": 158031
+    },
+    "dmj-639a646642ca": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "A trophy hall of crushed shields and bent swords, each tagged with a name in neat, patient handwriting.",
+      "chars": 103,
+      "hash": "98bf9c43ecd2d18c",
+      "file": "voice/dmj-639a646642ca.mp3",
+      "bytes": 118325
+    },
+    "dmj-8bba228827e7": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The floor here is scorched in a long, perfect line, as if lightning once ran along it on four legs.",
+      "chars": 99,
+      "hash": "148cc29f3cd44eae",
+      "file": "voice/dmj-8bba228827e7.mp3",
+      "bytes": 131700
+    },
+    "dmj-7b4c6e5d13e0": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Emberhollow huddles beneath the black shadow of the Spire, all slate roofs and leaning chimneys. The bell tolls the hour a little nervously, and every face in the square has lost someone to the dark below.",
+      "chars": 205,
+      "hash": "28472547d5c26292",
+      "file": "voice/dmj-7b4c6e5d13e0.mp3",
+      "bytes": 224905
+    },
+    "dmj-8f8a670b8d08": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Boar & Spoon is warm, loud and smells of spilled ale, roast onions and wet dog. A fiddler saws at something cheerful in the corner while a mounted boar's head, wearing a spoon on a string, watches the door. Adventurers swap tall tales at long tables, and every one of them has a story about the Blackspire.",
+      "chars": 310,
+      "hash": "b008c40b9e8986d7",
+      "file": "voice/dmj-8f8a670b8d08.mp3",
+      "bytes": 357816
+    },
+    "dmj-28f49355f55e": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Temple of Cant is cool and hushed, lit by tall candles that never quite drip. Incense of cedar and myrrh drifts past a donation box the size of a coffin. Somewhere a priest is counting coins very quietly.",
+      "chars": 208,
+      "hash": "6f3ca9fdd4778386",
+      "file": "voice/dmj-28f49355f55e.mp3",
+      "bytes": 245385
+    },
+    "dmj-8bd3cbc0ad78": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Straw dummies hang from posts in the Training Grounds, most of them missing their heads. The air rings with clashing steel, barked orders and the thud of arrows striking targets. A grizzled sergeant watches you sideways and mutters something about soft hands.",
+      "chars": 259,
+      "hash": "dfe5f1c1ee3ae5d5",
+      "file": "voice/dmj-8bd3cbc0ad78.mp3",
+      "bytes": 290106
+    },
+    "dmj-ae9bdf17af22": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Fizzbang's Trading Post is an avalanche of goods waiting to happen: ropes, lanterns, potions and at least one suspicious barrel. It smells of lamp oil and lavender soap. A gnome peers at you over a counter piled high with \"bargains\".",
+      "chars": 233,
+      "hash": "fc78613d026288a5",
+      "file": "voice/dmj-ae9bdf17af22.mp3",
+      "bytes": 286345
+    },
+    "dmj-a0714f6b37db": {
+      "speaker": "dm",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The cobbles end at a ring of standing stones around a gaping stair. Cold air breathes up from below, carrying faint echoes: a drip, a scratch, something like distant laughter. The town's last lantern swings above the entrance, and nobody has ever bothered to light it.",
+      "chars": 268,
+      "hash": "57f2400f951a0f91",
+      "file": "voice/dmj-a0714f6b37db.mp3",
+      "bytes": 324379
+    },
+    "tilda-6a7532d6cabb": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "They say a halfling put Garrick Vane in the ground. Lantern Row held a vigil.",
+      "chars": 77,
+      "hash": "66f3601f7bb489f0",
+      "file": "voice/tilda-6a7532d6cabb.mp3",
+      "bytes": 79037
+    },
+    "brogan-09d5810eaec6": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Hard justice. I will not say I blame her.",
+      "chars": 41,
+      "hash": "781289f54b1d052b",
+      "file": "voice/brogan-09d5810eaec6.mp3",
+      "bytes": 49362
+    },
+    "tilda-7b1f6306cff9": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "I heard the halfling let Garrick Vane walk. Mercy, in Lantern Row!",
+      "chars": 66,
+      "hash": "7ff604888ed038d1",
+      "file": "voice/tilda-7b1f6306cff9.mp3",
+      "bytes": 70260
+    },
+    "ketter-6c1aaa47123c": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "It takes more nerve to spare a man than to stab him.",
+      "chars": 52,
+      "hash": "8d805464ec330257",
+      "file": "voice/ketter-6c1aaa47123c.mp3",
+      "bytes": 47690
+    },
+    "iolen-5b090abee38c": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "The Sisters sing free now. Harl Tollow rows out, and the water answers him.",
+      "chars": 75,
+      "hash": "d2bac152ec8138ea",
+      "file": "voice/iolen-5b090abee38c.mp3",
+      "bytes": 84888
+    },
+    "brogan-cc342575cb05": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Gave me goosebumps, it did.",
+      "chars": 27,
+      "hash": "5eef49f06fc9eba3",
+      "file": "voice/brogan-cc342575cb05.mp3",
+      "bytes": 30136
+    },
+    "iolen-73388761f408": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "The Drowned Choir sings for a master now. Harl has stopped rowing.",
+      "chars": 66,
+      "hash": "acc604b0ee82e27d",
+      "file": "voice/iolen-73388761f408.mp3",
+      "bytes": 80709
+    },
+    "mosk-070212e31a56": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "A song with a leash on it. I do not like it.",
+      "chars": 44,
+      "hash": "fb3caebbb4e884b0",
+      "file": "voice/mosk-070212e31a56.mp3",
+      "bytes": 64408
+    },
+    "mosk-816d5213930a": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "Ysolde's Mirror is shards on the kiln floor. The glasswright sleeps at last.",
+      "chars": 76,
+      "hash": "6a78b422e121992a",
+      "file": "voice/mosk-816d5213930a.mp3",
+      "bytes": 94501
+    },
+    "tilda-569a94f1ef45": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "Silver glitter in every boot that comes up from the Glimmerdeep.",
+      "chars": 64,
+      "hash": "b82f377acd398478",
+      "file": "voice/tilda-569a94f1ef45.mp3",
+      "bytes": 51452
+    },
+    "iolen-9416786fd241": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "Someone looked into the Mirror, I am told. They came out knowing things.",
+      "chars": 72,
+      "hash": "4bc2aed50c149134",
+      "file": "voice/iolen-9416786fd241.mp3",
+      "bytes": 81127
+    },
+    "ketter-2dbb6a105519": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "I once saw a man go quiet after a mirror. He was never the same.",
+      "chars": 64,
+      "hash": "a37f396ec3febc4a",
+      "file": "voice/ketter-2dbb6a105519.mp3",
+      "bytes": 61065
+    },
+    "brogan-122e2bbfa12d": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Odalys named the forger to their face. Pawn tickets are honest again.",
+      "chars": 69,
+      "hash": "999cb204fd3e68f6",
+      "file": "voice/brogan-122e2bbfa12d.mp3",
+      "bytes": 89486
+    },
+    "tilda-3bd4a21bc0d8": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "Whoever pointed the finger had proof. Nobody is arguing.",
+      "chars": 56,
+      "hash": "54f90f2a9098c9b3",
+      "file": "voice/tilda-3bd4a21bc0d8.mp3",
+      "bytes": 47690
+    },
+    "tilda-26edec56785e": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "The forger left town by lantern light, and Odalys looks lighter.",
+      "chars": 64,
+      "hash": "16f07ddb6836bfb5",
+      "file": "voice/tilda-26edec56785e.mp3",
+      "bytes": 71096
+    },
+    "mosk-a675de9f4648": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "I heard coins changed hands. I heard nothing else. I heard nothing.",
+      "chars": 67,
+      "hash": "b1ad9d55033bd03d",
+      "file": "voice/mosk-a675de9f4648.mp3",
+      "bytes": 100771
+    },
+    "iolen-2203fa629dfd": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "The Sunken Orchard blooms again under open sky. Silverfruit in the market!",
+      "chars": 74,
+      "hash": "95f2db8b0967574f",
+      "file": "voice/iolen-2203fa629dfd.mp3",
+      "bytes": 86560
+    },
+    "brogan-f76e8abe2e36": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "One bite and my cough was gone.",
+      "chars": 31,
+      "hash": "345b640f46de921e",
+      "file": "voice/brogan-f76e8abe2e36.mp3",
+      "bytes": 36823
+    },
+    "iolen-538a77b7ad7f": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "The orchard gate stands crooked and the trees have gone quiet.",
+      "chars": 62,
+      "hash": "f67e7c2606e5493b",
+      "file": "voice/iolen-538a77b7ad7f.mp3",
+      "bytes": 65662
+    },
+    "mosk-eeb0d8de3889": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "Somebody paid a price down there. I bar my door at night.",
+      "chars": 57,
+      "hash": "ca5e493ea273e16d",
+      "file": "voice/mosk-eeb0d8de3889.mp3",
+      "bytes": 65662
+    },
+    "ketter-eb39cf50576e": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "The Sergeant of the Fourth Company has his roll called at last. You gave him peace.",
+      "chars": 83,
+      "hash": "4a4acc9d42f2e66d",
+      "file": "voice/ketter-eb39cf50576e.mp3",
+      "bytes": 81127
+    },
+    "brogan-252e4d194c48": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Skarn the Spider Rider is dead! The Warrens are quiet. Mostly.",
+      "chars": 62,
+      "hash": "74569b32adf55e6f",
+      "file": "voice/brogan-252e4d194c48.mp3",
+      "bytes": 91158
+    },
+    "tilda-691811f2c6a0": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "The rats never read the news, love.",
+      "chars": 35,
+      "hash": "59361966bf8a21a4",
+      "file": "voice/tilda-691811f2c6a0.mp3",
+      "bytes": 32225
+    },
+    "tilda-a8fe45c44850": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "Old Clubtail is down! Miners say the Grotto doors open easier now.",
+      "chars": 66,
+      "hash": "b8d3b8c907f525f8",
+      "file": "voice/tilda-a8fe45c44850.mp3",
+      "bytes": 61065
+    },
+    "mosk-60554f3ccfc7": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "Glasshide fell. The Glimmerdeep glows, and nobody has turned to glass this week.",
+      "chars": 80,
+      "hash": "c39dce9916c3cb20",
+      "file": "voice/mosk-60554f3ccfc7.mp3",
+      "bytes": 111220
+    },
+    "ketter-a95bfb71be0f": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "Forgemaster Brakk is finished. The Ashforge anvils ring for free folk again.",
+      "chars": 76,
+      "hash": "d4773b26c1dbcc5b",
+      "file": "voice/ketter-a95bfb71be0f.mp3",
+      "bytes": 76947
+    },
+    "tilda-62d60f50011a": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "The Dread Sovereign is dead! Somebody drinks free tonight. I hope it is you.",
+      "chars": 76,
+      "hash": "0a86cdcd50f78ea0",
+      "file": "voice/tilda-62d60f50011a.mp3",
+      "bytes": 64408
+    },
+    "ketter-790a14a3d1b7": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "The Tyrant still sleeps under the vault, mind. Do not celebrate too long.",
+      "chars": 73,
+      "hash": "17a6e48f08bfd781",
+      "file": "voice/ketter-790a14a3d1b7.mp3",
+      "bytes": 79037
+    },
+    "iolen-2dc127a356af": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "The moon looks cracked tonight. One seal is gone, they say.",
+      "chars": 59,
+      "hash": "c616a884eeebf62e",
+      "file": "voice/iolen-2dc127a356af.mp3",
+      "bytes": 61065
+    },
+    "brogan-a85cb29581c8": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Every third rest, another one breaks. Count your naps.",
+      "chars": 54,
+      "hash": "a9915ff6b2bb2302",
+      "file": "voice/brogan-a85cb29581c8.mp3",
+      "bytes": 65662
+    },
+    "ketter-726bd379a772": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "Three seals broken. Gorvax shifts in his sleep. Do not linger up here.",
+      "chars": 70,
+      "hash": "eaed47ddd945a24e",
+      "file": "voice/ketter-726bd379a772.mp3",
+      "bytes": 79037
+    },
+    "tilda-3b5634432a3c": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "Odalys at the pawn shop is white as flour. Someone forged her tickets.",
+      "chars": 70,
+      "hash": "2ff73db6f07a9e42",
+      "file": "voice/tilda-3b5634432a3c.mp3",
+      "bytes": 73185
+    },
+    "mosk-bad8d548c539": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "If you find the forger, she pays well. If you do not, she remembers.",
+      "chars": 68,
+      "hash": "3936adf2c1231a42",
+      "file": "voice/mosk-bad8d548c539.mp3",
+      "bytes": 97845
+    },
+    "ketter-80554f2becba": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "Three leads at the pawn shop: the tickets, the grave dirt, the back alley. Check all three first.",
+      "chars": 97,
+      "hash": "9ab414fc7d2160b5",
+      "file": "voice/ketter-80554f2becba.mp3",
+      "bytes": 107458
+    },
+    "tilda-c61e8a26bad8": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "Odalys wants proof, not a guess. A hasty accusation never ends well.",
+      "chars": 68,
+      "hash": "fcf11dbe151fd38f",
+      "file": "voice/tilda-c61e8a26bad8.mp3",
+      "bytes": 62736
+    },
+    "iolen-08f62d3c8634": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "Harl Tollow rows out each dusk and listens. He swears his wife still sings under the water.",
+      "chars": 91,
+      "hash": "d0dc78951d5ce9ac",
+      "file": "voice/iolen-08f62d3c8634.mp3",
+      "bytes": 102861
+    },
+    "brogan-51323bb59090": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Down in the Drowned Grotto, second floor. You need a strong stomach.",
+      "chars": 68,
+      "hash": "064621414b63b691",
+      "file": "voice/brogan-51323bb59090.mp3",
+      "bytes": 81963
+    },
+    "iolen-782d569a7697": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "The Sunken Chapel stands on the second floor. The Black Pool lies beyond it. Bring a steady heart.",
+      "chars": 98,
+      "hash": "dac3652bf9724b61",
+      "file": "voice/iolen-782d569a7697.mp3",
+      "bytes": 114145
+    },
+    "ketter-64b4109152da": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "A glasswright named Ysolde lost her trust in mirrors. The old kiln, third floor.",
+      "chars": 80,
+      "hash": "8d8027c85cc94a13",
+      "file": "voice/ketter-64b4109152da.mp3",
+      "bytes": 83634
+    },
+    "mosk-5d70f9d610ad": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "Do not look at any mirror down there longer than you must.",
+      "chars": 58,
+      "hash": "0f873cdcbce16ac6",
+      "file": "voice/mosk-5d70f9d610ad.mp3",
+      "bytes": 66498
+    },
+    "ketter-941ce08c91dd": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "A Sergeant of the Fourth Company still walks the Ashforge, counting his dead.",
+      "chars": 77,
+      "hash": "26b22d944d88cf26",
+      "file": "voice/ketter-941ce08c91dd.mp3",
+      "bytes": 79037
+    },
+    "brogan-4fcd2d96e73c": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Three tags missing from his roll. Search the old barracks.",
+      "chars": 58,
+      "hash": "f3a018809202a4aa",
+      "file": "voice/brogan-4fcd2d96e73c.mp3",
+      "bytes": 72350
+    },
+    "iolen-436571e8fcf7": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "A keeper named Maelis tends the Sunken Orchard on the third floor. The trees listen.",
+      "chars": 84,
+      "hash": "4b7c6f4e721bb637",
+      "file": "voice/iolen-436571e8fcf7.mp3",
+      "bytes": 93247
+    },
+    "iolen-97a2dd098143": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "They answer to the hour and the weather. Read the sky and the trees before you choose.",
+      "chars": 86,
+      "hash": "2b95ebaf888e41ba",
+      "file": "voice/iolen-97a2dd098143.mp3",
+      "bytes": 87396
+    },
+    "tilda-fcb93d129a2e": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "Chalk marks on the cellar doors in Lantern Row. Three dots and a hook. Still fresh.",
+      "chars": 83,
+      "hash": "464e55942a47f69e",
+      "file": "voice/tilda-fcb93d129a2e.mp3",
+      "bytes": 71096
+    },
+    "brogan-32ce625be4ad": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Garrick Vane's old crew. Eleven gone, and one man walks free.",
+      "chars": 61,
+      "hash": "b58e159553bbb678",
+      "file": "voice/brogan-32ce625be4ad.mp3",
+      "bytes": 84470
+    },
+    "brogan-46c0592502d9": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Four of the Watch went into the Warrens and never came back. Rowan will not say it.",
+      "chars": 83,
+      "hash": "527c3c4cdf952932",
+      "file": "voice/brogan-46c0592502d9.mp3",
+      "bytes": 92412
+    },
+    "ketter-a2c9bd58640a": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "Bound, not dead, I would bet my knee. Cut them loose.",
+      "chars": 53,
+      "hash": "324ad9a61c17c24d",
+      "file": "voice/ketter-a2c9bd58640a.mp3",
+      "bytes": 48526
+    },
+    "tilda-3aabdcee13c7": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "Marga hears digging under the cellar. Not rats. Someone tunnels toward the barrels.",
+      "chars": 83,
+      "hash": "b01a6c33a6731a55",
+      "file": "voice/tilda-3aabdcee13c7.mp3",
+      "bytes": 71096
+    },
+    "mosk-7d44bfe15edc": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "First floor, I heard. Collapse it and she will never stop thanking you.",
+      "chars": 71,
+      "hash": "2dc0c3b4cd1a8956",
+      "file": "voice/mosk-7d44bfe15edc.mp3",
+      "bytes": 90322
+    },
+    "iolen-d4369fac12c1": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "Brother Osric lost temple relics in a satchel stitched with the royal sun.",
+      "chars": 74,
+      "hash": "0c33860cfd3691ee",
+      "file": "voice/iolen-d4369fac12c1.mp3",
+      "bytes": 76947
+    },
+    "mosk-37b202f43630": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "The Grotto swallowed it. Sunk in the water, but dry inside, by some blessing.",
+      "chars": 77,
+      "hash": "56acda3796ffa738",
+      "file": "voice/mosk-37b202f43630.mp3",
+      "bytes": 115399
+    },
+    "ketter-d1ba4bd7c9b8": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "Dwarven smiths sit in chains at the Ashforge. Dobbin swears they will fight for you.",
+      "chars": 84,
+      "hash": "739aa2ae95f26a34",
+      "file": "voice/ketter-d1ba4bd7c9b8.mp3",
+      "bytes": 79037
+    },
+    "brogan-71eb4e677396": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Smash the chains. Do not pick the locks.",
+      "chars": 40,
+      "hash": "92343546464b062a",
+      "file": "voice/brogan-71eb4e677396.mp3",
+      "bytes": 56049
+    },
+    "ketter-5006d93a7394": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "First floor, the Warrens. Skarn rides a spider, and spiders burn. Bring fire.",
+      "chars": 77,
+      "hash": "030ce1c0040c90c1",
+      "file": "voice/ketter-5006d93a7394.mp3",
+      "bytes": 79037
+    },
+    "brogan-3476c5514866": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Rats come in packs. Fight in the corridor, not the open room.",
+      "chars": 61,
+      "hash": "1ab60c2ca52ed972",
+      "file": "voice/brogan-3476c5514866.mp3",
+      "bytes": 80709
+    },
+    "ketter-abad5446ce34": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "Old Clubtail hits like a falling roof. Keep your healer behind the line and topped up.",
+      "chars": 86,
+      "hash": "799e726e6a4926ce",
+      "file": "voice/ketter-abad5446ce34.mp3",
+      "bytes": 74439
+    },
+    "mosk-b07d15443e57": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "No healer in your party? Down in the Grotto? Old Clubtail breaks bones.",
+      "chars": 71,
+      "hash": "705ec42448af1ee2",
+      "file": "voice/mosk-b07d15443e57.mp3",
+      "bytes": 107458
+    },
+    "brogan-a687d6325171": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Hire a priest at the bar before you go. It is cheaper than a funeral.",
+      "chars": 69,
+      "hash": "9b5170ac0f91f246",
+      "file": "voice/brogan-a687d6325171.mp3",
+      "bytes": 76947
+    },
+    "ketter-408f93f2e50d": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "Glasshide the Basilisk turns folk to glass. Thunder shatters it. Poison does nothing.",
+      "chars": 85,
+      "hash": "2d4bcbedb90faccd",
+      "file": "voice/ketter-408f93f2e50d.mp3",
+      "bytes": 89486
+    },
+    "brogan-60bfef1b7952": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Gargoyles in the Glimmerdeep shrug off lightning and poison. Hit them with steel.",
+      "chars": 81,
+      "hash": "7910dc2f13bf2943",
+      "file": "voice/brogan-60bfef1b7952.mp3",
+      "bytes": 94083
+    },
+    "ketter-4706dcbce08c": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "Forgemaster Brakk shrugs off fire. Odd, for a man who lives in a forge.",
+      "chars": 71,
+      "hash": "053b53690e2abcd3",
+      "file": "voice/ketter-4706dcbce08c.mp3",
+      "bytes": 85724
+    },
+    "mosk-32b0dac2417c": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "The chimera Cindermaw burns, flies and bites three ways. Cold drops it like a stone.",
+      "chars": 84,
+      "hash": "66fe1bfa500499d6",
+      "file": "voice/mosk-32b0dac2417c.mp3",
+      "bytes": 145074
+    },
+    "ketter-7c0c23fa70aa": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "Malthrax fears radiant light and shrugs off the dark. Bring something that shines.",
+      "chars": 82,
+      "hash": "01d59c5c98460413",
+      "file": "voice/ketter-7c0c23fa70aa.mp3",
+      "bytes": 86560
+    },
+    "iolen-46b1bad59ff6": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "The Sovereign's staff has a crack under the third ring. Find the tall tale and strike there.",
+      "chars": 92,
+      "hash": "42704ee4982c8172",
+      "file": "voice/iolen-46b1bad59ff6.mp3",
+      "bytes": 104532
+    },
+    "brogan-d8210bfed4b9": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Another round! And a dwarf's blessing on whoever pays!",
+      "chars": 54,
+      "hash": "66b03b764cc9f431",
+      "file": "voice/brogan-d8210bfed4b9.mp3",
+      "bytes": 71514
+    },
+    "tilda-f7a4c8c9f89e": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "Pay first, bless after, Brogan.",
+      "chars": 31,
+      "hash": "df9523f69a097a42",
+      "file": "voice/tilda-f7a4c8c9f89e.mp3",
+      "bytes": 30972
+    },
+    "mosk-4e3759aa7812": {
+      "speaker": "mosk",
+      "voice": "SDARFhQygpPvpLh7Ad1B",
+      "text": "Ninety gold, three pelts and a lamp. That is all I have left, and I was robbed twice.",
+      "chars": 85,
+      "hash": "923b13329487f09c",
+      "file": "voice/mosk-4e3759aa7812.mp3",
+      "bytes": 140059
+    },
+    "ketter-890730f36245": {
+      "speaker": "ketter",
+      "voice": "7FroLDTDG92jPfUW6BlQ",
+      "text": "Thirty years in the dungeons. My knees remember every one of them.",
+      "chars": 66,
+      "hash": "1cabe8d102cd0aff",
+      "file": "voice/ketter-890730f36245.mp3",
+      "bytes": 58975
+    },
+    "iolen-ff99021f427f": {
+      "speaker": "iolen",
+      "voice": "8N2ng9i2uiUWqstgmWlH",
+      "text": "The road is long, but this tavern is warm. I rest here between pilgrimages.",
+      "chars": 75,
+      "hash": "4cbcc7bf760c8256",
+      "file": "voice/iolen-ff99021f427f.mp3",
+      "bytes": 89486
+    },
+    "tilda-84adee4cdc87": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "Marga waters the ale. Do not tell her I said so.",
+      "chars": 48,
+      "hash": "d01be6f825d031e6",
+      "file": "voice/tilda-84adee4cdc87.mp3",
+      "bytes": 49362
+    },
+    "brogan-33fec4de56eb": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "I could not tell. Is that bad?",
+      "chars": 30,
+      "hash": "a74a7e4de00e8dd7",
+      "file": "voice/brogan-33fec4de56eb.mp3",
+      "bytes": 43510
+    },
+    "brogan-a47044fb2e9a": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "I heard the stew has rat in it.",
+      "chars": 31,
+      "hash": "75b0908ab95dd328",
+      "file": "voice/brogan-a47044fb2e9a.mp3",
+      "bytes": 43510
+    },
+    "tilda-76a0a9606157": {
+      "speaker": "tilda",
+      "voice": "EQx6HGDYjkDpcli6vorJ",
+      "text": "Only on weekdays, love.",
+      "chars": 23,
+      "hash": "7f4b1aeb24debfdb",
+      "file": "voice/tilda-76a0a9606157.mp3",
+      "bytes": 24702
+    },
+    "brambur-3bfc297a2427": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "My mum was a smith before she was anything else. She forged a hammer for every child she blessed.",
+      "chars": 97,
+      "hash": "ea83e8d4c8c21009",
+      "file": "voice/brambur-3bfc297a2427.mp3",
+      "bytes": 111638
+    },
+    "brambur-95795a25df84": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "Someone took hers from the forge. It is somewhere below us, and I keep apologizing to the rats in case they have it.",
+      "chars": 116,
+      "hash": "e80d6bd50705c8dc",
+      "file": "voice/brambur-95795a25df84.mp3",
+      "bytes": 107876
+    },
+    "brambur-dcb9ebb2556e": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "If you see dwarven boot prints, will you tell me? Please? Sorry. Please.",
+      "chars": 72,
+      "hash": "d69867351a6dab17",
+      "file": "voice/brambur-dcb9ebb2556e.mp3",
+      "bytes": 87396
+    },
+    "brambur-24184eba63bb": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "I did not tell you about my father. He went down a mine and counted the dark instead of the days.",
+      "chars": 97,
+      "hash": "c02c148eeeaf08a3",
+      "file": "voice/brambur-24184eba63bb.mp3",
+      "bytes": 91576
+    },
+    "brambur-9ee349d2e2ab": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "Mother Pellwen says every second chance is a door. I only have to knock, instead of apologizing to it.",
+      "chars": 102,
+      "hash": "b1e418b23979e7fa",
+      "file": "voice/brambur-9ee349d2e2ab.mp3",
+      "bytes": 100771
+    },
+    "brambur-9b6c336c389c": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "I used to pray for the courage to be brave. Lately I pray for the courage to be useful.",
+      "chars": 87,
+      "hash": "575044ef908753d4",
+      "file": "voice/brambur-9b6c336c389c.mp3",
+      "bytes": 86560
+    },
+    "brambur-e4bea7fac98f": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "You make me useful. I wanted you to know that. It is the nicest thing anyone has done for me.",
+      "chars": 93,
+      "hash": "fb3e8ab4924cbb25",
+      "file": "voice/brambur-e4bea7fac98f.mp3",
+      "bytes": 91576
+    },
+    "brambur-96c4336b5643": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "Sorry. I mean thank you.",
+      "chars": 24,
+      "hash": "62899e63842fcc1a",
+      "file": "voice/brambur-96c4336b5643.mp3",
+      "bytes": 25538
+    },
+    "brambur-2ef50b1a1f3c": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "The hammer has a name. Hearthsong. My mum sang to the iron while she worked.",
+      "chars": 76,
+      "hash": "25e8a6ed22ad8e20",
+      "file": "voice/brambur-2ef50b1a1f3c.mp3",
+      "bytes": 78201
+    },
+    "brambur-251238f423b7": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "When we find it, I would like you to hear it ring. That is all. That is everything.",
+      "chars": 83,
+      "hash": "074c1d155b16a271",
+      "file": "voice/brambur-251238f423b7.mp3",
+      "bytes": 76947
+    },
+    "fizzwick-06546a7af701": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Fizzwick's spellbook was scattered by cultists. Pages, you understand, written in his own tiny hand.",
+      "chars": 100,
+      "hash": "b4081673276f2d12",
+      "file": "voice/fizzwick-06546a7af701.mp3",
+      "bytes": 118325
+    },
+    "fizzwick-4baf1d3627b6": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Without them Fizzwick is merely brilliant. With them, Fizzwick is inevitable.",
+      "chars": 77,
+      "hash": "5cc3b122283982b6",
+      "file": "voice/fizzwick-4baf1d3627b6.mp3",
+      "bytes": 97845
+    },
+    "fizzwick-83f3f6d119ae": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Keep an eye out for torn pages. Fizzwick will pretend he does not care.",
+      "chars": 71,
+      "hash": "409832d045e3e969",
+      "file": "voice/fizzwick-83f3f6d119ae.mp3",
+      "bytes": 86560
+    },
+    "fizzwick-6532fd836869": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Fizzwick was expelled from the Academy of Brightspire. Officially, for a fireball in the library.",
+      "chars": 97,
+      "hash": "709036e154867056",
+      "file": "voice/fizzwick-6532fd836869.mp3",
+      "bytes": 100771
+    },
+    "fizzwick-6d9c6550e4b2": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "The fireball was peer review, a rather harsh one. The library has since been rebuilt, and it is bigger.",
+      "chars": 103,
+      "hash": "1d0be1695304e22e",
+      "file": "voice/fizzwick-6d9c6550e4b2.mp3",
+      "bytes": 111220
+    },
+    "fizzwick-35c7c72dc7cd": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Fizzwick will tell you something he has told no one. He fears nobody remembers a gnome who is not loud.",
+      "chars": 103,
+      "hash": "a15340fab76b2670",
+      "file": "voice/fizzwick-35c7c72dc7cd.mp3",
+      "bytes": 104950
+    },
+    "fizzwick-d7b452e5f700": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "So Fizzwick is very loud. Even in the dark. Especially in the dark.",
+      "chars": 67,
+      "hash": "921ffdb99f8ad32c",
+      "file": "voice/fizzwick-d7b452e5f700.mp3",
+      "bytes": 73185
+    },
+    "fizzwick-c8bd1509c629": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Fizzwick has never had a friend who stayed after the explosion. You stayed.",
+      "chars": 75,
+      "hash": "cf51e04bc44cda77",
+      "file": "voice/fizzwick-c8bd1509c629.mp3",
+      "bytes": 81963
+    },
+    "fizzwick-d050a4431401": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Fizzwick has noted this in a footnote. It is the longest footnote he has ever written.",
+      "chars": 86,
+      "hash": "866994042fa52240",
+      "file": "voice/fizzwick-d050a4431401.mp3",
+      "bytes": 93247
+    },
+    "pip-8b275e3ff2d0": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "The Lantern Row Crew had eleven. We lit one lantern for each of us, over the old bakery door.",
+      "chars": 93,
+      "hash": "82fbb4404f3a184f",
+      "file": "voice/pip-8b275e3ff2d0.mp3",
+      "bytes": 120833
+    },
+    "pip-54b6a329e1af": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "Garrick Vane was my partner, and my best friend. He sold the whole crew to the cult for a pocket of gold.",
+      "chars": 105,
+      "hash": "e3f6856f4d3e798e",
+      "file": "voice/pip-54b6a329e1af.mp3",
+      "bytes": 111638
+    },
+    "pip-0636ea81252a": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "So I follow the Lantern Row marks down the floors. Three clues, then the Seneschal's door.",
+      "chars": 90,
+      "hash": "082dc66e7fe9ef3f",
+      "file": "voice/pip-0636ea81252a.mp3",
+      "bytes": 96173
+    },
+    "pip-1ff0207d58c1": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "Posy was the youngest. Nine years old, pockets like a magician. Garrick swore he would keep her safe.",
+      "chars": 101,
+      "hash": "14b61e116f9f3132",
+      "file": "voice/pip-1ff0207d58c1.mp3",
+      "bytes": 118325
+    },
+    "pip-fab114464a60": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "I do not want to talk about Posy. Thank you for not making me.",
+      "chars": 62,
+      "hash": "443beaa5d5596cd8",
+      "file": "voice/pip-fab114464a60.mp3",
+      "bytes": 71096
+    },
+    "pip-4d21bbda69fe": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "Some nights I plan to stab him. Some nights I plan to hear him say sorry.",
+      "chars": 73,
+      "hash": "5e41b4ccefbc25a3",
+      "file": "voice/pip-4d21bbda69fe.mp3",
+      "bytes": 96173
+    },
+    "pip-2cd4f58413f1": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "I like the second plan less. Whatever you decide when we get there, I will remember it. I remember everything.",
+      "chars": 110,
+      "hash": "90d9c8e4d6b95a2f",
+      "file": "voice/pip-2cd4f58413f1.mp3",
+      "bytes": 129610
+    },
+    "pip-a2c01d0b78c0": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "I do not trust anybody. But I trust you a little. For me, that is a lot.",
+      "chars": 72,
+      "hash": "8377156b2609606d",
+      "file": "voice/pip-a2c01d0b78c0.mp3",
+      "bytes": 93247
+    },
+    "pip-e70f163bb153": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "When we reach the Seneschal's door, stand where I can see you. That is all I ask.",
+      "chars": 81,
+      "hash": "431ce0fcf657b438",
+      "file": "voice/pip-e70f163bb153.mp3",
+      "bytes": 89486
+    },
+    "grumsh-3e1c01e64f20": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "I am writing a ballad. One verse for every floor of the Blackspire. Five verses, no chorus.",
+      "chars": 91,
+      "hash": "59900b0cedb39118",
+      "file": "voice/grumsh-3e1c01e64f20.mp3",
+      "bytes": 107458
+    },
+    "grumsh-50ac5b09e27b": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "My mother wanted a bard. I am a disappointment with a very good rhyme for slaughter.",
+      "chars": 84,
+      "hash": "6d2605aedb6533f6",
+      "file": "voice/grumsh-50ac5b09e27b.mp3",
+      "bytes": 82798
+    },
+    "grumsh-676ab6cbe330": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "If you find a verse on a wall, in a carving or a drunk's scrawl, tell me. It may be the one.",
+      "chars": 92,
+      "hash": "715905e5dba0b1a1",
+      "file": "voice/grumsh-676ab6cbe330.mp3",
+      "bytes": 85724
+    },
+    "grumsh-5965a8690bf4": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "My father was a warlord. He taught me to count enemies. My mother taught me to count syllables.",
+      "chars": 95,
+      "hash": "b7b866e1aa762d29",
+      "file": "voice/grumsh-5965a8690bf4.mp3",
+      "bytes": 91158
+    },
+    "grumsh-1a06091aa059": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "I am better at the second. No one has ever cheered a syllable.",
+      "chars": 62,
+      "hash": "e5a0f6bcb0de3066",
+      "file": "voice/grumsh-1a06091aa059.mp3",
+      "bytes": 63572
+    },
+    "grumsh-ba7df98adc17": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "When I was small, I sang to the wounded in the camp. They said I sounded like a kind storm.",
+      "chars": 91,
+      "hash": "9fa442888ccece1a",
+      "file": "voice/grumsh-ba7df98adc17.mp3",
+      "bytes": 91576
+    },
+    "grumsh-b230c09f6a6b": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "Then my father heard. He called it weakness, and I put the songs away for twenty years.",
+      "chars": 87,
+      "hash": "ae664a0961e1137f",
+      "file": "voice/grumsh-b230c09f6a6b.mp3",
+      "bytes": 94083
+    },
+    "grumsh-dc7a41bf0c2e": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "Last night I hummed in my sleep. Brambur says it was lovely.",
+      "chars": 60,
+      "hash": "c0ddbea1b58cdf29",
+      "file": "voice/grumsh-dc7a41bf0c2e.mp3",
+      "bytes": 61901
+    },
+    "grumsh-975bfe0684c2": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "I will sing the ballad aloud when we win. You may stand at the back. I will still see you.",
+      "chars": 90,
+      "hash": "447713f2d08beb01",
+      "file": "voice/grumsh-975bfe0684c2.mp3",
+      "bytes": 87814
+    },
+    "zizzy-5779a49ac17e": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "Zizzy needs blasting powder! Dwarven blasting powder, the good stuff, in the Ashforge somewhere!",
+      "chars": 96,
+      "hash": "94093bf79b6935c2",
+      "file": "voice/zizzy-5779a49ac17e.mp3",
+      "bytes": 100771
+    },
+    "zizzy-c42763835226": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "The Ashforge gate is locked. Locks are just very small walls, and walls are very slow explosions.",
+      "chars": 97,
+      "hash": "84358306b7836edb",
+      "file": "voice/zizzy-c42763835226.mp3",
+      "bytes": 115399
+    },
+    "zizzy-b36ba6ca6541": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "Find the powder and Zizzy will make you a firework. A tiny one. Medium.",
+      "chars": 71,
+      "hash": "a3180f302f6945f3",
+      "file": "voice/zizzy-b36ba6ca6541.mp3",
+      "bytes": 99099
+    },
+    "zizzy-d3b34e30a10b": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "My family did not like the fire. The tiefling parts of me that go boom. They told me to hide it.",
+      "chars": 96,
+      "hash": "58d6c6298a11a7d0",
+      "file": "voice/zizzy-d3b34e30a10b.mp3",
+      "bytes": 105786
+    },
+    "zizzy-1aa6358c5c54": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "Zizzy did not hide it. Zizzy made it a hobby, then a career. Look how well it is going!",
+      "chars": 87,
+      "hash": "ec77316ea8a80b01",
+      "file": "voice/zizzy-1aa6358c5c54.mp3",
+      "bytes": 104950
+    },
+    "zizzy-beead22ef13a": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "Zizzy has a secret. When it is quiet, I get scared the fire will not stop.",
+      "chars": 74,
+      "hash": "686b2b6d6d8a0ef6",
+      "file": "voice/zizzy-beead22ef13a.mp3",
+      "bytes": 91158
+    },
+    "zizzy-f6c23d7a56d7": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "When you are near, it stays small. I do not know why. I am not complaining. Do not tell Vexrath, he will file it.",
+      "chars": 113,
+      "hash": "ed0ec41562399cae",
+      "file": "voice/zizzy-f6c23d7a56d7.mp3",
+      "bytes": 125012
+    },
+    "zizzy-3343c3902758": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "Zizzy made you a gift. A very small firework, shaped like a heart. It exploded. Sorry!",
+      "chars": 86,
+      "hash": "c63c527894b929e1",
+      "file": "voice/zizzy-3343c3902758.mp3",
+      "bytes": 92412
+    },
+    "zizzy-b3d1bf3a7b21": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "I will make another. You are my favorite explosion and my favorite person, in that order.",
+      "chars": 89,
+      "hash": "b32b2298bff3d182",
+      "file": "voice/zizzy-b3d1bf3a7b21.mp3",
+      "bytes": 96173
+    },
+    "vexrath-6d5d412ebe93": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "My clan was exiled by royal decree, forty years ago. I have read the decree. I believe it is forged.",
+      "chars": 100,
+      "hash": "919acfa70c28ab0a",
+      "file": "voice/vexrath-6d5d412ebe93.mp3",
+      "bytes": 124594
+    },
+    "vexrath-fe761ea8ede7": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "The original is sealed in crystal somewhere on the third floor. I will find it, or I will file a complaint.",
+      "chars": 107,
+      "hash": "3cecfc04b6fa21ae",
+      "file": "voice/vexrath-fe761ea8ede7.mp3",
+      "bytes": 112474
+    },
+    "vexrath-fe14de1b012d": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "If you see a royal seal, bring it to me. Bring it gently. It is evidence.",
+      "chars": 73,
+      "hash": "ebefae55d3e02410",
+      "file": "voice/vexrath-fe14de1b012d.mp3",
+      "bytes": 99935
+    },
+    "vexrath-78d540482240": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "Ledgerus teaches that every promise is a debt, and every debt will be called. I take that seriously.",
+      "chars": 100,
+      "hash": "d821fd9a16aecf34",
+      "file": "voice/vexrath-78d540482240.mp3",
+      "bytes": 135461
+    },
+    "vexrath-6bba4e1ff438": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "I fear I have not always kept my promises to my own family.",
+      "chars": 59,
+      "hash": "0852ec92b0c53063",
+      "file": "voice/vexrath-6bba4e1ff438.mp3",
+      "bytes": 61065
+    },
+    "vexrath-36ee88d4596b": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "My sister begged me not to sign the exile. I signed. I thought it was the law. It was a lie.",
+      "chars": 92,
+      "hash": "fc45404b88830e44",
+      "file": "voice/vexrath-36ee88d4596b.mp3",
+      "bytes": 112474
+    },
+    "vexrath-a5026f06c1f8": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "I have been filing that mistake in my heart for forty years. It has no folder.",
+      "chars": 78,
+      "hash": "add5ab32e0ac1b59",
+      "file": "voice/vexrath-a5026f06c1f8.mp3",
+      "bytes": 94083
+    },
+    "vexrath-8467745c99ff": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "I have drafted a document. It is a character reference. It is for you.",
+      "chars": 70,
+      "hash": "e095dc00b99bd5a7",
+      "file": "voice/vexrath-8467745c99ff.mp3",
+      "bytes": 94083
+    },
+    "vexrath-945d968468bb": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "It reads, in full: honest, brave, irregular. Please note that I have stamped it twice.",
+      "chars": 86,
+      "hash": "f8f0c7e7f631d6c6",
+      "file": "voice/vexrath-945d968468bb.mp3",
+      "bytes": 115399
+    },
+    "nettle-51b938de46e5": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "I am collecting the true legend of the Sovereign's staff. One fragment per floor, from the second floor down.",
+      "chars": 109,
+      "hash": "c0b97970a2b9225b",
+      "file": "voice/nettle-51b938de46e5.mp3",
+      "bytes": 133372
+    },
+    "nettle-9a5e51bb065d": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "Everyone agrees on the staff. Nobody agrees on the details. That is how you know it is true.",
+      "chars": 92,
+      "hash": "ae8e9c7b8602f4eb",
+      "file": "voice/nettle-9a5e51bb065d.mp3",
+      "bytes": 126684
+    },
+    "nettle-205293f62d06": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "If a smith or a ghost starts talking, listen. I pay in stories.",
+      "chars": 63,
+      "hash": "57997555e259be1a",
+      "file": "voice/nettle-205293f62d06.mp3",
+      "bytes": 88650
+    },
+    "nettle-af94a06030b2": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "Truth time. I did not invent the door. I only wanted to be the sort of person who might have.",
+      "chars": 93,
+      "hash": "c8780116d45a6753",
+      "file": "voice/nettle-af94a06030b2.mp3",
+      "bytes": 118325
+    },
+    "nettle-4d99d7179769": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "Everything else I told you is true. Possibly. That is the truth.",
+      "chars": 64,
+      "hash": "03633b642eb1f29e",
+      "file": "voice/nettle-4d99d7179769.mp3",
+      "bytes": 104950
+    },
+    "nettle-dc3b6c58a823": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "I grew up in a ship's galley. My mother sold stories to sailors for an extra ladle of soup.",
+      "chars": 91,
+      "hash": "a1423981c125b35d",
+      "file": "voice/nettle-dc3b6c58a823.mp3",
+      "bytes": 110384
+    },
+    "nettle-1991e16231c7": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "She said a lie is a gift when you give it away. I have given away a great many gifts.",
+      "chars": 85,
+      "hash": "48253a5922922b69",
+      "file": "voice/nettle-1991e16231c7.mp3",
+      "bytes": 122087
+    },
+    "nettle-9c95d136ad2e": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "I tried writing the true story of this party. It came out better than any lie I own.",
+      "chars": 84,
+      "hash": "5118160d5671c0d3",
+      "file": "voice/nettle-9c95d136ad2e.mp3",
+      "bytes": 107458
+    },
+    "nettle-28460b1ea10c": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "I am keeping it. Somebody should remember us properly, and it might as well be a liar.",
+      "chars": 86,
+      "hash": "28de7ee3613f9fa9",
+      "file": "voice/nettle-28460b1ea10c.mp3",
+      "bytes": 97845
+    },
+    "brambur-c1341bb3a6c5": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "Any word of dwarven boot prints? Mum's hammer is out there, on the first floor, and the fourth.",
+      "chars": 95,
+      "hash": "34565f904d1a05b2",
+      "file": "voice/brambur-c1341bb3a6c5.mp3",
+      "bytes": 106622
+    },
+    "fizzwick-1a8fef4d2ff2": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Fizzwick's missing pages are on the second floor and the third. Torn, in tiny handwriting. You cannot miss them.",
+      "chars": 112,
+      "hash": "14f4905b49f11e62",
+      "file": "voice/fizzwick-1a8fef4d2ff2.mp3",
+      "bytes": 114145
+    },
+    "pip-540ad3f1cad2": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "The Lantern Row marks are on every floor. Three clues, then the Seneschal's door.",
+      "chars": 81,
+      "hash": "7d774caa2504cd65",
+      "file": "voice/pip-540ad3f1cad2.mp3",
+      "bytes": 81127
+    },
+    "grumsh-02466aa32b16": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "There is a verse waiting on every floor. Wall carvings, drunken scrawls. I will know it when I hear it.",
+      "chars": 103,
+      "hash": "4ab401b7b21f5e4a",
+      "file": "voice/grumsh-02466aa32b16.mp3",
+      "bytes": 113310
+    },
+    "zizzy-4fa18d4d96c4": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "Blasting powder, in the Ashforge! A keg, a barrel! Zizzy would settle for a thimble.",
+      "chars": 84,
+      "hash": "e46fbdb5a775acf8",
+      "file": "voice/zizzy-4fa18d4d96c4.mp3",
+      "bytes": 112474
+    },
+    "vexrath-dcb0ed5ff463": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "The original decree is sealed in crystal on the third floor. I would know the seal anywhere.",
+      "chars": 92,
+      "hash": "95e4597baac304e3",
+      "file": "voice/vexrath-dcb0ed5ff463.mp3",
+      "bytes": 97009
+    },
+    "nettle-b53a2ee68163": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "One tale fragment per floor, from the second down. Ask the smiths and the ghosts. They love a story.",
+      "chars": 100,
+      "hash": "400528a4ed66d324",
+      "file": "voice/nettle-b53a2ee68163.mp3",
+      "bytes": 165136
+    },
+    "pip-4ae67c799bb4": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "Traps on this floor like dull corridors. Walk slowly, listen for clicks, and check the plate stones.",
+      "chars": 100,
+      "hash": "ff68717ce28c780b",
+      "file": "voice/pip-4ae67c799bb4.mp3",
+      "bytes": 114145
+    },
+    "zizzy-1fd56c51d106": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "The spiders on this floor burn! Zizzy will bring the fire. The rats burn too, but they do not enjoy it.",
+      "chars": 103,
+      "hash": "9dd30fab92f36137",
+      "file": "voice/zizzy-1fd56c51d106.mp3",
+      "bytes": 113310
+    },
+    "brambur-4392d6e30c26": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "Old Clubtail hits very hard. Keep us healed, and keep the healer standing. That is me. Sorry.",
+      "chars": 93,
+      "hash": "1119836b17928305",
+      "file": "voice/brambur-4392d6e30c26.mp3",
+      "bytes": 103696
+    },
+    "liora-578faa05247c": {
+      "speaker": "liora",
+      "voice": "CmoLJ5IFIu3FQ1FZAYIK",
+      "text": "The Grotto floods in places. Look for the chapel and the black pool, and listen for singing.",
+      "chars": 92,
+      "hash": "60b9ed9ab2899c13",
+      "file": "voice/liora-578faa05247c.mp3",
+      "bytes": 101189
+    },
+    "fizzwick-e808b20a3720": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Wasps and water. Fizzwick advises thunder, or at least dry socks.",
+      "chars": 65,
+      "hash": "01a3ca57ca90d00f",
+      "file": "voice/fizzwick-e808b20a3720.mp3",
+      "bytes": 84470
+    },
+    "vexrath-33f69342040f": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "Glasshide turns the careless to glass. Thunder shatters it. Poison does nothing. I have filed this.",
+      "chars": 99,
+      "hash": "9728c2c540a47d65",
+      "file": "voice/vexrath-33f69342040f.mp3",
+      "bytes": 138387
+    },
+    "nettle-0cccb19b3d34": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "The orchard in the Glimmerdeep is real, and so is the kiln. Look for open sky and a glint of silver.",
+      "chars": 100,
+      "hash": "4daa125f03298eca",
+      "file": "voice/nettle-0cccb19b3d34.mp3",
+      "bytes": 124594
+    },
+    "pip-0998379c114e": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "The mirrors on this floor lie. Do not stare at one longer than a breath.",
+      "chars": 72,
+      "hash": "01bf6c2ab3dae32b",
+      "file": "voice/pip-0998379c114e.mp3",
+      "bytes": 68588
+    },
+    "zizzy-71f80810f19a": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "Cindermaw hates cold! Zizzy has no cold. Zizzy has other fun things.",
+      "chars": 68,
+      "hash": "15fb15081a882905",
+      "file": "voice/zizzy-71f80810f19a.mp3",
+      "bytes": 97845
+    },
+    "grumsh-9e1b19b1a71a": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "Brakk wears fire like a coat. Steel or cold, not flame. I will write him a short verse.",
+      "chars": 87,
+      "hash": "d21038ede7db2559",
+      "file": "voice/grumsh-9e1b19b1a71a.mp3",
+      "bytes": 104950
+    },
+    "fizzwick-c0717e4d672d": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Smiths in chains. Fizzwick does not enjoy chains. Free them, and they will help us.",
+      "chars": 83,
+      "hash": "9ac2914deacbb54a",
+      "file": "voice/fizzwick-c0717e4d672d.mp3",
+      "bytes": 95337
+    },
+    "liora-df6da57615b6": {
+      "speaker": "liora",
+      "voice": "CmoLJ5IFIu3FQ1FZAYIK",
+      "text": "Malthrax hates radiant light, and the dark does nothing. If you have anything holy, save it for him.",
+      "chars": 100,
+      "hash": "bced4e87cfa64c1e",
+      "file": "voice/liora-df6da57615b6.mp3",
+      "bytes": 115399
+    },
+    "nettle-3dc27f9f9df4": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "The staff has a crack under the third ring. Strike there and it ends. I have it on good authority.",
+      "chars": 98,
+      "hash": "18e6afca8bef2b8c",
+      "file": "voice/nettle-3dc27f9f9df4.mp3",
+      "bytes": 112474
+    },
+    "pip-da0c0a789589": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "The Seneschal's door is somewhere on this floor. Check every wall before you check every door.",
+      "chars": 94,
+      "hash": "1c1563b6ac8a60bd",
+      "file": "voice/pip-da0c0a789589.mp3",
+      "bytes": 98263
+    },
+    "brambur-1fd783201157": {
+      "speaker": "brambur",
+      "voice": "YIn3yKpQSeXNJMF5CIuj",
+      "text": "Rest before you push on, please. A tired party is a sorry party. I am saying sorry in advance.",
+      "chars": 94,
+      "hash": "f3e9df7d7081a882",
+      "file": "voice/brambur-1fd783201157.mp3",
+      "bytes": 96173
+    },
+    "fizzwick-8866ba86835e": {
+      "speaker": "fizzwick",
+      "voice": "ouL9IsyrSnUkCmfnD02u",
+      "text": "Fizzwick advises you to read the walls. Walls are the oldest books, and the rudest.",
+      "chars": 83,
+      "hash": "a31c14076798d3d6",
+      "file": "voice/fizzwick-8866ba86835e.mp3",
+      "bytes": 92412
+    },
+    "pip-f0f94e23d2fd": {
+      "speaker": "pip",
+      "voice": "P7fAh4p4xVfEzGgihOit",
+      "text": "Check every chest twice and every door once. Then check your own pockets.",
+      "chars": 73,
+      "hash": "cd6768cd0bccec2a",
+      "file": "voice/pip-f0f94e23d2fd.mp3",
+      "bytes": 87396
+    },
+    "grumsh-33e05432168d": {
+      "speaker": "grumsh",
+      "voice": "10NkTYmU7tSz3Kkl3Lex",
+      "text": "Fight with your back to a wall. Make the enemy walk around your rhyme.",
+      "chars": 70,
+      "hash": "929cf48752e2638b",
+      "file": "voice/grumsh-33e05432168d.mp3",
+      "bytes": 72350
+    },
+    "zizzy-e8b093421484": {
+      "speaker": "zizzy",
+      "voice": "342hpGp7PKo7DsTTVSdr",
+      "text": "If it is stuck, burn it. If it is not stuck, ask first. Mostly burn.",
+      "chars": 68,
+      "hash": "e5bcb966907008cd",
+      "file": "voice/zizzy-e8b093421484.mp3",
+      "bytes": 87396
+    },
+    "vexrath-b320c82b20d8": {
+      "speaker": "vexrath",
+      "voice": "ttNi9wVM8M97tsxE7PFZ",
+      "text": "Prepare, then proceed. A properly prepared slate of spells wins more fights than courage.",
+      "chars": 89,
+      "hash": "b1f4f8b33d7c2b8a",
+      "file": "voice/vexrath-b320c82b20d8.mp3",
+      "bytes": 113310
+    },
+    "nettle-7ce048737434": {
+      "speaker": "nettle",
+      "voice": "CHPhef6gfFNOkEUe49Yz",
+      "text": "When in doubt, ask the ghosts. They love to talk, and they never charge.",
+      "chars": 72,
+      "hash": "515b2e60708c9df0",
+      "file": "voice/nettle-7ce048737434.mp3",
+      "bytes": 79873
+    },
+    "liora-6bc95d5b9163": {
+      "speaker": "liora",
+      "voice": "CmoLJ5IFIu3FQ1FZAYIK",
+      "text": "Watch for loose stones, cold drafts and fresh footprints. The floor always tells the truth.",
+      "chars": 91,
+      "hash": "3026bfd9604ab871",
+      "file": "voice/liora-6bc95d5b9163.mp3",
+      "bytes": 101189
     }
   }
 }
