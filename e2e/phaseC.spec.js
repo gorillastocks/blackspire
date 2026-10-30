@@ -21,15 +21,16 @@ test('Liora: painted portrait on her hire card, intro dialogue, recruit from the
   await newGame(page); await openLocation(page, 'Tavern'); await page.locator('#modal [data-tab="hire"]').click();
   const card = page.locator('#hire .hirecard', { hasText: 'Liora' }); await expect(card).toBeVisible();
   await expect(card.locator('img.hirepic')).toBeVisible();
-  const loaded = await card.locator('img.hirepic').evaluate((i) => i.complete && i.naturalWidth > 100); expect(loaded).toBe(true);
+  // the portrait loads lazily behind the 36 creator portraits, so wait for it instead of sampling once
+  await expect.poll(() => card.locator('img.hirepic').evaluate((i) => i.complete && i.naturalWidth > 100), { timeout: 15000 }).toBe(true);
   await card.evaluate((el) => el.scrollIntoView({ block: 'center' })); await page.waitForTimeout(300); await shot(page, { path: `/workspace/shots/phaseC-liora-hire-${info.project.name}.png` });
   await page.locator('[data-recruit="liora"]').click();
   await expect(page.locator('.dialogue .dlgportrait img')).toBeVisible(); await page.waitForTimeout(500);
   await shot(page, { path: `/workspace/shots/phaseC-liora-portrait-${info.project.name}.png` });
   for (let i = 0; i < 6 && await page.locator('#dlg-next').count(); i++) { await page.locator('#dlg-next').click(); await page.waitForTimeout(150); if (await page.locator('.dialogue').count() === 0) break; }
-  // her four voiced lines resolve to clips; an unvoiced line still has its caption text and no clip
+  // every Liora line is voiced now (the catalog is 100% voiced), so both her intro and her battle bark resolve to clips
   const v = await page.evaluate(() => { const h = window.__gw.voice().has; return [h("Liora Wardenfall, Warden's Watch. My father went down into the Blackspire twenty years ago. I'm done waiting at the door. Mind if I join you?", 'Liora'), h('Arrows nocked. Let us make this quick.', 'Liora')]; });
-  expect(v).toEqual([true, false]);
+  expect(v).toEqual([true, true]);
   const inParty = await page.evaluate(() => window.__gw.state.party.some((c) => c.companion === 'liora') || window.__gw.state.roster.some((c) => c.companion === 'liora'));
   expect(inParty).toBe(true); expect(okErr(errors)).toEqual([]);
 });
@@ -46,7 +47,7 @@ test('level 1 showcase: banter, an event card with choices, consequences and the
   await shot(page, { path: `/workspace/shots/phaseC-event-marker-${info.project.name}.png` });
   // a banter moment from a companion (the same path as walking into a new area)
   await page.evaluate(() => { const g = window.__gw; g.say(g.G.PC.reactive(g.state, 'room', {}, 1)); });
-  await expect(page.locator('#banter .bubble')).toBeVisible(); await page.waitForTimeout(400);
+  await expect(page.locator('#banter .bubble').last()).toBeVisible(); await page.waitForTimeout(400); // up to two bubbles are shown outside combat, so look at the newest
   await shot(page, { path: `/workspace/shots/phaseC-banter-${info.project.name}.png` });
   // step onto the event: the card appears with a portrait and 2-3 choices plus Not now
   await page.locator('#controls button', { hasText: '▲' }).click();
@@ -86,6 +87,6 @@ test('Liora conversation: choices raise hearts, journal shows bonds, save round-
   await page.evaluate(() => window.__gw.showTown());
   await page.locator('#btn-journal').click(); await page.locator('#modal [data-tab="bonds"]').click(); await expect(page.locator('.bonds .heart').first()).toBeVisible();
   await shot(page, { path: `/workspace/shots/phaseC-journal-${info.project.name}.png` });
-  const ok = await page.evaluate(() => { const { G, state } = window.__gw; const d = G.deserialize(G.serialize(state)); return d.version === 6 && d.pc.moments[0] !== undefined; }); expect(ok).toBe(true);
+  const ok = await page.evaluate(() => { const { G, state } = window.__gw; const d = G.deserialize(G.serialize(state)); return d.version === 8 && d.pc.moments[0] !== undefined; }); expect(ok).toBe(true);
   expect(okErr(errors)).toEqual([]);
 });
