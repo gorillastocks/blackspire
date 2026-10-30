@@ -19,7 +19,12 @@ def wrap(draw, text, fnt, maxw):
     cands = [(text[:i + 1].strip(), text[i + 1:].strip()) for i, c in enumerate(text) if c in '.,' and text[i + 1:i + 2] == ' ']
     cands = [c for c in cands if len(c[0]) >= 12 and all(draw.textlength(x, font=fnt) <= maxw for x in c)]
     if cands: return list(min(cands, key=lambda c: abs(draw.textlength(c[0], font=fnt) - draw.textlength(c[1], font=fnt))))
-    words, lines, cur = text.split(), [], ''
+    words = text.split(); best = None  # most balanced two-line word split that fits
+    for k in range(1, len(words)):
+        a, b = ' '.join(words[:k]), ' '.join(words[k:]); wa, wb = draw.textlength(a, font=fnt), draw.textlength(b, font=fnt)
+        if max(wa, wb) <= maxw and (best is None or abs(wa - wb) < best[0]): best = (abs(wa - wb), [a, b])
+    if best: return best[1]
+    lines, cur = [], ''
     for w in words:
         t = (cur + ' ' + w).strip()
         if draw.textlength(t, font=fnt) <= maxw: cur = t
@@ -44,7 +49,7 @@ def band(dev, caption):
     smax = int(H * 0.40); lines = None
     for size in range(smax, int(smax * .46), -2):  # prefer a sentence/comma break if it fits without shrinking much
         fnt = font(size); lh = int(size * 1.18)
-        if dr.textlength(caption, font=fnt) <= maxw: lines = [caption]; break
+        if dr.textlength(caption, font=fnt) <= maxw and size >= smax * 0.72: lines = [caption]; break
         cands = [(caption[:i + 1].strip(), caption[i + 1:].strip()) for i, c in enumerate(caption) if c in '.,' and caption[i + 1:i + 2] == ' ']
         cands = [c for c in cands if len(c[0]) >= 12 and all(dr.textlength(x, font=fnt) <= maxw for x in c)]
         if cands and lh * 2 <= H * 0.74: lines = list(min(cands, key=lambda c: abs(dr.textlength(c[0], font=fnt) - dr.textlength(c[1], font=fnt)))); break

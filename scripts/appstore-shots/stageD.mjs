@@ -27,7 +27,7 @@ await page.keyboard.press('w');
 if (process.argv[3] === 'menu') { // wait for a hero's turn menu while Gorvax is on the arena and the party is still standing
   const menu = page.locator('.combatmenu');
   for (let i = 0; i < 400; i++) { if (await menu.isVisible().catch(() => false) && /Attack|Shoot/.test(await menu.innerText().catch(() => ''))) break; await sleep(250); }
-  await sleep(1500); await page.screenshot({ path: `${raw}/gorvax-0.png` }); await browser.close(); process.exit(0);
+  await sleep(4000); await page.screenshot({ path: `${raw}/gorvax-0.png` }); await browser.close(); process.exit(0);
 }
 for (let i = 0; i < 3; i++) { await sleep(50); await page.screenshot({ path: `${raw}/gorvax-${i}.png` }); console.log(i, (await page.evaluate(() => (document.querySelector('#modal')?.innerText || document.querySelector('#caption')?.innerText || '')).catch(() => '')).slice(0, 120).replace(/\n/g, ' | ')); }
 await browser.close();
