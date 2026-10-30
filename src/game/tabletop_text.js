@@ -102,7 +102,7 @@ export const TT_SCENES = {
   'g.lie': { lines: [
     ['narrator', 'He is very good. Every line lands calm, every pause is rehearsed. Whatever lies beneath it, you cannot find it.'],
     ['garrick', 'She burned with the others. I am sorry. I think of her every day. I think of her often.'],
-    ['narrator', 'Pip\'s jaw tightens. He believes it, and perhaps you should too.'],
+    ['narrator', 'Pip\'s jaw tightens. She believes it, and perhaps you should too.'],
   ], fx: { flag: 'g_asked' }, next: 'g.choice' },
   'g.key': { lines: [
     ['narrator', 'You set the cast down: a Lantern Row key, newly forged, with Garrick\'s own initials in the bow. He looks at it the way a man looks at his own gravestone.'],
@@ -128,7 +128,7 @@ export const TT_SCENES = {
   'g.snap': { lines: [
     ['narrator', 'You say stop. Pip hears you, and does not stop. It is quick, and nobody in the room says a word afterwards.'],
     ['pip', 'I heard you. I am sorry. I could not do it your way.'],
-  ], fx: { gold: 300, item: 'lanternEdge', xp: 400, flag: ['pipVengeance', 'pipSnapped', 'debt_done'], aff: { pip: -1 }, q: ['debt', 'done'], consume: true, journal: 'Garrick Vane is dead. I told Pip to stop. He did not.' }, end: true },
+  ], fx: { gold: 300, item: 'lanternEdge', xp: 400, flag: ['pipVengeance', 'pipSnapped', 'debt_done'], aff: { pip: -1 }, q: ['debt', 'done'], consume: true, journal: 'Garrick Vane is dead. I told Pip to stop. She did not.' }, end: true },
   'g.mercy': { lines: [
     ['narrator', 'Put it down, you say, and for a long moment, nothing. Then the knife trembles, and drops point first into the desk, quivering.'],
     ['pip', 'Fine. Fine! I hate this. I am letting him live because you asked, not because he deserves it.'],

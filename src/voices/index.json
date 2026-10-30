@@ -13815,15 +13815,6 @@
       "file": "voice/narrator-6e51eb95225e.mp3",
       "bytes": 130446
     },
-    "narrator-234e87fd3ef6": {
-      "speaker": "narrator",
-      "voice": "7p1Ofvcwsv7UBPoFNcpI",
-      "text": "Pip's jaw tightens. He believes it, and perhaps you should too.",
-      "chars": 63,
-      "hash": "48576b027bea18fc",
-      "file": "voice/narrator-234e87fd3ef6.mp3",
-      "bytes": 78201
-    },
     "narrator-58bdf9d1c9f4": {
       "speaker": "narrator",
       "voice": "7p1Ofvcwsv7UBPoFNcpI",
@@ -17477,6 +17468,15 @@
       "hash": "d261df630b29f5fc",
       "file": "voice/dm-a0714f6b37db.mp3",
       "bytes": 340679
+    },
+    "narrator-497674faf539": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Pip's jaw tightens. She believes it, and perhaps you should too.",
+      "chars": 64,
+      "hash": "316d40b7d0c507fb",
+      "file": "voice/narrator-497674faf539.mp3",
+      "bytes": 73185
     }
   },
   "byHash": {
@@ -20550,8 +20550,6 @@
     "b9320dc173c8a8d2": "voice/narrator-26dfac0d10c8.mp3",
     "narrator:5bfb1b7f19f38359": "voice/narrator-6e51eb95225e.mp3",
     "5bfb1b7f19f38359": "voice/narrator-6e51eb95225e.mp3",
-    "narrator:48576b027bea18fc": "voice/narrator-234e87fd3ef6.mp3",
-    "48576b027bea18fc": "voice/narrator-234e87fd3ef6.mp3",
     "narrator:2984f36d84ba0284": "voice/narrator-58bdf9d1c9f4.mp3",
     "2984f36d84ba0284": "voice/narrator-58bdf9d1c9f4.mp3",
     "narrator:ba74550c722cc64c": "voice/narrator-a743ed80e157.mp3",
@@ -21363,7 +21361,9 @@
     "dm:9ec29ce858b9d98c": "voice/dm-ae9bdf17af22.mp3",
     "9ec29ce858b9d98c": "voice/dm-ae9bdf17af22.mp3",
     "dm:d261df630b29f5fc": "voice/dm-a0714f6b37db.mp3",
-    "d261df630b29f5fc": "voice/dm-a0714f6b37db.mp3"
+    "d261df630b29f5fc": "voice/dm-a0714f6b37db.mp3",
+    "narrator:316d40b7d0c507fb": "voice/narrator-497674faf539.mp3",
+    "316d40b7d0c507fb": "voice/narrator-497674faf539.mp3"
   },
   "byText": {
     "elowen|rise, knight of the dawn.": "voice/elowen-591217990d9f.mp3",
@@ -24436,8 +24436,6 @@
     "you watch his hands, not his face. a tremor in his left thumb, the thing he always did when he would rather not say. he is not lying about the fire. he is lying by leaving something out.": "voice/narrator-26dfac0d10c8.mp3",
     "narrator|he is very good. every line lands calm, every pause is rehearsed. whatever lies beneath it, you cannot find it.": "voice/narrator-6e51eb95225e.mp3",
     "he is very good. every line lands calm, every pause is rehearsed. whatever lies beneath it, you cannot find it.": "voice/narrator-6e51eb95225e.mp3",
-    "narrator|pip's jaw tightens. he believes it, and perhaps you should too.": "voice/narrator-234e87fd3ef6.mp3",
-    "pip's jaw tightens. he believes it, and perhaps you should too.": "voice/narrator-234e87fd3ef6.mp3",
     "narrator|you set the cast down: a lantern row key, newly forged, with garrick's own initials in the bow. he looks at it the way a man looks at his own gravestone.": "voice/narrator-58bdf9d1c9f4.mp3",
     "you set the cast down: a lantern row key, newly forged, with garrick's own initials in the bow. he looks at it the way a man looks at his own gravestone.": "voice/narrator-58bdf9d1c9f4.mp3",
     "narrator|there are no more questions. the guards are gone, the keys lie on the desk, and a knife is in pip's hand. everyone at the table is looking at you.": "voice/narrator-a743ed80e157.mp3",
@@ -25199,6 +25197,8 @@
     "dm|the temple of cant is cool and hushed, lit by tall candles that never quite drip. incense of cedar and myrrh drifts past a donation box the size of a coffin. somewhere a priest is counting coins very quietly.": "voice/dm-28f49355f55e.mp3",
     "dm|straw dummies hang from posts in the training grounds, most of them missing their heads. the air rings with clashing steel, barked orders and the thud of arrows striking targets. a grizzled sergeant watches you sideways and mutters something about soft hands.": "voice/dm-8bd3cbc0ad78.mp3",
     "dm|fizzbang's trading post is an avalanche of goods waiting to happen: ropes, lanterns, potions and at least one suspicious barrel. it smells of lamp oil and lavender soap. a gnome peers at you over a counter piled high with \"bargains\".": "voice/dm-ae9bdf17af22.mp3",
-    "dm|the cobbles end at a ring of standing stones around a gaping stair. cold air breathes up from below, carrying faint echoes: a drip, a scratch, something like distant laughter. the town's last lantern swings above the entrance, and nobody has ever bothered to light it.": "voice/dm-a0714f6b37db.mp3"
+    "dm|the cobbles end at a ring of standing stones around a gaping stair. cold air breathes up from below, carrying faint echoes: a drip, a scratch, something like distant laughter. the town's last lantern swings above the entrance, and nobody has ever bothered to light it.": "voice/dm-a0714f6b37db.mp3",
+    "narrator|pip's jaw tightens. she believes it, and perhaps you should too.": "voice/narrator-497674faf539.mp3",
+    "pip's jaw tightens. she believes it, and perhaps you should too.": "voice/narrator-497674faf539.mp3"
   }
 }

@@ -470,7 +470,7 @@ export function usePotion(s, idx, c) {
 }
 
 /* ---------- Save / Load ---------- */
-/** v7: drop the old spoon currency, quest and items; Pip gets his new quest. Safe to run on any save, any number of times. */
+/** v7: drop the old spoon currency, quest and items; Pip gets her new quest. Safe to run on any save, any number of times. */
 const OLD_SPOON_ITEMS = { spoon: 'tinCup', ironLadle: 'tinCup', goldSpoon: 'gildedGoblet', crystalSpoon: 'gildedGoblet', runcibleSpoon: 'jewelledChalice', royalSpoon: 'jewelledChalice' };
 export function migrateV7(s) {
   delete s.spoons;
