@@ -425,6 +425,8 @@ export const TUNING = {
   /** B2-B5 pass: every monster on the floor (B1..B5) gets this HP multiplier / this damage multiplier against the party, on top of difficulty. */
   floorHp: [1, 1.15, 1.25, 1.2, 1.2],
   floorDmg: [1, 1.05, 1.1, 1.0, 1.0],
+  /** B2 boss when the party has no healer (no cleric, druid, bard or paladin standing): HP and damage multipliers so the floor stays fair without healing magic. */
+  noHealerBoss: { hp: 0.85, dmg: 0.9 },
   /** Flat attack-roll bonus per floor (deeper monsters fight like higher-CR creatures: a bigger proficiency bonus). */
   floorAtk: [0, 1, 3, 2, 2],
   /** Legendary-style actions (SRD spirit): extra basic attacks a boss makes at the top of every round (B2-B5 only). */

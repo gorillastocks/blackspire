@@ -10,6 +10,7 @@ import { traitFor, applyTrait, traitsOf, dtype, TRAIT_KINDS, studySkill, studyDC
 const BPS = ['bludgeoning', 'piercing', 'slashing'];
 
 let mid = 1;
+const HEALER_CLASSES = ['cleric', 'druid', 'bard', 'paladin'];
 export const DIFFICULTY = { story: { hp: 0.7, dmg: 0.6, label: 'Story' }, normal: { hp: 1, dmg: 1, label: 'Normal' }, hard: { hp: 1.35, dmg: 1.3, floorScale: [1, 0.1, 0.7, 0.55, 0.55], label: 'Hard' } };
 // floors 2-5 carry extra tuning multipliers (TUNING.floorHp/floorDmg/foeHp/foeDmg/eliteFloorHp, tuned on Normal); Hard already multiplies everything by 1.35/1.3, so only `floorScale` of those extras is applied there (otherwise B2-B5 become unwinnable).
 const tuneX = (d, x, floor) => 1 + ((x == null ? 1 : x) - 1) * (d.floorScale == null ? 1 : d.floorScale[floor == null ? 0 : floor]);
@@ -60,8 +61,10 @@ export class Combat {
     this.elite = elite; this.lore = lore || {};
     this.party = party; this.inventory = inventory; this.canFlee = canFlee; this.boss = boss; this.story = story || {};
     this.diff = DIFFICULTY[difficulty] || DIFFICULTY.normal;
+    // B2 boss for a party with nobody who can heal (no cleric, druid, bard or paladin standing): a fair path, a trimmed boss (TUNING.noHealerBoss)
+    this.noHealerEase = boss && this.story.floor === 1 && !party.some((c) => !c.dead && HEALER_CLASSES.includes(c.cls)) ? TUNING.noHealerBoss : null;
     this.monsters = []; const gidOf = new Map();
-    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); if (!gidOf.has(g.key)) gidOf.set(g.key, gidOf.size); m.gid = gidOf.get(g.key); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1) * tuneX(this.diff, TUNING.bossHp[g.key], this.story.floor) * tuneX(this.diff, TUNING.floorHp[this.story.floor], this.story.floor) * (this.story.floor > 0 ? tuneX(this.diff, TUNING.foeHp[g.key], this.story.floor) : 1) * (elite ? (this.monsters.length === 0 ? 1.7 : 1.25) * tuneX(this.diff, TUNING.eliteFloorHp[elite.floor], this.story.floor) : 1))); if (elite) { m.elite = true; if (this.monsters.length === 0) { m.ac += 1; if (elite.title) m.name = elite.title; } } this.monsters.push(m); }
+    for (const g of groups) for (let i = 0; i < g.count; i++) { const m = makeMonster(g.key, this.monsters.length); if (!gidOf.has(g.key)) gidOf.set(g.key, gidOf.size); m.gid = gidOf.get(g.key); m.hp = m.maxHp = Math.max(1, Math.round(m.maxHp * this.diff.hp * (this.story.empowered && m.T.boss ? 1.25 : 1) * tuneX(this.diff, TUNING.bossHp[g.key], this.story.floor) * tuneX(this.diff, TUNING.floorHp[this.story.floor], this.story.floor) * (this.story.floor > 0 ? tuneX(this.diff, TUNING.foeHp[g.key], this.story.floor) : 1) * (this.noHealerEase ? this.noHealerEase.hp : 1) * (elite ? (this.monsters.length === 0 ? 1.7 : 1.25) * tuneX(this.diff, TUNING.eliteFloorHp[elite.floor], this.story.floor) : 1))); if (elite) { m.elite = true; if (this.monsters.length === 0) { m.ac += 1; if (elite.title) m.name = elite.title; } } this.monsters.push(m); }
     for (const m of this.monsters) { const l = this.lore[m.key]; m.known = { types: { ...(l?.types || {}) }, studied: !!l?.studied }; m.studyTried = new Set(); }
     this.groups = buildRanks(this.monsters); this.rankSig = this.liveRanks().map((g) => g.gid).join();
     this.log = []; this.events = []; this.round = 0; this.state = 'running'; this.turnIdx = -1; this.xp = 0; this.gold = 0;
@@ -216,7 +219,7 @@ export class Combat {
 
   /* ---------- Damage & concentration ---------- */
   damage(target, amt, type, src, { crit = false, attack = false } = {}) {
-    if (src && src.side === 'monster' && target.side === 'party' && this.diff && amt > 0) { const dm = this.diff.dmg * tuneX(this.diff, TUNING.floorDmg[this.story.floor], this.story.floor) * (this.story.floor > 0 ? tuneX(this.diff, TUNING.foeDmg[src.key], this.story.floor) : 1); if (dm !== 1) amt = Math.max(1, Math.round(amt * dm)); }
+    if (src && src.side === 'monster' && target.side === 'party' && this.diff && amt > 0) { const dm = this.diff.dmg * (this.noHealerEase ? this.noHealerEase.dmg : 1) * tuneX(this.diff, TUNING.floorDmg[this.story.floor], this.story.floor) * (this.story.floor > 0 ? tuneX(this.diff, TUNING.foeDmg[src.key], this.story.floor) : 1); if (dm !== 1) amt = Math.max(1, Math.round(amt * dm)); }
     if (target.side === 'monster') {
       if (target.hp <= 0) return 0;
       const tk = traitFor(target.T, type);
