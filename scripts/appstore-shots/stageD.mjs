@@ -22,6 +22,7 @@ const pos = await page.evaluate(async () => {
 console.log(JSON.stringify(pos)); await sleep(3500);
 for (const sel of ['#tip-skip', '#ev-later']) { const l = page.locator(sel); if (await l.isVisible().catch(() => false)) await l.click({ force: true }); }
 await page.screenshot({ path: `${raw}/gorvax-pre.png` });
+await page.addStyleTag({ content: '#toast{display:none !important}' });
 await page.keyboard.press('w');
-for (let i = 0; i < 10; i++) { await sleep(1500); await page.screenshot({ path: `${raw}/gorvax-${i}.png` }); console.log(i, (await page.evaluate(() => (document.querySelector('#modal')?.innerText || document.querySelector('#caption')?.innerText || '')).catch(() => '')).slice(0, 120).replace(/\n/g, ' | ')); }
+for (let i = 0; i < 3; i++) { await sleep(50); await page.screenshot({ path: `${raw}/gorvax-${i}.png` }); console.log(i, (await page.evaluate(() => (document.querySelector('#modal')?.innerText || document.querySelector('#caption')?.innerText || '')).catch(() => '')).slice(0, 120).replace(/\n/g, ' | ')); }
 await browser.close();
