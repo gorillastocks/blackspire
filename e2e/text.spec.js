@@ -3,7 +3,7 @@ import { trackErrors, newGame, auditText } from './helpers.js';
 
 test.describe.configure({ timeout: 300000 });
 // A big tablet viewport with the WebGL arena rendering (software GL) behind the dialog can starve a single screenshot past 15s: retry with a longer timeout before failing.
-const shot = async (page, o) => { for (let i = 0; i < 3; i++) { try { return await shot(page, { ...o, timeout: 40000 }); } catch (e) { if (i === 2) throw e; await page.mouse.move(1, 1); await page.waitForTimeout(500); } } };
+const shot = async (page, o) => { for (let i = 0; i < 3; i++) { try { return await page.screenshot({ ...o, timeout: 40000 }); } catch (e) { if (i === 2) throw e; await page.mouse.move(1, 1); await page.waitForTimeout(500); } } };
 
 
 test('chest + trap search, companion talk and banter text is crisp and readable', async ({ page }, info) => {
