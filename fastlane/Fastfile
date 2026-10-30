@@ -32,7 +32,7 @@ platform :ios do
       UI.message("dist cert id=#{c.id} type=#{c.certificate_type} serial=#{c.serial_number} expires=#{c.expiration_date}")
     end
     bundle = Spaceship::ConnectAPI::BundleId.find(BUNDLE_ID)
-    caps = bundle.get_bundle_id_capabilities.map(&:capability_type)
+    caps = bundle.get_capabilities.map(&:capability_type)
     UI.message("App ID capabilities: #{caps.join(', ')}")
     Spaceship::ConnectAPI::App.find(BUNDLE_ID).get_builds(limit: 5, sort: "-uploadedDate").each do |b|
       UI.message("build #{b.version} uploaded=#{b.uploaded_date} processing=#{b.processing_state} expired=#{b.expired}")
