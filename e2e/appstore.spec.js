@@ -67,7 +67,11 @@ test('export code → import restores the game; corrupt saves recover from backu
   await page.click('#btn-menu'); await page.click('#menu-backup'); await page.fill('#import-code', 'not a save'); await page.click('#btn-import-code');
   await expect(page.locator('#gmenu')).toContainText('Import failed'); await page.click('#menu-close');
   // corrupt the autosave: Continue recovers from .bak
-  await page.evaluate(() => { localStorage.setItem('blackspire.save.v1.bak', localStorage.getItem('blackspire.save.v1')); localStorage.setItem('blackspire.save.v1', '{"party":[{"na'); });
+  // The game now saves itself when the page is hidden or unloaded (suspend save), which would heal a save corrupted before the reload.
+  // So: let it save now, keep that good copy, and corrupt the main save as the NEXT page loads (after the unload save has happened).
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  const good = await page.evaluate(() => localStorage.getItem('blackspire.save.v1'));
+  await page.addInitScript((good) => { if (sessionStorage.getItem('corrupted-once')) return; sessionStorage.setItem('corrupted-once', '1'); localStorage.setItem('blackspire.save.v1.bak', good); localStorage.setItem('blackspire.save.v1', '{"party":[{"na'); }, good);
   await page.reload(); await page.waitForSelector('#btn-continue', { timeout: 90000 }); await page.click('#btn-continue');
   await expect(page.locator('#log')).toContainText('automatic backup');
   expect(await page.evaluate(() => window.__gw.state.gold)).toBe(4321);
