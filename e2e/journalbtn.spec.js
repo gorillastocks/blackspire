@@ -7,7 +7,7 @@ test('Journal button replaces Sheet in the maze; party cards open the sheet (maz
   await newGame(page);
   // town: Journal is a town button; the party card opens a sheet
   await expect(page.locator('#btn-journal')).toBeVisible();
-  // (on a phone the town square is a full-screen sheet that deliberately covers the party cards; the Training Grounds rows carry a Sheet button per hero there)
+  // (on a phone the town square is a full-screen sheet that deliberately covers the party cards; the square carries a tappable chip per hero there)
   const vp = page.viewportSize(); const phone = vp.width <= 760 || (vp.height <= 520 && vp.width > vp.height);
   if (!phone) {
     await page.locator('#party .card').nth(1).click();
@@ -17,10 +17,12 @@ test('Journal button replaces Sheet in the maze; party cards open the sheet (maz
     await page.keyboard.press('Escape'); await expect(page.locator('#modal .sheethead')).toHaveCount(0); // closes back to the town square
     await page.evaluate(() => window.__gw.showTown());
   } else {
-    await openLocation(page, 'Training Grounds');
-    const sheets = page.locator('#modal button', { hasText: /^Sheet$/ }); await expect(sheets).toHaveCount(4);
-    await sheets.nth(1).click(); await expect(page.locator('#modal .sheethead')).toBeVisible();
-    await page.locator('#modal .closebtn:visible').first().click(); await page.locator('#modal .backbtn:visible').first().click().catch(() => {});
+    // phone: the square is a full-screen sheet over the cards, so it carries a tappable chip per hero
+    const chips = page.locator('#modal .partychips button'); await expect(chips).toHaveCount(4);
+    await chips.nth(1).click(); await expect(page.locator('#modal .sheethead')).toBeVisible();
+    const second = await page.evaluate(() => window.__gw.state.party[1].name);
+    await expect(page.locator('#modal .tabs button.on')).toHaveText(second);
+    await page.keyboard.press('Escape'); await expect(page.locator('#modal .sheethead')).toHaveCount(0);
     await page.evaluate(() => window.__gw.showTown());
   }
   await openLocation(page, 'Edge of Town'); await page.click('#btn-enter');

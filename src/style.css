@@ -736,3 +736,5 @@ button.bigtab { width: 100%; min-height: 52px; margin-bottom: 4px; }
 
 /* iPad portrait: the town square sits at the top so the party cards underneath stay tappable (a card opens that hero's sheet) */
 @media (orientation: portrait) and (min-width: 761px) { #modal.transparent { align-items: flex-start; } #modal.transparent .panel { max-height: 62%; } }
+.partychips { display: none; }
+@media (max-width: 760px), (max-height: 700px) and (pointer: coarse) { .partychips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 6px 0; } .partychips button { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }

@@ -644,6 +644,7 @@ function showTown(sub = null) {
         btn('🎯 Training Grounds', () => showTown('train'), { id: 'btn-train' }),
         btn('🗣 Town Folk (quests)', () => showTownFolk(), { id: 'btn-folk' }),
         btn('📖 Journal', () => showJournal(() => showTown(), 'quests'), { id: 'btn-journal' })),
+      h('div', { class: 'partychips' }, ...S.party.map((c) => h('button', { class: 'small', title: `${c.name}: character sheet`, onclick: () => showSheet(c) }, portrait(c, 'cport'), ` ${c.name.split(' ').pop()}`))), // phones: the full-screen square covers the party cards, so each hero is tappable here too
       h('div', { class: 'menu row3' },
         btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, { id: 'btn-town-save', 'aria-label': 'Save Game' }),
         btn('📂 Load', () => loadGame(), { id: 'btn-town-load', 'aria-label': 'Load Game' }),
