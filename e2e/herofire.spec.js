@@ -81,3 +81,58 @@ test('hero casts fire (and other projectile spells): a visible projectile travel
   }
   expect(errors).toEqual([]);
 });
+
+// Companions and Auto: with the AI playing (Auto on) the sorcerer hero and the wizard companion cast fire; every attack-roll result (hit or miss) of a
+// projectile spell must fly a projectile caster → target, and every area spell must burst. Accounted from the real combat events vs. the renderer's calls.
+const AUTO_CONFIGS = [
+  { name: 'bolt + fireball', hero: ['fireBolt'], wiz: ['fireBolt', 'fireball'], want: { hero: ['fireBolt'], wiz: ['fireball'] } },
+  { name: 'scorching ray (hero) + ray (wizard)', hero: ['fireBolt', 'scorchingRay'], wiz: ['fireBolt', 'scorchingRay'], want: { hero: ['scorchingRay'], wiz: ['scorchingRay'] } },
+  { name: 'burning hands (wizard)', hero: ['fireBolt'], wiz: ['fireBolt', 'burningHands'], want: { hero: ['fireBolt'], wiz: ['burningHands'] } },
+];
+for (const cfg of AUTO_CONFIGS) {
+  test(`Auto on: hero and companion fire spells fly/burst — ${cfg.name}`, async ({ page }, info) => {
+    test.setTimeout(420000);
+    const errors = trackErrors(page); const P = info.project.name;
+    await page.goto('./'); await page.waitForSelector('#btn-new', { timeout: 90000 }); await page.click('#btn-new');
+    await page.selectOption('#ccls', 'sorcerer'); await page.click('#btn-begin');
+    await page.click('#btn-spell-rec').catch(() => {}); await page.click('#btn-spell-ok');
+    await skipPrologue(page); await expect(townSquare(page)).toBeVisible();
+    const skip = page.locator('#tip-skip'); if (await skip.isVisible()) await skip.click();
+    await page.evaluate(({ cfg }) => {
+      const g = window.__gw, R = g.R; const hero = g.state.party[0], wiz = g.state.party.find((c) => c.cls === 'wizard');
+      hero.level = 9; hero.spells = cfg.hero; hero.slots = [9, 9, 9, 9, 9]; wiz.level = 9; wiz.spells = cfg.wiz; wiz.slots = [9, 9, 9, 9, 9];
+      for (const c of g.state.party) { c.maxHp = 9999; c.hp = 9999; }
+      window.__sc = []; window.__proj = []; window.__area = 0; window.__ev = [];
+      const os = R.spellCast.bind(R); R.spellCast = (s, t, i, d) => { window.__sc.push({ s, i, area: t == null }); return os(s, t, i, d); };
+      const p = R.cfx.projectile.bind(R.cfx); R.cfx.projectile = (a, b, l, d) => { window.__proj.push({ from: a.toArray(), to: b.toArray() }); return p(a, b, l, d); };
+      const ar = R.cfx.area.bind(R.cfx); R.cfx.area = (...x) => { window.__area++; return ar(...x); };
+      localStorage.setItem('blackspire.settings', JSON.stringify({ battleSpeed: 'double', battleSpeedSet: true }));
+      g.startCombat({ groups: [{ key: 'animatedArmor', count: 3 }, { key: 'giantRat', count: 2 }] });
+      const c = g.combat; const od = c.drain.bind(c); c.drain = () => { const r = od(); window.__ev.push(...r.events.map((e) => ({ type: e.type, att: e.att?.name, who: e.who?.name, tgt: e.tgt?.side, spell: e.spell }))); return r; };
+      for (const m of c.monsters) { m.hp = m.maxHp = 99999; m.ac = 99; }
+    }, { cfg });
+    const auto = page.locator('#autobtn'); await expect(auto).toBeVisible({ timeout: 60000 }); await auto.click(); await expect(auto).toHaveAttribute('aria-pressed', 'true');
+    // rounds 1-2 everything misses, rounds 3-4 everything hits, then the foes fall so the fight ends
+    await expect.poll(() => page.evaluate(() => { const c = window.__gw.combat; if (!c) return 9; if (c.round >= 3) for (const m of c.monsters) m.ac = 1; if (c.round >= 5) for (const m of c.monsters) m.hp = 1; return c.round; }), { timeout: 240000, intervals: [300] }).toBeGreaterThanOrEqual(5);
+    await page.screenshot({ path: `/workspace/shots/autofire-${P}-${cfg.name.replace(/\W+/g, '_')}.png` }).catch(() => {});
+    const r = await page.evaluate(() => {
+      const names = { hero: window.__gw.state.party[0].name, wiz: window.__gw.state.party.find((c) => c.cls === 'wizard').name };
+      const AREA = ['fireball', 'burningHands']; const PROJ = ['fireBolt', 'scorchingRay']; let pend = null; let expectProj = 0, expectArea = 0; const seen = {}; const results = { hit: 0, miss: 0 };
+      for (const e of window.__ev) {
+        if (e.type === 'cutin' || e.type === 'partyAttack' || e.type === 'monsterAttack') pend = null;
+        else if (e.type === 'spell') { pend = e.who && (AREA.includes(e.spell) || PROJ.includes(e.spell)) ? { who: e.who, spell: e.spell } : null; if (pend) { const k = e.who === names.hero ? 'hero' : e.who === names.wiz ? 'wiz' : 'other'; (seen[k] ||= new Set()).add(e.spell); if (AREA.includes(e.spell)) expectArea++; } }
+        else if ((e.type === 'hit' || e.type === 'miss') && e.tgt === 'monster' && pend && pend.who === e.att && PROJ.includes(pend.spell)) { expectProj++; results[e.type]++; }
+      }
+      return { expectProj, expectArea, seen: Object.fromEntries(Object.entries(seen).map(([k, v]) => [k, [...v]])), results, sc: window.__sc, proj: window.__proj, area: window.__area, nEvents: window.__ev.length };
+    });
+    console.log(P, cfg.name, JSON.stringify({ expectProj: r.expectProj, expectArea: r.expectArea, seen: r.seen, results: r.results, spellCasts: r.sc.length, projs: r.proj.length, areas: r.area }));
+    for (const [who, spells] of Object.entries(cfg.want)) for (const s of spells) expect(r.seen[who] || [], `${P}: ${who} cast ${s} under Auto`).toContain(s);
+    expect(r.results.miss, 'misses were exercised').toBeGreaterThan(0); expect(r.results.hit, 'hits were exercised').toBeGreaterThan(0);
+    expect(r.sc.filter((c) => !c.area).length, `${P}: a projectile flew for every hit/miss of a projectile spell`).toBeGreaterThanOrEqual(r.expectProj);
+    expect(r.proj.length, `${P}: cfx projectiles spawned`).toBeGreaterThanOrEqual(r.expectProj);
+    expect(r.sc.filter((c) => c.area).length, `${P}: every area spell burst`).toBeGreaterThanOrEqual(r.expectArea);
+    expect(r.area, `${P}: cfx area bursts spawned`).toBeGreaterThanOrEqual(r.expectArea);
+    expect(r.proj.every((c) => c.from[2] > c.to[2]), `${P}: every projectile starts at the party, in front of the foes`).toBe(true);
+    expect(errors).toEqual([]);
+  });
+}
