@@ -8,6 +8,8 @@ import * as PC from '../src/game/phaseC.js';
 import * as G from '../src/game/game.js';
 import * as DM from '../src/game/dm.js';
 import * as RX from '../src/game/reactions.js';
+import * as Tavern from '../src/game/tavern.js';
+import * as CampTalk from '../src/game/camptalk.js';
 import { TT_SCENES } from '../src/game/tabletop_text.js';
 import { getLevel } from '../src/dungeon/levels.js';
 import { LORE } from '../src/dungeon/extras.js';
@@ -134,6 +136,10 @@ export function catalog() {
   // ---- the Dungeon Master's beats (key places, boss lairs, discoveries, quest beats) and the party's reactions ----
   for (const [id, t] of Object.entries(DM.BEATS)) add('Dungeon Master beats', 'dm', t, `dm.${id}`, id.startsWith('lair') || id === 'gorvax' || id === 'orchard' || id === 'kiln' ? 97 : 90);
   for (const [k, t, id] of RX.allLines()) add('Party reactions', k, t, `react.${id}`, 88);
+
+  // ---- tavern patrons (Listen In) and camp heart to hearts (Talk) ----
+  for (const [k, tx, id] of Tavern.allLines()) add('Tavern rumours (Listen In)', k, tx, `rumor.${id}`, 80);
+  for (const [k, tx, id] of CampTalk.allLines()) add('Camp talk (heart to hearts)', k, tx, id, 80);
 
   // ---- branching events (run each card for every Liora / check variant) ----
   for (const E of PC.EVENT_LIST) for (const withL of [true, false]) {

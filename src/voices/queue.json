@@ -1,10 +1,1338 @@
 [
   {
-    "id": "narrator-497674faf539",
-    "speaker": "narrator",
-    "text": "Pip's jaw tightens. She believes it, and perhaps you should too.",
-    "priority": 94,
-    "source": "phaseE:Tabletop quests:tt.g.lie",
+    "id": "tilda-6a7532d6cabb",
+    "speaker": "tilda",
+    "text": "They say a halfling put Garrick Vane in the ground. Lantern Row held a vigil.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.venge",
+    "chars": 77
+  },
+  {
+    "id": "brogan-09d5810eaec6",
+    "speaker": "brogan",
+    "text": "Hard justice. I will not say I blame her.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.venge",
+    "chars": 41
+  },
+  {
+    "id": "tilda-7b1f6306cff9",
+    "speaker": "tilda",
+    "text": "I heard the halfling let Garrick Vane walk. Mercy, in Lantern Row!",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.mercy",
+    "chars": 66
+  },
+  {
+    "id": "ketter-6c1aaa47123c",
+    "speaker": "ketter",
+    "text": "It takes more nerve to spare a man than to stab him.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.mercy",
+    "chars": 52
+  },
+  {
+    "id": "iolen-5b090abee38c",
+    "speaker": "iolen",
+    "text": "The Sisters sing free now. Harl Tollow rows out, and the water answers him.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.freed",
+    "chars": 75
+  },
+  {
+    "id": "brogan-cc342575cb05",
+    "speaker": "brogan",
+    "text": "Gave me goosebumps, it did.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.freed",
+    "chars": 27
+  },
+  {
+    "id": "iolen-73388761f408",
+    "speaker": "iolen",
+    "text": "The Drowned Choir sings for a master now. Harl has stopped rowing.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.bound",
+    "chars": 66
+  },
+  {
+    "id": "mosk-070212e31a56",
+    "speaker": "mosk",
+    "text": "A song with a leash on it. I do not like it.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.bound",
+    "chars": 44
+  },
+  {
+    "id": "mosk-816d5213930a",
+    "speaker": "mosk",
+    "text": "Ysolde's Mirror is shards on the kiln floor. The glasswright sleeps at last.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.shatter",
+    "chars": 76
+  },
+  {
+    "id": "tilda-569a94f1ef45",
+    "speaker": "tilda",
+    "text": "Silver glitter in every boot that comes up from the Glimmerdeep.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.shatter",
     "chars": 64
+  },
+  {
+    "id": "iolen-9416786fd241",
+    "speaker": "iolen",
+    "text": "Someone looked into the Mirror, I am told. They came out knowing things.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.gaze",
+    "chars": 72
+  },
+  {
+    "id": "ketter-2dbb6a105519",
+    "speaker": "ketter",
+    "text": "I once saw a man go quiet after a mirror. He was never the same.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.gaze",
+    "chars": 64
+  },
+  {
+    "id": "brogan-122e2bbfa12d",
+    "speaker": "brogan",
+    "text": "Odalys named the forger to their face. Pawn tickets are honest again.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.ledgerA",
+    "chars": 69
+  },
+  {
+    "id": "tilda-3bd4a21bc0d8",
+    "speaker": "tilda",
+    "text": "Whoever pointed the finger had proof. Nobody is arguing.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.ledgerA",
+    "chars": 56
+  },
+  {
+    "id": "tilda-26edec56785e",
+    "speaker": "tilda",
+    "text": "The forger left town by lantern light, and Odalys looks lighter.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.ledgerB",
+    "chars": 64
+  },
+  {
+    "id": "mosk-a675de9f4648",
+    "speaker": "mosk",
+    "text": "I heard coins changed hands. I heard nothing else. I heard nothing.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.ledgerB",
+    "chars": 67
+  },
+  {
+    "id": "iolen-2203fa629dfd",
+    "speaker": "iolen",
+    "text": "The Sunken Orchard blooms again under open sky. Silverfruit in the market!",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.orchGood",
+    "chars": 74
+  },
+  {
+    "id": "brogan-f76e8abe2e36",
+    "speaker": "brogan",
+    "text": "One bite and my cough was gone.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.orchGood",
+    "chars": 31
+  },
+  {
+    "id": "iolen-538a77b7ad7f",
+    "speaker": "iolen",
+    "text": "The orchard gate stands crooked and the trees have gone quiet.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.orchBad",
+    "chars": 62
+  },
+  {
+    "id": "mosk-eeb0d8de3889",
+    "speaker": "mosk",
+    "text": "Somebody paid a price down there. I bar my door at night.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.orchBad",
+    "chars": 57
+  },
+  {
+    "id": "ketter-eb39cf50576e",
+    "speaker": "ketter",
+    "text": "The Sergeant of the Fourth Company has his roll called at last. You gave him peace.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.crane",
+    "chars": 83
+  },
+  {
+    "id": "brogan-252e4d194c48",
+    "speaker": "brogan",
+    "text": "Skarn the Spider Rider is dead! The Warrens are quiet. Mostly.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.boss0",
+    "chars": 62
+  },
+  {
+    "id": "tilda-691811f2c6a0",
+    "speaker": "tilda",
+    "text": "The rats never read the news, love.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.boss0",
+    "chars": 35
+  },
+  {
+    "id": "tilda-a8fe45c44850",
+    "speaker": "tilda",
+    "text": "Old Clubtail is down! Miners say the Grotto doors open easier now.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.boss1",
+    "chars": 66
+  },
+  {
+    "id": "mosk-60554f3ccfc7",
+    "speaker": "mosk",
+    "text": "Glasshide fell. The Glimmerdeep glows, and nobody has turned to glass this week.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.boss2",
+    "chars": 80
+  },
+  {
+    "id": "ketter-a95bfb71be0f",
+    "speaker": "ketter",
+    "text": "Forgemaster Brakk is finished. The Ashforge anvils ring for free folk again.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.boss3",
+    "chars": 76
+  },
+  {
+    "id": "tilda-62d60f50011a",
+    "speaker": "tilda",
+    "text": "The Dread Sovereign is dead! Somebody drinks free tonight. I hope it is you.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.boss4",
+    "chars": 76
+  },
+  {
+    "id": "ketter-790a14a3d1b7",
+    "speaker": "ketter",
+    "text": "The Tyrant still sleeps under the vault, mind. Do not celebrate too long.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.boss4",
+    "chars": 73
+  },
+  {
+    "id": "iolen-2dc127a356af",
+    "speaker": "iolen",
+    "text": "The moon looks cracked tonight. One seal is gone, they say.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.moon1",
+    "chars": 59
+  },
+  {
+    "id": "brogan-a85cb29581c8",
+    "speaker": "brogan",
+    "text": "Every third rest, another one breaks. Count your naps.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.moon1",
+    "chars": 54
+  },
+  {
+    "id": "ketter-726bd379a772",
+    "speaker": "ketter",
+    "text": "Three seals broken. Gorvax shifts in his sleep. Do not linger up here.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.moon3",
+    "chars": 70
+  },
+  {
+    "id": "tilda-3b5634432a3c",
+    "speaker": "tilda",
+    "text": "Odalys at the pawn shop is white as flour. Someone forged her tickets.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.ledger0",
+    "chars": 70
+  },
+  {
+    "id": "mosk-bad8d548c539",
+    "speaker": "mosk",
+    "text": "If you find the forger, she pays well. If you do not, she remembers.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.ledger0",
+    "chars": 68
+  },
+  {
+    "id": "ketter-80554f2becba",
+    "speaker": "ketter",
+    "text": "Three leads at the pawn shop: the tickets, the grave dirt, the back alley. Check all three first.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.ledger1",
+    "chars": 97
+  },
+  {
+    "id": "tilda-c61e8a26bad8",
+    "speaker": "tilda",
+    "text": "Odalys wants proof, not a guess. A hasty accusation never ends well.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.ledger1",
+    "chars": 68
+  },
+  {
+    "id": "iolen-08f62d3c8634",
+    "speaker": "iolen",
+    "text": "Harl Tollow rows out each dusk and listens. He swears his wife still sings under the water.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.choir0",
+    "chars": 91
+  },
+  {
+    "id": "brogan-51323bb59090",
+    "speaker": "brogan",
+    "text": "Down in the Drowned Grotto, second floor. You need a strong stomach.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.choir0",
+    "chars": 68
+  },
+  {
+    "id": "iolen-782d569a7697",
+    "speaker": "iolen",
+    "text": "The Sunken Chapel stands on the second floor. The Black Pool lies beyond it. Bring a steady heart.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.choir1",
+    "chars": 98
+  },
+  {
+    "id": "ketter-64b4109152da",
+    "speaker": "ketter",
+    "text": "A glasswright named Ysolde lost her trust in mirrors. The old kiln, third floor.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.glass",
+    "chars": 80
+  },
+  {
+    "id": "mosk-5d70f9d610ad",
+    "speaker": "mosk",
+    "text": "Do not look at any mirror down there longer than you must.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.glass",
+    "chars": 58
+  },
+  {
+    "id": "ketter-941ce08c91dd",
+    "speaker": "ketter",
+    "text": "A Sergeant of the Fourth Company still walks the Ashforge, counting his dead.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.crane",
+    "chars": 77
+  },
+  {
+    "id": "brogan-4fcd2d96e73c",
+    "speaker": "brogan",
+    "text": "Three tags missing from his roll. Search the old barracks.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.crane",
+    "chars": 58
+  },
+  {
+    "id": "iolen-436571e8fcf7",
+    "speaker": "iolen",
+    "text": "A keeper named Maelis tends the Sunken Orchard on the third floor. The trees listen.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.orchard",
+    "chars": 84
+  },
+  {
+    "id": "iolen-97a2dd098143",
+    "speaker": "iolen",
+    "text": "They answer to the hour and the weather. Read the sky and the trees before you choose.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.orchard",
+    "chars": 86
+  },
+  {
+    "id": "tilda-fcb93d129a2e",
+    "speaker": "tilda",
+    "text": "Chalk marks on the cellar doors in Lantern Row. Three dots and a hook. Still fresh.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.debt",
+    "chars": 83
+  },
+  {
+    "id": "brogan-32ce625be4ad",
+    "speaker": "brogan",
+    "text": "Garrick Vane's old crew. Eleven gone, and one man walks free.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.debt",
+    "chars": 61
+  },
+  {
+    "id": "brogan-46c0592502d9",
+    "speaker": "brogan",
+    "text": "Four of the Watch went into the Warrens and never came back. Rowan will not say it.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.guards",
+    "chars": 83
+  },
+  {
+    "id": "ketter-a2c9bd58640a",
+    "speaker": "ketter",
+    "text": "Bound, not dead, I would bet my knee. Cut them loose.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.guards",
+    "chars": 53
+  },
+  {
+    "id": "tilda-3aabdcee13c7",
+    "speaker": "tilda",
+    "text": "Marga hears digging under the cellar. Not rats. Someone tunnels toward the barrels.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.tunnel",
+    "chars": 83
+  },
+  {
+    "id": "mosk-7d44bfe15edc",
+    "speaker": "mosk",
+    "text": "First floor, I heard. Collapse it and she will never stop thanking you.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.tunnel",
+    "chars": 71
+  },
+  {
+    "id": "iolen-d4369fac12c1",
+    "speaker": "iolen",
+    "text": "Brother Osric lost temple relics in a satchel stitched with the royal sun.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.satchel",
+    "chars": 74
+  },
+  {
+    "id": "mosk-37b202f43630",
+    "speaker": "mosk",
+    "text": "The Grotto swallowed it. Sunk in the water, but dry inside, by some blessing.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.satchel",
+    "chars": 77
+  },
+  {
+    "id": "ketter-d1ba4bd7c9b8",
+    "speaker": "ketter",
+    "text": "Dwarven smiths sit in chains at the Ashforge. Dobbin swears they will fight for you.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.smiths",
+    "chars": 84
+  },
+  {
+    "id": "brogan-71eb4e677396",
+    "speaker": "brogan",
+    "text": "Smash the chains. Do not pick the locks.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.h.smiths",
+    "chars": 40
+  },
+  {
+    "id": "ketter-5006d93a7394",
+    "speaker": "ketter",
+    "text": "First floor, the Warrens. Skarn rides a spider, and spiders burn. Bring fire.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b1",
+    "chars": 77
+  },
+  {
+    "id": "brogan-3476c5514866",
+    "speaker": "brogan",
+    "text": "Rats come in packs. Fight in the corridor, not the open room.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b1",
+    "chars": 61
+  },
+  {
+    "id": "ketter-abad5446ce34",
+    "speaker": "ketter",
+    "text": "Old Clubtail hits like a falling roof. Keep your healer behind the line and topped up.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b2h",
+    "chars": 86
+  },
+  {
+    "id": "mosk-b07d15443e57",
+    "speaker": "mosk",
+    "text": "No healer in your party? Down in the Grotto? Old Clubtail breaks bones.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b2n",
+    "chars": 71
+  },
+  {
+    "id": "brogan-a687d6325171",
+    "speaker": "brogan",
+    "text": "Hire a priest at the bar before you go. It is cheaper than a funeral.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b2n",
+    "chars": 69
+  },
+  {
+    "id": "ketter-408f93f2e50d",
+    "speaker": "ketter",
+    "text": "Glasshide the Basilisk turns folk to glass. Thunder shatters it. Poison does nothing.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b3a",
+    "chars": 85
+  },
+  {
+    "id": "brogan-60bfef1b7952",
+    "speaker": "brogan",
+    "text": "Gargoyles in the Glimmerdeep shrug off lightning and poison. Hit them with steel.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b3b",
+    "chars": 81
+  },
+  {
+    "id": "ketter-4706dcbce08c",
+    "speaker": "ketter",
+    "text": "Forgemaster Brakk shrugs off fire. Odd, for a man who lives in a forge.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b4a",
+    "chars": 71
+  },
+  {
+    "id": "mosk-32b0dac2417c",
+    "speaker": "mosk",
+    "text": "The chimera Cindermaw burns, flies and bites three ways. Cold drops it like a stone.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b4b",
+    "chars": 84
+  },
+  {
+    "id": "ketter-7c0c23fa70aa",
+    "speaker": "ketter",
+    "text": "Malthrax fears radiant light and shrugs off the dark. Bring something that shines.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b5a",
+    "chars": 82
+  },
+  {
+    "id": "iolen-46b1bad59ff6",
+    "speaker": "iolen",
+    "text": "The Sovereign's staff has a crack under the third ring. Find the tall tale and strike there.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.t.b5b",
+    "chars": 92
+  },
+  {
+    "id": "brogan-d8210bfed4b9",
+    "speaker": "brogan",
+    "text": "Another round! And a dwarf's blessing on whoever pays!",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.i.1",
+    "chars": 54
+  },
+  {
+    "id": "tilda-f7a4c8c9f89e",
+    "speaker": "tilda",
+    "text": "Pay first, bless after, Brogan.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.i.1",
+    "chars": 31
+  },
+  {
+    "id": "mosk-4e3759aa7812",
+    "speaker": "mosk",
+    "text": "Ninety gold, three pelts and a lamp. That is all I have left, and I was robbed twice.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.i.2",
+    "chars": 85
+  },
+  {
+    "id": "ketter-890730f36245",
+    "speaker": "ketter",
+    "text": "Thirty years in the dungeons. My knees remember every one of them.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.i.3",
+    "chars": 66
+  },
+  {
+    "id": "iolen-ff99021f427f",
+    "speaker": "iolen",
+    "text": "The road is long, but this tavern is warm. I rest here between pilgrimages.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.i.4",
+    "chars": 75
+  },
+  {
+    "id": "tilda-84adee4cdc87",
+    "speaker": "tilda",
+    "text": "Marga waters the ale. Do not tell her I said so.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.i.5",
+    "chars": 48
+  },
+  {
+    "id": "brogan-33fec4de56eb",
+    "speaker": "brogan",
+    "text": "I could not tell. Is that bad?",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.i.5",
+    "chars": 30
+  },
+  {
+    "id": "brogan-a47044fb2e9a",
+    "speaker": "brogan",
+    "text": "I heard the stew has rat in it.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.i.6",
+    "chars": 31
+  },
+  {
+    "id": "tilda-76a0a9606157",
+    "speaker": "tilda",
+    "text": "Only on weekdays, love.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.i.6",
+    "chars": 23
+  },
+  {
+    "id": "brambur-3bfc297a2427",
+    "speaker": "brambur",
+    "text": "My mum was a smith before she was anything else. She forged a hammer for every child she blessed.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.1",
+    "chars": 97
+  },
+  {
+    "id": "brambur-95795a25df84",
+    "speaker": "brambur",
+    "text": "Someone took hers from the forge. It is somewhere below us, and I keep apologizing to the rats in case they have it.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.1",
+    "chars": 116
+  },
+  {
+    "id": "brambur-dcb9ebb2556e",
+    "speaker": "brambur",
+    "text": "If you see dwarven boot prints, will you tell me? Please? Sorry. Please.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.1",
+    "chars": 72
+  },
+  {
+    "id": "brambur-24184eba63bb",
+    "speaker": "brambur",
+    "text": "I did not tell you about my father. He went down a mine and counted the dark instead of the days.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.2",
+    "chars": 97
+  },
+  {
+    "id": "brambur-9ee349d2e2ab",
+    "speaker": "brambur",
+    "text": "Mother Pellwen says every second chance is a door. I only have to knock, instead of apologizing to it.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.2",
+    "chars": 102
+  },
+  {
+    "id": "brambur-9b6c336c389c",
+    "speaker": "brambur",
+    "text": "I used to pray for the courage to be brave. Lately I pray for the courage to be useful.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.3",
+    "chars": 87
+  },
+  {
+    "id": "brambur-e4bea7fac98f",
+    "speaker": "brambur",
+    "text": "You make me useful. I wanted you to know that. It is the nicest thing anyone has done for me.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.3",
+    "chars": 93
+  },
+  {
+    "id": "brambur-96c4336b5643",
+    "speaker": "brambur",
+    "text": "Sorry. I mean thank you.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.3",
+    "chars": 24
+  },
+  {
+    "id": "brambur-2ef50b1a1f3c",
+    "speaker": "brambur",
+    "text": "The hammer has a name. Hearthsong. My mum sang to the iron while she worked.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.4",
+    "chars": 76
+  },
+  {
+    "id": "brambur-251238f423b7",
+    "speaker": "brambur",
+    "text": "When we find it, I would like you to hear it ring. That is all. That is everything.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.4",
+    "chars": 83
+  },
+  {
+    "id": "fizzwick-06546a7af701",
+    "speaker": "fizzwick",
+    "text": "Fizzwick's spellbook was scattered by cultists. Pages, you understand, written in his own tiny hand.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.1",
+    "chars": 100
+  },
+  {
+    "id": "fizzwick-4baf1d3627b6",
+    "speaker": "fizzwick",
+    "text": "Without them Fizzwick is merely brilliant. With them, Fizzwick is inevitable.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.1",
+    "chars": 77
+  },
+  {
+    "id": "fizzwick-83f3f6d119ae",
+    "speaker": "fizzwick",
+    "text": "Keep an eye out for torn pages. Fizzwick will pretend he does not care.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.1",
+    "chars": 71
+  },
+  {
+    "id": "fizzwick-6532fd836869",
+    "speaker": "fizzwick",
+    "text": "Fizzwick was expelled from the Academy of Brightspire. Officially, for a fireball in the library.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.2",
+    "chars": 97
+  },
+  {
+    "id": "fizzwick-6d9c6550e4b2",
+    "speaker": "fizzwick",
+    "text": "The fireball was peer review, a rather harsh one. The library has since been rebuilt, and it is bigger.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.2",
+    "chars": 103
+  },
+  {
+    "id": "fizzwick-35c7c72dc7cd",
+    "speaker": "fizzwick",
+    "text": "Fizzwick will tell you something he has told no one. He fears nobody remembers a gnome who is not loud.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.3",
+    "chars": 103
+  },
+  {
+    "id": "fizzwick-d7b452e5f700",
+    "speaker": "fizzwick",
+    "text": "So Fizzwick is very loud. Even in the dark. Especially in the dark.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.3",
+    "chars": 67
+  },
+  {
+    "id": "fizzwick-c8bd1509c629",
+    "speaker": "fizzwick",
+    "text": "Fizzwick has never had a friend who stayed after the explosion. You stayed.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.4",
+    "chars": 75
+  },
+  {
+    "id": "fizzwick-d050a4431401",
+    "speaker": "fizzwick",
+    "text": "Fizzwick has noted this in a footnote. It is the longest footnote he has ever written.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.4",
+    "chars": 86
+  },
+  {
+    "id": "pip-8b275e3ff2d0",
+    "speaker": "pip",
+    "text": "The Lantern Row Crew had eleven. We lit one lantern for each of us, over the old bakery door.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.1",
+    "chars": 93
+  },
+  {
+    "id": "pip-54b6a329e1af",
+    "speaker": "pip",
+    "text": "Garrick Vane was my partner, and my best friend. He sold the whole crew to the cult for a pocket of gold.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.1",
+    "chars": 105
+  },
+  {
+    "id": "pip-0636ea81252a",
+    "speaker": "pip",
+    "text": "So I follow the Lantern Row marks down the floors. Three clues, then the Seneschal's door.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.1",
+    "chars": 90
+  },
+  {
+    "id": "pip-1ff0207d58c1",
+    "speaker": "pip",
+    "text": "Posy was the youngest. Nine years old, pockets like a magician. Garrick swore he would keep her safe.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.2",
+    "chars": 101
+  },
+  {
+    "id": "pip-fab114464a60",
+    "speaker": "pip",
+    "text": "I do not want to talk about Posy. Thank you for not making me.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.2",
+    "chars": 62
+  },
+  {
+    "id": "pip-4d21bbda69fe",
+    "speaker": "pip",
+    "text": "Some nights I plan to stab him. Some nights I plan to hear him say sorry.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.3",
+    "chars": 73
+  },
+  {
+    "id": "pip-2cd4f58413f1",
+    "speaker": "pip",
+    "text": "I like the second plan less. Whatever you decide when we get there, I will remember it. I remember everything.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.3",
+    "chars": 110
+  },
+  {
+    "id": "pip-a2c01d0b78c0",
+    "speaker": "pip",
+    "text": "I do not trust anybody. But I trust you a little. For me, that is a lot.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.4",
+    "chars": 72
+  },
+  {
+    "id": "pip-e70f163bb153",
+    "speaker": "pip",
+    "text": "When we reach the Seneschal's door, stand where I can see you. That is all I ask.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.4",
+    "chars": 81
+  },
+  {
+    "id": "grumsh-3e1c01e64f20",
+    "speaker": "grumsh",
+    "text": "I am writing a ballad. One verse for every floor of the Blackspire. Five verses, no chorus.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.1",
+    "chars": 91
+  },
+  {
+    "id": "grumsh-50ac5b09e27b",
+    "speaker": "grumsh",
+    "text": "My mother wanted a bard. I am a disappointment with a very good rhyme for slaughter.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.1",
+    "chars": 84
+  },
+  {
+    "id": "grumsh-676ab6cbe330",
+    "speaker": "grumsh",
+    "text": "If you find a verse on a wall, in a carving or a drunk's scrawl, tell me. It may be the one.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.1",
+    "chars": 92
+  },
+  {
+    "id": "grumsh-5965a8690bf4",
+    "speaker": "grumsh",
+    "text": "My father was a warlord. He taught me to count enemies. My mother taught me to count syllables.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.2",
+    "chars": 95
+  },
+  {
+    "id": "grumsh-1a06091aa059",
+    "speaker": "grumsh",
+    "text": "I am better at the second. No one has ever cheered a syllable.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.2",
+    "chars": 62
+  },
+  {
+    "id": "grumsh-ba7df98adc17",
+    "speaker": "grumsh",
+    "text": "When I was small, I sang to the wounded in the camp. They said I sounded like a kind storm.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.3",
+    "chars": 91
+  },
+  {
+    "id": "grumsh-b230c09f6a6b",
+    "speaker": "grumsh",
+    "text": "Then my father heard. He called it weakness, and I put the songs away for twenty years.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.3",
+    "chars": 87
+  },
+  {
+    "id": "grumsh-dc7a41bf0c2e",
+    "speaker": "grumsh",
+    "text": "Last night I hummed in my sleep. Brambur says it was lovely.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.4",
+    "chars": 60
+  },
+  {
+    "id": "grumsh-975bfe0684c2",
+    "speaker": "grumsh",
+    "text": "I will sing the ballad aloud when we win. You may stand at the back. I will still see you.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.4",
+    "chars": 90
+  },
+  {
+    "id": "zizzy-5779a49ac17e",
+    "speaker": "zizzy",
+    "text": "Zizzy needs blasting powder! Dwarven blasting powder, the good stuff, in the Ashforge somewhere!",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.1",
+    "chars": 96
+  },
+  {
+    "id": "zizzy-c42763835226",
+    "speaker": "zizzy",
+    "text": "The Ashforge gate is locked. Locks are just very small walls, and walls are very slow explosions.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.1",
+    "chars": 97
+  },
+  {
+    "id": "zizzy-b36ba6ca6541",
+    "speaker": "zizzy",
+    "text": "Find the powder and Zizzy will make you a firework. A tiny one. Medium.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.1",
+    "chars": 71
+  },
+  {
+    "id": "zizzy-d3b34e30a10b",
+    "speaker": "zizzy",
+    "text": "My family did not like the fire. The tiefling parts of me that go boom. They told me to hide it.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.2",
+    "chars": 96
+  },
+  {
+    "id": "zizzy-1aa6358c5c54",
+    "speaker": "zizzy",
+    "text": "Zizzy did not hide it. Zizzy made it a hobby, then a career. Look how well it is going!",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.2",
+    "chars": 87
+  },
+  {
+    "id": "zizzy-beead22ef13a",
+    "speaker": "zizzy",
+    "text": "Zizzy has a secret. When it is quiet, I get scared the fire will not stop.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.3",
+    "chars": 74
+  },
+  {
+    "id": "zizzy-f6c23d7a56d7",
+    "speaker": "zizzy",
+    "text": "When you are near, it stays small. I do not know why. I am not complaining. Do not tell Vexrath, he will file it.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.3",
+    "chars": 113
+  },
+  {
+    "id": "zizzy-3343c3902758",
+    "speaker": "zizzy",
+    "text": "Zizzy made you a gift. A very small firework, shaped like a heart. It exploded. Sorry!",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.4",
+    "chars": 86
+  },
+  {
+    "id": "zizzy-b3d1bf3a7b21",
+    "speaker": "zizzy",
+    "text": "I will make another. You are my favorite explosion and my favorite person, in that order.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.4",
+    "chars": 89
+  },
+  {
+    "id": "vexrath-6d5d412ebe93",
+    "speaker": "vexrath",
+    "text": "My clan was exiled by royal decree, forty years ago. I have read the decree. I believe it is forged.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.1",
+    "chars": 100
+  },
+  {
+    "id": "vexrath-fe761ea8ede7",
+    "speaker": "vexrath",
+    "text": "The original is sealed in crystal somewhere on the third floor. I will find it, or I will file a complaint.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.1",
+    "chars": 107
+  },
+  {
+    "id": "vexrath-fe14de1b012d",
+    "speaker": "vexrath",
+    "text": "If you see a royal seal, bring it to me. Bring it gently. It is evidence.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.1",
+    "chars": 73
+  },
+  {
+    "id": "vexrath-78d540482240",
+    "speaker": "vexrath",
+    "text": "Ledgerus teaches that every promise is a debt, and every debt will be called. I take that seriously.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.2",
+    "chars": 100
+  },
+  {
+    "id": "vexrath-6bba4e1ff438",
+    "speaker": "vexrath",
+    "text": "I fear I have not always kept my promises to my own family.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.2",
+    "chars": 59
+  },
+  {
+    "id": "vexrath-36ee88d4596b",
+    "speaker": "vexrath",
+    "text": "My sister begged me not to sign the exile. I signed. I thought it was the law. It was a lie.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.3",
+    "chars": 92
+  },
+  {
+    "id": "vexrath-a5026f06c1f8",
+    "speaker": "vexrath",
+    "text": "I have been filing that mistake in my heart for forty years. It has no folder.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.3",
+    "chars": 78
+  },
+  {
+    "id": "vexrath-8467745c99ff",
+    "speaker": "vexrath",
+    "text": "I have drafted a document. It is a character reference. It is for you.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.4",
+    "chars": 70
+  },
+  {
+    "id": "vexrath-945d968468bb",
+    "speaker": "vexrath",
+    "text": "It reads, in full: honest, brave, irregular. Please note that I have stamped it twice.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.4",
+    "chars": 86
+  },
+  {
+    "id": "nettle-51b938de46e5",
+    "speaker": "nettle",
+    "text": "I am collecting the true legend of the Sovereign's staff. One fragment per floor, from the second floor down.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.1",
+    "chars": 109
+  },
+  {
+    "id": "nettle-9a5e51bb065d",
+    "speaker": "nettle",
+    "text": "Everyone agrees on the staff. Nobody agrees on the details. That is how you know it is true.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.1",
+    "chars": 92
+  },
+  {
+    "id": "nettle-205293f62d06",
+    "speaker": "nettle",
+    "text": "If a smith or a ghost starts talking, listen. I pay in stories.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.1",
+    "chars": 63
+  },
+  {
+    "id": "nettle-af94a06030b2",
+    "speaker": "nettle",
+    "text": "Truth time. I did not invent the door. I only wanted to be the sort of person who might have.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.2",
+    "chars": 93
+  },
+  {
+    "id": "nettle-4d99d7179769",
+    "speaker": "nettle",
+    "text": "Everything else I told you is true. Possibly. That is the truth.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.2",
+    "chars": 64
+  },
+  {
+    "id": "nettle-dc3b6c58a823",
+    "speaker": "nettle",
+    "text": "I grew up in a ship's galley. My mother sold stories to sailors for an extra ladle of soup.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.3",
+    "chars": 91
+  },
+  {
+    "id": "nettle-1991e16231c7",
+    "speaker": "nettle",
+    "text": "She said a lie is a gift when you give it away. I have given away a great many gifts.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.3",
+    "chars": 85
+  },
+  {
+    "id": "nettle-9c95d136ad2e",
+    "speaker": "nettle",
+    "text": "I tried writing the true story of this party. It came out better than any lie I own.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.4",
+    "chars": 84
+  },
+  {
+    "id": "nettle-28460b1ea10c",
+    "speaker": "nettle",
+    "text": "I am keeping it. Somebody should remember us properly, and it might as well be a liar.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.4",
+    "chars": 86
+  },
+  {
+    "id": "brambur-c1341bb3a6c5",
+    "speaker": "brambur",
+    "text": "Any word of dwarven boot prints? Mum's hammer is out there, on the first floor, and the fourth.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.quest",
+    "chars": 95
+  },
+  {
+    "id": "fizzwick-1a8fef4d2ff2",
+    "speaker": "fizzwick",
+    "text": "Fizzwick's missing pages are on the second floor and the third. Torn, in tiny handwriting. You cannot miss them.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.quest",
+    "chars": 112
+  },
+  {
+    "id": "pip-540ad3f1cad2",
+    "speaker": "pip",
+    "text": "The Lantern Row marks are on every floor. Three clues, then the Seneschal's door.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.quest",
+    "chars": 81
+  },
+  {
+    "id": "grumsh-02466aa32b16",
+    "speaker": "grumsh",
+    "text": "There is a verse waiting on every floor. Wall carvings, drunken scrawls. I will know it when I hear it.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.quest",
+    "chars": 103
+  },
+  {
+    "id": "zizzy-4fa18d4d96c4",
+    "speaker": "zizzy",
+    "text": "Blasting powder, in the Ashforge! A keg, a barrel! Zizzy would settle for a thimble.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.quest",
+    "chars": 84
+  },
+  {
+    "id": "vexrath-dcb0ed5ff463",
+    "speaker": "vexrath",
+    "text": "The original decree is sealed in crystal on the third floor. I would know the seal anywhere.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.quest",
+    "chars": 92
+  },
+  {
+    "id": "nettle-b53a2ee68163",
+    "speaker": "nettle",
+    "text": "One tale fragment per floor, from the second down. Ask the smiths and the ghosts. They love a story.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.quest",
+    "chars": 100
+  },
+  {
+    "id": "pip-4ae67c799bb4",
+    "speaker": "pip",
+    "text": "Traps on this floor like dull corridors. Walk slowly, listen for clicks, and check the plate stones.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b1",
+    "chars": 100
+  },
+  {
+    "id": "zizzy-1fd56c51d106",
+    "speaker": "zizzy",
+    "text": "The spiders on this floor burn! Zizzy will bring the fire. The rats burn too, but they do not enjoy it.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b1",
+    "chars": 103
+  },
+  {
+    "id": "brambur-4392d6e30c26",
+    "speaker": "brambur",
+    "text": "Old Clubtail hits very hard. Keep us healed, and keep the healer standing. That is me. Sorry.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b2",
+    "chars": 93
+  },
+  {
+    "id": "liora-578faa05247c",
+    "speaker": "liora",
+    "text": "The Grotto floods in places. Look for the chapel and the black pool, and listen for singing.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b2",
+    "chars": 92
+  },
+  {
+    "id": "fizzwick-e808b20a3720",
+    "speaker": "fizzwick",
+    "text": "Wasps and water. Fizzwick advises thunder, or at least dry socks.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b2",
+    "chars": 65
+  },
+  {
+    "id": "vexrath-33f69342040f",
+    "speaker": "vexrath",
+    "text": "Glasshide turns the careless to glass. Thunder shatters it. Poison does nothing. I have filed this.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b3",
+    "chars": 99
+  },
+  {
+    "id": "nettle-0cccb19b3d34",
+    "speaker": "nettle",
+    "text": "The orchard in the Glimmerdeep is real, and so is the kiln. Look for open sky and a glint of silver.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b3",
+    "chars": 100
+  },
+  {
+    "id": "pip-0998379c114e",
+    "speaker": "pip",
+    "text": "The mirrors on this floor lie. Do not stare at one longer than a breath.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b3",
+    "chars": 72
+  },
+  {
+    "id": "zizzy-71f80810f19a",
+    "speaker": "zizzy",
+    "text": "Cindermaw hates cold! Zizzy has no cold. Zizzy has other fun things.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b4",
+    "chars": 68
+  },
+  {
+    "id": "grumsh-9e1b19b1a71a",
+    "speaker": "grumsh",
+    "text": "Brakk wears fire like a coat. Steel or cold, not flame. I will write him a short verse.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b4",
+    "chars": 87
+  },
+  {
+    "id": "fizzwick-c0717e4d672d",
+    "speaker": "fizzwick",
+    "text": "Smiths in chains. Fizzwick does not enjoy chains. Free them, and they will help us.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b4",
+    "chars": 83
+  },
+  {
+    "id": "liora-df6da57615b6",
+    "speaker": "liora",
+    "text": "Malthrax hates radiant light, and the dark does nothing. If you have anything holy, save it for him.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b5",
+    "chars": 100
+  },
+  {
+    "id": "nettle-3dc27f9f9df4",
+    "speaker": "nettle",
+    "text": "The staff has a crack under the third ring. Strike there and it ends. I have it on good authority.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b5",
+    "chars": 98
+  },
+  {
+    "id": "pip-da0c0a789589",
+    "speaker": "pip",
+    "text": "The Seneschal's door is somewhere on this floor. Check every wall before you check every door.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.tip.b5",
+    "chars": 94
+  },
+  {
+    "id": "brambur-1fd783201157",
+    "speaker": "brambur",
+    "text": "Rest before you push on, please. A tired party is a sorry party. I am saying sorry in advance.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.brambur.tip",
+    "chars": 94
+  },
+  {
+    "id": "fizzwick-8866ba86835e",
+    "speaker": "fizzwick",
+    "text": "Fizzwick advises you to read the walls. Walls are the oldest books, and the rudest.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.fizzwick.tip",
+    "chars": 83
+  },
+  {
+    "id": "pip-f0f94e23d2fd",
+    "speaker": "pip",
+    "text": "Check every chest twice and every door once. Then check your own pockets.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.pip.tip",
+    "chars": 73
+  },
+  {
+    "id": "grumsh-33e05432168d",
+    "speaker": "grumsh",
+    "text": "Fight with your back to a wall. Make the enemy walk around your rhyme.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.grumsh.tip",
+    "chars": 70
+  },
+  {
+    "id": "zizzy-e8b093421484",
+    "speaker": "zizzy",
+    "text": "If it is stuck, burn it. If it is not stuck, ask first. Mostly burn.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.zizzy.tip",
+    "chars": 68
+  },
+  {
+    "id": "vexrath-b320c82b20d8",
+    "speaker": "vexrath",
+    "text": "Prepare, then proceed. A properly prepared slate of spells wins more fights than courage.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.vexrath.tip",
+    "chars": 89
+  },
+  {
+    "id": "nettle-7ce048737434",
+    "speaker": "nettle",
+    "text": "When in doubt, ask the ghosts. They love to talk, and they never charge.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.nettle.tip",
+    "chars": 72
+  },
+  {
+    "id": "liora-6bc95d5b9163",
+    "speaker": "liora",
+    "text": "Watch for loose stones, cold drafts and fresh footprints. The floor always tells the truth.",
+    "priority": 80,
+    "source": "phaseE:Camp talk (heart to hearts):talk.liora.tip",
+    "chars": 91
   }
 ]

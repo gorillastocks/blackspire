@@ -5,6 +5,7 @@ import { COMPANIONS } from './companions.js';
 import { memoryLines, liftCurses, lioraEnding } from './phaseC.js';
 import * as TT from './tabletop.js';
 import { addEntry } from './journal.js';
+import { PATRONS } from './tavern.js';
 import * as Journal from './journal.js';
 export { Journal };
 import { bubbles } from './reactions.js';
@@ -37,7 +38,7 @@ export const NPCS = {
   hero: { name: 'You', icon: '⚔', color: '#ffa24a' },
 };
 const C = (k) => ({ name: COMPANIONS[k].short, icon: { brambur: '🔨', fizzwick: '⚙', pip: '🏮', grumsh: '🪓', zizzy: '🔥', vexrath: '🐉', nettle: '🎻', liora: '🌅' }[k], color: COMPANIONS[k].color, img: COMPANIONS[k].portrait });
-export function speaker(who) { return NPCS[who] || (COMPANIONS[who] ? C(who) : NPCS.narrator); }
+export function speaker(who) { return NPCS[who] || PATRONS[who] || (COMPANIONS[who] ? C(who) : NPCS.narrator); }
 const L = (who, text) => ({ who, text });
 
 /* ---------- Quests ---------- */

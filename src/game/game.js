@@ -15,10 +15,12 @@ import * as DM from './dm.js';
 import { migrateJournal } from './journal.js';
 import * as RX from './reactions.js';
 import * as PC from './phaseC.js';
+import * as CampTalk from './camptalk.js';
+import * as Tavern from './tavern.js';
 import * as Prog from './progress.js';
 import { isLevelLocked } from '../entitlements.js';
 import { Combat } from '../rules/combat.js';
-export { Narr, Prog, PC, DM, RX };
+export { Narr, Prog, PC, DM, RX, CampTalk, Tavern };
 export { Story };
 export const NLEVELS = LEVEL_DEFS.length;
 
@@ -253,7 +255,7 @@ export function enterTile(s) {
 }
 
 export function afterCombat(s, combat, info = {}) {
-  const out = [];
+  const out = []; if (s.flags?.campInit) delete s.flags.campInit; // the camp talk's initiative bonus lasts one fight
   if (combat.state === 'won') {
     const af = PC.afterFight(s, combat.gold); s.gold += af.gold; out.push(...af.out); Prog.noteFightWon(s, info);
     const def = getLevel(s.level).def;
@@ -392,6 +394,7 @@ export function rest(s, kind) {
   }
   if (kind === 'short') { for (const c of s.party) for (const l of shortRest(c)) out.push({ log: l }); out.push({ log: 'The party takes a short rest (1 hour).', cls: 'good' }); }
   else { for (const c of s.party) longRest(c); out.push({ log: 'The party takes a long rest. HP, spell slots and abilities restored.', cls: 'good' }); if (Prog.addRested(s, 'camp') > 0) out.push({ log: '☾ Rested: bonus XP on your next finds.', cls: 'dim' }); out.push(...Story.onLongRest(s)); }
+  CampTalk.newRest(s); // companions have something to say again
   out.push({ banter: banter(s.party, 'rest', {}, 0.9) });
   return out;
 }
@@ -399,12 +402,12 @@ export function rest(s, kind) {
 /* ---------- Town ---------- */
 export function innRest(s) {
   const cost = s.flags?.freeInn ? 0 : 10; if (s.gold < cost) return [{ log: 'Not enough gold for a room (10 gp).', cls: 'bad' }];
-  s.gold -= cost; for (const c of s.party) longRest(c); Prog.addRested(s, 'inn');
+  s.gold -= cost; for (const c of s.party) longRest(c); Prog.addRested(s, 'inn'); CampTalk.newRest(s);
   const lifted = PC.liftCurses(s);
   return [{ log: cost ? 'You rent rooms at the Boar & Spoon Inn and sleep soundly. (−10 gp)' : 'Marga waves you upstairs. "On the house, love." You sleep soundly.', cls: 'good', voice: cost ? null : { text: 'On the house, love.', who: 'marga' } }, ...(lifted ? [{ log: '☾ A night of safe sleep lifts the curse upon you.', cls: 'good' }] : []), ...Story.onLongRest(s)];
 }
 /** Combat options derived from story state (lieutenant/boss set-pieces). */
-export function combatOpts(s, info = {}) { return { floor: s.level, ...Story.storyCombat(s, info, s.level), xpAward: (share) => Prog.awardCombatXp(s, Math.round(share * PC.fightXpMult(s)), info) }; }
+export function combatOpts(s, info = {}) { const st = Story.storyCombat(s, info, s.level); if (s.flags?.campInit) st.initBonus = (st.initBonus || 0) + s.flags.campInit; return { floor: s.level, ...st, xpAward: (share) => Prog.awardCombatXp(s, Math.round(share * PC.fightXpMult(s)), info) }; }
 export function templeCost(c) { return c.dead ? 100 * c.level : c.conditions.poisoned ? 20 : c.hp < c.maxHp ? 5 * c.level : 0; }
 export function templeHeal(s, c) {
   let cost = templeCost(c); if (!cost) return [{ log: `${c.name} needs no healing.`, cls: 'dim' }];
@@ -773,5 +776,17 @@ export function campTalk(s) {
   const m = PC.pendingMoment(s);
   if (m != null) return { moment: m, scene: PC.momentScene(s, m) };
   return { line: campDialogue(s) };
+}
+/** Camp Talk: who can talk (with a "!" for something new), and one heart to heart. Liora's pending moment keeps its own scene. */
+export const talkRoster = (s) => CampTalk.roster(s);
+export const anyFreshTalk = (s) => CampTalk.roster(s).some((r) => r.fresh);
+export function talkWith(s, k) {
+  if (k === 'liora') { const m = PC.pendingMoment(s); if (m != null) return { kind: 'moment', moment: m, scene: PC.momentScene(s, m) }; }
+  return CampTalk.talkWith(s, k);
+}
+/** Listen In (the tavern bar): a rumour overheard from the patrons, or about one tap in four the party's own banter. */
+export function listenIn(s, rng = Math.random) {
+  if (Tavern.listenKind(s, rng) === 'banter') return { kind: 'banter', line: campDialogue(s) };
+  const o = Tavern.overhear(s, rng, (st, text) => Story.addJournal(st, text)); return { kind: 'rumor', ...o };
 }
 export function lioraMoment(s, i, choiceId) { const r = PC.resolveMoment(s, i, choiceId); return r; }

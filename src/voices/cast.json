@@ -278,5 +278,30 @@
       "style": 0.5,
       "use_speaker_boost": true
     }
+  },
+  "brogan": {
+    "id": "U4Y0Z2HmYcQYMkJB8hrg",
+    "name": "Tom",
+    "note": "Drunk miner (Tom - Pirate Character, gravelly weather beaten West Country)"
+  },
+  "tilda": {
+    "id": "EQx6HGDYjkDpcli6vorJ",
+    "name": "Lizzie",
+    "note": "Gossiping barmaid (Lizzie - Cockney Character)"
+  },
+  "ketter": {
+    "id": "7FroLDTDG92jPfUW6BlQ",
+    "name": "John Texas",
+    "note": "Retired adventurer (John Texas - Deep and Smooth Narrator, gravelly southern)"
+  },
+  "mosk": {
+    "id": "SDARFhQygpPvpLh7Ad1B",
+    "name": "Odd Todd",
+    "note": "Nervous merchant (Odd Todd - Nervous Professor)"
+  },
+  "iolen": {
+    "id": "8N2ng9i2uiUWqstgmWlH",
+    "name": "Beth",
+    "note": "Pilgrim (Beth - Calm, Gentle and Nurturing)"
   }
 }
