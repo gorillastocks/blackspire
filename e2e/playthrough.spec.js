@@ -35,7 +35,7 @@ for (const rnd of [false, true]) for (const [i, difficulty] of ['story', 'normal
 
     // load the finished campaign into the UI: townsfolk all done, journal complete
     await page.evaluate((st) => window.__gw.loadState(st), r._state);
-    await page.click('#btn-folk'); await expect(page.locator('[data-npc]')).toHaveCount(6);
+    await page.click('#btn-folk'); await expect(page.locator('[data-npc]')).toHaveCount(8); // six townsfolk + the Ledger pawnbroker + Pip's debt
     for (const b of await page.locator('[data-npc]').all()) await expect(b).toContainText('✔');
     await page.locator('#modal .backbtn').click(); await page.click('#btn-journal'); await page.click('#modal [data-tab="notes"]');
     await expect(page.locator('#modal')).toContainText("Elowen's notes (10/10)"); await page.click('#btn-journal-close');
