@@ -1,0 +1,60 @@
+name: iOS admin (certificate bootstrap / info)
+
+# info: read-only listing of distribution certificates and recent TestFlight builds.
+# bootstrap_cert: ONE-TIME creation of the persistent Apple Distribution certificate. The .p12 is protected by the
+# DIST_CERT_PASSWORD secret, wrapped again with AES-256 using the same password, and uploaded as a 1-day artifact.
+# Nothing is ever revoked by this workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "info or bootstrap_cert"
+        required: true
+        default: info
+        type: choice
+        options: [info, bootstrap_cert]
+
+permissions:
+  contents: read
+
+jobs:
+  admin:
+    if: github.repository == 'gorillastocks/blackspire'
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: info
+        if: inputs.action == 'info'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: bundle exec fastlane ios info
+
+      - name: bootstrap_cert
+        if: inputs.action == 'bootstrap_cert'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          DIST_CERT_PASSWORD: ${{ secrets.DIST_CERT_PASSWORD }}
+        run: |
+          set -e
+          export P12_OUT="$RUNNER_TEMP/dist.p12.b64"
+          bundle exec fastlane ios bootstrap_cert
+          openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:DIST_CERT_PASSWORD -in "$P12_OUT" -out "$RUNNER_TEMP/dist.p12.b64.enc"
+          rm -f "$P12_OUT"
+
+      - name: upload encrypted p12
+        if: inputs.action == 'bootstrap_cert'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-cert-enc
+          path: ${{ runner.temp }}/dist.p12.b64.enc
+          retention-days: 1
