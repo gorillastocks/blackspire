@@ -32,8 +32,8 @@ export const SPR_RANK_SCALE = [1, 0.84, 0.72, 0.63, 0.57, 0.52];
 // The painted-sprite front rank stands well forward on the stage (the disc centre is z = -2, its near edge z = 3.5) and the ranks
 // behind are packed closer together, so the pack fills the stage but back groups still read as further back.
 export const SPR_BOSS_MIN_SCALE = 0.92;
-export const SPR_Z0 = 0.9;
-export const SPR_RANK_DZ = 0.95;
+export const SPR_Z0 = 2.6;
+export const SPR_RANK_DZ = 1.7;
 const rscale = (r) => SPR_RANK_SCALE[Math.min(r, SPR_RANK_SCALE.length - 1)];
 /** Positions for one line of figures (already scaled widths `ws`), biggest in the middle. Returns x per input index, centred on 0. */
 function chainLine(items, overlap) {
@@ -49,8 +49,11 @@ function chainLine(items, overlap) {
  * items: [{ id, w, h, boss, elite }] sprite world size at rank 0; ranks: arrays of ids (front to back) or null.
  * Returns { pos: Map id -> { x, z, y, s, rank } } where s is the rank scale to multiply w/h with.
  */
-export function spriteRankLayout(items, ranks) {
+export function spriteRankLayout(items, ranks, opts = {}) {
+  const spread = Math.max(0, Math.min(1, opts.spread || 0)), aspect = Math.max(0.5, Math.min(2.2, opts.aspect || 1)); // spread: 0 on a narrow phone stage (compact pack), 1 on a wide tablet/desktop stage (fan the groups out across it)
   const rows = ranks && ranks.length ? ranks : [items.map((m) => m.id)];
+  let SP = 0; // target width of the whole pack on a wide stage: about every figure side by side, but never wider than the stage shows
+  if (spread > 0) { const sc = (q, ri) => (q.boss ? Math.max(rscale(ri), SPR_BOSS_MIN_SCALE) : rscale(ri)); let sumW = 0, hF = 0; rows.forEach((row, ri) => row.forEach((id) => { const q = items.find((z) => z.id === id); if (q) { sumW += q.w * sc(q, ri); if (ri === 0) hF = Math.max(hF, q.h * sc(q, ri)); } })); SP = Math.min(2.2 * sumW, 11, 8.5 * aspect) * spread; }
   const pos = new Map(); let prevExtents = []; let f0 = null; // f0: x-span of the front rank, back ranks should not stick out far beyond it
   const placed = []; // { lo, hi, top } of every figure already standing: back figures are raised until their heads clear what hides them
   rows.forEach((row, ri) => {
@@ -71,18 +74,24 @@ export function spriteRankLayout(items, ranks) {
       const xs = chainLine(its, ri === 0 ? 0.2 : 0.22); const big = its.slice().sort((a, b) => b.h - a.h)[0];
       for (const it of its) place.push({ it, x: xs.get(it), z: z0 + (it === big && its.length > 1 ? -0.3 : it.boss ? 0 : its.length > 1 ? 0.15 : 0), k: 1 });
     }
-    // centre the row, then slide it sideways (rank >= 1) to the spot where it is least hidden by the rank in front
+    // centre the row, then slide it sideways (rank >= 1) to the spot where it is least hidden by the rank in front; on a wide stage the row may also
+    // be fanned out (gaps between its figures) so the groups stand left and right of the ones in front instead of piling up behind them
     const ext = (p) => [p.x - p.it.w * p.k / 2, p.x + p.it.w * p.k / 2];
     let lo = Infinity, hi = -Infinity; for (const p of place) { const [a, b] = ext(p); lo = Math.min(lo, a); hi = Math.max(hi, b); }
-    const c0 = -(lo + hi) / 2; let best = c0;
-    if (ri > 0 && prevExtents.length) {
+    const c0 = -(lo + hi) / 2; let best = { dsh: 0, f: 1 }; const natW = hi - lo; const rowTarget = ri === 0 ? (natW < 0.5 * SP ? 0 : 0.8 * SP) : 0.92 * SP;
+    const hasBoss = place.some((p) => p.it.boss);
+    if ((ri > 0 && prevExtents.length) || (SP && ri === 0 && rowTarget && place.length > 1)) {
       const avgW = place.reduce((t, p) => t + p.it.w, 0) / place.length; let bc = Infinity;
-      const hasBoss = place.some((p) => p.it.boss); for (let d = hasBoss ? -2.4 : -1.6; d <= (hasBoss ? 2.401 : 1.601); d += 0.1) { const sh = c0 + d * avgW; let cost = Math.abs(d) * avgW * 0.5;
-        for (const p of place) { const [a, b] = ext(p); const ca = a + sh, cb = b + sh, w = (cb - ca) * 0.7, mid = (ca + cb) / 2; for (const [pa, pb] of prevExtents) cost += (p.it.boss ? 2.5 : 0.5) * Math.max(0, Math.min(mid + w / 2, pb) - Math.max(mid - w / 2, pa));
-          if (f0) cost += (hasBoss && p.it.boss ? 0.8 : 3) * (Math.max(0, f0[0] - ca) + Math.max(0, cb - f0[1])); }
-        if (cost < bc - 1e-6) { bc = cost; best = sh; } }
+      const dmax = Math.max(hasBoss ? 2.4 : 1.6, SP ? SP / 2 / avgW : 0), fs = SP && place.length > 1 ? [1, 1.15, 1.3, 1.5, 1.7, 1.9, 2.2, 2.6, 3.0, 3.5, 4, 4.6, 5.3, 6, 7, 8] : [1];
+      for (const f of fs) for (let d = -dmax; d <= dmax + 0.001; d += 0.1) { const dsh = d * avgW; let cost = Math.abs(d) * avgW * 0.5 + (f - 1) * 0.1 * avgW; let ca0 = Infinity, cb0 = -Infinity;
+        for (const p of place) { const px = (p.x + c0) * f + dsh, ca = px - p.it.w * p.k / 2, cb = px + p.it.w * p.k / 2, w = (cb - ca) * 0.7, mid = (ca + cb) / 2; ca0 = Math.min(ca0, ca); cb0 = Math.max(cb0, cb);
+          for (const [pa, pb] of prevExtents) cost += (p.it.boss ? 2.5 : 0.5) * Math.max(0, Math.min(mid + w / 2, pb) - Math.max(mid - w / 2, pa));
+          if (SP) cost += 3 * (Math.max(0, -SP / 2 - ca) + Math.max(0, cb - SP / 2)) * (p.it.boss ? 0.3 : 1);
+          else if (f0) cost += (hasBoss && p.it.boss ? 0.8 : 3) * (Math.max(0, f0[0] - ca) + Math.max(0, cb - f0[1])); }
+        if (SP && rowTarget) cost += 0.6 * Math.max(0, rowTarget - (cb0 - ca0)) + 0.25 * Math.abs(ca0 + cb0) * 0.5; // reach for the stage width, stay roughly centred
+        if (cost < bc - 1e-6) { bc = cost; best = { dsh, f }; } }
     }
-    const ex = []; const fin = place.map((p) => ({ ...p, x: Math.max(-9, Math.min(9, p.x + best)) })).sort((p, q) => (p.line || 0) - (q.line || 0)); const mine = [];
+    const ex = []; const fin = place.map((p) => ({ ...p, x: Math.max(-9, Math.min(9, (p.x + c0) * best.f + best.dsh)) })).sort((p, q) => (p.line || 0) - (q.line || 0)); const mine = [];
     for (const p of fin) {
       const [a, b] = ext(p), w = (b - a) * 0.6, mid = (a + b) / 2, hh = p.it.h * p.k; let y = ri > 0 || p.line ? 0.1 + (p.line ? 0.22 * hh : 0) : 0;
       for (const q of placed) if (!(q.rank === ri && q.line === (p.line || 0)) && Math.min(mid + w / 2, q.hi) - Math.max(mid - w / 2, q.lo) > 0.1 * w) y = Math.max(y, Math.min(2.6 * hh, q.top - (p.it.boss ? 0.4 : 0.52) * hh));

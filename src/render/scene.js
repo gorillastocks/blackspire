@@ -400,14 +400,16 @@ export class Renderer {
     }));
     this.fitArena();
   }
+  /** How wide the stage is: a wide view (tablet, desktop) fans the groups out across it, a narrow phone view keeps the pack compact. */
+  stageOpts() { const a = (this.container.clientWidth || 1) / (this.container.clientHeight || 1); return { aspect: a, spread: Math.max(0, Math.min(1, (a - 0.95) / 0.35)) }; }
   /** Rank layout for painted sprites (sizes come from the paintings themselves). */
   spriteLayout(monsters, ranks, sprs) {
     const items = monsters.map((m, i) => { const T = MONSTERS[m.key]; const z = spriteSize(m, T, sprs[i]); return { id: m.id, w: z.w, h: z.h, boss: !!T.boss || !!m.elite }; });
-    return { ...spriteRankLayout(items, ranks), crowd: 1, sprite: true };
+    return { ...spriteRankLayout(items, ranks, this.stageOpts()), crowd: 1, sprite: true };
   }
   /** Ranks changed (a front group fell): slide the surviving groups forward to their new depth. */
   restageMonsters(monsters, ranks, ms = 600) {
-    let lay; if (this.sprMode) { const alive = monsters.filter((m) => this.monsterObjs.get(m.id)?.spr); lay = spriteRankLayout(alive.map((m) => { const v = this.monsterObjs.get(m.id), T = MONSTERS[m.key]; return { id: m.id, w: v.spr.Wd, h: v.spr.H, boss: !!T.boss || !!m.elite }; }), ranks); }
+    let lay; if (this.sprMode) { const alive = monsters.filter((m) => this.monsterObjs.get(m.id)?.spr); lay = spriteRankLayout(alive.map((m) => { const v = this.monsterObjs.get(m.id), T = MONSTERS[m.key]; return { id: m.id, w: v.spr.Wd, h: v.spr.H, boss: !!T.boss || !!m.elite }; }), ranks, this.stageOpts()); }
     else lay = rankLayout(monsters.map((m) => ({ id: m.id, T: MONSTERS[m.key] })), ranks); const from = new Map();
     for (const [id, v] of this.monsterObjs) { if (v.dead) continue; const t = lay.pos.get(id); if (t) from.set(id, { x: v.holder.position.x, z: v.holder.position.z, y: v.holder.position.y, rs: v.spr?.rs ?? 1, t }); }
     const t0 = performance.now(); const dur = this.reduceMotion ? 1 : ms;
@@ -424,8 +426,10 @@ export class Renderer {
     const spr = !!this.sprMode; const zf = spr ? SPR_Z0 + 2 : 0; // painted sprites stand forward on the stage: the camera moves up with them
     const base = new THREE.Vector3(0, spr ? 3.5 : 2.1, 5.2 + zf), look = new THREE.Vector3(0, spr ? 1.45 : 1.3, -2 + zf); this.arenaLook = look; // painted sprites: a slightly higher camera so back ranks sit higher in the picture
     const phonePortrait = window.innerWidth <= 760 && window.innerHeight > window.innerWidth; // there the view itself grows while a caption is up
-    const reserve = phonePortrait && !this.captionUp ? 0.1 : Math.min(0.62, Math.max(0.24, (this.captionReservePx || (w < 520 ? 150 : 140)) / h)); // no caption up: just room for floaters
-    const hud = this.container.querySelector('#hud'), top = Math.max(3, hud && hud.offsetHeight ? ((hud.offsetTop + hud.offsetHeight) / h) * 100 + 1 : 3), limit = 100 * (1 - reserve) - 2 + (spr ? 1 : 0);
+    const wideStage = spr && this.stageOpts().spread >= 0.5; // tablet / desktop: with no caption up the pack stands in the middle of the stage, not in a band over the caption
+    const reserve0 = phonePortrait && !this.captionUp ? 0.1 : Math.min(0.62, Math.max(0.24, (this.captionReservePx || (w < 520 ? 150 : 140)) / h)); // no caption up: just room for floaters
+    const reserve = wideStage && !this.captionUp ? 0.1 : reserve0; // the pack's size is still fitted to reserve0; only where it stands (centre of the stage) follows reserve
+    const hud = this.container.querySelector('#hud'), top = Math.max(3, hud && hud.offsetHeight ? ((hud.offsetTop + hud.offsetHeight) / h) * 100 + 1 : 3), limit = 100 * (1 - reserve) - 2 + (spr ? 1 : 0), limit0 = 100 * (1 - reserve0) - 2 + (spr ? 1 : 0);
     const topPad = spr ? 3 : 0; // room for the name plates above the heads
     if (this.arena.fog) { this.arena.fog.near = spr ? 10 : 8; this.arena.fog.far = spr ? 32 : 22; } // the stage is framed from further back with the pack forward: keep the pillars and back ranks clear of the fog
     cam.clearViewOffset(); cam.zoom = 1; cam.updateProjectionMatrix(); let k = 1; this._co?.set(0, 0, 0);
@@ -436,17 +440,18 @@ export class Renderer {
     for (let i = 0; i < 8; i++) {
       cam.position.copy(look).addScaledVector(base.clone().sub(look), k); cam.lookAt(look); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
       const r = this.monsterRect(); if (!r) break;
-      const span = r.bottom - r.top, avail = limit - top - topPad, wide = (r.right - r.left) / (spr ? 97 : 90), half = Math.max(50 - r.left, r.right - 50) / (spr ? 48.5 : 45);
+      const span = r.bottom - r.top, avail = limit0 - top - topPad, wide = (r.right - r.left) / (spr ? 97 : 90), half = Math.max(50 - r.left, r.right - 50) / (spr ? 48.5 : 45);
       let need = Math.max(span / avail, wide, half);
       if (spr) { // painted sprites: the FRONT rank is fitted big (about 72% of the stage); back ranks may rise past the top edge a little (their heads tuck under the HUD) but stay visible
         const f = this.monsterRect(0) || r, fw = (f.right - f.left) / 97, fh = Math.max(50 - f.left, f.right - 50) / 48.5;
-        need = Math.max((f.bottom - f.top) / (0.72 * avail), span / (1.3 * avail), fw, wide / 1.3, fh, half / 1.2) ; } if (Math.abs(need - 0.97) < 0.03) break;
+        const wk = 1.3 + (0.85 / sprViewScale(h) - 1.3) * Math.max(0, Math.min(1, this.stageOpts().spread)); // a wide stage lets the fanned-out pack use more of its width
+        need = Math.max((f.bottom - f.top) / (0.72 * avail), span / (1.3 * avail), fw, wide / wk, fh, half / (wk - 0.1)) ; } if (Math.abs(need - 0.97) < 0.03) break;
       const nk = Math.max(kMin, k * Math.min(2.5, need * 1.03)); if (Math.abs(nk - k) < 0.002) break; k = nk; // pull back if too big, push in if small
     }
     // Painted sprites are shown at SPR_VIEW_SCALE of the fitted size by zooming the lens out, NOT by dollying back: a camera that far away loses big bosses in the fog / far plane.
     if (spr) { cam.zoom = sprViewScale(h); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
-    const r = (spr && this.monsterRect(0)) || this.monsterRect(); this.arenaShift = 0;
-    if (r) { const shift = (r.top + r.bottom) / 2 - (top + topPad + limit) / 2; // centre the monsters in the band above the caption (+ moves the picture up)
+    const r = (spr && !(wideStage && !this.captionUp) && this.monsterRect(0)) || this.monsterRect(); this.arenaShift = 0; // wide stage, no caption: the whole pack is centred (so the front rank stands low), else the front rank
+    if (r) { const shift = (r.top + r.bottom) / 2 - (top + topPad + limit) / 2 - (wideStage && !this.captionUp ? 8 : 0); // centre the monsters in the band above the caption (+ moves the picture up)
       const s = Number.isFinite(shift) ? Math.max(-45, Math.min(45, shift)) : 0; // a bigger shift can only mean a bad measurement
       if (s) { cam.setViewOffset(w, h, 0, (s / 100) * h, w, h); this.arenaShift = s; } }
     cam.updateProjectionMatrix();
