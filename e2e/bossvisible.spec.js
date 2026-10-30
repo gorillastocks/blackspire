@@ -17,7 +17,7 @@ const BOSSES = {
 const leadRect = (page) => page.evaluate(() => {
   const { R } = window.__gw; const cv = R.container.getBoundingClientRect(); const v = R.monsterObjs.get(window.__gw.combat.monsters[0].id); const b = v.wbox; let l = 1e9, t = 1e9, r = -1e9, bt = -1e9;
   for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) { const q = new b.min.constructor(x, y, (b.min.z + b.max.z) / 2).project(R.arenaCam); const px = (q.x * 0.5 + 0.5) * cv.width, py = (-q.y * 0.5 + 0.5) * cv.height; l = Math.min(l, px); r = Math.max(r, px); t = Math.min(t, py); bt = Math.max(bt, py); }
-  return { cv: { x: cv.x, y: cv.y, w: cv.width, h: cv.height }, l, t, r, b: bt, zoom: R.arenaCam.zoom, dist: R.arenaCam.position.length() };
+  return { cv: { x: cv.x, y: cv.y, w: cv.width, h: cv.height }, l, t, r, b: bt, zoom: R.arenaCam.zoom, dist: R.arenaCam.position.distanceTo(R.arenaLook) };
 });
 
 for (const [name, groups] of Object.entries(BOSSES)) {
@@ -50,7 +50,7 @@ for (const [name, groups] of Object.entries(BOSSES)) {
     console.log(`${name} ${P}: boss pixels ${(frac * 100).toFixed(0)}% of its box; box ${Math.round(rc.l)},${Math.round(rc.t)}-${Math.round(rc.r)},${Math.round(rc.b)} of ${Math.round(rc.cv.w)}x${Math.round(rc.cv.h)}; zoom ${rc.zoom}, camera distance ${rc.dist.toFixed(1)}`);
     expect(frac, 'the boss sprite has visible (non-background) pixels in frame').toBeGreaterThan(0.08);
     expect(rc.zoom, 'about half size (a little more on a short stage)').toBeGreaterThanOrEqual(0.56); expect(rc.zoom).toBeLessThanOrEqual(0.7);
-    expect(rc.dist, 'camera not dollied out into the fog').toBeLessThan(14);
+    expect(rc.dist, 'camera not dollied out into the fog (distance to the look point; the stage and camera stand forward together, so the old distance from the origin grew with SPR_Z0 alone: 14 there is 12.8 here)').toBeLessThan(13);
     // mostly inside the arena view, and not the full height (half size)
     expect(rc.l).toBeGreaterThanOrEqual(-4); expect(rc.r).toBeLessThanOrEqual(rc.cv.w + 4); expect(rc.t).toBeGreaterThanOrEqual(-rc.cv.h * 0.08); expect(rc.b).toBeLessThanOrEqual(rc.cv.h * 1.02);
     expect((rc.b - rc.t) / rc.cv.h, 'boss height as a share of the arena view').toBeLessThan(0.6);
