@@ -14,8 +14,7 @@ FRAMES = [  # (file name, raw capture, caption)
     ('05-floors.png', 'floors', '5 dungeons. Beat it in a weekend.'),
     ('06-classes.png', 'create', '12 classes'),
     ('07-town.png', 'town', 'Rest, shop and recruit in Emberhollow.'),
-    ('08-tavern.png', 'listen', 'Listen in on the Boar & Spoon.'),
-    ('09-camp.png', 'camp', 'Bond with your party by the campfire.'),
+    ('08-camp.png', 'camp', 'Bond with your companions at camp.'),
 ]
 if os.path.exists(f'{raw}/floor5.png'): overview.main(dev, raw)
 for name, src, cap in FRAMES:

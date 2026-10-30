@@ -14,6 +14,11 @@ def font(px):
     return f
 
 def wrap(draw, text, fnt, maxw):
+    if draw.textlength(text, font=fnt) <= maxw: return [text]
+    # prefer a break at a sentence or comma boundary, as balanced as possible
+    cands = [(text[:i + 1].strip(), text[i + 1:].strip()) for i, c in enumerate(text) if c in '.,' and text[i + 1:i + 2] == ' ']
+    cands = [c for c in cands if all(draw.textlength(x, font=fnt) <= maxw for x in c)]
+    if cands: return list(min(cands, key=lambda c: abs(draw.textlength(c[0], font=fnt) - draw.textlength(c[1], font=fnt))))
     words, lines, cur = text.split(), [], ''
     for w in words:
         t = (cur + ' ' + w).strip()
@@ -36,12 +41,19 @@ def band(dev, caption):
     img = Image.composite(Image.new('RGB', (W, H), (255, 90, 31)), img, glow)
     dr = ImageDraw.Draw(img)
     margin = int(W * 0.06); maxw = W - 2 * margin
-    size = int(H * 0.40)
-    while True:
-        fnt = font(size); lines = wrap(dr, caption, fnt, maxw)
-        lh = int(size * 1.18)
-        if (len(lines) <= 2 and lh * len(lines) <= H * 0.74 and all(dr.textlength(l, font=fnt) <= maxw for l in lines)) or size < 20: break
-        size -= 2
+    smax = int(H * 0.40); lines = None
+    for size in range(smax, int(smax * .46), -2):  # prefer a sentence/comma break if it fits without shrinking much
+        fnt = font(size); lh = int(size * 1.18)
+        if dr.textlength(caption, font=fnt) <= maxw: lines = [caption]; break
+        cands = [(caption[:i + 1].strip(), caption[i + 1:].strip()) for i, c in enumerate(caption) if c in '.,' and caption[i + 1:i + 2] == ' ']
+        cands = [c for c in cands if all(dr.textlength(x, font=fnt) <= maxw for x in c)]
+        if cands and lh * 2 <= H * 0.74: lines = list(min(cands, key=lambda c: abs(dr.textlength(c[0], font=fnt) - dr.textlength(c[1], font=fnt)))); break
+    if lines is None:
+        size = smax
+        while True:
+            fnt = font(size); lines = wrap(dr, caption, fnt, maxw); lh = int(size * 1.18)
+            if (len(lines) <= 2 and lh * len(lines) <= H * 0.74 and all(dr.textlength(l, font=fnt) <= maxw for l in lines)) or size < 20: break
+            size -= 2
     if len(lines) == 1 and size >= int(H * 0.40) - 1: pass
     total = lh * len(lines); y0 = (H - total) // 2 - int(H * 0.02)
     text_mask = Image.new('L', (W, H), 0); md = ImageDraw.Draw(text_mask)
