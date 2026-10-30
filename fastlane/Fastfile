@@ -38,18 +38,12 @@ platform :ios do
       # The certificate (and with it the profile) is deleted again at the end, so runs never pile up certificates.
       setup_ci
       certs_before = Spaceship::ConnectAPI::Certificate.all(filter: { certificateType: dist_types.join(",") }).map(&:id)
-      # TEMP one-off: remove the orphan certificate left by the failed run 41110675079 (created by this pipeline, no profile).
-      if certs_before.include?("6X6AQV9USD")
-        Spaceship::ConnectAPI::Certificate.get(certificate_id: "6X6AQV9USD").delete!
-        certs_before.delete("6X6AQV9USD")
-        UI.message("Removed orphan certificate from earlier failed run")
-      end
       cert(
         api_key: api_key,
         team_id: team_id,
         development: false,
         generate_apple_certs: true,
-        keychain_path: lane_context[SharedValues::KEYCHAIN_PATH],
+        keychain_path: File.expand_path("~/Library/Keychains/#{ENV["MATCH_KEYCHAIN_NAME"]}-db"),
         keychain_password: ""
       )
 
