@@ -49,7 +49,7 @@ platform :ios do
         output_directory: "ios/App/output",
         output_name: "Blackspire.ipa",
         clean: true,
-        xcargs: "#{auth_flags} DEVELOPMENT_TEAM=#{team_id} " \
+        xcargs: "#{auth_flags} DEVELOPMENT_TEAM=#{team_id} CODE_SIGN_IDENTITY=\"Apple Distribution\" " \
                 "MARKETING_VERSION=#{MARKETING_VERSION} CURRENT_PROJECT_VERSION=#{build_number}",
         export_xcargs: auth_flags,
         export_options: {
