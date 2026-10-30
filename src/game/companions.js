@@ -57,7 +57,7 @@ export const COMPANIONS = {
     ],
   },
   pip: {
-    name: 'Pip Tealeaf', short: 'Pip', race: 'lightfootHalfling', cls: 'rogue', color: '#ffd34d',
+    name: 'Pip Tealeaf', short: 'Pip', race: 'lightfootHalfling', cls: 'rogue', color: '#ffd34d', portrait: 37,
     base: { str: 8, dex: 15, con: 14, int: 12, wis: 13, cha: 10 }, skills: ['stealth', 'perception', 'sleightOfHand', 'investigation', 'acrobatics'],
     blurb: 'A sarcastic lightfoot halfling thief of the Lantern Row Crew, hunting the partner who sold the whole crew to the cult. Dry as dust and twice as sharp.',
     lines: {

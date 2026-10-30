@@ -25,10 +25,11 @@ export const PORTRAITS = LIST.map(([race, sex, cls, skin, hair], i) => ({ id: i,
 export const PORTRAIT_COUNT = PORTRAITS.length;
 /** Phase C: story portraits that sit after the 36 pickable ones (never in the creator grid or the random pool). */
 export const LIORA_PORTRAIT = PORTRAIT_COUNT; // p36.webp, Liora Wardenfall
-export const PORTRAIT_TOTAL = PORTRAIT_COUNT + 1;
+export const PIP_PORTRAIT = PORTRAIT_COUNT + 1; // p37.webp, Pip Tealeaf (a woman)
+export const PORTRAIT_TOTAL = PORTRAIT_COUNT + 2;
 
 /** URL of painted portrait i (any integer; wraps). */
-export function portraitURL(i) { i = i === LIORA_PORTRAIT ? i : ((i | 0) % PORTRAIT_COUNT + PORTRAIT_COUNT) % PORTRAIT_COUNT; return BASE + 'portraits/p' + String(i).padStart(2, '0') + '.webp'; }
+export function portraitURL(i) { i = (i === LIORA_PORTRAIT || i === PIP_PORTRAIT) ? i : ((i | 0) % PORTRAIT_COUNT + PORTRAIT_COUNT) % PORTRAIT_COUNT; return BASE + 'portraits/p' + String(i).padStart(2, '0') + '.webp'; }
 /** Random portrait, preferring one of the character's race (and class) when there is one. */
 export function randomPortrait(race = null, cls = null, rnd = Math.random) {
   let pool = PORTRAITS.filter((p) => p.race === race && p.cls === cls); if (!pool.length) pool = PORTRAITS.filter((p) => p.race === race); if (!pool.length) pool = PORTRAITS;
