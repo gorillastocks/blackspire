@@ -49,7 +49,7 @@ if (want('floors')) await step('floors', async () => {
 
 if (want('camp')) await step('camp', async () => {
   await place(spot); await page.evaluate(() => window.__gw.showCamp()); await sleep(800);
-  await page.locator('#btn-talk').click(); await sleep(1500); await page.screenshot({ path: `${raw}/camp.png` });
+  await page.locator('#btn-talk').click(); await sleep(1200); await page.locator('#modal button', { hasText: 'Brambur' }).first().click(); await sleep(2500); await page.screenshot({ path: `${raw}/camp.png` });
   await page.evaluate(() => window.__gw.closeModal()); await sleep(300);
 });
 
@@ -59,7 +59,7 @@ if (want('battle')) await step('battle', async () => {
   const menu = page.locator('.combatmenu'); let ok = false;
   for (let i = 0; i < 300; i++) {
     if (await page.locator('#caption.show').isVisible().catch(() => false)) await page.locator('#caption').click({ force: true }).catch(() => {});
-    if (await menu.isVisible().catch(() => false) && /Attack|Cast Spell/.test(await menu.innerText().catch(() => '')) && await page.evaluate(() => { const c = window.__gw.combat; return c && c.current() === window.__gw.state.party[0]; })) { ok = true; break; }
+    if (await menu.isVisible().catch(() => false) && /Attack|Shoot|Cast Spell/.test(await menu.innerText().catch(() => '')) && await page.evaluate(() => { const c = window.__gw.combat; return c && c.current() === window.__gw.state.party[0]; })) { ok = true; break; }
     await sleep(300);
   }
   console.log('hero turn', ok); await sleep(2500);
