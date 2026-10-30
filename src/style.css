@@ -130,6 +130,11 @@ body.incombat #bottom { grid-template-columns: 1fr 420px; }
 /* town screens float over the scene; let taps reach the party sidebar (sheets, AI toggles) around the panel */
 #modal.transparent { pointer-events: none; }
 #modal.transparent .panel { pointer-events: auto; }
+/* phones + foldables: a town location (Tavern, Temple, Shop...) is a full-height sheet that fully covers the scene, party cards and log behind it; its content scrolls */
+@media (max-width: 760px), (max-height: 700px) and (pointer: coarse) {
+  #modal.transparent { pointer-events: auto; background: #05030b; align-items: stretch; justify-content: center; }
+  #modal.transparent .panel { height: 100%; max-height: 100%; width: 100%; max-width: 760px; border-radius: 0; border-left: none; border-right: none; box-shadow: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+}
 
 /* crisp, high-contrast dialog text: opaque panels, no blur/filters/scale anywhere on text layers */
 .panel { color: #f2efff; font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
