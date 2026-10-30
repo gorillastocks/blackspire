@@ -100,7 +100,7 @@ for (const cfg of AUTO_CONFIGS) {
     const skip = page.locator('#tip-skip'); if (await skip.isVisible()) await skip.click();
     await page.evaluate(({ cfg }) => {
       const g = window.__gw, R = g.R; const hero = g.state.party[0], wiz = g.state.party.find((c) => c.cls === 'wizard');
-      hero.level = 9; hero.spells = cfg.hero; hero.slots = [9, 9, 9, 9, 9]; wiz.level = 9; wiz.spells = cfg.wiz; wiz.slots = [9, 9, 9, 9, 9];
+      const lv = (l) => l.filter((k) => k !== 'fireBolt'); hero.level = 9; hero.cantrips = ['fireBolt']; hero.spells = lv(cfg.hero); hero.slots = [9, 9, 9, 9, 9]; wiz.level = 9; wiz.cantrips = ['fireBolt']; wiz.spells = lv(cfg.wiz); wiz.prepared = lv(cfg.wiz); wiz.slots = [9, 9, 9, 9, 9];
       for (const c of g.state.party) { c.maxHp = 9999; c.hp = 9999; }
       window.__sc = []; window.__proj = []; window.__area = 0; window.__ev = [];
       const os = R.spellCast.bind(R); R.spellCast = (s, t, i, d) => { window.__sc.push({ s, i, area: t == null }); return os(s, t, i, d); };
@@ -108,9 +108,12 @@ for (const cfg of AUTO_CONFIGS) {
       const ar = R.cfx.area.bind(R.cfx); R.cfx.area = (...x) => { window.__area++; return ar(...x); };
       localStorage.setItem('blackspire.settings', JSON.stringify({ battleSpeed: 'double', battleSpeedSet: true }));
       g.startCombat({ groups: [{ key: 'animatedArmor', count: 3 }, { key: 'giantRat', count: 2 }] });
-      const c = g.combat; const od = c.drain.bind(c); c.drain = () => { const r = od(); window.__ev.push(...r.events.map((e) => ({ type: e.type, att: e.att?.name, who: e.who?.name, tgt: e.tgt?.side, spell: e.spell }))); return r; };
-      for (const m of c.monsters) { m.hp = m.maxHp = 99999; m.ac = 99; }
+      return new Promise((res) => { const t = setInterval(() => { if (g.combat) { clearInterval(t); res(); } }, 20); });
     }, { cfg });
+    await page.evaluate(() => {
+      const g = window.__gw; const c = g.combat; const od = c.drain.bind(c); c.drain = () => { const r = od(); window.__ev.push(...r.events.map((e) => ({ type: e.type, att: e.att?.name, who: e.who?.name, tgt: e.tgt?.side, spell: e.spell }))); return r; };
+      for (const m of c.monsters) { m.hp = m.maxHp = 99999; m.ac = 99; }
+    });
     const auto = page.locator('#autobtn'); await expect(auto).toBeVisible({ timeout: 60000 }); await auto.click(); await expect(auto).toHaveAttribute('aria-pressed', 'true');
     // rounds 1-2 everything misses, rounds 3-4 everything hits, then the foes fall so the fight ends
     await expect.poll(() => page.evaluate(() => { const c = window.__gw.combat; if (!c) return 9; if (c.round >= 3) for (const m of c.monsters) m.ac = 1; if (c.round >= 5) for (const m of c.monsters) m.hp = 1; return c.round; }), { timeout: 240000, intervals: [300] }).toBeGreaterThanOrEqual(5);
