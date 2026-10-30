@@ -16,16 +16,9 @@
     "note": "Dungeon Master (Julian - Deep, Rich and Mature)"
   },
   "dm": {
-    "id": "b1A9OAVD1Yu0SjoFdv4A",
-    "name": "Raymond",
-    "note": "Dungeon Master read-aloud (Raymond - Theatrical Classical Narrator)",
-    "settings": {
-      "stability": 0.45,
-      "similarity_boost": 0.8,
-      "style": 0.55,
-      "use_speaker_boost": true,
-      "speed": 1.05
-    }
+    "id": "7p1Ofvcwsv7UBPoFNcpI",
+    "name": "Julian",
+    "note": "Dungeon Master read-aloud: the original narrator voice (Julian - Deep, Rich and Mature), same as the narrator speaker, default settings"
   },
   "malthrax": {
     "id": "dG7SBJDxDoZkQUrwvqrD",

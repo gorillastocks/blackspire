@@ -28,7 +28,7 @@ test('Dungeon Master: floor entry, boss lair read before the fight, skip by tap,
   await newGame(page);
   await clearTown(page); // the town square card, skipped by a tap
   expect(await page.evaluate(() => window.__gw.state.seen['town:square'])).toBe(1);
-  // B1 entry: Raymond reads, the caption has the header, a tap skips it
+  // B1 entry: the DM reads, the caption has the header, a tap skips it
   await page.evaluate(() => { const g = window.__gw; g.handle(g.G.enterDungeon(g.state, 0)); });
   await expect(card(page)).toBeVisible(); await expect(page.locator('#caption .dmhead')).toContainText('Dungeon Master');
   await expect(page.locator('#caption .captxt')).toContainText('Rat Warrens');
