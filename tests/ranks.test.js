@@ -3,7 +3,7 @@ import { createCharacter, assignByPriority, levelUp } from '../src/rules/charact
 import { Combat, MAX_GROUPS, FRONT_GROUPS } from '../src/rules/combat.js';
 import { setRng, seeded } from '../src/rules/dice.js';
 import { SPELLS, MONSTERS } from '../src/rules/data.js';
-import { rankLayout, spriteRankLayout, SPR_RANK_SCALE, RANK_Z0, RANK_DZ } from '../src/render/ranks.js';
+import { rankLayout, spriteRankLayout, SPR_RANK_SCALE, SPR_Z0, SPR_RANK_DZ, RANK_Z0, RANK_DZ } from '../src/render/ranks.js';
 
 afterEach(() => setRng(null));
 const mk = (cls, lvl = 1) => { const c = createCharacter({ name: cls, race: 'human', cls, base: assignByPriority(cls) }); c.xp = 999999; while (c.level < lvl) levelUp(c); return c; };
@@ -224,5 +224,29 @@ describe('ranks: painted-sprite layout', () => {
   });
   it('without rank info it lays everyone out as one rank', () => {
     const { pos } = spriteRankLayout([fig('a'), fig('b')], null); expect(pos.get('a').rank).toBe(0); expect(pos.get('b').rank).toBe(0);
+  });
+});
+
+describe('ranks: wide stage (iPad / desktop) fills the stage; phones keep the compact pack', () => {
+  const fig = (id, w, h, o = {}) => ({ id, w, h, ...o });
+  // spider + 2 cultists + 2 rats in three ranks, as in the iPad screenshot
+  const rows = [['spider'], ['c1', 'c2'], ['r1', 'r2']];
+  const its = [fig('spider', 4.4, 3.6), fig('c1', 2.2, 3.2), fig('c2', 2.2, 3.2), fig('r1', 1.8, 1.4), fig('r2', 1.8, 1.4)];
+  const wide = spriteRankLayout(its, rows, { spread: 1, aspect: 1.3 }).pos, phone = spriteRankLayout(its, rows, { spread: 0, aspect: 0.5 }).pos, none = spriteRankLayout(its, rows).pos;
+  it('the front rank stands at the front of the ring and ranks keep a clear depth step', () => {
+    expect(wide.get('spider').z).toBeCloseTo(SPR_Z0 - 0.0, 0); expect(wide.get('spider').z).toBeGreaterThanOrEqual(SPR_Z0 - 0.4);
+    const z = (id) => wide.get(id).z; expect(z('spider') - z('c1')).toBeGreaterThanOrEqual(SPR_RANK_DZ - 0.5); expect(z('c1') - z('r1')).toBeGreaterThanOrEqual(SPR_RANK_DZ - 0.5);
+  });
+  it('the back ranks spread sideways instead of hiding behind the front figure', () => {
+    const spread = (m, ids) => Math.max(...ids.map((i) => m.get(i).x)) - Math.min(...ids.map((i) => m.get(i).x));
+    expect(spread(wide, ['c1', 'c2'])).toBeGreaterThan(spread(phone, ['c1', 'c2']));
+    expect(spread(wide, ['r1', 'r2'])).toBeGreaterThan(spread(phone, ['r1', 'r2']));
+    const hideSp = (id) => Math.abs(wide.get(id).x - wide.get('spider').x); // cultists stand clear of the spider's centre
+    expect(hideSp('c1')).toBeGreaterThan(2); expect(hideSp('c2')).toBeGreaterThan(2);
+    const all = [...wide.values()].map((p) => p.x); expect(Math.max(...all) - Math.min(...all)).toBeGreaterThan(8);
+  });
+  it('without wide-stage options the layout is the compact phone one', () => {
+    for (const id of its.map((i) => i.id)) { expect(none.get(id).x).toBeCloseTo(phone.get(id).x, 5); expect(none.get(id).z).toBeCloseTo(phone.get(id).z, 5); }
+    const all = [...phone.values()].map((p) => p.x); expect(Math.max(...all) - Math.min(...all)).toBeLessThan(9);
   });
 });
