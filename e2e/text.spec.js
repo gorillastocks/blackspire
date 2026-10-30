@@ -11,9 +11,13 @@ test('chest + trap search, companion talk and banter text is crisp and readable'
   // tavern chatter
   await page.locator('#modal button', { hasText: 'Tavern' }).click();
   await page.locator('#modal button', { hasText: 'Listen in' }).click();
+  if (await page.locator('.dialogue').count()) { // a patron exchange (about one tap in four is the party's banter instead)
+    await auditText(page, '#modal .panel', minPx);
+    await page.screenshot({ path: `screenshots/text-${info.project.name}-tavern-talk.png` });
+    for (let i = 0; i < 4 && await page.locator('.dialogue').count(); i++) { await page.locator('#dlg-next').click(); await page.waitForTimeout(150); }
+  }
   await expect(page.locator('#modal .dlgout')).toBeVisible();
   await auditText(page, '#modal .panel', minPx);
-  await page.screenshot({ path: `screenshots/text-${info.project.name}-tavern-talk.png` });
   await page.locator('#modal .backbtn').first().click();
   // dungeon: stand on a chest and search it for traps
   await page.locator('#modal button', { hasText: 'Edge of Town' }).click(); await page.click('#btn-enter');
@@ -29,7 +33,8 @@ test('chest + trap search, companion talk and banter text is crisp and readable'
   await page.locator('#modal button', { hasText: 'Leave it' }).click();
   // camp: companion conversation
   await page.evaluate(() => window.__gw.showCamp());
-  await page.click('#btn-talk'); await page.click('#btn-talk');
+  await page.click('#btn-talk'); await page.locator('#talk-picker [data-talk]').first().click(); // pick a companion for a heart to heart
+  await expect(page.locator('.dialogue')).toBeVisible();
   await auditText(page, '#modal .panel', minPx);
   await page.screenshot({ path: `screenshots/text-${info.project.name}-camp-talk.png` });
   await page.keyboard.press('Escape'); await page.evaluate(() => { const m = document.querySelector('#modal'); if (!m.classList.contains('hidden')) m.querySelector('.closebtn')?.click(); });

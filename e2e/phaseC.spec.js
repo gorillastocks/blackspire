@@ -68,7 +68,7 @@ test('level 1 showcase: banter, an event card with choices, consequences and the
   await expect(page.locator('#modal.hidden, #modal:not(:has(.evcard))').first()).toBeAttached();
   // journal: bonds and omens
   await page.evaluate(() => window.__gw.state.pc.buffs.push({ id: 'hush', steps: 50, fights: 0, chests: 0 }));
-  await page.locator('#controls button', { hasText: 'Camp' }).click(); await page.locator('#btn-talk').click();
+  await page.locator('#controls button', { hasText: 'Camp' }).click(); await page.locator('#btn-talk').click(); await page.locator('[data-talk="liora"]').click(); // the camp Talk picker: Liora's pending moment
   await expect(page.locator('.dialogue')).toBeVisible(); await shot(page, { path: `/workspace/shots/phaseC-liora-talk-${info.project.name}.png` });
   expect(okErr(errors)).toEqual([]);
 });
