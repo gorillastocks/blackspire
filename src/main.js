@@ -1432,6 +1432,7 @@ function declutterTags() {
     const items = tags.map((el) => { el.style.marginTop = el.style.marginLeft = ''; return { el, r: el.getBoundingClientRect() }; }).sort((a, b) => b.r.bottom - a.r.bottom || a.r.left - b.r.left); // front (lowest) first
     const placed = []; let ok = true;
     for (const sel of ['#btn-menu']) { const e = document.querySelector(sel); if (e && e.offsetParent) { const b = e.getBoundingClientRect(); if (b.width) placed.push({ left: b.left, right: b.right, top: b.top, bottom: b.bottom }); } } // plates keep clear of the Menu button
+    { const hd = window.innerWidth <= 760 && document.querySelector('#hud'); if (hd && hd.offsetParent) { const b = hd.getBoundingClientRect(); if (b.width && b.height) placed.push({ left: b.left, right: b.right, top: b.top, bottom: b.bottom + 2 }); } } // ... and clear of the HUD header text (it wraps to two lines on a phone)
     for (const it of items) {
       const w = it.r.width, hgt = it.r.height; let best = null;
       const need = Math.max(0, Math.ceil((hr.top + 2 - it.r.top) / (hgt * 0.5))); // plates anchored above the view slide down just enough to get in
