@@ -75,7 +75,7 @@ export function buildSpriteMonster(scene, m, T, spr, lay, n, crowd) {
   shadow.rotation.x = -Math.PI / 2; shadow.scale.set(Wd * rs * 0.85, Wd * rs * 0.28, 1); shadow.position.y = -(flying ? 0.3 * H * rs : 0) + 0.02; shadow.renderOrder = -1; holder.add(shadow);
   holder.lookAt(scene.arenaCam.position.x * 0.3, holder.position.y, scene.arenaCam.position.z);
   scene.monsterGroup.add(holder); scene.monsterGroup.updateMatrixWorld(true);
-  const local = new Box3(new Vector3(-Wd * rs / 2, 0, -0.12), new Vector3(Wd * rs / 2, H * rs, 0.12)); // billboards face the camera, so z is small
+  const local = new Box3(new Vector3(-Wd * rs / 2, flying ? -0.3 * H * rs : 0, -0.12), new Vector3(Wd * rs / 2, H * rs, 0.12)); // a flier's box reaches down to its floor shadow, so the caption / plates stay clear of what is drawn // billboards face the camera, so z is small
   const wbox = local.clone().translate(holder.position);
   const rec = { id: m.id, holder, o, mixer: null, clips: {}, mats: [], dead: false, height: H * rs, wbox, spr: { mesh, mat, shadow, local, base: holder.position.clone(), phase: Math.random() * 6.28, flying, Wd, H, rs, rank: L ? L.rank : 0, lastX: x, lastZ: z, lastRs: rs } };
   scene.monsterObjs.set(m.id, rec); return rec;
@@ -87,7 +87,7 @@ export function updateSprites(scene, dt, t) {
   for (const [, v] of scene.monsterObjs) {
     const s = v.spr; if (!s) continue; const u = s.mat.userData.u;
     // keep the framing box glued to the holder (ranks slide forward when a front group falls)
-    const p = v.holder.position; if (p.x !== s.lastX || p.z !== s.lastZ || s.rs !== s.lastRs) { s.local.min.set(-s.Wd * s.rs / 2, 0, -0.12); s.local.max.set(s.Wd * s.rs / 2, s.H * s.rs, 0.12); v.height = s.H * s.rs; s.shadow.scale.set(s.Wd * s.rs * 0.85, s.Wd * s.rs * 0.28, 1); v.wbox.copy(s.local).translate(p); s.lastX = p.x; s.lastZ = p.z; s.lastRs = s.rs; if (!v.dead) v.wbox.min.y = Math.min(v.wbox.min.y, p.y); }
+    const p = v.holder.position; if (p.x !== s.lastX || p.z !== s.lastZ || s.rs !== s.lastRs) { s.local.min.set(-s.Wd * s.rs / 2, s.flying ? -0.3 * s.H * s.rs : 0, -0.12); s.local.max.set(s.Wd * s.rs / 2, s.H * s.rs, 0.12); v.height = s.H * s.rs; s.shadow.scale.set(s.Wd * s.rs * 0.85, s.Wd * s.rs * 0.28, 1); v.wbox.copy(s.local).translate(p); s.lastX = p.x; s.lastZ = p.z; s.lastRs = s.rs; if (!v.dead) v.wbox.min.y = Math.min(v.wbox.min.y, p.y); }
     // idle: breathing (squash & stretch from the feet) and a slow sway; flyers hover
     const ph = t * 1.9 + s.phase; const live = !v.dead;
     const amp = live ? (rm ? 0 : 1) : 0;
