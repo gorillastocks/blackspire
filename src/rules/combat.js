@@ -334,7 +334,7 @@ export class Combat {
       tgt.slots[0]--; tgt.reaction = false; tgt.conditions.shieldSpell = true; hit = false;
       this.say(`${tgt.name} casts Shield! (+5 AC) The ${label} glances off.`, 'spell'); this.emit({ type: 'spell', who: tgt, spell: 'shield' });
     }
-    if (!hit) { this.caption(narrateAttack({ att, tgt, label, type, hit: false, ranged, spell }), `Miss — ${total} vs AC ${ac}`, 'miss'); this.say(`${att.name}'s ${label} misses ${tgt.name}${advTxt}. [${nat}+${bonus}${bless ? '+' + bless : ''}=${total} vs AC ${ac}]`, 'dim'); this.emit({ type: 'miss', att, tgt, spell: spell || null }); return { hit: false, crit: false, dmg: 0 }; }
+    if (!hit) { this.emit({ type: 'miss', att, tgt, spell: spell || null }); this.caption(narrateAttack({ att, tgt, label, type, hit: false, ranged, spell }), `Miss — ${total} vs AC ${ac}`, 'miss'); this.say(`${att.name}'s ${label} misses ${tgt.name}${advTxt}. [${nat}+${bonus}${bless ? '+' + bless : ''}=${total} vs AC ${ac}]`, 'dim'); return { hit: false, crit: false, dmg: 0 }; }
     let d = roll(dmg, { crit, extraDice: crit ? extraOnCrit : 0 }) + dmgBonus;
     let sneakTxt = '';
     if (sneak) { d += roll(`${sneak}d6`, { crit }); sneakTxt = ' +Sneak Attack'; }

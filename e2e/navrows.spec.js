@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { newGame, openLocation, trackErrors } from './helpers.js';
 
-// Exploring: the arrow row and the Search/Camp/Map/Sheet/Items/Save row are always fully visible and tappable
+// Exploring: the arrow row and the Search/Camp/Map/Journal/Items/Save row are always fully visible and tappable
 // (elementFromPoint at each button's centre and near its top/bottom edges is the button), with and without level-up chips,
 // at the device size and on a shorter screen (Safari with its toolbars showing).
 const check = (page) => page.evaluate(() => {

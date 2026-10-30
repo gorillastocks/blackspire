@@ -477,7 +477,7 @@ function setControls(kind) {
     b('↶', () => act(() => G.turn(S, -1)), '', 'Turn left (A)'); b('▲', () => act(() => G.move(S, 0)), '', 'Forward (W)'); b('↷', () => act(() => G.turn(S, 1)), '', 'Turn right (D)');
     b('◀', () => act(() => G.move(S, 3)), '', 'Strafe left (Q)'); b('▼', () => act(() => G.move(S, 2)), '', 'Back (S)'); b('▶', () => act(() => G.move(S, 1)), '', 'Strafe right (E)');
     b('🔍 Search', doSearch, 'act', 'Search (F)'); b('⛺ Camp', () => { healSel = null; showCamp('rest'); }, 'act', 'Camp (C)'); b('🗺 Map', showMap, 'act', 'Map (M)');
-    b('📜 Sheet', () => showSheet(S.party[0]), 'act', 'Character sheet (I)'); b('🎒 Items', showInventory, 'act', 'Inventory (B)'); b('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, 'act', 'Save (P)');
+    b('📖 Journal', () => showJournal(null, 'quests'), 'act', 'Journal: quests, notes, chapter log, bonds (J) · tap a party card for its character sheet (I)'); b('🎒 Items', showInventory, 'act', 'Inventory (B)'); b('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, 'act', 'Save (P)');
   }
 }
 function act(f) { ambientMoveToken++; const ev = f(); R.setView(S.x, S.y, S.dir); if (ev.some?.((e) => !e.bump)) sfx('step'); handle(ev); if (S && !combat && S.steps % 8 === 0 && S.steps !== lastAutoStep) { lastAutoStep = S.steps; autosave(true); } }
@@ -548,7 +548,7 @@ function showHelp() {
   <table><tr><th>Move</th><td>W/↑ forward · S/↓ back · A/D or ←/→ turn · Q/E strafe · swipe on mobile</td></tr>
   <tr><th>Search</th><td>F / Space — find secret doors & traps, pick or force locks</td></tr>
   <tr><th>Camp</th><td>C — short/long rest, party talk, reorder, save/load</td></tr>
-  <tr><th>Map / Sheet / Items</th><td>M / I / B</td></tr>
+  <tr><th>Map / Journal / Sheet / Items</th><td>M / J / I / B</td></tr>
   <tr><th>Combat</th><td>Number keys pick menu entries; click monster tags to target. Each hero acts on their turn with a short cut-in; <b>🤖 Auto</b> lets the AI play every hero (you too) until you tap it again, and <b>⏩</b> changes battle speed (cut-ins follow it).</td></tr></table>
   <h3>Rows: front and back</h3>
   <p>Your party order is your formation. The <b>first two heroes are the front row</b> (⚔); everyone else is the <b>back row</b> (🏹). Only the front row can attack in melee. A back-row hero needs a <b>ranged weapon, a spell</b> or a <b>reach weapon</b> (glaive, halberd, pike, whip). Monsters aim at the front row about <b>9 times in 10</b>, but fliers and archers pick anyone. A downed front-row hero is replaced by the next hero in line.</p>
@@ -1402,7 +1402,7 @@ async function flushCombat() {
   const fxDur = () => skipping ? 40 : Math.round(420 * ANIM_SLOW * Math.max(0.4, speed().f)); // bolts / bursts / strikes ≈1.5x longer; scales with battle speed
   for (const e of events) {
     if (!combat || !S) return;
-    if (e.type === 'caption') { pending = null; renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0 && !skipping); if (skipping) await new Promise((r) => setTimeout(r, 120)); else if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
+    if (e.type === 'caption') { renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0 && !skipping); if (skipping) await new Promise((r) => setTimeout(r, 120)); else if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
     if (e.type === 'cutin') { pending = null; await playCutin(e); continue; }
     if (e.type === 'trait') { const d = D.dtype(e.dtype), k = D.TRAIT_KINDS[e.kind]; floater(e.who.id, `${d.icon} ${k.mark}`, false, e.dtype); renderTargets(); if (e.first) toast(`${d.icon} Discovered: ${e.who.name} ${k.word.toLowerCase()} ${d.name.toLowerCase()} (${k.mark})`); await wait(e.kind === 'immune' ? 220 : 140); continue; }
     if (e.type === 'rows') { renderParty(); continue; }

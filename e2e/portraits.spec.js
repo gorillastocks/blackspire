@@ -29,7 +29,7 @@ test('portraits: picker in creation, party panel, sheet change, companions + old
   expect(bad).toEqual([]);
   await page.screenshot({ path: `/workspace/shots/portraits-party-${P}.png` });
   // change from the sheet
-  await page.locator('#controls button', { hasText: 'Sheet' }).click();
+  await page.locator('#party .card').first().click(); // the party card opens that hero's sheet (there is no Sheet button any more)
   await page.click('#btn-portrait');
   await page.locator('#pgrid [data-pid="20"]').click();
   await expect(page.locator('#btn-portrait')).toBeVisible();
