@@ -10,7 +10,8 @@ platform :ios do
     issuer_id = ENV.fetch("ASC_ISSUER_ID")
     key_content = ENV.fetch("ASC_KEY_P8")
 
-    created_cert_id = nil
+    certs_before = nil
+    dist_types = %w[IOS_DISTRIBUTION DISTRIBUTION]
     begin
       api_key = app_store_connect_api_key(
         key_id: key_id,
@@ -36,9 +37,21 @@ platform :ios do
       # wants. Instead: an ephemeral App Store distribution certificate + profile, both created through the API key.
       # The certificate (and with it the profile) is deleted again at the end, so runs never pile up certificates.
       setup_ci
-      cert(api_key: api_key, team_id: team_id, development: false, generate_apple_certs: true)
-      cert_id = lane_context[SharedValues::CERT_CERTIFICATE_ID]
-      created_cert_id = cert_id
+      certs_before = Spaceship::ConnectAPI::Certificate.all(filter: { certificateType: dist_types.join(",") }).map(&:id)
+      # TEMP one-off: remove the orphan certificate left by the failed run 41110675079 (created by this pipeline, no profile).
+      if certs_before.include?("6X6AQV9USD")
+        Spaceship::ConnectAPI::Certificate.get(certificate_id: "6X6AQV9USD").delete!
+        certs_before.delete("6X6AQV9USD")
+        UI.message("Removed orphan certificate from earlier failed run")
+      end
+      cert(
+        api_key: api_key,
+        team_id: team_id,
+        development: false,
+        generate_apple_certs: true,
+        keychain_path: lane_context[SharedValues::KEYCHAIN_PATH],
+        keychain_password: ""
+      )
 
       profile_name = "Blackspire AppStore CI #{build_number}"
       sigh(
@@ -92,12 +105,15 @@ platform :ios do
       sh("echo \"build_number=#{build_number}\" >> \"$GITHUB_OUTPUT\"") if ENV["GITHUB_OUTPUT"]
     ensure
       begin
-        if created_cert_id
-          Spaceship::ConnectAPI::Certificate.get(certificate_id: created_cert_id)&.delete!
-          UI.message("Removed ephemeral distribution certificate")
+        if certs_before
+          now = Spaceship::ConnectAPI::Certificate.all(filter: { certificateType: dist_types.join(",") })
+          now.reject { |c| certs_before.include?(c.id) }.each do |c|
+            c.delete!
+            UI.message("Removed ephemeral distribution certificate created by this run")
+          end
         end
       rescue => e
-        UI.important("Could not remove ephemeral certificate #{created_cert_id}: #{e.message}")
+        UI.important("Could not remove ephemeral certificate: #{e.message}")
       end
     end
   end
