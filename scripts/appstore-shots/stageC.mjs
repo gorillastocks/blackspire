@@ -9,6 +9,7 @@ await page.evaluate(() => { const l = document.querySelector('#log'); if (l) l.s
 await page.click('#btn-tavern'); await sleep(1000);
 for (let i = 0; i < 4; i++) { for (const sel of ['#tip-skip']) { const l = page.locator(sel); if (await l.isVisible().catch(() => false)) await l.click({ force: true }); } await sleep(200); }
 await page.screenshot({ path: `${raw}/tavern.png` });
+await page.locator('#modal button, #view button', { hasText: 'Bar' }).first().click(); await sleep(800);
 await page.locator('#btn-listen').click(); await sleep(1800);
 console.log((await page.evaluate(() => document.querySelector('#modal')?.innerText || '')).slice(0, 400));
 await page.screenshot({ path: `${raw}/listen.png` });

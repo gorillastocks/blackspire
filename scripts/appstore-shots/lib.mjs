@@ -11,7 +11,7 @@ export async function open(dev) {
   const browser = await chromium.launch({ args: gl });
   const ctx = await browser.newContext({ viewport: d.viewport, deviceScaleFactor: d.dpr, isMobile: true, hasTouch: true });
   await ctx.addInitScript(() => { try { localStorage.setItem('blackspire.settings', JSON.stringify({ areaDesc: false, battleSpeed: 'normal', battleSpeedSet: true, tutorialDone: true })); } catch {} });
-  const page = await ctx.newPage();
+  const page = await ctx.newPage(); page.setDefaultTimeout(150000);
   page.on('pageerror', (e) => console.log('PAGEERROR', String(e)));
   await page.goto(URL); await page.waitForSelector('#btn-new', { timeout: 90000 });
   return { browser, page, d };
