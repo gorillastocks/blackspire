@@ -14,7 +14,7 @@ test('Journal button replaces Sheet in the maze; party cards open the sheet (maz
     await expect(page.locator('#modal .sheethead')).toBeVisible();
     const second = await page.evaluate(() => window.__gw.state.party[1].name);
     await expect(page.locator('#modal .tabs button.on')).toHaveText(second);
-    await page.keyboard.press('Escape'); await expect(page.locator('#modal')).toBeHidden();
+    await page.keyboard.press('Escape'); await expect(page.locator('#modal .sheethead')).toHaveCount(0); // closes back to the town square
     await page.evaluate(() => window.__gw.showTown());
   } else {
     await openLocation(page, 'Training Grounds');

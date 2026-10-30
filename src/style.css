@@ -733,3 +733,6 @@ button.bigtab { width: 100%; min-height: 52px; margin-bottom: 4px; }
 @media (max-width: 760px) and (orientation: portrait) {
   body.incombat.logopen #app { grid-template-rows: minmax(clamp(200px, 30dvh, 600px), 1fr) auto auto auto; }
 }
+
+/* iPad portrait: the town square sits at the top so the party cards underneath stay tappable (a card opens that hero's sheet) */
+@media (orientation: portrait) and (min-width: 761px) { #modal.transparent { align-items: flex-start; } #modal.transparent .panel { max-height: 62%; } }
