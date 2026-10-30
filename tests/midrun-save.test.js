@@ -6,6 +6,7 @@ import * as TV from '../src/game/tavern.js';
 import * as RX from '../src/game/reactions.js';
 import * as J from '../src/game/journal.js';
 import * as DM from '../src/game/dm.js';
+import { getLevel } from '../src/dungeon/levels.js';
 import { Combat } from '../src/rules/combat.js';
 import { setRng, seeded } from '../src/rules/dice.js';
 
@@ -102,5 +103,17 @@ describe('save migration v7 to v8', () => {
     const r = asV7(midRun()); r.spoons = 5; r.inventory.push('goldSpoon'); r.quests.spoons = 'active';
     const d = G.deserialize(JSON.stringify(r)); expect(d.spoons).toBeUndefined(); expect(d.inventory).toContain('gildedGoblet'); expect(d.inventory).not.toContain('goldSpoon'); expect(d.quests.spoons).toBeUndefined();
     expect(plain(G.deserialize(G.serialize(d)))).toEqual(plain(d));
+  });
+});
+
+describe('a save keeps its own dungeon layout even after another game was played in the same session', () => {
+  const grid = (lvl) => JSON.stringify(getLevel(lvl).grid || getLevel(lvl).map || getLevel(lvl));
+  it('random-dungeon save, then a classic game, then load the random one: same floor, same chest tiles', () => {
+    setRng(seeded(3));
+    const a = G.newGame({ name: 'A', randomDungeons: true }); Story.finishPrologue(a, 'vow'); G.enterDungeon(a, 1); const g1 = grid(1), raw = G.serialize(a);
+    const b = G.newGame({ name: 'B' }); Story.finishPrologue(b, 'vow'); G.enterDungeon(b, 1); const g2 = grid(1);
+    expect(g2).not.toBe(g1);
+    const d = G.deserialize(raw); G.enterDungeon(d, 1); expect(grid(1)).toBe(g1); // loading brings the saved layout back
+    G.deserialize(G.serialize(b)); expect(grid(1)).toBe(g2); // and a classic save brings the classic one back
   });
 });
