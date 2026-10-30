@@ -8,10 +8,10 @@ out = '/workspace/appstore/iphone-6.9' if dev == 'iphone' else '/workspace/appst
 os.makedirs(out, exist_ok=True)
 FRAMES = [  # (file name, raw capture, caption)
     ('01-descend.png', 'corridor', 'Descend into Blackspire.'),
-    ('02-elowen.png', 'elowen', 'Save her before the city falls.'),
-    ('03-battle.png', 'battle', 'One price. No ads. No gacha.'),
+    ('02-gorvax.png', 'gorvax-0' if os.path.exists(f'{raw}/gorvax-0.png') else 'elowen', 'Save her before the town falls.'),
+    ('03-battle.png', 'battle', 'One price. No gacha.'),
     ('04-automap.png', 'automap', 'Old-school grid crawling, with an automap'),
-    ('05-floors.png', 'floors', '5 dungeons. Beat it in a weekend.'),
+    ('05-floors.png', 'floors', '5 deadly floors. One epic quest.'),
     ('06-classes.png', 'create', '12 classes'),
     ('07-town.png', 'town', 'Rest, shop and recruit in Emberhollow.'),
     ('08-camp.png', 'camp', 'Bond with your companions at camp.'),
