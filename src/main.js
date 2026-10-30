@@ -1068,7 +1068,7 @@ function showCaption(e, tapHint = false) {
 function placeCaption(el = $('#caption')) {
   const view = $('#view').getBoundingClientRect(); if (!view.height) return; const msg = el.classList.contains('msg');
   let top = view.top + view.height * 0.62, bottom = view.bottom - 6;
-  const r = !msg && combat && R.monsterRect ? R.monsterRect() : null; if (r) top = view.top + (Math.max(0, r.bottom) / 100) * view.height;
+  const r = !msg && combat && R.monsterRect ? R.monsterRect(Infinity, true) : null; if (r) top = view.top + (Math.max(0, r.bottom) / 100) * view.height;
   if (msg) { top = Math.max(view.top + 8, $('#hud').getBoundingClientRect().bottom + 4); const mb = $('#btn-menu')?.getBoundingClientRect(); if (mb && mb.width && mb.top < view.top + view.height / 3 && mb.right > view.left + view.width / 2) top = Math.max(top, mb.bottom + 4); } // clear of a top-right ☰ Menu
   for (const sel of ['#cmenu', '#modal.combat .panel', '#log', '#controls']) {
     const m = document.querySelector(sel); if (!m || !m.offsetParent) continue; const b = m.getBoundingClientRect();

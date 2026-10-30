@@ -527,11 +527,12 @@ export class Renderer {
     this.fx.push({ m, l, t: 0 });
   }
   /** Screen rectangle (in % of the view) covered by all living monsters, padded for idle/attack animation. */
-  monsterRect(maxRank = Infinity) {
+  monsterRect(maxRank = Infinity, withShadow = false) {
     let r = null; const v3 = new THREE.Vector3();
     for (const [, v] of this.monsterObjs) {
       if (v.dead || !v.wbox || v.wbox.isEmpty() || (v.spr?.rank ?? 0) > maxRank) continue; const b = v.wbox.clone(); const sz = b.getSize(new THREE.Vector3());
       const px = this.sprMode ? 0.015 : 0.1, py = this.sprMode ? 0.05 : 0.12; b.min.x -= sz.x * px; b.max.x += sz.x * px; b.max.y += sz.y * py; b.min.z -= sz.z * 0.1; b.max.z += sz.z * 0.1 + 0.4; // lunge toward camera
+      if (withShadow && v.spr?.flying) b.min.y -= 0.3 * v.spr.H * v.spr.rs; // a flier's floor shadow hangs below its box: the caption must clear it (framing stays on the body)
       for (let i = 0; i < 8; i++) { v3.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).project(this.arenaCam);
         const x = (v3.x * 0.5 + 0.5) * 100, y = (-v3.y * 0.5 + 0.5) * 100;
         if (!r) r = { left: x, right: x, top: y, bottom: y }; else { r.left = Math.min(r.left, x); r.right = Math.max(r.right, x); r.top = Math.min(r.top, y); r.bottom = Math.max(r.bottom, y); } }
