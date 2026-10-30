@@ -387,7 +387,7 @@ span.cport { display: inline-flex; align-items: center; justify-content: center;
 #party .lvchip { flex: none; }
 @media (max-width: 760px), (max-height: 520px) and (orientation: landscape) {
   #party .cport { width: 20px; height: 20px; margin-right: 3px; }
-  #party .aitog { min-width: 36px; padding: 1px 4px; }
+  #party .aitog { min-width: 44px; padding: 1px 4px; }
   #party .tag { padding: 0 4px; font-size: 10px; }
 }
 
