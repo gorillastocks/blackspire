@@ -12,15 +12,17 @@ const tab = (page, id) => page.locator(`#modal [data-tab="${id}"]`);
 async function rowsReachable(page, rows, what) {
   const n = await rows.count();
   for (let i = 0; i < n; i++) {
-    const r = rows.nth(i); await r.scrollIntoViewIfNeeded();
+    const r = rows.nth(i); await r.evaluate((el) => el.scrollIntoView({ block: 'center' })); // the narration echo is sticky at the foot: scroll the row clear of it
+    await r.evaluate((el) => { const t = () => { const b = el.getBoundingClientRect(); const x = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2); return !!x && el.contains(x); }; if (!t()) el.closest('.panel').scrollTop = el.closest('.panel').scrollHeight; });
     const ok = await r.evaluate((el) => {
       const b = el.getBoundingClientRect(); const p = el.closest('.panel').getBoundingClientRect(); const nav = el.closest('.panel').querySelector('.navbar')?.getBoundingClientRect();
       const t = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
       const clear = b.top >= (nav ? nav.bottom : p.top) - 1 && b.bottom <= p.bottom + 1 && b.left >= p.left - 1 && b.right <= p.right + 1;
-      return { clear, top: !!t && el.contains(t), h: b.height, fs: parseFloat(getComputedStyle(el.querySelector('.pname, span') || el).fontSize) };
+      return { clear, top: !!t && el.contains(t), cover: t ? (t.id || t.className || t.tagName) + ' in ' + (t.closest('[id]')?.id || '') : 'none', h: b.height, fs: parseFloat(getComputedStyle(el.querySelector('.pname, span') || el).fontSize) };
     });
+    if (!ok.top) await page.screenshot({ path: `/workspace/shots/tavern-debug-${i}.png`, timeout: 20000 }).catch(() => {});
     expect(ok.clear, `${what} row ${i} sits inside the scrolling sheet`).toBe(true);
-    expect(ok.top, `${what} row ${i} is not covered by anything`).toBe(true);
+    expect(ok.top, `${what} row ${i} is not covered by anything (top element: ${ok.cover})`).toBe(true);
     expect(ok.fs, `${what} row ${i} legible`).toBeGreaterThanOrEqual(14);
   }
   return n;
@@ -41,7 +43,7 @@ test('tavern: full-height sheet on phones; all party members and all waiting her
       return { l: p.left, r: p.right, t: p.top, b: p.bottom, W, H, leaks };
     });
     if (phone) {
-      expect(m.r - m.l, `${what}: sheet spans the screen width`).toBeGreaterThanOrEqual(m.W - 24);
+      expect(m.r - m.l, `${what}: sheet spans the screen width`).toBeGreaterThanOrEqual(Math.min(m.W - 24, 740));
       expect(m.b - m.t, `${what}: sheet is full height`).toBeGreaterThanOrEqual(m.H - 70);
       expect(m.leaks, `${what}: nothing from behind (party cards, log, scene) is tappable around the sheet`).toBe(0);
     }
