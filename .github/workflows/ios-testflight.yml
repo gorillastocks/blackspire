@@ -1,0 +1,64 @@
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "ios-v*"
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  testflight:
+    if: github.repository == 'gorillastocks/blackspire'
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Toolchain versions
+        run: |
+          xcodebuild -version
+          node -v
+          pod --version
+          bundle exec fastlane --version | tail -1
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Sync Capacitor into iOS (runs pod install)
+        run: npx cap sync ios
+
+      - name: Build, sign and upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: bundle exec fastlane ios beta
+
+      - name: Check shipped web bundle (paywall + Restore Purchases)
+        if: always()
+        run: |
+          set -e
+          grep -rlq "Restore Purchases" ios/App/App/public/assets && echo "Restore Purchases string: present"
+          grep -rlq "BlackspireStore" ios/App/App/public/assets && echo "StoreKit bridge: present"
+          grep -rlq "com.gorillastocks.blackspire.fullgame" ios/App/App/public/assets && echo "Product id: present"
