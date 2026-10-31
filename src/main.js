@@ -1746,7 +1746,7 @@ function showFallen() {
   fallenUp = true; document.body.classList.add('fallen'); closeMenu(); hideCaption(); setControls(null); try { sfx('thud'); } catch { /* ignore */ }
   const pv = G.wipePreview(S), lk = latestKey(), inf = lk ? slotInfo(lk) : null;
   const party = h('ul', { class: 'fallen-party' }, S.party.map((c) => h('li', { class: c.dead ? 'slain' : 'down' }, `${c.dead ? '☠' : '💤'} ${c.name}`, h('small', {}, c.dead ? ' slain' : ' down'))));
-  const penalty = [pv.goldLost ? `the temple keeps ${pv.goldLost} gold` : 'you have no gold to lose', pv.down.length ? `${pv.down.length === 1 ? pv.down[0] + ' wakes' : 'the fallen wake'} with 1 HP` : null, pv.dead.length ? `${pv.dead.length === 1 ? pv.dead[0] + ' is' : pv.dead.length + ' heroes are'} slain until the Temple raises them` : null].filter(Boolean).join(' · ');
+  const penalty = [pv.goldLost ? `the temple keeps ${pv.goldLost} gold` : 'you have no gold to lose', pv.down.length ? `${pv.down.length === 1 ? pv.down[0] + ' wakes' : 'the fallen wake'} with 1 HP` : null, pv.dead.length ? `${pv.dead.length === 1 ? pv.dead[0] + ' is' : pv.dead.length + ' heroes are'} slain until the Temple raises them` : null].filter(Boolean).join(' · ').replace(/^./, (ch) => ch.toUpperCase());
   openModal(h('div', { class: 'fallen-screen', id: 'fallen-screen', role: 'alertdialog', 'aria-labelledby': 'fallen-title' },
     h('div', { class: 'fallen-skull', 'aria-hidden': 'true' }, '☠'),
     h('h2', { id: 'fallen-title' }, 'Your party has fallen'),
