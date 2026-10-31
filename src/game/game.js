@@ -254,6 +254,25 @@ export function enterTile(s) {
   return suppressAmbientForCombat(out);
 }
 
+/** What Return to Town would cost right now (for the "party has fallen" screen). */
+export function wipePreview(s) {
+  const dead = s.party.filter((c) => c.dead), down = s.party.filter((c) => !c.dead);
+  return { goldLost: Math.floor(s.gold / 2), dead: dead.map((c) => c.name), down: down.map((c) => c.name), raise: dead.map((c) => ({ name: c.name, cost: templeCost(c) })), mercy: !down.length };
+}
+/** Total party knockout, the player chose Return to Town: temple acolytes drag the party back to Emberhollow.
+ *  Penalty: half the gold is kept by the temple; the fallen who were only unconscious wake with 1 HP and no conditions;
+ *  the slain stay dead until the Temple raises them (100 gp x level, as always). If every hero is slain, the acolytes
+ *  raise the party leader for free at 1 HP so the party is never stuck in town with nobody able to walk. */
+export function wipeToTown(s) {
+  s.mode = 'town'; const lost = Math.floor(s.gold / 2); s.gold -= lost;
+  for (const c of s.party) { if (!c.dead) { c.hp = 1; c.conditions = {}; c.deathSaves = { s: 0, f: 0 }; c.stable = false; } }
+  const out = [{ log: `Total party knockout! Temple acolytes drag you back to town. They charge ${lost} gold for the trouble.`, cls: 'bad', toTown: true }];
+  if (s.party.length && s.party.every((c) => c.dead)) {
+    const c = s.party[0]; c.dead = false; c.hp = 1; c.conditions = {}; c.deathSaves = { s: 0, f: 0 }; c.stable = false;
+    out.push({ log: `Every hero was slain, so the acolytes raise ${c.name} out of pity (free).`, cls: 'good' });
+  }
+  return out;
+}
 export function afterCombat(s, combat, info = {}) {
   const out = []; if (s.flags?.campInit) delete s.flags.campInit; // the camp talk's initiative bonus lasts one fight
   if (combat.state === 'won') {
@@ -275,10 +294,9 @@ export function afterCombat(s, combat, info = {}) {
       out.push({ combat: { groups: def.phase2.map((g) => ({ key: g.key, count: g.count[0] })), boss: true, phase2: true } });
     }
   } else if (combat.state === 'lost') {
-    // Rescue: a party of temple acolytes drags you back to town
-    s.mode = 'town'; const lost = Math.floor(s.gold / 2); s.gold -= lost;
-    for (const c of s.party) { if (!c.dead) { c.hp = 1; c.conditions = {}; c.deathSaves = { s: 0, f: 0 }; c.stable = false; } }
-    out.push({ log: `Total party knockout! Temple acolytes drag you back to town. They charge ${lost} gold for the trouble.`, cls: 'bad', toTown: true });
+    // The game shows the "party has fallen" screen (deferWipe) and applies the town penalty only if the player picks Return to Town.
+    if (info.deferWipe) out.push({ log: 'The party has fallen...', cls: 'bad', wiped: true });
+    else out.push(...wipeToTown(s));
   } else if (combat.state === 'fled') {
     for (const c of s.party) delete c.conditions.grappled;
     // step back

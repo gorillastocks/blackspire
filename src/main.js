@@ -296,6 +296,7 @@ function handle(events) {
     if (e.reveal || e.sfx === 'door' || e.sfx === 'chest') rebuild();
     if (e.xp) toast(`✦ +${e.xp} XP each`);
     if (e.paywall) { prompt('paywall', e); return; }
+    if (e.wiped) { showFallen(); return; }
     if (e.toTown) { const rc = G.Prog.sessionRecap(S); if (rc) queueMessage(rc); autosave(); showTown(); return; }
     if (e.combat) { startCombat(e.combat); return; }
     if (e.prompt) { if (msgRunning) messagesDone().then(() => S && !combat && prompt(e.prompt, e)); else prompt(e.prompt, e); } // read the card first
@@ -526,7 +527,7 @@ function dismissModal() { closeModal(); if (!S) showTitle(); else if (S.mode ===
 
 /* ---------- Title & creation ---------- */
 async function showTitle() {
-  S = null; townVisited = false; closeMenu(); updateMenuBtn(); setControls(null); R.setMode('combat'); refresh();
+  fallenUp = false; document.body.classList.remove('fallen'); S = null; townVisited = false; closeMenu(); updateMenuBtn(); setControls(null); R.setMode('combat'); refresh();
   R.clearMonsters(); document.body.classList.add('titlescreen');
   const has = [G.SAVE_KEY, ...SLOT_KEYS].some((k) => slotInfo(k));
   openModal([
@@ -1713,7 +1714,7 @@ async function endCombat() {
   await flushCombat(); await wait(500);
   const st = combat.state; const info = combatInfo;
   if (st === 'won') { say(banter(S.party, 'victory', {}, 0.8)); setTimeout(() => packBarkAny('victory'), 1200); }
-  const ev = G.afterCombat(S, combat, info);
+  const ev = G.afterCombat(S, combat, st === 'lost' && !info.town ? { ...info, deferWipe: true } : info); // a wipe is resolved by the Party Fallen screen, not silently
   combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI(); hideCaption();
   if (st === 'won') {
     // Fanfare via the voice WebAudio path (destination) — proven on Sean's iPhone. Duck bed separately.
@@ -1737,8 +1738,33 @@ async function endCombat() {
   autosave();
 }
 
+
+/* ---------- Total party wipe: "Your party has fallen" ---------- */
+let fallenUp = false; // while the screen is up the wiped state must never be autosaved over the player's real save
+/** Themed game-over screen. Load Save = the newest save (autosave or a slot); Return to Town = the temple-rescue penalty (see G.wipeToTown). */
+function showFallen() {
+  fallenUp = true; document.body.classList.add('fallen'); closeMenu(); hideCaption(); setControls(null); try { sfx('thud'); } catch { /* ignore */ }
+  const pv = G.wipePreview(S), lk = latestKey(), inf = lk ? slotInfo(lk) : null;
+  const party = h('ul', { class: 'fallen-party' }, S.party.map((c) => h('li', { class: c.dead ? 'slain' : 'down' }, `${c.dead ? '☠' : '💤'} ${c.name}`, h('small', {}, c.dead ? ' slain' : ' down'))));
+  const penalty = [pv.goldLost ? `the temple keeps ${pv.goldLost} gold` : 'you have no gold to lose', pv.down.length ? `${pv.down.length === 1 ? pv.down[0] + ' wakes' : 'the fallen wake'} with 1 HP` : null, pv.dead.length ? `${pv.dead.length === 1 ? pv.dead[0] + ' is' : pv.dead.length + ' heroes are'} slain until the Temple raises them` : null].filter(Boolean).join(' · ');
+  openModal(h('div', { class: 'fallen-screen', id: 'fallen-screen', role: 'alertdialog', 'aria-labelledby': 'fallen-title' },
+    h('div', { class: 'fallen-skull', 'aria-hidden': 'true' }, '☠'),
+    h('h2', { id: 'fallen-title' }, 'Your party has fallen'),
+    h('p', { class: 'fallen-lore' }, 'The last torch gutters out and the dark closes over your heroes. The Blackspire is not finished with you yet.'),
+    party,
+    h('div', { class: 'fallen-actions' },
+      bigBtn('📂 Load Save', inf ? inf.text : 'No save found', () => { if (lk) loadGame(lk); }, { id: 'btn-fallen-load', class: 'fallen-btn', disabled: !lk }),
+      bigBtn('🏘 Return to Town', penalty, () => returnToTownFromWipe(), { id: 'btn-fallen-town', class: 'fallen-btn primary' }))), { closable: false });
+  setTimeout(() => $('#btn-fallen-load')?.focus?.(), 50);
+}
+function returnToTownFromWipe() {
+  if (!S || !fallenUp) return;
+  fallenUp = false; document.body.classList.remove('fallen'); closeModal();
+  handle(G.wipeToTown(S)); // logs the penalty, then toTown: recap, autosave (the post-penalty state), Town Square
+}
+
 /* ---------- Save/load ---------- */
-function autosave(quiet = false) { if (!S || combat) return; try { S.savedAt = Date.now(); writeSave(G.SAVE_KEY, G.serialize(S)); } catch (e) { if (!quiet) log('Save failed: ' + e.message, 'bad'); } }
+function autosave(quiet = false) { if (!S || combat || fallenUp) return; try { S.savedAt = Date.now(); writeSave(G.SAVE_KEY, G.serialize(S)); } catch (e) { if (!quiet) log('Save failed: ' + e.message, 'bad'); } }
 /** Suspend anywhere: when the app is hidden or closed, save now. Mid-fight the pre-fight snapshot is saved, flagged to resume that fight. */
 let suspendSnap = null;
 function suspendSave() { if (!S) return; if (combat) { if (suspendSnap) { try { writeSave(G.SAVE_KEY, suspendSnap); } catch { /* ignore */ } } return; } if (!busy) autosave(true); }
@@ -1748,6 +1774,7 @@ window.addEventListener('pagehide', suspendSave);
 async function loadGame(key = G.SAVE_KEY) {
   const got = readSave(key); if (!got) { log('No saved game.', 'bad'); return; }
   try { S = G.deserialize(got.raw); } catch { log('Save is corrupted and no backup could be read.', 'bad'); return; }
+  fallenUp = false; document.body.classList.remove('fallen');
   if (got.recovered) log('⚠ That save was damaged — restored it from its automatic backup copy.', 'crit');
   abandonCombat(); closeModal(); closeMenu(); updateMenuBtn(); log('Game loaded.', 'sys');
   const resume = S.resumeCombat; delete S.resumeCombat;
@@ -1767,7 +1794,7 @@ async function boot() {
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
     outdoorInfo: () => ({ reg: outReg(), near: S ? outNear() : false, hour: S ? outHour() : null, tod: S ? todName(outHour()) : null, weather: R?.outdoor?.weather || null, state: R?.outState || null, counts: R?.outdoor?.counts || null }), look(p) { if (R) R.pitch = p; }, poiMap(lvl = 2) { const L = getLevel(lvl); const o = {}; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (L.tiles[y][x] === 'Q') o[poiIdAt(L, x, y)] = [x, y]; return o; }, setHour(h) { if (R?.outdoor) R.outdoor.forceHour = h; refresh(); }, setWeather(k) { R?.outdoor?.setWeather(k); refresh(); },
-    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, getLevel, refresh, showInventory, runTT, showJournal, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, getLevel, refresh, showInventory, runTT, showJournal, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, showFallen, returnToTownFromWipe, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
