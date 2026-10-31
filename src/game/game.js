@@ -1,7 +1,7 @@
 // Core game state & exploration logic (DOM-free, so it can be unit tested and simulated).
 import { packById, DEFAULT_PACK } from '../voices/packs.js';
 import { getLevel, DIRS, W, H, tileOrdinal, poiIdAt, LEVEL_DEFS, setDungeonSeeds, randomSeeds } from '../dungeon/levels.js';
-import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor, isProficientWeapon, heavyPenalty, speedOf, skillMod, knownSpells, spellMod, heal } from '../rules/character.js';
+import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLevelUp, check, thievesTools, passive, isDown, abilityMod, canWearArmor, isProficientWeapon, heavyPenalty, speedOf, skillMod, knownSpells, spellMod, heal, reclass } from '../rules/character.js';
 import { ITEMS, WEAPONS, ARMOR, CLASSES, RACES, XP_LEVELS, SPELLS, DROP_POOL, tierOf } from '../rules/data.js';
 import { elitePos, LORE } from '../dungeon/extras.js';
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
@@ -80,6 +80,27 @@ export function createRecruit(s, { name, race, cls, base, portrait = null, voice
   const c = createCharacter({ name: (name || 'Recruit').trim().slice(0, 18) || 'Recruit', race, cls, base: base || assignByPriority(cls) });
   c.recruit = true; c.ai = true; c.voicePack = packById(voicePack)?.id || undefined; givePortrait(c, portrait); raiseTo(c, partyLevel(s));
   const ev = [{ log: place(s, c), cls: 'good' }]; ev.char = c; return ev;
+}
+/* ---------- Re-class (Training Grounds): companions, recruits and the player's own hero, same rules and price ---------- */
+export const reclassCost = (c) => 50 * c.level;
+/** Retrain `c` (anyone in the party or roster, the hero included) into `cls` at the same level. Pays the gold, swaps the character in place (same slot, id, name, race, portrait, voice, XP)
+ *  and puts any magic or special gear back in the pack, since the new class starts in its own kit. Returns log events; ev.char is the new character (ev.ok false when refused). */
+export function reclassCharacter(s, c, cls) {
+  const cost = reclassCost(c), fail = (log) => { const ev = [{ log, cls: 'bad' }]; ev.ok = false; return ev; };
+  if (!CLASSES[cls] || cls === c.cls) return fail('Pick a different class.');
+  if (s.gold < cost) return fail('Not enough gold.');
+  if (![...s.party, ...(s.roster || [])].includes(c)) return fail('That character is not in your party.');
+  const n = reclass(c, cls);
+  // old gear: only magic / named items (and rings, cloaks, helms) go back to the pack; plain starting kit is just replaced, so retraining cannot be used to farm shop goods
+  const e = c.equip || {}, back = [];
+  for (const slot of ['weapon', 'ranged', 'armor']) { const g = e[slot]; if (g && (g.key || g.magic)) back.push(g.key || Object.keys(ITEMS).find((k) => ITEMS[k].base === g.base && ITEMS[k].magic === g.magic)); }
+  if (typeof e.shield === 'string') back.push(e.shield);
+  for (const slot of ['ring', 'cloak', 'helm']) if (e[slot]) back.push(e[slot]);
+  for (const k of back) if (k) s.inventory.push(k);
+  for (const list of [s.party, s.roster || []]) { const i = list.indexOf(c); if (i >= 0) list[i] = n; }
+  s.gold -= cost;
+  const ev = [{ log: `${n.name} retrains as a ${CLASSES[cls].name} (${CLASSES[cls].sub}).`, cls: 'good' }]; if (back.length) ev.push({ log: 'Their old magic gear goes back in the pack.', cls: 'dim' });
+  ev.ok = true; ev.char = n; return ev;
 }
 export function dismiss(s, c) {
   if (isHero(c)) return [{ log: 'You cannot dismiss yourself.', cls: 'dim' }];

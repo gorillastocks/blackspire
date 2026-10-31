@@ -6,7 +6,7 @@ import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS, poiIdAt } from './dungeon/
 import { outdoorRegion, inRegion, hourAt, todName, WEATHER_INFO } from './dungeon/outdoor.js';
 import { Combat, projectileCount, projectileNoun, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, TIER_COLOR, TIER_LABEL, tierOf, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
-import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, speedOf, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive, reclass } from './rules/character.js';
+import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, speedOf, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive } from './rules/character.js';
 import * as SC from './rules/spellcasting.js';
 import * as D from './rules/phaseD.js';
 import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
@@ -95,7 +95,7 @@ function showDialogue(scene, { closable = false } = {}) {
         scene.title ? h('h2', {}, scene.title) : null,
         scene.roll ? h('div', { class: `ttroll ${scene.roll.ok ? 'ok' : 'bad'}`, 'data-roll': scene.roll.ok ? 'success' : 'failure' }, scene.roll.text) : null,
         h('div', { class: 'dlgrow' }, speakerPortrait(sp),
-          h('div', { class: `dlgtext${ln.who === 'dm' ? ' dmbox' : ''}` }, sp.name ? h('b', { style: `color:${sp.color}` }, ln.who === 'dm' ? '🎲 The Dungeon Master reads aloud' : sp.name) : null, h('p', { class: ln.who === 'narrator' || ln.who === 'dm' ? 'lore' : '' }, ln.text), ln.react ? h('small', { class: `rx ${ln.react}`, 'data-react': ln.react }, ln.bonus ? '💬 ' + (ln.react === 'approve' ? 'Warms to you' : 'Cools toward you') : ln.react === 'approve' ? '👍 Approves' : ln.react === 'object' ? '👎 Objects' : '😏 Quips') : null)),
+          h('div', { class: `dlgtext${ln.who === 'dm' ? ' dmbox' : ''}` }, sp.name ? h('b', { style: `color:${sp.color}` }, sp.name) : null, h('p', { class: ln.who === 'narrator' || ln.who === 'dm' ? 'lore' : '' }, ln.text), ln.react ? h('small', { class: `rx ${ln.react}`, 'data-react': ln.react }, ln.bonus ? '💬 ' + (ln.react === 'approve' ? 'Warms to you' : 'Cools toward you') : ln.react === 'approve' ? '👍 Approves' : ln.react === 'object' ? '👎 Objects' : '😏 Quips') : null)),
         last && scene.fx?.length ? h('div', { class: 'fxlist' }, scene.fx.map((f) => h('div', { class: `fx ${f.cls}` }, f.t))) : null,
         h('div', { class: 'hint' }, `${Math.min(i + 1, lines.length)} / ${lines.length}`),
         h('div', { class: 'menu' }, last
@@ -627,7 +627,7 @@ let townSub = null; let townVisited = false;
 const TOWN_TITLES = { tavern: '🍺 Tavern', temple: '⛪ Temple', shop: '⚒ Trading Post', train: '🎯 Training Grounds', edge: '🕳 Edge of Town' };
 let tavernTab = 'party', shopTab = 'potions';
 function showTown(sub = null) {
-  townSub = sub; const arriving = S.mode !== 'town' || !townVisited; townVisited = true;
+  townSub = sub; if (sub !== 'train') reclassTarget = null; const arriving = S.mode !== 'town' || !townVisited; townVisited = true;
   S.mode = 'town'; combat = null; endCombatUI(); setControls(null); R.setMode('combat'); R.clearMonsters(); refresh();
   if (arriving) autosave(); // autosave on every town entry
   const back = (where) => btn('← Town', () => showTown(), { class: 'backbtn', 'data-back': where, 'aria-label': 'Back to Town Square', title: 'Back to Town Square' });
@@ -684,14 +684,17 @@ function showTown(sub = null) {
     if (!tabs.some((t) => t[0] === shopTab)) shopTab = 'potions';
     const page = shopTab === 'sell' ? [h('h3', {}, 'Sell / Equip — selling pays half price'), inventoryList(redraw, true)] : [list(shopTab)];
     P([h('p', { class: 'goldline' }, `💰 You have ${S.gold} gp`), h('div', { class: 'tabpage', 'data-page': shopTab }, page)], { tabs: tabBar(tabs, shopTab, (id) => { shopTab = id; redraw(); }) });
+  } else if (sub === 'train' && reclassTarget && [...S.party, ...S.roster].includes(reclassTarget)) {
+    reclassPage(reclassTarget, P);
   } else if (sub === 'train') {
+    reclassTarget = null;
     P([h('div', { class: 'menu trainlist' }, S.party.map((c) => h('div', { class: 'row trainrow' },
       btn(canLevelUp(c) ? `⬆ Train ${c.name} to level ${c.level + 1}` : `${c.name} — L${c.level} (${c.xp}/${xpForNext(c) === Infinity ? 'max' : xpForNext(c)} XP)`, () => trainWithSpells(c, () => showTown('train')), { disabled: !canLevelUp(c), class: canLevelUp(c) ? 'levelup trainmain' : 'trainmain' }),
       SC.preparedMax(c) ? btn('📖 Prepare', () => showSpellPicker(c, 'prepare', null, () => showTown('train')), { class: 'small', 'data-prepare': c.id }) : null,
-      (c.companion || c.recruit) ? btn('Re-class', () => reclassMenu(c), { class: 'small' }) : null,
+      btn('Re-class', () => reclassMenu(c), { class: 'small', 'data-reclass': c.id }),
       btn('Sheet', () => showSheet(c), { class: 'small' })))),
       btn('✍ Create a new recruit', () => showCreate(true), { id: 'btn-train-recruit', class: 'bigtab' }),
-      h('p', { class: 'hint' }, 'Re-class: retrain a companion or recruit into any of the 12 classes at the same level (50 gp per level).')]);
+      h('p', { class: 'hint' }, 'Re-class: retrain yourself, a companion or a recruit into any of the 12 classes at the same level (50 gp per level). Name, portrait, voice and XP stay.')]);
   } else if (sub === 'edge') {
     P([h('p', { class: 'hint' }, 'The maze entrance yawns before you. The dwarven mine lift can take you to any level you have already reached.'),
       h('div', { class: 'menu' }, btn('Descend the stairs to B1', () => enter(0), { class: 'primary', id: 'btn-enter' }),
@@ -1182,7 +1185,7 @@ async function pumpMessages() {
       }
       const el = $('#caption'); clearTimeout(capTimer);
       el.className = `${m.dm ? 'dmbox ' : ''}show msg ${m.cls === 'rare' ? 'rare tier-' + m.tier : m.cls === 'loot' ? 'loot crit' + (m.tier ? ' tier-' + m.tier : '') : m.cls === 'bad' ? 'bad' : m.cls === 'good' ? 'good' : 'lore'}`; el.innerHTML = ''; capShownAt = performance.now();
-      el.dataset.pre = m.pre ? '1' : ''; if (m.dm) el.append(h('div', { class: 'dmhead' }, '🎲 The Dungeon Master reads aloud'));
+      el.dataset.pre = m.pre ? '1' : ''; if (m.dm) el.append(h('div', { class: 'dmhead' }, 'Dungeon Master'));
       el.append(h('div', { class: 'captxt' }, m.dm ? m.text.replace(/^🕯\s*/, '') : m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l, i) => { const lt = m.cls === 'rare' ? (i === 0 ? m.lineTiers[0] : null) : m.lineTiers?.[i]; return h('div', { class: lt ? 'tl tier-' + lt : '' }, l); })) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
       placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 400);
       if (m.cls === 'rare') { sfx('reveal_' + (m.rareSfx === 'common' ? 'uncommon' : m.rareSfx)); duckBed(0.3); playVoiceLine(m.text.replace('✨ ', ''), 'narrator', { kind: 'other' }); }
@@ -1528,17 +1531,16 @@ function combatKey(e) {
   if (n >= 1 && n <= modal._options.length && !modal._options[n - 1].disabled) { e.preventDefault(); modal._resolve(modal._options[n - 1]); }
   if (e.key === 'Escape') { const b = modal._options.find((o) => o.back); if (b) modal._resolve(b); }
 }
-async function reclassMenu(c) {
-  const cost = 50 * c.level;
-  const opts = Object.entries(CLASSES).filter(([k]) => k !== c.cls).map(([k, C]) => ({ label: `${C.name} — ${C.sub}`, k, disabled: S.gold < cost }));
-  opts.push({ label: '← Back', back: true });
-  const o = await chooseFrom(`Retrain ${c.name} (L${c.level} ${CLASSES[c.cls].name}) as… Cost ${cost} gp (you have ${S.gold}).`, opts);
-  if (!o.back && S.gold >= cost) {
-    const n = reclass(c, o.k); n.recruit = c.recruit;
-    for (const list of [S.party, S.roster]) { const i = list.indexOf(c); if (i >= 0) list[i] = n; }
-    S.gold -= cost; log(`${n.name} retrains as a ${CLASSES[o.k].name} (${CLASSES[o.k].sub}).`, 'good'); autosave();
-  }
-  showTown('train');
+/** Re-class picker: a Training Grounds page (the combat-menu dock sits behind the town panel, so it is drawn as a page of buttons). Heroes, companions and recruits alike. */
+let reclassTarget = null;
+function reclassMenu(c) { reclassTarget = c; showTown('train'); }
+function reclassPage(c, P) {
+  const cost = G.reclassCost(c), done = () => { reclassTarget = null; showTown('train'); };
+  P([h('p', { class: 'goldline' }, `Retrain ${c.name}${G.isHero(c) ? ' (you)' : ''} — L${c.level} ${CLASSES[c.cls].name} — as…`), h('p', { class: 'hint' }, `Cost ${cost} gp (you have ${S.gold}). Same level and XP; name, portrait and voice stay. Magic gear goes back in the pack.`),
+    h('div', { class: 'menu grid2 reclasslist' }, Object.entries(CLASSES).filter(([k]) => k !== c.cls).map(([k, C]) => btn([h('b', { class: 'bt' }, C.name), h('small', { class: 'bs' }, C.sub)], () => {
+      const ev = G.reclassCharacter(S, c, k); for (const e of ev) log(e.log, e.cls); if (ev.ok) autosave(); done();
+    }, { disabled: S.gold < cost, class: 'bigbtn', 'data-class': k }))),
+    btn('← Cancel', done, { id: 'btn-reclass-cancel' })]);
 }
 /** Multi-projectile spells (Magic Missile darts, Scorching Ray rays, Eldritch Blast beams): assign each dart/ray/beam to a foe, repeats allowed.
  *  Tap a monster tag (or its button) to send one more at it; "All on one" then a foe sends every remaining shot there; Undo / Clear; Cast needs all assigned. */

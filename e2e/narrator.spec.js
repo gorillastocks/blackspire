@@ -30,7 +30,7 @@ test('Dungeon Master: floor entry, boss lair read before the fight, skip by tap,
   expect(await page.evaluate(() => window.__gw.state.seen['town:square'])).toBe(1);
   // B1 entry: the DM reads, the caption has the header, a tap skips it
   await page.evaluate(() => { const g = window.__gw; g.handle(g.G.enterDungeon(g.state, 0)); });
-  await expect(card(page)).toBeVisible(); await expect(page.locator('#caption .dmhead')).toContainText('Dungeon Master');
+  await expect(card(page)).toBeVisible(); await expect(page.locator('#caption .dmhead')).toHaveText('Dungeon Master');
   await expect(page.locator('#caption .captxt')).toContainText('Rat Warrens');
   await page.waitForTimeout(600); await clearOfEverything(page, 'B1 intro'); await shot(page, 'narrator', 'floor', P);
   await skip(page);
@@ -55,7 +55,7 @@ test('Dungeon Master: the Orchard and quest scenes are read in the dialogue, wit
   await newGame(page); await clearTown(page);
   await page.evaluate(() => { window.__gw.runTT('glass.0'); });
   const dlg = page.locator('.dialogue'); await expect(dlg).toBeVisible();
-  await expect(dlg.locator('.dmbox b')).toContainText('Dungeon Master reads aloud');
+  await expect(dlg.locator('.dmbox b')).toHaveText('Dungeon Master');
   await page.waitForTimeout(500); await shot(page, 'narrator', 'quest-scene', P);
   const voiced = await page.evaluate(() => { const l = document.querySelector('.dialogue .dlgtext p')?.textContent; return window.__gw.voice().has(l, 'dm'); });
   expect(voiced, 'the read-aloud has a recorded clip').toBe(true);

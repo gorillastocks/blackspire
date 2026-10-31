@@ -252,7 +252,8 @@ export function check(c, skillOrAbility, { adv = false, dis = false, guidance = 
 }
 export function thievesTools(c) { return abilityMod(c, 'dex') + (c.cls === 'rogue' ? prof(c) * 2 : 0); }
 
-/** Re-train a character into another class at the same level (Training Grounds). Keeps identity, XP and level. */
+/** Re-train a character into another class at the same level (Training Grounds). Keeps identity (id, name, race, portrait, voice pack, recruit / companion tag), XP and level.
+ *  Works for the player's own hero too: the hero is the character with neither tag, so leader status and the saved creation data (name, race, portrait, voice) carry over unchanged. */
 export function reclass(c, cls) {
   const R = RACES[c.race], base = {};
   for (const a of ABILITIES) base[a] = c.scores[a] - (R.bonus[a] || 0);
@@ -264,6 +265,8 @@ export function reclass(c, cls) {
   const target = c.level, xp = c.xp;
   n.xp = 999999; while (n.level < target) levelUp(n);
   Object.assign(n, { id: c.id, xp, ai: c.ai, tactics: c.tactics, side: c.side });
+  if (c.recruit) n.recruit = c.recruit;               // a recruit stays a recruit...
+  if (c.voicePack !== undefined) n.voicePack = c.voicePack; // ...and a created hero / recruit keeps the voice picked at creation (the hero is simply the one with neither tag)
   longRest(n);
   return n;
 }
