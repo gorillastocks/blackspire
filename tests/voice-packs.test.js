@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { PACKS, KINDS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter, packSpeaker } from '../src/voices/packs.js';
+import { PACKS, KINDS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter, packSpeaker, HERO_LINES, heroSpeakerFor } from '../src/voices/packs.js';
 import { newGame, createRecruit } from '../src/game/game.js';
 import { normVoiceText } from '../src/voices/norm.js';
 
@@ -52,6 +52,29 @@ describe('voice packs', () => {
     const p = packById('gruffWarrior');
     for (let i = 0; i < 30; i++) { const a = packLine(p, 'attack', 'Take that!'); expect(p.lines.attack).toContain(a); expect(a).not.toBe('Take that!'); }
     expect(packLine(p, 'nope')).toBeNull();
+  });
+});
+
+describe('the hero speaks story replies in their own voice pack', () => {
+  const idx = read('src/voices/index.json').byText;
+  it('HERO_LINES are exactly the quoted hero replies used by the story and are dash free', () => {
+    const src = ['src/game/story.js', 'src/game/phaseC_text.js'].map((f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')).join('\n').replace(/\\'/g, "'");
+    expect(HERO_LINES).toHaveLength(7);
+    for (const t of HERO_LINES) { expect(src.includes(t), t).toBe(true); expect(DASH.test(t), t).toBe(false); }
+  });
+  it('every pack (default and the ten others) has a clip for every hero reply', () => {
+    const miss = PACKS.flatMap((p) => HERO_LINES.filter((t) => !idx[`${packSpeaker(p).toLowerCase()}|${normVoiceText(t)}`]).map((t) => `${p.id}: ${t}`));
+    expect(miss).toEqual([]);
+  });
+  it('the default hero clips and the text only lookup are still Ser Aldric', () => {
+    for (const t of HERO_LINES) expect(idx[normVoiceText(t)], t).toBe(idx[`seraldric|${normVoiceText(t)}`]);
+  });
+  it('picks the hero pack, and falls back to Ser Aldric when the pack has no clip', () => {
+    const has = (t, who) => who === 'vp_slyrogue' && t === HERO_LINES[0];
+    expect(heroSpeakerFor(packById('slyRogue'), HERO_LINES[0], has)).toBe('vp_slyrogue');
+    expect(heroSpeakerFor(packById('slyRogue'), HERO_LINES[1], has)).toBe('serAldric');
+    expect(heroSpeakerFor(null, HERO_LINES[0], has)).toBe('serAldric');
+    expect(heroSpeakerFor(packById(DEFAULT_PACK), HERO_LINES[0], () => true)).toBe('serAldric');
   });
 });
 

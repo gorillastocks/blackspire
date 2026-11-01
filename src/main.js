@@ -14,7 +14,7 @@ import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic, playVictorySting, victoryStingState, duckBed, ac, unlock as unlockAudio, isMuted } from './audio.js';
 import { voiceBusy, clipSeconds, msSinceVoiceEnd, playVoiceLine, playAmbientNarration, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt, invalidateAmbientVoices, setAmbientVoiceGate, voiceGeneration } from './voices/voice.js';
-import { PACKS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter } from './voices/packs.js';
+import { PACKS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter, heroSpeakerFor } from './voices/packs.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 import * as ENT from './entitlements.js';
 // After a redeploy, an old tab's lazy chunks 404: reload once to pick up the new build.
@@ -49,13 +49,12 @@ const modal = $('#modal');
 const Story = G.Story;
 
 /* ---------- Voice helpers: the hero's quoted replies, narrated logs ---------- */
-/** The quoted words of a reply button ("I will bring her home.") are spoken by the hero when picked. */
+/** The quoted words of a reply button ("I will bring her home.") are spoken by the hero, in the voice pack chosen at character creation (default Ser Aldric; falls back to him if a pack clip is missing). */
 function heroSpeak(label) {
-  const m = String(label || '').match(/[“"]([^”"]+)[”"]/); if (!m || !S || heroPackVoice()) return;
-  playVoiceLine(m[1], 'serAldric', { kind: 'dialog' });
+  const m = String(label || '').match(/[“"]([^”"]+)[”"]/); if (!m || !S) return;
+  const who = heroSpeakerFor(packOf(G.heroOf(S)), m[1], hasVoice);
+  playVoiceLine(m[1], who, { kind: 'dialog' });
 }
-/** Hook for a hero voice pack (character creation): when the hero chose a pack the default Ser Aldric voice is not used. */
-function heroPackVoice() { const p = S && packOf(G.heroOf(S)); return p && p.id !== DEFAULT_PACK ? p : null; }
 
 /* ---------- Voice packs: short spoken reactions for player-created characters (combat + camp), rate limited ---------- */
 const barkLimiter = createBarkLimiter(); const lastPackLine = new Map(); const lowHpSaid = new Set();

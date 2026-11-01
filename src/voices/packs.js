@@ -51,6 +51,17 @@ export const PACKS = [
     victory: ['VICTORY! MORE ENEMIES!'], downed: ['Tell my axe... I loved it.'], camp: ['MEAT! Where is the meat?'], lowHp: ['NOT YET! NOT YET!'], select: ['WHO NEEDS SMASHING?'] } },
 ];
 
+/** The hero's quoted story replies (reply buttons in story.js and phaseC_text.js). Every pack records each of these, so the hero always speaks in their own chosen voice. */
+export const HERO_LINES = [
+  'I will bring her home.', 'Malthrax will kneel first.', 'We will find him.', "I'm looking at you, not the glass.",
+  'No one. Until recently.', 'My party counts. You count.', 'Win first. Ask me again with the sun up.',
+];
+
+/** Who speaks the hero's reply: the hero's own pack when that pack has a clip of it (`hasClip(text, speaker)`), else the default Ser Aldric voice. */
+export function heroSpeakerFor(pack, text, hasClip) {
+  return pack && pack.cast && hasClip(text, pack.cast) ? pack.cast : 'serAldric';
+}
+
 export const KINDS = ['attack', 'hit', 'miss', 'crit', 'spell', 'heal', 'levelUp', 'victory', 'downed', 'camp', 'lowHp', 'select'];
 export const packById = (id) => PACKS.find((p) => p.id === id) || null;
 /** A character's pack: what they picked at creation; the default hero (and anyone without a pick) uses Ser Aldric. Companions have their own voices. */

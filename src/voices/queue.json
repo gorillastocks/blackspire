@@ -1334,5 +1334,565 @@
     "priority": 80,
     "source": "phaseE:Camp talk (heart to hearts):talk.liora.tip",
     "chars": 91
+  },
+  {
+    "id": "vp_gruffwarrior-c5474ef3c376",
+    "speaker": "vp_gruffwarrior",
+    "text": "I will bring her home.",
+    "priority": 50,
+    "source": "hero:gruffWarrior",
+    "chars": 22
+  },
+  {
+    "id": "vp_gruffwarrior-5ada2f8ca5bd",
+    "speaker": "vp_gruffwarrior",
+    "text": "Malthrax will kneel first.",
+    "priority": 50,
+    "source": "hero:gruffWarrior",
+    "chars": 26
+  },
+  {
+    "id": "vp_gruffwarrior-a862291e9c83",
+    "speaker": "vp_gruffwarrior",
+    "text": "We will find him.",
+    "priority": 50,
+    "source": "hero:gruffWarrior",
+    "chars": 17
+  },
+  {
+    "id": "vp_gruffwarrior-fbf738fd2e01",
+    "speaker": "vp_gruffwarrior",
+    "text": "I'm looking at you, not the glass.",
+    "priority": 50,
+    "source": "hero:gruffWarrior",
+    "chars": 34
+  },
+  {
+    "id": "vp_gruffwarrior-60d798d5f37f",
+    "speaker": "vp_gruffwarrior",
+    "text": "No one. Until recently.",
+    "priority": 50,
+    "source": "hero:gruffWarrior",
+    "chars": 23
+  },
+  {
+    "id": "vp_gruffwarrior-6a0135afed83",
+    "speaker": "vp_gruffwarrior",
+    "text": "My party counts. You count.",
+    "priority": 50,
+    "source": "hero:gruffWarrior",
+    "chars": 27
+  },
+  {
+    "id": "vp_gruffwarrior-834ebc19dae2",
+    "speaker": "vp_gruffwarrior",
+    "text": "Win first. Ask me again with the sun up.",
+    "priority": 50,
+    "source": "hero:gruffWarrior",
+    "chars": 40
+  },
+  {
+    "id": "vp_youngheroine-c5474ef3c376",
+    "speaker": "vp_youngheroine",
+    "text": "I will bring her home.",
+    "priority": 50,
+    "source": "hero:youngHeroine",
+    "chars": 22
+  },
+  {
+    "id": "vp_youngheroine-5ada2f8ca5bd",
+    "speaker": "vp_youngheroine",
+    "text": "Malthrax will kneel first.",
+    "priority": 50,
+    "source": "hero:youngHeroine",
+    "chars": 26
+  },
+  {
+    "id": "vp_youngheroine-a862291e9c83",
+    "speaker": "vp_youngheroine",
+    "text": "We will find him.",
+    "priority": 50,
+    "source": "hero:youngHeroine",
+    "chars": 17
+  },
+  {
+    "id": "vp_youngheroine-fbf738fd2e01",
+    "speaker": "vp_youngheroine",
+    "text": "I'm looking at you, not the glass.",
+    "priority": 50,
+    "source": "hero:youngHeroine",
+    "chars": 34
+  },
+  {
+    "id": "vp_youngheroine-60d798d5f37f",
+    "speaker": "vp_youngheroine",
+    "text": "No one. Until recently.",
+    "priority": 50,
+    "source": "hero:youngHeroine",
+    "chars": 23
+  },
+  {
+    "id": "vp_youngheroine-6a0135afed83",
+    "speaker": "vp_youngheroine",
+    "text": "My party counts. You count.",
+    "priority": 50,
+    "source": "hero:youngHeroine",
+    "chars": 27
+  },
+  {
+    "id": "vp_youngheroine-834ebc19dae2",
+    "speaker": "vp_youngheroine",
+    "text": "Win first. Ask me again with the sun up.",
+    "priority": 50,
+    "source": "hero:youngHeroine",
+    "chars": 40
+  },
+  {
+    "id": "vp_wiseelder-c5474ef3c376",
+    "speaker": "vp_wiseelder",
+    "text": "I will bring her home.",
+    "priority": 50,
+    "source": "hero:wiseElder",
+    "chars": 22
+  },
+  {
+    "id": "vp_wiseelder-5ada2f8ca5bd",
+    "speaker": "vp_wiseelder",
+    "text": "Malthrax will kneel first.",
+    "priority": 50,
+    "source": "hero:wiseElder",
+    "chars": 26
+  },
+  {
+    "id": "vp_wiseelder-a862291e9c83",
+    "speaker": "vp_wiseelder",
+    "text": "We will find him.",
+    "priority": 50,
+    "source": "hero:wiseElder",
+    "chars": 17
+  },
+  {
+    "id": "vp_wiseelder-fbf738fd2e01",
+    "speaker": "vp_wiseelder",
+    "text": "I'm looking at you, not the glass.",
+    "priority": 50,
+    "source": "hero:wiseElder",
+    "chars": 34
+  },
+  {
+    "id": "vp_wiseelder-60d798d5f37f",
+    "speaker": "vp_wiseelder",
+    "text": "No one. Until recently.",
+    "priority": 50,
+    "source": "hero:wiseElder",
+    "chars": 23
+  },
+  {
+    "id": "vp_wiseelder-6a0135afed83",
+    "speaker": "vp_wiseelder",
+    "text": "My party counts. You count.",
+    "priority": 50,
+    "source": "hero:wiseElder",
+    "chars": 27
+  },
+  {
+    "id": "vp_wiseelder-834ebc19dae2",
+    "speaker": "vp_wiseelder",
+    "text": "Win first. Ask me again with the sun up.",
+    "priority": 50,
+    "source": "hero:wiseElder",
+    "chars": 40
+  },
+  {
+    "id": "vp_slyrogue-c5474ef3c376",
+    "speaker": "vp_slyrogue",
+    "text": "I will bring her home.",
+    "priority": 50,
+    "source": "hero:slyRogue",
+    "chars": 22
+  },
+  {
+    "id": "vp_slyrogue-5ada2f8ca5bd",
+    "speaker": "vp_slyrogue",
+    "text": "Malthrax will kneel first.",
+    "priority": 50,
+    "source": "hero:slyRogue",
+    "chars": 26
+  },
+  {
+    "id": "vp_slyrogue-a862291e9c83",
+    "speaker": "vp_slyrogue",
+    "text": "We will find him.",
+    "priority": 50,
+    "source": "hero:slyRogue",
+    "chars": 17
+  },
+  {
+    "id": "vp_slyrogue-fbf738fd2e01",
+    "speaker": "vp_slyrogue",
+    "text": "I'm looking at you, not the glass.",
+    "priority": 50,
+    "source": "hero:slyRogue",
+    "chars": 34
+  },
+  {
+    "id": "vp_slyrogue-60d798d5f37f",
+    "speaker": "vp_slyrogue",
+    "text": "No one. Until recently.",
+    "priority": 50,
+    "source": "hero:slyRogue",
+    "chars": 23
+  },
+  {
+    "id": "vp_slyrogue-6a0135afed83",
+    "speaker": "vp_slyrogue",
+    "text": "My party counts. You count.",
+    "priority": 50,
+    "source": "hero:slyRogue",
+    "chars": 27
+  },
+  {
+    "id": "vp_slyrogue-834ebc19dae2",
+    "speaker": "vp_slyrogue",
+    "text": "Win first. Ask me again with the sun up.",
+    "priority": 50,
+    "source": "hero:slyRogue",
+    "chars": 40
+  },
+  {
+    "id": "vp_nobleknight-c5474ef3c376",
+    "speaker": "vp_nobleknight",
+    "text": "I will bring her home.",
+    "priority": 50,
+    "source": "hero:nobleKnight",
+    "chars": 22
+  },
+  {
+    "id": "vp_nobleknight-5ada2f8ca5bd",
+    "speaker": "vp_nobleknight",
+    "text": "Malthrax will kneel first.",
+    "priority": 50,
+    "source": "hero:nobleKnight",
+    "chars": 26
+  },
+  {
+    "id": "vp_nobleknight-a862291e9c83",
+    "speaker": "vp_nobleknight",
+    "text": "We will find him.",
+    "priority": 50,
+    "source": "hero:nobleKnight",
+    "chars": 17
+  },
+  {
+    "id": "vp_nobleknight-fbf738fd2e01",
+    "speaker": "vp_nobleknight",
+    "text": "I'm looking at you, not the glass.",
+    "priority": 50,
+    "source": "hero:nobleKnight",
+    "chars": 34
+  },
+  {
+    "id": "vp_nobleknight-60d798d5f37f",
+    "speaker": "vp_nobleknight",
+    "text": "No one. Until recently.",
+    "priority": 50,
+    "source": "hero:nobleKnight",
+    "chars": 23
+  },
+  {
+    "id": "vp_nobleknight-6a0135afed83",
+    "speaker": "vp_nobleknight",
+    "text": "My party counts. You count.",
+    "priority": 50,
+    "source": "hero:nobleKnight",
+    "chars": 27
+  },
+  {
+    "id": "vp_nobleknight-834ebc19dae2",
+    "speaker": "vp_nobleknight",
+    "text": "Win first. Ask me again with the sun up.",
+    "priority": 50,
+    "source": "hero:nobleKnight",
+    "chars": 40
+  },
+  {
+    "id": "vp_fierceshieldmaiden-c5474ef3c376",
+    "speaker": "vp_fierceshieldmaiden",
+    "text": "I will bring her home.",
+    "priority": 50,
+    "source": "hero:fierceShieldmaiden",
+    "chars": 22
+  },
+  {
+    "id": "vp_fierceshieldmaiden-5ada2f8ca5bd",
+    "speaker": "vp_fierceshieldmaiden",
+    "text": "Malthrax will kneel first.",
+    "priority": 50,
+    "source": "hero:fierceShieldmaiden",
+    "chars": 26
+  },
+  {
+    "id": "vp_fierceshieldmaiden-a862291e9c83",
+    "speaker": "vp_fierceshieldmaiden",
+    "text": "We will find him.",
+    "priority": 50,
+    "source": "hero:fierceShieldmaiden",
+    "chars": 17
+  },
+  {
+    "id": "vp_fierceshieldmaiden-fbf738fd2e01",
+    "speaker": "vp_fierceshieldmaiden",
+    "text": "I'm looking at you, not the glass.",
+    "priority": 50,
+    "source": "hero:fierceShieldmaiden",
+    "chars": 34
+  },
+  {
+    "id": "vp_fierceshieldmaiden-60d798d5f37f",
+    "speaker": "vp_fierceshieldmaiden",
+    "text": "No one. Until recently.",
+    "priority": 50,
+    "source": "hero:fierceShieldmaiden",
+    "chars": 23
+  },
+  {
+    "id": "vp_fierceshieldmaiden-6a0135afed83",
+    "speaker": "vp_fierceshieldmaiden",
+    "text": "My party counts. You count.",
+    "priority": 50,
+    "source": "hero:fierceShieldmaiden",
+    "chars": 27
+  },
+  {
+    "id": "vp_fierceshieldmaiden-834ebc19dae2",
+    "speaker": "vp_fierceshieldmaiden",
+    "text": "Win first. Ask me again with the sun up.",
+    "priority": 50,
+    "source": "hero:fierceShieldmaiden",
+    "chars": 40
+  },
+  {
+    "id": "vp_cheerfulbard-c5474ef3c376",
+    "speaker": "vp_cheerfulbard",
+    "text": "I will bring her home.",
+    "priority": 50,
+    "source": "hero:cheerfulBard",
+    "chars": 22
+  },
+  {
+    "id": "vp_cheerfulbard-5ada2f8ca5bd",
+    "speaker": "vp_cheerfulbard",
+    "text": "Malthrax will kneel first.",
+    "priority": 50,
+    "source": "hero:cheerfulBard",
+    "chars": 26
+  },
+  {
+    "id": "vp_cheerfulbard-a862291e9c83",
+    "speaker": "vp_cheerfulbard",
+    "text": "We will find him.",
+    "priority": 50,
+    "source": "hero:cheerfulBard",
+    "chars": 17
+  },
+  {
+    "id": "vp_cheerfulbard-fbf738fd2e01",
+    "speaker": "vp_cheerfulbard",
+    "text": "I'm looking at you, not the glass.",
+    "priority": 50,
+    "source": "hero:cheerfulBard",
+    "chars": 34
+  },
+  {
+    "id": "vp_cheerfulbard-60d798d5f37f",
+    "speaker": "vp_cheerfulbard",
+    "text": "No one. Until recently.",
+    "priority": 50,
+    "source": "hero:cheerfulBard",
+    "chars": 23
+  },
+  {
+    "id": "vp_cheerfulbard-6a0135afed83",
+    "speaker": "vp_cheerfulbard",
+    "text": "My party counts. You count.",
+    "priority": 50,
+    "source": "hero:cheerfulBard",
+    "chars": 27
+  },
+  {
+    "id": "vp_cheerfulbard-834ebc19dae2",
+    "speaker": "vp_cheerfulbard",
+    "text": "Win first. Ask me again with the sun up.",
+    "priority": 50,
+    "source": "hero:cheerfulBard",
+    "chars": 40
+  },
+  {
+    "id": "vp_dourdwarf-c5474ef3c376",
+    "speaker": "vp_dourdwarf",
+    "text": "I will bring her home.",
+    "priority": 50,
+    "source": "hero:dourDwarf",
+    "chars": 22
+  },
+  {
+    "id": "vp_dourdwarf-5ada2f8ca5bd",
+    "speaker": "vp_dourdwarf",
+    "text": "Malthrax will kneel first.",
+    "priority": 50,
+    "source": "hero:dourDwarf",
+    "chars": 26
+  },
+  {
+    "id": "vp_dourdwarf-a862291e9c83",
+    "speaker": "vp_dourdwarf",
+    "text": "We will find him.",
+    "priority": 50,
+    "source": "hero:dourDwarf",
+    "chars": 17
+  },
+  {
+    "id": "vp_dourdwarf-fbf738fd2e01",
+    "speaker": "vp_dourdwarf",
+    "text": "I'm looking at you, not the glass.",
+    "priority": 50,
+    "source": "hero:dourDwarf",
+    "chars": 34
+  },
+  {
+    "id": "vp_dourdwarf-60d798d5f37f",
+    "speaker": "vp_dourdwarf",
+    "text": "No one. Until recently.",
+    "priority": 50,
+    "source": "hero:dourDwarf",
+    "chars": 23
+  },
+  {
+    "id": "vp_dourdwarf-6a0135afed83",
+    "speaker": "vp_dourdwarf",
+    "text": "My party counts. You count.",
+    "priority": 50,
+    "source": "hero:dourDwarf",
+    "chars": 27
+  },
+  {
+    "id": "vp_dourdwarf-834ebc19dae2",
+    "speaker": "vp_dourdwarf",
+    "text": "Win first. Ask me again with the sun up.",
+    "priority": 50,
+    "source": "hero:dourDwarf",
+    "chars": 40
+  },
+  {
+    "id": "vp_mysticsorceress-c5474ef3c376",
+    "speaker": "vp_mysticsorceress",
+    "text": "I will bring her home.",
+    "priority": 50,
+    "source": "hero:mysticSorceress",
+    "chars": 22
+  },
+  {
+    "id": "vp_mysticsorceress-5ada2f8ca5bd",
+    "speaker": "vp_mysticsorceress",
+    "text": "Malthrax will kneel first.",
+    "priority": 50,
+    "source": "hero:mysticSorceress",
+    "chars": 26
+  },
+  {
+    "id": "vp_mysticsorceress-a862291e9c83",
+    "speaker": "vp_mysticsorceress",
+    "text": "We will find him.",
+    "priority": 50,
+    "source": "hero:mysticSorceress",
+    "chars": 17
+  },
+  {
+    "id": "vp_mysticsorceress-fbf738fd2e01",
+    "speaker": "vp_mysticsorceress",
+    "text": "I'm looking at you, not the glass.",
+    "priority": 50,
+    "source": "hero:mysticSorceress",
+    "chars": 34
+  },
+  {
+    "id": "vp_mysticsorceress-60d798d5f37f",
+    "speaker": "vp_mysticsorceress",
+    "text": "No one. Until recently.",
+    "priority": 50,
+    "source": "hero:mysticSorceress",
+    "chars": 23
+  },
+  {
+    "id": "vp_mysticsorceress-6a0135afed83",
+    "speaker": "vp_mysticsorceress",
+    "text": "My party counts. You count.",
+    "priority": 50,
+    "source": "hero:mysticSorceress",
+    "chars": 27
+  },
+  {
+    "id": "vp_mysticsorceress-834ebc19dae2",
+    "speaker": "vp_mysticsorceress",
+    "text": "Win first. Ask me again with the sun up.",
+    "priority": 50,
+    "source": "hero:mysticSorceress",
+    "chars": 40
+  },
+  {
+    "id": "vp_boomingbarbarian-c5474ef3c376",
+    "speaker": "vp_boomingbarbarian",
+    "text": "I will bring her home.",
+    "priority": 50,
+    "source": "hero:boomingBarbarian",
+    "chars": 22
+  },
+  {
+    "id": "vp_boomingbarbarian-5ada2f8ca5bd",
+    "speaker": "vp_boomingbarbarian",
+    "text": "Malthrax will kneel first.",
+    "priority": 50,
+    "source": "hero:boomingBarbarian",
+    "chars": 26
+  },
+  {
+    "id": "vp_boomingbarbarian-a862291e9c83",
+    "speaker": "vp_boomingbarbarian",
+    "text": "We will find him.",
+    "priority": 50,
+    "source": "hero:boomingBarbarian",
+    "chars": 17
+  },
+  {
+    "id": "vp_boomingbarbarian-fbf738fd2e01",
+    "speaker": "vp_boomingbarbarian",
+    "text": "I'm looking at you, not the glass.",
+    "priority": 50,
+    "source": "hero:boomingBarbarian",
+    "chars": 34
+  },
+  {
+    "id": "vp_boomingbarbarian-60d798d5f37f",
+    "speaker": "vp_boomingbarbarian",
+    "text": "No one. Until recently.",
+    "priority": 50,
+    "source": "hero:boomingBarbarian",
+    "chars": 23
+  },
+  {
+    "id": "vp_boomingbarbarian-6a0135afed83",
+    "speaker": "vp_boomingbarbarian",
+    "text": "My party counts. You count.",
+    "priority": 50,
+    "source": "hero:boomingBarbarian",
+    "chars": 27
+  },
+  {
+    "id": "vp_boomingbarbarian-834ebc19dae2",
+    "speaker": "vp_boomingbarbarian",
+    "text": "Win first. Ask me again with the sun up.",
+    "priority": 50,
+    "source": "hero:boomingBarbarian",
+    "chars": 40
   }
 ]
