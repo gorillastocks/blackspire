@@ -1,6 +1,7 @@
 // Anti-grind progression: XP for discoveries as well as fights, catch-up / rested bonuses, shrinking encounter rates,
 // trivial-fight detection and the automap helpers (pathing, pins, goals). DOM-free so it can be unit tested.
 import { getLevel, W, H, DIRS, LEVEL_DEFS } from '../dungeon/levels.js';
+import { RECAP_TITLE } from './cardlines.js';
 import { CR_XP, MONSTERS, ITEMS } from '../rules/data.js';
 
 export const SAVE_VERSION = 5;
@@ -130,7 +131,7 @@ export function sessionRecap(s) {
   const xp = Math.round(((s.party || []).reduce((t, c) => t + c.xp, 0) - q.xp0) / n), gold = s.gold - q.gold0, steps = s.steps - q.steps0;
   const lines = [`✦ +${Math.max(0, xp)} XP each`, `💰 ${gold >= 0 ? '+' : ''}${gold} gold`, `👣 ${steps} steps · ${Math.max(0, s.stats.discoveries - q.disc0)} finds · ${Math.max(0, s.stats.secrets - q.secrets0)} secrets`];
   if (s.mode === 'dungeon' || s.level >= 0) lines.push(`🗺 ${LEVEL_DEFS[s.level]?.name || ''}: ${Math.round(exploredFraction(s) * 100)}% explored`);
-  s.session = null; return { text: '⛺ Delve recap', cls: 'loot', lines };
+  s.session = null; return { text: `⛺ ${RECAP_TITLE}`, cls: 'loot', lines };
 }
 
 /** Quests that finished since last checked pay XP once (old saves are marked silently on load). */

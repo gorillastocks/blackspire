@@ -724,6 +724,12 @@ function seesAhead(s, tx, ty) {
   for (let i = 1; i < k; i++) { const c = tile(s, s.x + fx * i, s.y + fy * i); if (c === undefined || isSolid(c) || c === 'D') return false; }
   return true;
 }
+/** The elite telegraph: the log/card text, and the spoken form (no warning emoji, no shouted "ELITE", no dashes between words). */
+export function eliteWarning(e, ahead) {
+  const where = e.kind === 'guard' ? (ahead ? 'stands guard ahead' : 'stands guard right here') : (ahead ? 'paces this corridor' : 'paces close by');
+  const rest = 'Fight it, sneak around it, or come back later. Its drops are the best on the floor.';
+  return { log: `⚠ ELITE: ${e.title} ${where}. ${rest}`, voice: { text: `Elite: ${e.title} ${where}. ${rest}`, who: 'narrator' } };
+}
 /** A telegraph the first time a LIVING elite is really in view (straight ahead down open ground) or within two steps by walking: never through a wall. */
 export function eliteSpotted(s) {
   const out = [];
@@ -734,7 +740,7 @@ export function eliteSpotted(s) {
     if (!near && !ahead) continue;
     s.eliteSeen[id] = 1;
     Prog.addPin(s, ex, ey, '☠', `Elite: ${e.title}${e.kind === 'patrol' ? ' (patrols here)' : ' (guards here)'}`);
-    out.push({ log: `⚠ ELITE: ${e.title} ${e.kind === 'guard' ? (ahead ? 'stands guard ahead' : 'stands guard right here') : (ahead ? 'paces this corridor' : 'paces close by')}. Fight it, sneak around it, or come back later. Its drops are the best on the floor.`, cls: 'crit', card: true, sfx: 'encounter', elite: e.id, banter: PC.reactive(s, 'elite') });
+    out.push({ ...eliteWarning(e, ahead), cls: 'crit', card: true, sfx: 'encounter', elite: e.id, banter: PC.reactive(s, 'elite') });
   }
   return out;
 }
@@ -805,7 +811,7 @@ export function chooseEvent(s, eventId, choiceId, check = (sk, dc) => partyCheck
   applyFx(s, fx, evs, lines);
   const title = E.card(s).title || E.title;
   Story.addJournal(s, `${title}: ${ch.label}${rollNote ? ` (${rollNote})` : ''}.`);
-  evs.unshift({ log: `✦ ${title}: ${res}`, cls: 'lore' });
+  evs.unshift({ log: `✦ ${title}: ${res}`, cls: 'lore', voice: false }); // the result card already spoke `res`: this journal echo stays silent
   const sp = s.mode === 'dungeon' ? PC.reactive(s, 'loot', {}, 0) : null; void sp;
   return { result: { title, text: res, roll: rollNote, fx: lines }, events: evs };
 }

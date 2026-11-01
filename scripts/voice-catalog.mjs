@@ -13,7 +13,8 @@ import * as CampTalk from '../src/game/camptalk.js';
 import { TT_SCENES } from '../src/game/tabletop_text.js';
 import { getLevel } from '../src/dungeon/levels.js';
 import { LORE } from '../src/dungeon/extras.js';
-import { MONSTERS } from '../src/rules/data.js';
+import { MONSTERS, TIER_LABEL } from '../src/rules/data.js';
+import { CHEST_LINES, VICTORY_LINES, RECAP_TITLE, rareFindText } from '../src/game/cardlines.js';
 import { spokenText, normVoiceText } from '../src/voices/norm.js';
 
 export const HERO = 'Ser Aldric';
@@ -151,5 +152,14 @@ export function catalog() {
       const q = quoted(ch.label || ''); if (q) add('Hero lines (Ser Aldric)', 'serAldric', q, `event.${E.id}.choice`, 92);
     }
   }
+
+  // ---- fixed card lines: chest and victory cards, rare-find headers, delve recap, secret discoveries, elite warnings (all narrator) ----
+  CHEST_LINES.forEach((t) => add('Cards and discoveries', 'narrator', `📦 ${t}`, 'main.chest', 61));
+  VICTORY_LINES.forEach((t) => add('Cards and discoveries', 'narrator', `⚔ ${t}`, 'main.victory', 61));
+  Object.values(TIER_LABEL).forEach((l) => add('Cards and discoveries', 'narrator', `✨ ${rareFindText(l)}`, 'main.rare', 61));
+  add('Cards and discoveries', 'narrator', `⛺ ${RECAP_TITLE}`, 'progress.recap', 61);
+  add('Cards and discoveries', 'narrator', 'You lean on the wall and your hand passes straight through: an illusion! A hidden passage opens.', 'game.illusion', 61);
+  add('Cards and discoveries', 'narrator', 'Your keen eyes notice a hidden door!', 'game.hiddenDoor', 61);
+  for (let i = 0; i < 5; i++) for (const e of getLevel(i).elites || []) for (const ahead of [true, false]) { const w = G.eliteWarning(e, ahead); add('Cards and discoveries: elite warnings', w.voice.who, w.voice.text, `elite.b${i + 1}.${e.id}`, 61); }
   return out;
 }

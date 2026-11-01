@@ -17,6 +17,7 @@ import { voiceBusy, clipSeconds, msSinceVoiceEnd, playVoiceLine, playAmbientNarr
 import { PACKS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter, heroSpeakerFor } from './voices/packs.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 import * as ENT from './entitlements.js';
+import { CHEST_LINES, VICTORY_LINES, rareFindText } from './game/cardlines.js';
 // After a redeploy, an old tab's lazy chunks 404: reload once to pick up the new build.
 window.addEventListener('vite:preloadError', (e) => {
   try { if (sessionStorage.getItem('gw-chunk-reload')) return; sessionStorage.setItem('gw-chunk-reload', '1'); } catch { return; }
@@ -70,6 +71,7 @@ function packBark(c, kind) {
 function packBarkAny(kind) { const a = (S?.party || []).filter((c) => !c.companion && !c.dead && !isDown(c)); if (a.length) packBark(a[Math.floor(Math.random() * a.length)], kind); }
 /** The text and speaker to voice for a log event: an explicit `voice`, else the log itself when it is a lore card. */
 function voiceOf(e) {
+  if (e.voice === false) return null; // explicitly silent (its text was already spoken)
   if (e.voice === true) return { text: e.log, who: 'narrator' };
   if (e.voice) return e.voice;
   return e.log && (e.cls === 'lore' || e.card) ? { text: e.log, who: 'narrator' } : null;
@@ -284,7 +286,7 @@ function handle(events) {
       log(e.log, e.cls);
       const vz = voiceOf(e);
       if (!combat && !willCombat && S?.mode === 'dungeon' && (e.card || e.cls === 'lore')) {
-        queueMessage({ text: e.log, cls: e.cls || 'lore', ambient: true, token: ambientToken(), voice: vz });
+        queueMessage({ text: e.log, cls: e.cls || 'lore', ambient: true, token: ambientToken(), voice: vz, silent: e.voice === false });
       } else if (vz && !combat && (!willCombat || vz.who !== 'narrator') && (S?.mode !== 'dungeon' || !menuOpen())) voiceLine(vz); // narrated outcome or a character's words, spoken after any card
     }
     if (e.banter) say(e.banter, { queue: !!(e.card || e.voice || e.cls === 'lore') }); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
@@ -306,7 +308,7 @@ function handle(events) {
 /** A glowing drop-reveal card for a named or tiered item found outside a fight. */
 function revealRare(r) {
   const k = r.key, t = r.tier || tierOf(k), I = ITEMS[k];
-  queueMessage({ text: `✨ ${TIER_LABEL[t]} find!`, cls: 'rare', tier: t, lines: [G.nameOf(k), I?.desc || ''].filter(Boolean), lineTiers: [t], rareSfx: t, from: r.from });
+  queueMessage({ text: `✨ ${rareFindText(TIER_LABEL[t])}`, cls: 'rare', tier: t, lines: [G.nameOf(k), I?.desc || ''].filter(Boolean), lineTiers: [t], rareSfx: t, from: r.from });
 }
 const tierStyle = (k) => { const t = tierOf(k); return t === 'common' ? '' : `color:${TIER_COLOR[t]};text-shadow:0 0 6px ${TIER_COLOR[t]}66`; };
 function flashRed(crit = false) { const f = $('#flash'); f.classList.toggle('crit', !!crit); f.style.opacity = 1; setTimeout(() => (f.style.opacity = 0), crit ? 380 : 250); }
@@ -1196,6 +1198,7 @@ async function pumpMessages() {
         playVictoryMusic();
       } else if (m.pre) { // before a boss fight: spoken in full, not tied to the ambient gate
         playVoiceLine((m.voice?.text || m.text).replace(/^🕯\s*/, ''), m.voice?.who || 'dm', { kind: 'other' });
+      } else if (m.silent) { /* journal echo of a result that was already spoken */
       } else if (m.ambient || m.cls === 'lore') {
         const tok = m.token || ambientToken();
         if (currentVoice()?.kind === 'battle') stopVoice(); // a card the player advanced to is not held back by a passing companion remark
@@ -1674,7 +1677,6 @@ async function playerTurn() {
 }
 /* ---------- Chest loot card: same style as the victory card; inspect/disarm stay as the choice step ---------- */
 let chestNotes = [];
-const CHEST_LINES = ['The lid creaks open…', 'Hinges groan as the lid swings up…', 'Dust puffs out as the lid lifts…', 'The lock gives with a click…'];
 function chestStep(fn) {
   const b = snapLoot();
   const ev = fn(S); const opened = ev.some((e) => e.sfx === 'chest');
@@ -1695,7 +1697,6 @@ function chestStep(fn) {
 /* ---------- Victory loot card: XP, gold, items, quest and level-up notes, tap to dismiss ---------- */
 let lootBase = null;
 const snapLoot = () => ({ gold: S.gold, xp: new Map(S.party.map((c) => [c, c.xp])), ready: new Set(S.party.filter((c) => canLevelUp(c))), inv: [...S.inventory] });
-const VICTORY_LINES = ['Victory!', 'The foe is vanquished!', 'Victory! The dust settles.', 'Victory — the way is clear.', 'Triumph! The party stands tall.'];
 function lootCard(ev, info) {
   const b = lootBase || snapLoot(), lines = [];
   const gains = S.party.filter((c) => !c.dead).map((c) => c.xp - (b.xp.get(c) ?? c.xp)).filter((n) => n > 0);

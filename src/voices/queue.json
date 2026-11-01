@@ -1894,5 +1894,349 @@
     "priority": 50,
     "source": "hero:boomingBarbarian",
     "chars": 40
+  },
+  {
+    "id": "narrator-0e7eb1627919",
+    "speaker": "narrator",
+    "text": "The lid creaks open…",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.chest",
+    "chars": 20
+  },
+  {
+    "id": "narrator-294136a4af97",
+    "speaker": "narrator",
+    "text": "Hinges groan as the lid swings up…",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.chest",
+    "chars": 34
+  },
+  {
+    "id": "narrator-0bef052775dd",
+    "speaker": "narrator",
+    "text": "Dust puffs out as the lid lifts…",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.chest",
+    "chars": 32
+  },
+  {
+    "id": "narrator-9d702876af4c",
+    "speaker": "narrator",
+    "text": "The lock gives with a click…",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.chest",
+    "chars": 28
+  },
+  {
+    "id": "narrator-25296a531b53",
+    "speaker": "narrator",
+    "text": "Victory!",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.victory",
+    "chars": 8
+  },
+  {
+    "id": "narrator-7c7598fb7c2e",
+    "speaker": "narrator",
+    "text": "The foe is vanquished!",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.victory",
+    "chars": 22
+  },
+  {
+    "id": "narrator-315bc0bdb249",
+    "speaker": "narrator",
+    "text": "Victory! The dust settles.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.victory",
+    "chars": 26
+  },
+  {
+    "id": "narrator-e4d396ef2b98",
+    "speaker": "narrator",
+    "text": "Victory, the way is clear.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.victory",
+    "chars": 26
+  },
+  {
+    "id": "narrator-17979b782388",
+    "speaker": "narrator",
+    "text": "Triumph! The party stands tall.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.victory",
+    "chars": 31
+  },
+  {
+    "id": "narrator-b293c2261e72",
+    "speaker": "narrator",
+    "text": "Common find!",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.rare",
+    "chars": 12
+  },
+  {
+    "id": "narrator-33ac6c5c1c0b",
+    "speaker": "narrator",
+    "text": "Uncommon find!",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.rare",
+    "chars": 14
+  },
+  {
+    "id": "narrator-85c49be69d9b",
+    "speaker": "narrator",
+    "text": "Rare find!",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.rare",
+    "chars": 10
+  },
+  {
+    "id": "narrator-7748987cd158",
+    "speaker": "narrator",
+    "text": "Epic find!",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.rare",
+    "chars": 10
+  },
+  {
+    "id": "narrator-a37c0c0bb485",
+    "speaker": "narrator",
+    "text": "Legendary find!",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:main.rare",
+    "chars": 15
+  },
+  {
+    "id": "narrator-76b2e354e2a6",
+    "speaker": "narrator",
+    "text": "Delve recap",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:progress.recap",
+    "chars": 11
+  },
+  {
+    "id": "narrator-6b18772ce561",
+    "speaker": "narrator",
+    "text": "You lean on the wall and your hand passes straight through: an illusion! A hidden passage opens.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:game.illusion",
+    "chars": 96
+  },
+  {
+    "id": "narrator-d1de7c184e0d",
+    "speaker": "narrator",
+    "text": "Your keen eyes notice a hidden door!",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries:game.hiddenDoor",
+    "chars": 36
+  },
+  {
+    "id": "narrator-962a62c8a673",
+    "speaker": "narrator",
+    "text": "Elite: Fangmother stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b1.e00",
+    "chars": 121
+  },
+  {
+    "id": "narrator-9560e323b443",
+    "speaker": "narrator",
+    "text": "Elite: Fangmother stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b1.e00",
+    "chars": 126
+  },
+  {
+    "id": "narrator-443644662a91",
+    "speaker": "narrator",
+    "text": "Elite: Webspinner Vessa paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b1.e01",
+    "chars": 128
+  },
+  {
+    "id": "narrator-a2d68b994d98",
+    "speaker": "narrator",
+    "text": "Elite: Webspinner Vessa paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b1.e01",
+    "chars": 123
+  },
+  {
+    "id": "narrator-10598a5919b2",
+    "speaker": "narrator",
+    "text": "Elite: Carapace King stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b2.e10",
+    "chars": 124
+  },
+  {
+    "id": "narrator-a0a235d4dad7",
+    "speaker": "narrator",
+    "text": "Elite: Carapace King stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b2.e10",
+    "chars": 129
+  },
+  {
+    "id": "narrator-e73462d44be3",
+    "speaker": "narrator",
+    "text": "Elite: Stormblade paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b2.e11",
+    "chars": 122
+  },
+  {
+    "id": "narrator-0b7593c16f8b",
+    "speaker": "narrator",
+    "text": "Elite: Stormblade paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b2.e11",
+    "chars": 117
+  },
+  {
+    "id": "narrator-cbe5b9a477a6",
+    "speaker": "narrator",
+    "text": "Elite: The Glass Warden stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b3.e20",
+    "chars": 127
+  },
+  {
+    "id": "narrator-32c201022005",
+    "speaker": "narrator",
+    "text": "Elite: The Glass Warden stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b3.e20",
+    "chars": 132
+  },
+  {
+    "id": "narrator-e4182926b72a",
+    "speaker": "narrator",
+    "text": "Elite: Sporelord Mul stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b3.e21",
+    "chars": 124
+  },
+  {
+    "id": "narrator-104b798d3dfd",
+    "speaker": "narrator",
+    "text": "Elite: Sporelord Mul stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b3.e21",
+    "chars": 129
+  },
+  {
+    "id": "narrator-43b5e67d1bd0",
+    "speaker": "narrator",
+    "text": "Elite: Dusk Mantle paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b3.e22",
+    "chars": 123
+  },
+  {
+    "id": "narrator-314a90fa983a",
+    "speaker": "narrator",
+    "text": "Elite: Dusk Mantle paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b3.e22",
+    "chars": 118
+  },
+  {
+    "id": "narrator-f5be32638c47",
+    "speaker": "narrator",
+    "text": "Elite: Ironbound Captain stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b4.e30",
+    "chars": 128
+  },
+  {
+    "id": "narrator-33b1e66d0ed6",
+    "speaker": "narrator",
+    "text": "Elite: Ironbound Captain stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b4.e30",
+    "chars": 133
+  },
+  {
+    "id": "narrator-c70e9e32ce4f",
+    "speaker": "narrator",
+    "text": "Elite: Cinder Brute stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b4.e31",
+    "chars": 123
+  },
+  {
+    "id": "narrator-7aae9f949561",
+    "speaker": "narrator",
+    "text": "Elite: Cinder Brute stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b4.e31",
+    "chars": 128
+  },
+  {
+    "id": "narrator-16665f9ec43a",
+    "speaker": "narrator",
+    "text": "Elite: Ashen Zealot paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b4.e32",
+    "chars": 124
+  },
+  {
+    "id": "narrator-cbcc9bb8050a",
+    "speaker": "narrator",
+    "text": "Elite: Ashen Zealot paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b4.e32",
+    "chars": 119
+  },
+  {
+    "id": "narrator-8dcd08c7ae40",
+    "speaker": "narrator",
+    "text": "Elite: Rex-Eater stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b5.e40",
+    "chars": 120
+  },
+  {
+    "id": "narrator-e7dcc948b6c3",
+    "speaker": "narrator",
+    "text": "Elite: Rex-Eater stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b5.e40",
+    "chars": 125
+  },
+  {
+    "id": "narrator-3bf10bc9af36",
+    "speaker": "narrator",
+    "text": "Elite: Vault Champion stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b5.e41",
+    "chars": 125
+  },
+  {
+    "id": "narrator-16a94e704ef5",
+    "speaker": "narrator",
+    "text": "Elite: Vault Champion stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b5.e41",
+    "chars": 130
+  },
+  {
+    "id": "narrator-7b612cbc646f",
+    "speaker": "narrator",
+    "text": "Elite: Horned Terror paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b5.e42",
+    "chars": 125
+  },
+  {
+    "id": "narrator-38b45acf4e11",
+    "speaker": "narrator",
+    "text": "Elite: Horned Terror paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+    "priority": 61,
+    "source": "phaseE:Cards and discoveries: elite warnings:elite.b5.e42",
+    "chars": 120
   }
 ]
