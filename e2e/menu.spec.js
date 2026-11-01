@@ -43,12 +43,22 @@ test('save & quit to title, then Continue and Load restore the game', async ({ p
   await page.screenshot({ path: `screenshots/menu-${P}-title-load.png` });
   await page.locator('#gmenu button[data-load="2"]').click();
   await expect.poll(() => st(page, () => window.__gw.state?.gold)).toBe(1234);
-  // the existing Save button still quick-saves
+  // the Save button writes the dedicated Quick Save slot (every press, no confirmation) and leaves the autosave alone
+  const autoBefore = await st(page, () => localStorage.getItem('blackspire.save.v1'));
+  await st(page, () => { window.__gw.state.gold = 1300; });
   await page.locator('#controls button', { hasText: 'Save' }).click();
-  expect(await st(page, () => JSON.parse(localStorage.getItem('blackspire.save.v1')).gold)).toBe(1234);
+  expect(await st(page, () => JSON.parse(localStorage.getItem('blackspire.save.quick')).gold)).toBe(1300);
+  expect(await st(page, () => localStorage.getItem('blackspire.save.v1'))).toBe(autoBefore);
+  await st(page, () => { window.__gw.state.gold = 1400; });
+  await page.locator('#controls button', { hasText: 'Save' }).click();
+  expect(await st(page, () => JSON.parse(localStorage.getItem('blackspire.save.quick')).gold)).toBe(1400);
+  await menuBtn(page).click(); await page.click('#menu-load');
+  await expect(page.locator('#gmenu button[data-load="auto"]')).toContainText('Autosave:');
+  await expect(page.locator('#gmenu button[data-load="quick"]')).toContainText('Quick Save:');
+  await page.click('#menu-close');
   // and the town square Save Game button too (after a reload, Continue still works)
   await page.reload(); await page.waitForSelector('#btn-new', { timeout: 90000 });
-  await page.click('#btn-continue'); await expect.poll(() => st(page, () => window.__gw.state?.gold)).toBe(1234);
+  await page.click('#btn-continue'); await expect.poll(() => st(page, () => window.__gw.state?.gold)).toBe(1400); // Continue = newest save = the Quick Save
   expect(errors, errors.join('\n')).toEqual([]);
 });
 

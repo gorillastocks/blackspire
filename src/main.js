@@ -1,7 +1,7 @@
 import { PORTRAITS, portraitURL, randomPortrait } from './portraits.js';
 import './style.css';
 import * as G from './game/game.js';
-import { SLOT_KEYS, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS, ANIM_SLOW } from './menu.js';
+import { SLOT_KEYS, saveEntries, saveName, newestKey, slotInfo, loadSettings, saveSettings, BATTLE_SPEEDS, ANIM_SLOW } from './menu.js';
 import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS, poiIdAt } from './dungeon/levels.js';
 import { outdoorRegion, inRegion, hourAt, todName, WEATHER_INFO } from './dungeon/outdoor.js';
 import { Combat, projectileCount, projectileNoun, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
@@ -479,7 +479,7 @@ function setControls(kind) {
     b('↶', () => act(() => G.turn(S, -1)), '', 'Turn left (A)'); b('▲', () => act(() => G.move(S, 0)), '', 'Forward (W)'); b('↷', () => act(() => G.turn(S, 1)), '', 'Turn right (D)');
     b('◀', () => act(() => G.move(S, 3)), '', 'Strafe left (Q)'); b('▼', () => act(() => G.move(S, 2)), '', 'Back (S)'); b('▶', () => act(() => G.move(S, 1)), '', 'Strafe right (E)');
     b('🔍 Search', doSearch, 'act', 'Search (F)'); b('⛺ Camp', () => { healSel = null; showCamp('rest'); }, 'act', 'Camp (C)'); b('🗺 Map', showMap, 'act', 'Map (M)');
-    b('📖 Journal', () => showJournal(null, 'quests'), 'act', 'Journal: quests, notes, chapter log, bonds (J) · tap a party card for its character sheet (I)'); b('🎒 Items', showInventory, 'act', 'Inventory (B)'); b('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, 'act', 'Save (P)');
+    b('📖 Journal', () => showJournal(null, 'quests'), 'act', 'Journal: quests, notes, chapter log, bonds (J) · tap a party card for its character sheet (I)'); b('🎒 Items', showInventory, 'act', 'Inventory (B)'); b('💾 Save', quickSave, 'act', 'Quick Save (P)');
   }
 }
 function act(f) { ambientMoveToken++; const ev = f(); R.setView(S.x, S.y, S.dir); if (ev.some?.((e) => !e.bump)) sfx('step'); handle(ev); if (S && !combat && S.steps % 8 === 0 && S.steps !== lastAutoStep) { lastAutoStep = S.steps; autosave(true); } }
@@ -501,7 +501,7 @@ window.addEventListener('keydown', (e) => {
   const map = { arrowup: () => G.move(S, 0), w: () => G.move(S, 0), arrowdown: () => G.move(S, 2), s: () => G.move(S, 2), arrowleft: () => G.turn(S, -1), a: () => G.turn(S, -1), arrowright: () => G.turn(S, 1), d: () => G.turn(S, 1), q: () => G.move(S, 3), e: () => G.move(S, 1) };
   if (map[k]) { e.preventDefault(); act(map[k]); return; }
   if (k === 'f' || k === ' ') { e.preventDefault(); doSearch(); }
-  if (k === 'c') showCamp('rest'); if (k === 'm') showMap(); if (k === 'i') showSheet(S.party[0]); if (k === 'b') showInventory(); if (k === 'p') { autosave(); log('Game saved.', 'sys'); }
+  if (k === 'c') showCamp('rest'); if (k === 'm') showMap(); if (k === 'i') showSheet(S.party[0]); if (k === 'b') showInventory(); if (k === 'p') quickSave();
 });
 // Swipe controls on the 3D view
 let touch0 = null;
@@ -530,7 +530,7 @@ function dismissModal() { closeModal(); if (!S) showTitle(); else if (S.mode ===
 async function showTitle() {
   fallenUp = false; document.body.classList.remove('fallen'); S = null; townVisited = false; closeMenu(); updateMenuBtn(); setControls(null); R.setMode('combat'); refresh();
   R.clearMonsters(); document.body.classList.add('titlescreen');
-  const has = [G.SAVE_KEY, ...SLOT_KEYS].some((k) => slotInfo(k));
+  const has = saveEntries(G.SAVE_KEY, G.QUICK_KEY).some(([k]) => slotInfo(k));
   openModal([
     h('h1', { class: 'logo' }, 'BLACKSPIRE'),
     h('p', { class: 'hint tagline' }, 'Five moons. Five seals. One princess in the Dread Sovereign\'s tower. · A first-person dungeon crawl built on the D&D 5e SRD'),
@@ -648,8 +648,8 @@ function showTown(sub = null) {
         btn('📖 Journal', () => showJournal(() => showTown(), 'quests'), { id: 'btn-journal' })),
       h('div', { class: 'partychips' }, ...S.party.map((c) => h('button', { class: 'small', title: `${c.name}: character sheet`, onclick: () => showSheet(c) }, portrait(c, 'cport'), ` ${c.name.split(' ').pop()}`))), // phones: the full-screen square covers the party cards, so each hero is tappable here too
       h('div', { class: 'menu row3' },
-        btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, { id: 'btn-town-save', 'aria-label': 'Save Game' }),
-        btn('📂 Load', () => loadGame(), { id: 'btn-town-load', 'aria-label': 'Load Game' }),
+        btn('💾 Save', quickSave, { id: 'btn-town-save', 'aria-label': 'Quick Save' }),
+        btn('📂 Load', () => loadGame(latestKey() || G.SAVE_KEY), { id: 'btn-town-load', 'aria-label': 'Load Game' }),
         btn('⏏ Title', () => { closeModal(); showTitle(); }, { id: 'btn-town-title', 'aria-label': 'Title Screen' }))));
     handle(G.Narr.townIntro(S, null)); handle(G.PC.townArrive(S)); // Phase C: a companion remark, and what the town remembers
     return;
@@ -853,7 +853,7 @@ function showCamp(tab) {
           bigBtn('🌙 Long Rest', '8 hrs, full recovery, risky', () => { closeModal(); handle(G.rest(S, 'long')); }, { id: 'btn-long-rest' }),
           bigBtn(G.anyFreshTalk(S) ? '🗣 Talk ❗' : '🗣 Talk', G.PC.pendingMoment(S) != null ? 'Liora has something to say' : G.anyFreshTalk(S) ? 'someone has something new to say' : 'a heart to heart, one each per rest', () => showTalkPicker(showCamp), { id: 'btn-talk' }),
           bigBtn('✨ Mage Armor', 'cast on the wizard', () => { const w = S.party.find((c) => c.cls === 'wizard' && !c.equip.armor && !c.dead && c.slots[0] > 0 && knownSpells(c).includes('mageArmor')); if (!w) { log('No wizard with a free slot and Mage Armor prepared needs it.', 'dim'); return; } w.slots[0]--; w.conditions.mageArmor = true; log(`${w.name} casts Mage Armor (AC ${armorClass(w)}).`, 'spell'); refresh(); }, { id: 'btn-mage-armor' })),
-        h('div', { class: 'menu row3 saverow' }, btn('💾 Save', () => { autosave(); log('Game saved.', 'sys'); }, { id: 'btn-camp-save' }), btn('📂 Load', () => loadGame(), { id: 'btn-camp-load' }))];
+        h('div', { class: 'menu row3 saverow' }, btn('💾 Save', quickSave, { id: 'btn-camp-save' }), btn('📂 Load', () => loadGame(latestKey() || G.SAVE_KEY), { id: 'btn-camp-load' }))];
     },
     heal: () => [h('div', { id: 'camp-heal' }, campHealSection())],
     spells: () => { const preps = S.party.filter((c) => !c.dead && SC.preparedMax(c)); return [h('div', { id: 'camp-prepare' }, preps.length
@@ -1743,7 +1743,7 @@ async function endCombat() {
 
 /* ---------- Total party wipe: "Your party has fallen" ---------- */
 let fallenUp = false; // while the screen is up the wiped state must never be autosaved over the player's real save
-/** Themed game-over screen. Load Save = the newest save (autosave or a slot); Return to Town = the temple-rescue penalty (see G.wipeToTown). */
+/** Themed game-over screen. Load Save = the newest save (autosave, quick save or a slot); Return to Town = the temple-rescue penalty (see G.wipeToTown). */
 function showFallen() {
   fallenUp = true; document.body.classList.add('fallen'); closeMenu(); hideCaption(); setControls(null); try { sfx('thud'); } catch { /* ignore */ }
   const pv = G.wipePreview(S), lk = latestKey(), inf = lk ? slotInfo(lk) : null;
@@ -1766,6 +1766,8 @@ function returnToTownFromWipe() {
 }
 
 /* ---------- Save/load ---------- */
+/** The Save button / P key: writes the Quick Save slot (its own key, never the autosave), overwriting it every press with no confirmation. */
+function quickSave() { if (!S || combat || fallenUp) return; try { S.savedAt = Date.now(); writeSave(G.QUICK_KEY, G.serialize(S)); log('Quick saved.', 'sys'); } catch (e) { log('Quick save failed: ' + e.message, 'bad'); } }
 function autosave(quiet = false) { if (!S || combat || fallenUp) return; try { S.savedAt = Date.now(); writeSave(G.SAVE_KEY, G.serialize(S)); } catch (e) { if (!quiet) log('Save failed: ' + e.message, 'bad'); } }
 /** Suspend anywhere: when the app is hidden or closed, save now. Mid-fight the pre-fight snapshot is saved, flagged to resume that fight. */
 let suspendSnap = null;
@@ -1800,7 +1802,7 @@ async function boot() {
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
-  const where = await initStorage([G.SAVE_KEY, ...SLOT_KEYS]);
+  const where = await initStorage(saveEntries(G.SAVE_KEY, G.QUICK_KEY).map(([k]) => k));
   ENT.onEntitlementChange((owned) => { toast(owned ? '🔓 Full game unlocked' : 'Full game purchase is no longer active'); });
   await ENT.initStore(); // iOS: localized price + re-verify Transaction.currentEntitlements before any save is loaded
   if (where === 'icloud') log('Saves sync with iCloud.', 'dim');
@@ -1830,9 +1832,9 @@ function menuOpen() { return !gmenu.classList.contains('hidden'); }
 function closeMenu() { gmenu.className = 'hidden'; gmenu.innerHTML = ''; }
 function updateMenuBtn() { menuBtn.classList.toggle('hidden', !S); document.body.classList.toggle('ingame', !!S); }
 function menuBack() { if (menuView === 'main' || !S) closeMenu(); else openMenu('main'); }
-function latestKey() { let best = null, bt = -1; for (const k of [G.SAVE_KEY, ...SLOT_KEYS]) { const i = slotInfo(k); if (i && i.t > bt) { bt = i.t; best = k; } } return best; }
+function latestKey() { return newestKey(saveEntries(G.SAVE_KEY, G.QUICK_KEY).map(([k]) => k)); }
 function continueLatest() { const k = latestKey(); if (k) loadGame(k); }
-function slotLabel(k, i) { const inf = slotInfo(k); return `${i < 0 ? 'Autosave / Quick save' : 'Slot ' + (i + 1)}: ${inf ? inf.text : 'empty'}`; }
+function slotLabel(k, i) { const inf = slotInfo(k); return `${saveName(i)}: ${inf ? inf.text : 'empty'}`; }
 function saveTo(k) { S.savedAt = Date.now(); writeSave(k, G.serialize(S)); }
 function confirmView(title, text, yesLabel, yes, back = 'main') {
   openMenu(null, [h('h2', {}, title), h('p', { class: 'warn' }, text),
@@ -1862,16 +1864,16 @@ function openMenu(view = 'main', custom = null) {
   } else if (view === 'save' || view === 'savequit') {
     const quit = view === 'savequit';
     body = [h('h2', {}, quit ? '💾 Save & Quit — choose a slot' : '💾 Save Game — choose a slot'),
-      note('Saving overwrites the slot. The Save button and autosave use their own quick-save slot.'),
+      note('Saving overwrites the slot. The Save button writes to Quick Save, and autosave keeps its own Autosave slot.'),
       h('div', { class: 'menu' }, SLOT_KEYS.map((k, i) => btn(slotLabel(k, i), () => confirmView(`Save to Slot ${i + 1}?`, slotInfo(k) ? `This overwrites: ${slotInfo(k).text}` : 'This slot is empty.', quit ? `💾 Save to Slot ${i + 1} and quit` : `💾 Save to Slot ${i + 1}`, () => {
         try { saveTo(k); } catch (e) { log('Save failed: ' + e.message, 'bad'); return; }
         log(`Game saved to Slot ${i + 1}.`, 'sys');
         if (quit) { closeMenu(); closeModal(); showTitle(); } else openMenu('main', [h('h2', {}, '✔ Saved'), h('p', {}, `Saved to Slot ${i + 1}.`), h('div', { class: 'menu' }, btn('▶ Resume', closeMenu, { class: 'primary', id: 'menu-resume' }), btn('← Main Menu', () => openMenu('main')))]);
       }, view), { class: 'slot', 'data-slot': i + 1 })))];
   } else if (view === 'load') {
-    const keys = [[G.SAVE_KEY, -1], ...SLOT_KEYS.map((k, i) => [k, i])];
+    const keys = saveEntries(G.SAVE_KEY, G.QUICK_KEY);
     body = [h('h2', {}, '📂 Load Game'), S ? note('Loading replaces the current game; progress since your last save will be lost.') : null,
-      h('div', { class: 'menu' }, keys.map(([k, i]) => btn(slotLabel(k, i), () => (S ? confirmView('Load this save?', 'Progress since your last save will be lost.', '📂 Load', () => loadGame(k), 'load') : loadGame(k)), { class: 'slot', 'data-load': i + 1, disabled: !slotInfo(k) })))];
+      h('div', { class: 'menu' }, keys.map(([k, i]) => btn(slotLabel(k, i), () => (S ? confirmView('Load this save?', 'Progress since your last save will be lost.', '📂 Load', () => loadGame(k), 'load') : loadGame(k)), { class: 'slot', 'data-load': i < 0 ? (i === -1 ? 'auto' : 'quick') : i + 1, disabled: !slotInfo(k) })))];
   } else if (view === 'settings') {
     const st = loadSettings();
     const slider = (key, label) => h('label', { class: 'slider' }, h('span', {}, label), h('input', { type: 'range', min: 0, max: 100, step: 5, value: Math.round(st[key] * 100), id: 'vol-' + key, 'aria-label': label + ' volume',
@@ -2026,7 +2028,7 @@ const TIPS = [
   ['Moving', 'Use the arrow pad (or swipe / WASD). Search with 🔎 to find secret doors and traps.'],
   ['Hold for info', 'Press and hold (or right-click) a party card, monster, item or spell to see its details.'],
   ['Your companions', 'Tap AI/YOU on a card to control a companion yourself. Set how AI companions fight under 🧠 Companion Tactics at camp or the Tavern.'],
-  ['Saving', 'The game autosaves on stairs, after fights and in town. ☰ Menu has save slots, settings and export/import.'],
+  ['Saving', 'The game autosaves on stairs, after fights and in town. The 💾 Save button writes your Quick Save, which you can load any time from Load Game. ☰ Menu has save slots, settings and export/import.'],
 ];
 const tipEl = h('div', { id: 'tip', class: 'hidden', role: 'dialog', 'aria-label': 'Tutorial tip' }); document.body.append(tipEl);
 function startTutorial() {

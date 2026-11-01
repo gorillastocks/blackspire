@@ -24,7 +24,8 @@ export { Narr, Prog, PC, DM, RX, CampTalk, Tavern };
 export { Story };
 export const NLEVELS = LEVEL_DEFS.length;
 
-export const SAVE_KEY = 'blackspire.save.v1';
+export const SAVE_KEY = 'blackspire.save.v1'; // autosave only
+export const QUICK_KEY = 'blackspire.save.quick'; // the Save button's own slot (Quick Save), overwritten on every press
 
 const withPC = (s) => { PC.ensure(s); return s; };
 export function newGame({ name = 'Hero', race = 'human', cls = 'fighter', base = null, randomDungeons = false, seeds = null, portrait = null, voicePack = null } = {}) {

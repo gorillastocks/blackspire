@@ -2,6 +2,12 @@ import { readSave } from './storage.js';
 // In-game main menu (☰ Menu / Esc): Resume, Save to slot, Load, Settings, Save & Quit, Quit without saving.
 // It is its own overlay (#gmenu) above everything, so Resume returns to exactly what was on screen.
 export const SLOT_KEYS = ['blackspire.save.slot1', 'blackspire.save.slot2', 'blackspire.save.slot3'];
+/** Every save a player can load, in list order: [key, index] with index -1 = Autosave, -2 = Quick Save, 0.. = numbered slots. */
+export function saveEntries(autoKey, quickKey) { return [[autoKey, -1], [quickKey, -2], ...SLOT_KEYS.map((k, i) => [k, i])]; }
+/** Display name of a save entry (see saveEntries). */
+export function saveName(i) { return i === -1 ? 'Autosave' : i === -2 ? 'Quick Save' : 'Slot ' + (i + 1); }
+/** The key of the newest save among the given keys (ties go to the earlier key), or null. */
+export function newestKey(keys) { let best = null, bt = -1; for (const k of keys) { const i = slotInfo(k); if (i && i.t > bt) { bt = i.t; best = k; } } return best; }
 export const SETTINGS_KEY = 'blackspire.settings';
 
 const DEFAULTS = { sound: true, music: 0.6, sfx: 0.8, amb: 0.6, voices: true, voice: 0.85, tutorialDone: false, battleSpeed: 'pause', areaDesc: true, trivialFights: 'ask' };
