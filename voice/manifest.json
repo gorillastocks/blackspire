@@ -19611,6 +19611,627 @@
       "hash": "78e1eafedb95bef6",
       "file": "voice/vp_boomingbarbarian-834ebc19dae2.mp3",
       "bytes": 54377
+    },
+    "narrator-0e7eb1627919": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The lid creaks open…",
+      "chars": 20,
+      "hash": "d643ce4eccd1798c",
+      "file": "voice/narrator-0e7eb1627919.mp3",
+      "bytes": 27210
+    },
+    "narrator-294136a4af97": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Hinges groan as the lid swings up…",
+      "chars": 34,
+      "hash": "56a9808e062e772b",
+      "file": "voice/narrator-294136a4af97.mp3",
+      "bytes": 38077
+    },
+    "narrator-0bef052775dd": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Dust puffs out as the lid lifts…",
+      "chars": 32,
+      "hash": "6e13e03161fed833",
+      "file": "voice/narrator-0bef052775dd.mp3",
+      "bytes": 36823
+    },
+    "narrator-9d702876af4c": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The lock gives with a click…",
+      "chars": 28,
+      "hash": "491e427dfd7c01c5",
+      "file": "voice/narrator-9d702876af4c.mp3",
+      "bytes": 25538
+    },
+    "narrator-25296a531b53": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Victory!",
+      "chars": 8,
+      "hash": "6981b0734229aec1",
+      "file": "voice/narrator-25296a531b53.mp3",
+      "bytes": 13835
+    },
+    "narrator-7c7598fb7c2e": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The foe is vanquished!",
+      "chars": 22,
+      "hash": "6b5a3a1bc92f1bd6",
+      "file": "voice/narrator-7c7598fb7c2e.mp3",
+      "bytes": 23448
+    },
+    "narrator-315bc0bdb249": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Victory! The dust settles.",
+      "chars": 26,
+      "hash": "3ff6a56373dfb17a",
+      "file": "voice/narrator-315bc0bdb249.mp3",
+      "bytes": 43510
+    },
+    "narrator-e4d396ef2b98": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Victory, the way is clear.",
+      "chars": 26,
+      "hash": "1f71c488ade01990",
+      "file": "voice/narrator-e4d396ef2b98.mp3",
+      "bytes": 36823
+    },
+    "narrator-17979b782388": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Triumph! The party stands tall.",
+      "chars": 31,
+      "hash": "2f7c8746b4519513",
+      "file": "voice/narrator-17979b782388.mp3",
+      "bytes": 44346
+    },
+    "narrator-b293c2261e72": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Common find!",
+      "chars": 12,
+      "hash": "23ed433ab8fab26c",
+      "file": "voice/narrator-b293c2261e72.mp3",
+      "bytes": 18015
+    },
+    "narrator-33ac6c5c1c0b": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Uncommon find!",
+      "chars": 14,
+      "hash": "a3825b9b6ebe11b4",
+      "file": "voice/narrator-33ac6c5c1c0b.mp3",
+      "bytes": 21776
+    },
+    "narrator-85c49be69d9b": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Rare find!",
+      "chars": 10,
+      "hash": "bbb759384aa5c4ca",
+      "file": "voice/narrator-85c49be69d9b.mp3",
+      "bytes": 17597
+    },
+    "narrator-7748987cd158": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Epic find!",
+      "chars": 10,
+      "hash": "3a2fb677f432d00e",
+      "file": "voice/narrator-7748987cd158.mp3",
+      "bytes": 18015
+    },
+    "narrator-a37c0c0bb485": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Legendary find!",
+      "chars": 15,
+      "hash": "a42b7c9e67ccf63e",
+      "file": "voice/narrator-a37c0c0bb485.mp3",
+      "bytes": 20941
+    },
+    "narrator-76b2e354e2a6": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Delve recap",
+      "chars": 11,
+      "hash": "516d440946f97308",
+      "file": "voice/narrator-76b2e354e2a6.mp3",
+      "bytes": 19687
+    },
+    "narrator-6b18772ce561": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You lean on the wall and your hand passes straight through: an illusion! A hidden passage opens.",
+      "chars": 96,
+      "hash": "9663444be4077cfd",
+      "file": "voice/narrator-6b18772ce561.mp3",
+      "bytes": 126684
+    },
+    "narrator-d1de7c184e0d": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Your keen eyes notice a hidden door!",
+      "chars": 36,
+      "hash": "5395f538536f7c10",
+      "file": "voice/narrator-d1de7c184e0d.mp3",
+      "bytes": 35987
+    },
+    "narrator-962a62c8a673": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Fangmother stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 121,
+      "hash": "cf713674c10749a9",
+      "file": "voice/narrator-962a62c8a673.mp3",
+      "bytes": 143821
+    },
+    "narrator-9560e323b443": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Fangmother stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 126,
+      "hash": "a0de7e3b08d0e3b7",
+      "file": "voice/narrator-9560e323b443.mp3",
+      "bytes": 145910
+    },
+    "narrator-443644662a91": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Webspinner Vessa paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 128,
+      "hash": "67de81e92e6a21c9",
+      "file": "voice/narrator-443644662a91.mp3",
+      "bytes": 189796
+    },
+    "narrator-a2d68b994d98": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Webspinner Vessa paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 123,
+      "hash": "004381568cc09738",
+      "file": "voice/narrator-a2d68b994d98.mp3",
+      "bytes": 208186
+    },
+    "narrator-10598a5919b2": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Carapace King stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 124,
+      "hash": "4900a0277ecfb62d",
+      "file": "voice/narrator-10598a5919b2.mp3",
+      "bytes": 160957
+    },
+    "narrator-a0a235d4dad7": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Carapace King stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 129,
+      "hash": "543941cef58bce19",
+      "file": "voice/narrator-a0a235d4dad7.mp3",
+      "bytes": 221143
+    },
+    "narrator-e73462d44be3": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Stormblade paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 122,
+      "hash": "8e996a02c0763687",
+      "file": "voice/narrator-e73462d44be3.mp3",
+      "bytes": 164718
+    },
+    "narrator-0b7593c16f8b": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Stormblade paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 117,
+      "hash": "8758909e2eb69b53",
+      "file": "voice/narrator-0b7593c16f8b.mp3",
+      "bytes": 165972
+    },
+    "narrator-cbe5b9a477a6": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: The Glass Warden stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 127,
+      "hash": "bf628ddf70d00d69",
+      "file": "voice/narrator-cbe5b9a477a6.mp3",
+      "bytes": 174750
+    },
+    "narrator-32c201022005": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: The Glass Warden stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 132,
+      "hash": "93a12d23ae7ccecd",
+      "file": "voice/narrator-32c201022005.mp3",
+      "bytes": 194394
+    },
+    "narrator-e4182926b72a": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Sporelord Mul stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 124,
+      "hash": "ec6537930481bfeb",
+      "file": "voice/narrator-e4182926b72a.mp3",
+      "bytes": 163883
+    },
+    "narrator-104b798d3dfd": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Sporelord Mul stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 129,
+      "hash": "8268fcd368924361",
+      "file": "voice/narrator-104b798d3dfd.mp3",
+      "bytes": 187706
+    },
+    "narrator-43b5e67d1bd0": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Dusk Mantle paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 123,
+      "hash": "1d983948e1e91949",
+      "file": "voice/narrator-43b5e67d1bd0.mp3",
+      "bytes": 156359
+    },
+    "narrator-314a90fa983a": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Dusk Mantle paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 118,
+      "hash": "d4c54ba03a2be276",
+      "file": "voice/narrator-314a90fa983a.mp3",
+      "bytes": 163047
+    },
+    "narrator-f5be32638c47": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Ironbound Captain stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 128,
+      "hash": "70e5b609c95cfa3f",
+      "file": "voice/narrator-f5be32638c47.mp3",
+      "bytes": 174750
+    },
+    "narrator-33b1e66d0ed6": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Ironbound Captain stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 133,
+      "hash": "6672e2cd21485bb1",
+      "file": "voice/narrator-33b1e66d0ed6.mp3",
+      "bytes": 219471
+    },
+    "narrator-c70e9e32ce4f": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Cinder Brute stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 123,
+      "hash": "dcafbf0d18f7ba78",
+      "file": "voice/narrator-c70e9e32ce4f.mp3",
+      "bytes": 156359
+    },
+    "narrator-7aae9f949561": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Cinder Brute stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 128,
+      "hash": "677b3456dccfc323",
+      "file": "voice/narrator-7aae9f949561.mp3",
+      "bytes": 169734
+    },
+    "narrator-16665f9ec43a": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Ashen Zealot paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 124,
+      "hash": "cc56bb84b0ceb3ca",
+      "file": "voice/narrator-16665f9ec43a.mp3",
+      "bytes": 182273
+    },
+    "narrator-cbcc9bb8050a": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Ashen Zealot paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 119,
+      "hash": "763adb08f6834167",
+      "file": "voice/narrator-cbcc9bb8050a.mp3",
+      "bytes": 178511
+    },
+    "narrator-8dcd08c7ae40": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Rex-Eater stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 120,
+      "hash": "8585cd051f3f020e",
+      "file": "voice/narrator-8dcd08c7ae40.mp3",
+      "bytes": 160957
+    },
+    "narrator-e7dcc948b6c3": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Rex-Eater stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 125,
+      "hash": "56287aa75583059b",
+      "file": "voice/narrator-e7dcc948b6c3.mp3",
+      "bytes": 167644
+    },
+    "narrator-3bf10bc9af36": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Vault Champion stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 125,
+      "hash": "6a584c5698c3fb53",
+      "file": "voice/narrator-3bf10bc9af36.mp3",
+      "bytes": 142985
+    },
+    "narrator-16a94e704ef5": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Vault Champion stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 130,
+      "hash": "d08d778072562210",
+      "file": "voice/narrator-16a94e704ef5.mp3",
+      "bytes": 165136
+    },
+    "narrator-7b612cbc646f": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Horned Terror paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 125,
+      "hash": "18d5fc97a71865a3",
+      "file": "voice/narrator-7b612cbc646f.mp3",
+      "bytes": 160957
+    },
+    "narrator-38b45acf4e11": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Horned Terror paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 120,
+      "hash": "0d15cbc6bc7bc5ac",
+      "file": "voice/narrator-38b45acf4e11.mp3",
+      "bytes": 141313
+    },
+    "narrator-8e130094c57a": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Fangmother paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 122,
+      "hash": "4e8c9c47c9f5178c",
+      "file": "voice/narrator-8e130094c57a.mp3",
+      "bytes": 158031
+    },
+    "narrator-b264b6587486": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Fangmother paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 117,
+      "hash": "20bd5350ad95b752",
+      "file": "voice/narrator-b264b6587486.mp3",
+      "bytes": 163047
+    },
+    "narrator-32ebb7830877": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Webspinner Vessa stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 127,
+      "hash": "ea7ab7a5af0b6949",
+      "file": "voice/narrator-32ebb7830877.mp3",
+      "bytes": 192722
+    },
+    "narrator-2fc93a58742e": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Webspinner Vessa stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 132,
+      "hash": "3a8aa7865e24eeb5",
+      "file": "voice/narrator-2fc93a58742e.mp3",
+      "bytes": 194394
+    },
+    "narrator-cfe2516834ee": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Carapace King paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 125,
+      "hash": "33113f352e93d3af",
+      "file": "voice/narrator-cfe2516834ee.mp3",
+      "bytes": 171824
+    },
+    "narrator-1ec0b714b11e": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Carapace King paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 120,
+      "hash": "e782413f02fcdc60",
+      "file": "voice/narrator-1ec0b714b11e.mp3",
+      "bytes": 174750
+    },
+    "narrator-5b17ac2c0896": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Stormblade stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 121,
+      "hash": "acc84601dc00fec6",
+      "file": "voice/narrator-5b17ac2c0896.mp3",
+      "bytes": 163047
+    },
+    "narrator-ad9bd10fc227": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Stormblade stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 126,
+      "hash": "40dd924ab675271f",
+      "file": "voice/narrator-ad9bd10fc227.mp3",
+      "bytes": 160121
+    },
+    "narrator-6a1b340edb65": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: The Glass Warden paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 128,
+      "hash": "1c180351f22f7124",
+      "file": "voice/narrator-6a1b340edb65.mp3",
+      "bytes": 180183
+    },
+    "narrator-5c313a861b99": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: The Glass Warden paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 123,
+      "hash": "14608bc2923df3bd",
+      "file": "voice/narrator-5c313a861b99.mp3",
+      "bytes": 165972
+    },
+    "narrator-01112f8468f1": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Sporelord Mul paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 125,
+      "hash": "3471a177a004e282",
+      "file": "voice/narrator-01112f8468f1.mp3",
+      "bytes": 152598
+    },
+    "narrator-9a6e2bb485c4": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Sporelord Mul paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 120,
+      "hash": "6af9654089899cc5",
+      "file": "voice/narrator-9a6e2bb485c4.mp3",
+      "bytes": 184781
+    },
+    "narrator-51a466ac8ea4": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Dusk Mantle stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 122,
+      "hash": "72415b14ba437800",
+      "file": "voice/narrator-51a466ac8ea4.mp3",
+      "bytes": 158031
+    },
+    "narrator-5d5fc2e0e540": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Dusk Mantle stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 127,
+      "hash": "8626ae6a674c2142",
+      "file": "voice/narrator-5d5fc2e0e540.mp3",
+      "bytes": 152598
+    },
+    "narrator-59d9ced0b183": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Ironbound Captain paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 129,
+      "hash": "7b7ff16a1216c85e",
+      "file": "voice/narrator-59d9ced0b183.mp3",
+      "bytes": 179347
+    },
+    "narrator-bba0b6f3c70c": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Ironbound Captain paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 124,
+      "hash": "75d3098924b33463",
+      "file": "voice/narrator-bba0b6f3c70c.mp3",
+      "bytes": 180183
+    },
+    "narrator-d4054aa6cffd": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Cinder Brute paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 124,
+      "hash": "fab3ee806ed070e3",
+      "file": "voice/narrator-d4054aa6cffd.mp3",
+      "bytes": 188124
+    },
+    "narrator-b9a3e925fa5e": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Cinder Brute paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 119,
+      "hash": "790b6ccb95ca1133",
+      "file": "voice/narrator-b9a3e925fa5e.mp3",
+      "bytes": 157195
+    },
+    "narrator-4880c48e82ef": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Ashen Zealot stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 123,
+      "hash": "b4aedcc429e5e8f5",
+      "file": "voice/narrator-4880c48e82ef.mp3",
+      "bytes": 184781
+    },
+    "narrator-66f696f16ed8": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Ashen Zealot stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 128,
+      "hash": "17f9f3734f568849",
+      "file": "voice/narrator-66f696f16ed8.mp3",
+      "bytes": 188124
+    },
+    "narrator-6eb6ef420506": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Rex-Eater paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 121,
+      "hash": "776fa8a7069a7a39",
+      "file": "voice/narrator-6eb6ef420506.mp3",
+      "bytes": 181019
+    },
+    "narrator-f17be1a7cd4e": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Rex-Eater paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 116,
+      "hash": "d2bb80f4a8d9b6bd",
+      "file": "voice/narrator-f17be1a7cd4e.mp3",
+      "bytes": 146746
+    },
+    "narrator-6f54ce81feaa": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Vault Champion paces this corridor. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 126,
+      "hash": "d40ed463cb26b439",
+      "file": "voice/narrator-6f54ce81feaa.mp3",
+      "bytes": 164718
+    },
+    "narrator-1e516b1be046": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Vault Champion paces close by. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 121,
+      "hash": "835dc05f62ed2d75",
+      "file": "voice/narrator-1e516b1be046.mp3",
+      "bytes": 134207
+    },
+    "narrator-c6b42da65f71": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Horned Terror stands guard ahead. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 124,
+      "hash": "0499b9e8b248d9de",
+      "file": "voice/narrator-c6b42da65f71.mp3",
+      "bytes": 166808
+    },
+    "narrator-024a9b04c3dc": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Elite: Horned Terror stands guard right here. Fight it, sneak around it, or come back later. Its drops are the best on the floor.",
+      "chars": 129,
+      "hash": "87696743b4b9a347",
+      "file": "voice/narrator-024a9b04c3dc.mp3",
+      "bytes": 161375
     }
   }
 }
