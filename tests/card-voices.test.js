@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { catalog } from '../scripts/voice-catalog.mjs';
 import { eliteWarning } from '../src/game/game.js';
 import { getLevel } from '../src/dungeon/levels.js';
+import { eliteRoster } from '../src/dungeon/extras.js';
 import { CHEST_LINES, VICTORY_LINES, RECAP_TITLE, rareFindText } from '../src/game/cardlines.js';
 import { TIER_LABEL } from '../src/rules/data.js';
 import { normVoiceText, spokenText } from '../src/voices/norm.js';
@@ -23,7 +24,9 @@ describe('card line voices', () => {
   });
   it('every elite warning (both variants) is voiced, and the spoken text has no emoji, shouting or dashes', () => {
     let n = 0;
-    for (let i = 0; i < 5; i++) for (const e of getLevel(i).elites) for (const ahead of [true, false]) {
+    const all = [];
+    for (let i = 0; i < 5; i++) { for (const [title] of eliteRoster(i)) for (const kind of ['guard', 'patrol']) all.push({ title, kind }); all.push(...getLevel(i).elites); }
+    for (const e of all) for (const ahead of [true, false]) {
       const w = eliteWarning(e, ahead); n++;
       expect(w.log.startsWith('⚠ ELITE: ')).toBe(true); // the on-screen text is unchanged
       expect(w.voice.who).toBe('narrator'); expect(w.voice.text.startsWith(`Elite: ${e.title} `)).toBe(true);
@@ -31,11 +34,11 @@ describe('card line voices', () => {
       expect(spokenText(w.voice.text)).toBe(w.voice.text);
       const f = voiced(w.voice.text); expect(f, w.voice.text).toBeTruthy(); expect(clipExists(f)).toBe(true);
     }
-    expect(n).toBeGreaterThanOrEqual(26);
+    expect(n).toBeGreaterThanOrEqual(52);
   });
   it('the catalog enumerates every new card line and each is recorded on disk', () => {
     const rows = catalog().filter((r) => r.cat.startsWith('Cards and discoveries'));
-    expect(rows.length).toBe(CHEST_LINES.length + VICTORY_LINES.length + 5 + 1 + 2 + 26);
+    expect(rows.length).toBe(CHEST_LINES.length + VICTORY_LINES.length + 5 + 1 + 2 + 52);
     for (const r of rows) { expect(r.speaker).toBe('narrator'); expect(clipExists(voiced(r.text)), r.text).toBe(true); }
   });
 });

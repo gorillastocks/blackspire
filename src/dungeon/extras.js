@@ -13,6 +13,8 @@ export const ELITES = [
   [['Ironbound Captain', [['animatedArmor', 3]]], ['Cinder Brute', [['hellHound', 2]]], ['Ashen Zealot', [['cultFanatic', 2], ['cultist', 2]]]],
   [['Rex-Eater', [['allosaurus', 3]]], ['Vault Champion', [['animatedArmor', 4]]], ['Horned Terror', [['triceratops', 1], ['allosaurus', 2]]]],
 ];
+/** The elites a floor can spawn (its guard/patrol split depends on the layout, so a title can be either kind). */
+export const eliteRoster = (idx) => ELITES[idx].slice(0, idx < 2 ? 2 : 3);
 /** Lore tablets found in hidden nooks (safe, self-contained: no clue is needed from elsewhere). */
 export const LORE = [
   ['Scratched into the stone: "The wardens fed the rats first, so the rats would learn to love the dark. They did."', 'A child\'s tally of days, 41 marks, then a drawing of a door.'],
@@ -90,7 +92,7 @@ export function decorate(L) {
   }
 
   // 3) Elites: guards stand at the mouth of a treasure dead end; patrols pace a straight corridor.
-  const want = ELITES[idx].slice(0, idx < 2 ? 2 : 3);
+  const want = eliteRoster(idx);
   const blockedOk = (cells) => {
     const u = [...t]; for (const [x, y] of cells) set(u, x, y, '#'); for (const e of elites) for (const [x, y] of e.path) set(u, x, y, '#'); // every elite at once, so no combination can seal the way
     const d = bfs(u, start[0], start[1], (c) => c !== '#' && c !== 'B');
