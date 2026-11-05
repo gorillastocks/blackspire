@@ -1,5 +1,6 @@
 // Tiny procedural sound effects via WebAudio (no audio assets needed), routed through the SFX volume bus.
 import { ac, out, isMuted } from './audio.js';
+import { fetchAudioBytes } from './audio-fetch.js';
 export { setMuted } from './audio.js';
 function tone(freq, dur, type = 'square', vol = 0.06, slide = 0) {
   if (isMuted()) return;
@@ -76,7 +77,7 @@ function loadSamples() {
   sampleLoad = true;
   const files = [...new Set(Object.values(SAMPLES).flat())];
   for (const f of files) {
-    fetch(sfxUrl(`sfx/${f}.mp3`)).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+    fetchAudioBytes(sfxUrl(`sfx/${f}.mp3`), 'sfx')
       .then((ab) => new Promise((ok, no) => ctx.decodeAudioData(ab, ok, no))).then((b) => { bufs[f] = b; }).catch(() => { /* keep procedural fallback */ });
   }
 }

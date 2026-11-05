@@ -4,6 +4,7 @@ import index from './index.json';
 import { ac, unlock as unlockAudio, duckBed } from '../audio.js';
 import { playVictorySynth } from '../victory-synth.js';
 import { normVoiceText } from './norm.js';
+import { fetchAudioBytes } from '../audio-fetch.js';
 
 const byText = index.byText || {};
 const cache = new Map(); // url → AudioBuffer | Promise
@@ -46,9 +47,7 @@ async function loadBuf(file) {
   const url = assetUrl(file);
   if (cache.has(url)) return cache.get(url);
   const p = (async () => {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`voice ${url} ${r.status}`);
-    const ab = await r.arrayBuffer();
+    const ab = await fetchAudioBytes(url, 'voice'); // tolerates Capacitor iOS status-0 responses
     const c = ac();
     if (!c) throw new Error('no audio');
     if (c.state !== 'running') await c.resume().catch(() => {});

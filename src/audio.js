@@ -1,4 +1,5 @@
 import { playVictorySynth } from './victory-synth.js';
+import { fetchAudioBytes } from './audio-fetch.js';
 // Blackspire audio: royalty-free music files (lazy-loaded) + procedural SFX/ambience via WebAudio.
 // Three buses (music / sfx / ambience) under a master gain, each with its own volume setting.
 // iOS/Safari: the AudioContext starts suspended until a user gesture, so unlock() runs on the first tap/key.
@@ -71,9 +72,7 @@ async function loadTrack(stem) {
   if (bufCache.has(cacheKey)) return bufCache.get(cacheKey);
   const p = (async () => {
     const url = musicUrl(stem, { preferMp3 });
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`music ${url} ${r.status}`);
-    const ab = await r.arrayBuffer();
+    const ab = await fetchAudioBytes(url, 'music'); // tolerates Capacitor iOS status-0 responses
     const c = ac();
     if (!c) throw new Error('no audio');
     if (c.state !== 'running') await c.resume().catch(() => {});
