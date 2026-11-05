@@ -6,14 +6,14 @@ import { fetchAudioBytes } from './audio-fetch.js';
 let ctx = null, master, bus = {};
 const vol = { music: 0.6, sfx: 0.8, amb: 0.6 }; let muted = false;
 
-export function ac() {
-  if (ctx) return ctx;
+function build() {
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
-  ctx = new AC();
+  ctx = new AC(); bus = {};
   master = ctx.createGain(); master.connect(ctx.destination);
   for (const k of ['music', 'sfx', 'amb']) { bus[k] = ctx.createGain(); bus[k].connect(master); }
   applyVolumes(); return ctx;
 }
+export function ac() { return ctx || build(); }
 export function out(name) { ac(); return bus[name]; }
 function applyVolumes() { if (!ctx) return; master.gain.value = muted ? 0 : 1; for (const k in bus) bus[k].gain.value = vol[k] * vol[k]; }
 export function setVolumes(v) { Object.assign(vol, v); applyVolumes(); }
@@ -24,16 +24,92 @@ export function sfxVolume() { return vol.sfx; }
 let unlocked = false;
 export function unlock() {
   const c = ac(); if (!c) return;
-  if (c.state !== 'running') c.resume().catch(() => {});
+  if (c.state !== 'running') {
+    c.resume().catch(() => {}); // called synchronously so it still counts as the user gesture
+    if (unlocked) recoverAudio('gesture'); // fallback: a closed / stuck context is recreated on the next tap
+  }
   if (!unlocked) { // play one silent buffer — required by older iOS to fully open the audio session
-    try { const b = c.createBuffer(1, 1, 22050), s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0); } catch { /* ignore */ }
+    primeContext(c);
     unlocked = true; if (want) play(want, true); if (ambWant) ambience(ambWant, true);
     // Decode the victory sting now so the first win is not racing a cold fetch/decode.
     prefetchMusic('victory');
   }
 }
+function primeContext(c) {
+  try { const b = c.createBuffer(1, 1, 22050), s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0); } catch { /* ignore */ }
+}
 for (const ev of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(ev, unlock, { capture: true, passive: true });
-document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend().catch(() => {}); else if (unlocked) ctx.resume().catch(() => {}); });
+
+/* ---------------- background / foreground recovery ----------------
+ * iOS WKWebView: when the app is backgrounded (app switch, lock, call, Siri) the AudioContext goes 'suspended' /
+ * 'interrupted', and on return resume() can reject, never settle, or leave a dead context. The old one-shot
+ * resume().catch(() => {}) swallowed that and nothing ever retried, so the game stayed silent until relaunch.
+ * Now every foreground signal runs recoverAudio(): resume (bounded by a timeout), else recreate the context + gain
+ * graph (decoded AudioBuffers are context-independent so the caches survive) and restart the music/ambience bed. */
+const RESUME_TIMEOUT_MS = 1500, MIN_REBUILD_GAP_MS = 2500;
+let recovering = null, lastRebuildAt = 0;
+const resetHooks = [];
+/** Register a callback run whenever the AudioContext is recreated (drop nodes that belonged to the old graph). */
+export function onAudioReset(fn) { if (typeof fn === 'function') resetHooks.push(fn); }
+function settle(p, ms) {
+  return new Promise((done) => {
+    const t = setTimeout(() => done(false), ms);
+    Promise.resolve(p).then(() => { clearTimeout(t); done(true); }, () => { clearTimeout(t); done(false); });
+  });
+}
+/** Resume a context, never waiting longer than RESUME_TIMEOUT_MS. Resolves true only if it is 'running' afterwards. */
+export async function resumeCtx(c = ctx) {
+  if (!c) return false;
+  if (c.state === 'running') return true;
+  if (c.state === 'closed') return false;
+  let p; try { p = c.resume(); } catch { return false; }
+  await settle(p, RESUME_TIMEOUT_MS);
+  return c.state === 'running';
+}
+function rebuildContext() {
+  const old = ctx;
+  clearTimeout(ambTimer); ambNodes = []; ambCur = null; noiseBuf = null;
+  try { stingHandle?.cancel?.(); } catch { /* ignore */ }
+  trackGain = null; trackSrc = null; cur = null; playGen++; // in-flight loads for the old graph drop themselves
+  stingGain = null; stingPlaying = false; duckSaved = null;
+  ctx = null; master = null; bus = {};
+  if (old) { try { old.close()?.catch?.(() => {}); } catch { /* ignore */ } }
+  for (const fn of resetHooks) { try { fn(); } catch { /* ignore */ } }
+  const c = build();
+  if (c) primeContext(c);
+  lastRebuildAt = Date.now();
+  return c;
+}
+function restartPlayback() {
+  if (want && TRACKS[want]?.loop) play(want, true, onDone);
+  if (ambWant) ambience(ambWant, true);
+}
+/** Bring audio back after the app returns to the foreground. Resolves true if the context ends up running. */
+export function recoverAudio() {
+  if (!ctx || !unlocked) return Promise.resolve(false);
+  if (recovering) return recovering;
+  recovering = (async () => {
+    const before = ctx.state;
+    let ok = await resumeCtx(ctx), rebuilt = false;
+    if (!ok && (ctx.state === 'closed' || Date.now() - lastRebuildAt > MIN_REBUILD_GAP_MS)) {
+      if (rebuildContext()) { rebuilt = true; ok = await resumeCtx(ctx); }
+    }
+    // If it is still not running the next user gesture (unlock) retries; sources scheduled now start when it resumes.
+    if (rebuilt || before === 'interrupted') restartPlayback();
+    return ok;
+  })().finally(() => { recovering = null; });
+  return recovering;
+}
+/** App went to the background: cleanly suspend (not awaited — it can hang while the session is interrupted). */
+export function suspendAudio() {
+  if (!ctx || ctx.state !== 'running') return;
+  try { ctx.suspend()?.catch?.(() => {}); } catch { /* ignore */ }
+}
+const foreground = () => { if (typeof document !== 'undefined' && document.hidden) return; recoverAudio(); };
+document.addEventListener('visibilitychange', () => { if (document.hidden) suspendAudio(); else recoverAudio(); });
+window.addEventListener('pagehide', suspendAudio);
+// pageshow / focus (WKWebView) and 'blackspireAudioResume' (AppDelegate: became active, or audio interruption ended)
+for (const ev of ['pageshow', 'focus', 'blackspireAudioResume']) window.addEventListener(ev, foreground);
 
 /* ---------------- file-based music (lazy-load AAC/OGG, crossfade) ---------------- */
 /** Track catalog: path stem under /music (browser picks .m4a or .ogg). */
@@ -75,8 +151,8 @@ async function loadTrack(stem) {
     const ab = await fetchAudioBytes(url, 'music'); // tolerates Capacitor iOS status-0 responses
     const c = ac();
     if (!c) throw new Error('no audio');
-    if (c.state !== 'running') await c.resume().catch(() => {});
-    return await c.decodeAudioData(ab.slice(0));
+    await resumeCtx(c);
+    return await (ac() || c).decodeAudioData(ab.slice(0)); // ac(): the context may have been recreated while resuming
   })();
   bufCache.set(cacheKey, p);
   try {

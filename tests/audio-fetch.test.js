@@ -47,7 +47,7 @@ describe('voice.js plays a clip when fetch reports status 0', () => {
       createBuffer() { return {}; },
       decodeAudioData: async () => ({ duration: 1.5, tag: 'decoded' }),
     };
-    vi.doMock('../src/audio.js', () => ({ ac: () => ctx, unlock: () => {}, duckBed: () => {} }));
+    vi.doMock('../src/audio.js', () => ({ ac: () => ctx, unlock: () => {}, duckBed: () => {}, resumeCtx: async () => true, onAudioReset: () => {} }));
     vi.doMock('../src/victory-synth.js', () => ({ playVictorySynth: () => ({ ok: true }) }));
     vi.stubGlobal('fetch', vi.fn(async () => resp({ ok: false, status: 0 })));
     const v = await import('../src/voices/voice.js');

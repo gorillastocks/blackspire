@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,8 +8,44 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        configureAudioSession()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioInterruption(_:)),
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance()
+        )
         return true
+    }
+
+    // MARK: - Audio session
+    // .playback + .default: sound plays with the ring/silent switch on and survives app switches. WKWebView's
+    // WebAudio output goes through this shared session, so it must be (re)activated whenever we come back.
+
+    private func configureAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playback, mode: .default, options: [])
+            try session.setActive(true)
+        } catch {
+            NSLog("Blackspire: audio session setup failed: \(error)")
+        }
+    }
+
+    /// Tells the web layer (src/audio.js) to resume / recreate its AudioContext.
+    private func notifyWebAudioResume() {
+        DispatchQueue.main.async { [weak self] in
+            guard let vc = self?.window?.rootViewController as? CAPBridgeViewController else { return }
+            vc.bridge?.triggerWindowJSEvent(eventName: "blackspireAudioResume")
+        }
+    }
+
+    @objc private func handleAudioInterruption(_ notification: Notification) {
+        guard let raw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: raw),
+              type == .ended else { return }
+        configureAudioSession()
+        notifyWebAudioResume()
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -23,10 +60,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+        configureAudioSession()
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        configureAudioSession()
+        notifyWebAudioResume()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

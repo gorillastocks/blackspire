@@ -1,5 +1,5 @@
 // Tiny procedural sound effects via WebAudio (no audio assets needed), routed through the SFX volume bus.
-import { ac, out, isMuted } from './audio.js';
+import { ac, out, isMuted, onAudioReset } from './audio.js';
 import { fetchAudioBytes } from './audio-fetch.js';
 export { setMuted } from './audio.js';
 function tone(freq, dur, type = 'square', vol = 0.06, slide = 0) {
@@ -77,10 +77,13 @@ function loadSamples() {
   sampleLoad = true;
   const files = [...new Set(Object.values(SAMPLES).flat())];
   for (const f of files) {
+    if (bufs[f]) continue;
     fetchAudioBytes(sfxUrl(`sfx/${f}.mp3`), 'sfx')
-      .then((ab) => new Promise((ok, no) => ctx.decodeAudioData(ab, ok, no))).then((b) => { bufs[f] = b; }).catch(() => { /* keep procedural fallback */ });
+      .then((ab) => new Promise((ok, no) => (ac() || ctx).decodeAudioData(ab, ok, no))).then((b) => { bufs[f] = b; }).catch(() => { /* keep procedural fallback */ });
   }
 }
+// After the AudioContext is recreated, retry any sample that failed to decode on the old one (decoded buffers are kept).
+onAudioReset(() => { sampleLoad = null; });
 const takeIdx = {};
 function playSample(n) {
   const ids = (SAMPLES[n] || []).filter((f) => bufs[f]); if (!ids.length) return false;

@@ -1,7 +1,7 @@
 // Spoken dialogue clips (ElevenLabs). Lazy-loads MP3s; looks up by speaker+normalized text.
 // Asset URLs must respect Vite base (./ → /blackspire/ on GitHub Pages) — never fetch from "/voice/...".
 import index from './index.json';
-import { ac, unlock as unlockAudio, duckBed } from '../audio.js';
+import { ac, unlock as unlockAudio, duckBed, resumeCtx, onAudioReset } from '../audio.js';
 import { playVictorySynth } from '../victory-synth.js';
 import { normVoiceText } from './norm.js';
 import { fetchAudioBytes } from '../audio-fetch.js';
@@ -50,8 +50,8 @@ async function loadBuf(file) {
     const ab = await fetchAudioBytes(url, 'voice'); // tolerates Capacitor iOS status-0 responses
     const c = ac();
     if (!c) throw new Error('no audio');
-    if (c.state !== 'running') await c.resume().catch(() => {});
-    return await c.decodeAudioData(ab.slice(0));
+    await resumeCtx(c); // bounded: a stuck resume() must not wedge the voice queue
+    return await (ac() || c).decodeAudioData(ab.slice(0)); // ac(): the context may have been recreated while resuming
   })();
   cache.set(url, p);
   try {
@@ -187,7 +187,7 @@ function startVoice(file, opts) {
   const runWA = async () => {
     starting++;
     try {
-      if (c && c.state !== 'running') await c.resume().catch(() => {});
+      if (c) await resumeCtx(c);
       const buf = await loadBuf(file);
       // Drop if a newer play superseded us, ambient was invalidated, or the host gate closed.
       if (myVoiceGen !== voiceGen) return;
@@ -197,7 +197,7 @@ function startVoice(file, opts) {
       if (!enabled) return;
       const ctx = ac();
       if (!ctx) throw new Error('no ctx');
-      if (ctx.state !== 'running') await ctx.resume().catch(() => {});
+      await resumeCtx(ctx);
       const src = ctx.createBufferSource();
       const g = ctx.createGain();
       g.gain.value = vol * vol;
@@ -227,6 +227,8 @@ function stopVoiceNow() {
   current = null;
 }
 let lastEnd = 0;
+// The AudioContext was recreated after a background/interruption: nodes of the old graph are dead, drop them.
+onAudioReset(() => { stopVoiceNow(); stopVictoryMusic(); });
 /** Milliseconds since the last clip ended (Infinity if none yet): used to space out companion barks. */
 export function msSinceVoiceEnd() { return voiceBusy() ? 0 : (lastEnd ? Date.now() - lastEnd : Infinity); }
 
@@ -329,10 +331,10 @@ export function playVictoryMusic(then = null) {
   stopVictoryMusic();
   const run = async () => {
     try {
-      if (c.state !== 'running') await c.resume().catch(() => {});
+      await resumeCtx(c);
       const ctx = ac();
       if (!ctx) throw new Error('no ctx');
-      if (ctx.state !== 'running') await ctx.resume().catch(() => {});
+      await resumeCtx(ctx);
       victoryLast.ctxState = ctx.state;
       duckBed(0.12);
       setTimeout(() => duckBed(0.12), 200);

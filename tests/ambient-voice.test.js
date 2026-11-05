@@ -27,6 +27,8 @@ vi.mock('../src/audio.js', () => ({
   ac: () => globalThis.__testAc,
   unlock: () => {},
   duckBed: () => {},
+  resumeCtx: async (c) => { if (c && c.state !== 'running') await c.resume?.(); return true; },
+  onAudioReset: () => {},
 }));
 
 vi.mock('../src/victory-synth.js', () => ({
