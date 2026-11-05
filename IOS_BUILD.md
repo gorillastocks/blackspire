@@ -32,7 +32,7 @@ Select the **App** project, then the **App** target.
 1. **General**
    - Display Name: `Blackspire`.
    - Bundle Identifier: `com.gorillastocks.blackspire`.
-   - Version: `1.0.0`. Build: `1` (increase the build number on every upload).
+   - Version: `1.0.1`. Build: `1` (increase the build number on every upload).
    - Minimum Deployments: iOS 15.0 (already set; StoreKit 2 and Capacitor 8 need it).
    - Supported Destinations: iPhone and iPad.
    - Under *Deployment Info*, tick all four orientations for iPad and Portrait plus both Landscapes for iPhone. The layout is tested at 393×852, 852×393, 1024×1366 and 1366×1024.
@@ -79,13 +79,19 @@ Steps on the Mac:
    - Content rights: you use third-party content. SRD 5.1 is CC-BY-4.0 and the Quaternius models are CC0; see ATTRIBUTION.md.
 3. **Age Rating** questionnaire: *Infrequent/Mild Cartoon or Fantasy Violence*. Answer None for everything else. This usually comes out at 9+.
 4. **App Privacy**: *Data Not Collected*. The game has no analytics, accounts or network calls. iCloud KV sync is Apple-managed and is not collection by you.
-5. **Privacy Policy URL**: required. A simple page stating "Blackspire collects no data; saves stay on your device/iCloud" is enough, e.g. a GitHub Pages file.
+5. **Privacy Policy URL** (version **1.0.1**): `https://blackspire.pages.dev/privacy`
 6. **Pricing and Availability**: price **Free** (the $4.99 unlock is the in-app purchase from section 2a), and pick countries.
 7. **Screenshots** (required sizes):
    - iPhone 6.9" at 1320×2868 or 6.5" at 1284×2778.
    - iPad 13" at 2064×2752 or 2048×2732.
    - Take them in the Simulator (iPhone 16 Pro Max, iPad Pro 13") with ⌘S.
-8. Write the description, keywords and support URL (the GitHub repo is fine).
+8. Write the description and keywords. **Support URL** (version **1.0.1**): `https://blackspire.pages.dev/support`. **Marketing URL** (version **1.0.1**): `https://blackspire.pages.dev/`.
+
+
+### App Store URLs for version 1.0.1
+- Privacy Policy URL: https://blackspire.pages.dev/privacy
+- Support URL: https://blackspire.pages.dev/support
+- Marketing URL: https://blackspire.pages.dev/
 
 ## 5. Archive and upload
 1. In Xcode, set the run destination to **Any iOS Device (arm64)**.
@@ -95,7 +101,7 @@ Steps on the Mac:
 5. (Recommended) Add yourself as an internal TestFlight tester and play a few minutes on a real device.
 
 ## 6. Submit for review
-1. Open the app → the version (1.0) → **Build → +**, and pick the uploaded build.
+1. Open the app → the version (**1.0.1**) → **Build → +**, and pick the uploaded build.
 2. In **App Review Information**, add contact details. Note: "Offline single-player game. No login required."
 3. Click **Add for Review → Submit**. Review typically takes 24–48 h.
 4. If it's rejected, read the message in the Resolution Center, fix it, bump the **Build** number, re-archive and re-submit.

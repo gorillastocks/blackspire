@@ -2,7 +2,7 @@
 
 A Wizardry-style first-person grid dungeon crawler rendered in neon 3D with three.js, using D&D 5e **SRD 5.1** rules.
 
-**Play:** https://gorillastocks.github.io/blackspire/
+**Play:** https://blackspire.pages.dev/
 
 - Create a hero. Three quirky companions (Brambur, Fizzwick, Pip) join you, and each can be set to AI or player control.
 - In the town of Emberhollow you'll find the tavern, inn, temple, shop, and training grounds.
