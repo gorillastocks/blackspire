@@ -1477,6 +1477,7 @@ async function flushCombat() {
     }
     else if (e.type === 'heal') { packBark(e.who, 'heal'); healFx(e.who); cardFloat(e.who, e.amt ? '+' + e.amt : '+', false, 'good'); sfx('heal'); }
     else if (e.type === 'down') { packBark(e.who, 'downed'); say(banter(S.party.filter((p) => p !== e.who), 'down', { p: e.who.name }, 0.9)); await wait(200); }
+    else if (e.type === 'heroDownControl') { if (autoBattle) setAuto(false); toast(`With ${e.who.name} down, your companions are now under your control.`); renderParty(); }
     else if (e.type === 'lowHp') { packBark(e.who, 'lowHp'); say(banter(S.party, 'lowHp', { who: e.who }, 0.35)); }
     renderParty(); renderTargets();
   }

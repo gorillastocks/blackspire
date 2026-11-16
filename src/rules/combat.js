@@ -68,6 +68,7 @@ export class Combat {
     for (const m of this.monsters) { const l = this.lore[m.key]; m.known = { types: { ...(l?.types || {}) }, studied: !!l?.studied }; m.studyTried = new Set(); }
     this.groups = buildRanks(this.monsters); this.rankSig = this.liveRanks().map((g) => g.gid).join();
     this.log = []; this.events = []; this.round = 0; this.state = 'running'; this.turnIdx = -1; this.xp = 0; this.gold = 0;
+    this.heroHandedOff = false;
     for (const c of party) { c.reaction = true; for (const k of ['dodging', 'hidden', 'raging', 'reckless', 'invisible', 'sacredWeapon']) delete c.conditions[k]; c.side = 'party'; if (c.tempHp == null) c.tempHp = 0; }
     // Initiative: d20 + Dex
     const all = [...party.filter((c) => !c.dead), ...this.monsters].map((who) => ({ who, init: d20() + (who.side === 'party' ? abilityMod(who, 'dex') + (this.story.initBonus || 0) : monsterSave(who, 'dex')) + rand() * 0.01 }));
@@ -78,7 +79,27 @@ export class Combat {
     this.nextTurn();
   }
   say(t, cls = '') { this.log.push({ t, cls }); }
-  emit(e) { this.events.push(e); }
+  emit(e) {
+    this.events.push(e);
+    if (e.type === 'heal' || e.type === 'revive' || e.type === 'down' || e.type === 'death') this.maybeHandoffOnHeroDown();
+  }
+  /** The player character (not a companion or recruit). Formation can move them off party[0]. */
+  playerHero() { return this.party.find((c) => !c.companion && !c.recruit) || this.party[0]; }
+  /** When the hero drops, companions currently on AI switch to player control once per downing. Healing the hero does not flip them back; the player can tap AI on a card to give one back. */
+  maybeHandoffOnHeroDown() {
+    const hero = this.playerHero();
+    if (!hero || !(hero.dead || hero.hp <= 0)) { this.heroHandedOff = false; return; }
+    if (this.heroHandedOff) return;
+    this.heroHandedOff = true;
+    const switched = this.party.filter((c) => c !== hero && c.ai);
+    for (const c of switched) c.ai = false;
+    if (!switched.length) return;
+    const names = switched.map((c) => c.name);
+    const who = names.length === 1 ? names[0] : names.length === 2 ? `${names[0]} and ${names[1]}` : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+    const verb = switched.length === 1 ? 'is' : 'are';
+    this.say(`With ${hero.name} down, ${who} ${verb} now under your control. Tap AI on a card to let them act on their own.`, 'sys');
+    this.emit({ type: 'heroDownControl', who: hero, switched });
+  }
   /** Big centered action caption for the UI (flavor text + short mechanical result). */
   caption(text, sub = '', tone = '') { this.emit({ type: 'caption', text, sub, tone }); }
   drain() { const l = this.log, e = this.events; this.log = []; this.events = []; return { log: l, events: e }; }
@@ -160,6 +181,7 @@ export class Combat {
   }
 
   nextTurn() {
+    this.maybeHandoffOnHeroDown();
     if (this.checkEnd()) return;
     for (let guard = 0; guard < 100; guard++) {
       this.turnIdx++;
@@ -252,6 +274,7 @@ export class Combat {
       if (amt >= target.maxHp) { this.kill(target); return amt; }
       target.deathSaves.f += crit ? 2 : 1; target.stable = false; this.say(`${target.name} takes damage while down! (${target.deathSaves.f}✗)`, 'bad');
       if (target.deathSaves.f >= 3) this.kill(target);
+      this.maybeHandoffOnHeroDown();
       return amt;
     }
     target.hp -= amt;
@@ -657,7 +680,7 @@ export class Combat {
         if (S.buff === 'blessed') { const tgs = this.party.filter((p) => !isDown(p)).slice(0, 3); for (const p of tgs) p.conditions.blessed = { src: c.id }; this.say(`${tgs.map((p) => p.name).join(', ')} feel blessed.`, 'spell'); }
         if (S.buff === 'shieldOfFaith') { const p = target && target.side === 'party' ? target : this.frontRow()[0] || c; p.conditions.shieldOfFaith = { src: c.id }; this.say(`A shimmering field surrounds ${p.name} (+2 AC).`, 'spell'); }
         if (S.buff === 'spiritGuardians') { c.conditions.spiritGuardians = { src: c.id }; this.say(`Spectral guardians whirl around ${c.name}!`, 'spell'); }
-        if (S.buff === 'aid') { for (const p of this.party.filter((p) => !p.dead).slice(0, 3)) if (!p.conditions.aid) { p.conditions.aid = true; p.maxHp += 5; heal(p, 5); } this.say(`Aid bolsters the party (+5 max HP).`, 'spell'); }
+        if (S.buff === 'aid') { for (const p of this.party.filter((p) => !p.dead).slice(0, 3)) if (!p.conditions.aid) { p.conditions.aid = true; p.maxHp += 5; heal(p, 5); } this.say(`Aid bolsters the party (+5 max HP).`, 'spell'); this.maybeHandoffOnHeroDown(); }
         if (S.buff === 'mageArmor') { const p = target || c; p.conditions.mageArmor = true; }
         if (S.buff === 'invisible') { const p = target && target.side === 'party' && !isDown(target) ? target : this.frontRow()[0] || c; p.conditions.invisible = { src: c.id }; this.say(`${p.name} vanishes from sight!`, 'spell'); }
         break;
