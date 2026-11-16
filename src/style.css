@@ -754,3 +754,11 @@ body.fallen #btn-menu { display: none; }
 .panel .fallen-actions button.fallen-btn small { font-size: 13px; color: #cfc4e6; line-height: 1.3; white-space: normal; }
 .panel .fallen-actions button.fallen-btn.primary { border-color: #ff9a3d; }
 @media (max-width: 700px) { .panel .fallen-actions button.fallen-btn small { font-size: 14px; } }
+
+.panel .credit-list { max-height: 40vh; overflow: auto; }
+/* Touch screens: lists inside a dialog are never their own scroll boxes. A swipe that starts on the portrait grid, voice list or pinned-notes list must scroll the whole dialog
+   (a nested scroller swallows the swipe, and iOS does not hand it on to the dialog until a new swipe starts at the edge). */
+@media (pointer: coarse), (max-width: 760px), (max-height: 520px) and (orientation: landscape) {
+  .pgrid, .voicelist, .pinlist, .panel .credit-list { max-height: none; overflow: visible; }
+  .panel { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+}

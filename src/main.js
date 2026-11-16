@@ -569,7 +569,7 @@ function showCredits() {
   <p>3D monster, chest and torch models by <b>Quaternius</b> (quaternius.com), CC0 1.0 — via the Easy Enemy, Animated Dinosaur, Ultimate Animated Animal, Platformer Game Kit, Cyberpunk Game Kit and Modular Dungeon packs.</p>
   <p>Spoken dialogue and battle sound effects by <a style="color:#22e6ff" href="https://elevenlabs.io" target="_blank" rel="noopener">elevenlabs.io</a>.</p>
   <p><b>Music</b> by Kevin MacLeod (<a style="color:#22e6ff" href="https://incompetech.com" target="_blank" rel="noopener">incompetech.com</a>), licensed under <a style="color:#22e6ff" href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>:</p>
-  <ul style="text-align:left;font-size:0.92em;line-height:1.45;max-height:40vh;overflow:auto">
+  <ul class="credit-list" style="text-align:left;font-size:0.92em;line-height:1.45">
     <li>Title — <i>Darkest Child</i></li>
     <li>Town — <i>Midnight Tale</i></li>
     <li>B1 Rat-Warrens — <i>Spider Eyes</i></li>
@@ -645,7 +645,9 @@ function showTown(sub = null) {
         btn('⚒ Fizzbang\'s Trading Post', () => { shopTab = 'potions'; showTown('shop'); }, { id: 'btn-shop' }),
         btn('🎯 Training Grounds', () => showTown('train'), { id: 'btn-train' }),
         btn('🗣 Town Folk (quests)', () => showTownFolk(), { id: 'btn-folk' }),
-        btn('📖 Journal', () => showJournal(() => showTown(), 'quests'), { id: 'btn-journal' })),
+        btn('📖 Journal', () => showJournal(() => showTown(), 'quests'), { id: 'btn-journal' }),
+        // iOS, not purchased yet: straight to the purchase screen (hidden on the web build and once bought)
+        ENT.paywallActive() && !ENT.hasEntitlement() ? btn(unlockLabel(), () => prompt('paywall', { fromTown: true, then: () => showTown(), back: () => showTown() }), { id: 'btn-town-unlock', class: 'primary', 'aria-label': 'Unlock Full Game' }) : null),
       h('div', { class: 'partychips' }, ...S.party.map((c) => h('button', { class: 'small', title: `${c.name}: character sheet`, onclick: () => showSheet(c) }, portrait(c, 'cport'), ` ${c.name.split(' ').pop()}`))), // phones: the full-screen square covers the party cards, so each hero is tappable here too
       h('div', { class: 'menu row3' },
         btn('💾 Save', quickSave, { id: 'btn-town-save', 'aria-label': 'Quick Save' }),
@@ -786,13 +788,13 @@ function prompt(kind, e = {}) {
     const go = async () => { if (e.then) return e.then(); handle(G.goDown(S)); await startDungeon(); autosave(); };
     if (ENT.isNativeIOS() && !ENT.PRODUCT.price) ENT.initStore(3000).then(() => { const el = $('#paywall-price'); if (el) el.textContent = paywallPrice(); });
     if (e.cliffhanger) playVoiceLine('Torchlight gutters on the stair below. Something vast breathes in the dark, and it says your names. Skarn was only the doorman.', 'narrator', { kind: 'dialog' });
-    openModal([h('h2', {}, e.cliffhanger ? 'The Stairs Go Deeper…' : 'The Way Is Sealed'),
-      h('p', { class: 'lore' }, e.cliffhanger ? 'Torchlight gutters on the stair below. Something vast breathes in the dark, and it says your names. Skarn was only the doorman.' : 'The deeper levels of the Blackspire are part of the full game.'),
+    openModal([h('h2', {}, e.fromTown ? 'Unlock Full Game' : e.cliffhanger ? 'The Stairs Go Deeper…' : 'The Way Is Sealed'),
+      h('p', { class: 'lore' }, e.fromTown ? 'B1 is free. The full game opens B2–B5 and the Blackspire itself, forever, with one purchase.' : e.cliffhanger ? 'Torchlight gutters on the stair below. Something vast breathes in the dark, and it says your names. Skarn was only the doorman.' : 'The deeper levels of the Blackspire are part of the full game.'),
       h('div', { class: 'paywall' }, h('h3', {}, ENT.PRODUCT.title), h('p', {}, ENT.PRODUCT.blurb), h('p', { class: 'price', id: 'paywall-price' }, paywallPrice()), h('p', { class: 'hint', id: 'paywall-status', role: 'status' }, '')),
       h('div', { class: 'menu' },
         btn(ENT.isNativeIOS() ? '🔓 Unlock Full Game' : '🔓 Unlock Full Game (test build)', async () => { await runStore('buy', ENT.purchase, go); }, { id: 'btn-unlock', class: 'primary' }),
         btn('♻ Restore Purchases', async () => { await runStore('restore', ENT.restore, go); }, { id: 'btn-restore' }),
-        btn('Not now', closeModal, { id: 'btn-notnow' }))], { closable: false });
+        btn('Not now', e.back || closeModal, { id: 'btn-notnow' }))], { closable: false });
     return;
   }
   if (kind === 'event') { showEvent(e.event); return; }
