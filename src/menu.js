@@ -24,7 +24,10 @@ export const BATTLE_SPEEDS = {
 export function loadSettings() {
   try {
     const s = { ...DEFAULTS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') };
-    // the default became Pause after each action: players who never picked a speed (still on the old 'normal' default) move to it
+    // Fresh installs and players who never picked a speed use Pause after each action.
+    // An older saved 'normal' without battleSpeedSet is the previous default, not a choice — move those to Pause.
+    // A speed the player actually picked (battleSpeedSet) is left alone, including Normal.
+    if (!BATTLE_SPEEDS[s.battleSpeed]) s.battleSpeed = 'pause';
     if (!s.battleSpeedSet && s.battleSpeed === 'normal') s.battleSpeed = 'pause';
     return s;
   } catch { return { ...DEFAULTS }; }

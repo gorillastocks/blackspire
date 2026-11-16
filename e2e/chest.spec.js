@@ -27,7 +27,14 @@ async function cardChecks(page, info, name) {
   await page.waitForTimeout(2600); await expect(card, 'watchdog leaves it alone').toBeVisible();
   const pos = await page.evaluate(() => `${window.__gw.state.x},${window.__gw.state.y}`); await page.keyboard.press('ArrowUp'); await page.waitForTimeout(150);
   expect(await page.evaluate(() => `${window.__gw.state.x},${window.__gw.state.y}`), 'no movement under the card').toBe(pos);
-  const vp = page.viewportSize(); if (!info.project.name.startsWith('desktop')) await page.touchscreen.tap(vp.width * 0.8, vp.height * 0.15); else await page.mouse.click(vp.width * 0.8, vp.height * 0.15);
+  const vp = page.viewportSize();
+  const tapAway = async () => { if (!info.project.name.startsWith('desktop')) await page.touchscreen.tap(vp.width * 0.8, vp.height * 0.15); else await page.mouse.click(vp.width * 0.8, vp.height * 0.15); };
+  await tapAway();
+  // A rare find is shown after the chest card; dismiss it too.
+  for (let i = 0; i < 3 && await page.locator('#caption.show').isVisible(); i++) {
+    await page.waitForTimeout(1100);
+    await tapAway();
+  }
   await expect(page.locator('#caption.show')).toHaveCount(0);
   await expect(page.locator('#modal:not(.hidden)')).toHaveCount(0);
 }

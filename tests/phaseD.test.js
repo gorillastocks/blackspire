@@ -106,6 +106,33 @@ describe('cut-ins', () => {
     const ev = cb.events.filter((e) => e.type === 'cutin'); expect(ev.length).toBe(1); expect(ev[0].kind).toBe('melee');
     expect(cb.events.findIndex((e) => e.type === 'cutin')).toBeLessThan(cb.events.findIndex((e) => e.type === 'partyAttack'));
   });
+  it('a hero attack emits partyAttack (and crit/miss) before the result caption, so the bark must wait until after the caption', () => {
+    const s = fresh(); const cb = mk(s, 'giantRat', 1); const hero = s.party[0];
+    expect(G.isHero(hero)).toBe(true);
+    toTurn(cb, hero); cb.events = [];
+    cb.act(hero, 'attack', { target: cb.monsters[0] });
+    const types = cb.events.map((e) => e.type);
+    const atk = types.indexOf('partyAttack');
+    const cap = types.indexOf('caption');
+    expect(atk).toBeGreaterThanOrEqual(0);
+    expect(cap).toBeGreaterThan(atk);
+    const afterAtk = types.slice(atk, cap + 1);
+    expect(afterAtk.some((t) => t === 'hit' || t === 'miss' || t === 'crit')).toBe(true);
+    expect(types.indexOf('partyHurt')).toBe(-1);
+  });
+  it('a monster hitting the hero emits partyHurt before the result caption (the bark plays while the caption is up)', () => {
+    const s = fresh(); const cb = mk(s, 'giantRat', 1);
+    toTurn(cb, cb.monsters[0]); cb.events = [];
+    cb.monsterTurn(cb.monsters[0]);
+    const types = cb.events.map((e) => e.type);
+    const cap = types.indexOf('caption');
+    const hurt = types.indexOf('partyHurt');
+    if (hurt >= 0) {
+      expect(cap).toBeGreaterThan(hurt);
+    } else {
+      expect(cap).toBeGreaterThan(types.indexOf('monsterAttack'));
+    }
+  });
 });
 
 describe('save v6', () => {

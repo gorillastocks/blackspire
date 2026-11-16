@@ -13,8 +13,9 @@ import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
 import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic, playVictorySting, victoryStingState, duckBed, ac, unlock as unlockAudio, isMuted } from './audio.js';
-import { voiceBusy, clipSeconds, msSinceVoiceEnd, playVoiceLine, playAmbientNarration, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt, invalidateAmbientVoices, setAmbientVoiceGate, voiceGeneration } from './voices/voice.js';
-import { PACKS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter, heroSpeakerFor } from './voices/packs.js';
+import { voiceBusy, clipSeconds, msSinceVoiceEnd, playVoiceLine, playAmbientNarration, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, stopVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt, invalidateAmbientVoices, setAmbientVoiceGate, voiceGeneration, dropQueuedVoices } from './voices/voice.js';
+import { victorySeq, configureVictorySequencer } from './voices/victory-sequence.js';
+import { PACKS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter, barkPlayOpts, takeBestBarks, heroSpeakerFor } from './voices/packs.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 import * as ENT from './entitlements.js';
 import { CHEST_LINES, VICTORY_LINES, rareFindText } from './game/cardlines.js';
@@ -59,16 +60,80 @@ function heroSpeak(label) {
 
 /* ---------- Voice packs: short spoken reactions for player-created characters (combat + camp), rate limited ---------- */
 const barkLimiter = createBarkLimiter(); const lastPackLine = new Map(); const lowHpSaid = new Set();
-/** A reaction of `kind` from this character's voice pack (hero default: Ser Aldric). Rate limited and never interrupts another voice (except downed and level up). */
+/** A reaction of `kind` from this character's voice pack (hero default: Ser Aldric). Rate limited. Combat barks queue briefly instead of being dropped when another voice is busy, and expire if they go stale. Downed / level up may start immediately. */
 function packBark(c, kind) {
   const pack = c && packOf(c); if (!pack || (c.dead && kind !== 'downed')) return;
-  if (!barkLimiter.allow(performance.now(), c.id || c.name, kind, voiceBusy())) return;
+  // Victory/chest audio owns the speakers; leftover attack barks must not sneak into that sequence.
+  if (victorySeq.isActive() && kind !== 'victory') return;
+  const hero = !!(c && G.isHero(c));
+  if (!barkLimiter.allow(performance.now(), c.id || c.name, kind, { busy: voiceBusy(), hero })) return;
   const line = packLine(pack, kind, lastPackLine.get(c.id || c.name)); if (!line || !hasVoice(line, pack.cast)) return;
   lastPackLine.set(c.id || c.name, line);
-  playVoiceLine(line, pack.cast, kind === 'downed' || kind === 'levelUp' || kind === 'select' ? { kind: 'battle' } : { kind: 'battle', ifIdle: true });
+  playVoiceLine(line, pack.cast, barkPlayOpts(kind, { hero }));
 }
 /** A random living pack character of the party reacts (victory, camp). */
 function packBarkAny(kind) { const a = (S?.party || []).filter((c) => !c.companion && !c.dead && !isDown(c)); if (a.length) packBark(a[Math.floor(Math.random() * a.length)], kind); }
+/** Pick a living hero pack's victory line without playing it (so the sequencer can wait its turn). */
+function pickPackVictoryLine() {
+  const a = (S?.party || []).filter((c) => !c.companion && !c.dead && !isDown(c));
+  if (!a.length) return null;
+  const c = a[Math.floor(Math.random() * a.length)];
+  const pack = packOf(c); if (!pack) return null;
+  const line = packLine(pack, 'victory', lastPackLine.get(c.id || c.name));
+  if (!line || !hasVoice(line, pack.cast)) return null;
+  lastPackLine.set(c.id || c.name, line);
+  return { role: 'character', text: line, who: pack.cast, kind: 'battle' };
+}
+/** Pull spoken companion lines off events so handle() does not start them under a loot sting. */
+function collectBanter(ev) {
+  const lines = [];
+  for (const e of ev) {
+    if (e.banter?.text) { lines.push(e.banter); e.banter = null; }
+  }
+  return lines;
+}
+/**
+ * Loot / victory audio: sting or reveal first, then the narrator card line, then character lines one at a time.
+ * music: 'sting' (battle/chest/loot fanfare) or 'reveal' (rare-item stinger).
+ */
+function beginLootAudio(card, { banterLine = null, banterLines = [], extraNarrator = null, music = 'sting', packVictory = false } = {}) {
+  try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
+  if (music === 'sting') { victoryUntil = Date.now() + 7000; duckBed(0.15); }
+  else duckBed(0.3);
+  const narrText = card?.voiceText || (music === 'reveal' ? String(card?.text || '').replace(/^✨\s*/, '') : card?.text);
+  const lines = [];
+  if (narrText) lines.push({ role: 'narrator', text: narrText, who: card?.voiceWho || 'narrator', kind: 'other' });
+  if (extraNarrator?.text) lines.push({ role: 'narrator', text: extraNarrator.text, who: extraNarrator.who || 'narrator', kind: extraNarrator.kind || 'dialog' });
+  for (const b of [banterLine, ...(banterLines || [])]) {
+    if (!b?.text) continue;
+    say(b, { silentVoice: true });
+    lines.push({ role: 'character', text: b.text, who: b.who, kind: 'battle' });
+  }
+  if (packVictory) {
+    const pack = pickPackVictoryLine();
+    if (pack) lines.push(pack);
+  }
+  const playMusic = music === 'reveal' ? (done) => {
+    const t = card?.rareSfx === 'common' ? 'uncommon' : (card?.rareSfx || card?.tier);
+    if (t) sfx('reveal_' + t);
+    setTimeout(done, 700);
+  } : undefined;
+  dropQueuedVoices((w) => w.opts?.combatBark || w.opts?.kind === 'battle');
+  victorySeq.start({ lines, playMusic });
+}
+/** Battle victory: sting, narrator, companion reaction, then a hero pack bark. */
+function beginBattleVictoryAudio(card, { banterLine = null, extraNarrator = null } = {}) {
+  beginLootAudio(card, { banterLine, extraNarrator, music: 'sting', packVictory: true });
+}
+configureVictorySequencer({
+  playMusic(done) { playVictoryMusic(() => { victoryUntil = 0; syncAudio(); done(); }); },
+  playLine(line, done) {
+    const ok = playVoiceLine(line.text, line.who, { kind: line.kind || 'other', onEnded: done, victory: true });
+    if (!ok) done();
+  },
+  stopMusic() { stopVictoryMusic(); victoryUntil = 0; syncAudio(); },
+  stopLine() { stopVoice({ drain: false }); },
+});
 /** The text and speaker to voice for a log event: an explicit `voice`, else the log itself when it is a lore card. */
 function voiceOf(e) {
   if (e.voice === false) return null; // explicitly silent (its text was already spoken)
@@ -235,8 +300,10 @@ function say(b, o = {}) {
   }
   // Barks never cut another voice off and are spaced out (about 5s in a fight, 3s outside); queued ones (after a card or a thread beat) wait their turn.
   const gap = combat ? 5000 : 3000;
-  if (b.thread || o.queue) playVoiceLine(b.text, b.who, { kind: 'battle', queue: true, maxWait: 14000 });
-  else if (msSinceVoiceEnd() >= gap) playVoiceLine(b.text, b.who, { kind: 'battle', ifIdle: true });
+  if (!o.silentVoice) {
+    if (b.thread || o.queue) playVoiceLine(b.text, b.who, { kind: 'battle', queue: true, maxWait: 14000 });
+    else if (msSinceVoiceEnd() >= gap) playVoiceLine(b.text, b.who, { kind: 'battle', ifIdle: true });
+  }
   const el = h('div', { class: `bubble${b.thread ? ' thread' : ''}` }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
   $('#banter').append(el); log(`${b.who}: "${b.text}"`, b.thread ? 'good' : 'lore'); setTimeout(() => el.remove(), b.thread ? 6500 : 5200);
   while ($('#banter').children.length > (combat ? 1 : 2)) $('#banter').firstChild.remove(); // one bubble at a time in a fight, so they never pile up over the stage
@@ -528,7 +595,7 @@ function dismissModal() { closeModal(); if (!S) showTitle(); else if (S.mode ===
 
 /* ---------- Title & creation ---------- */
 async function showTitle() {
-  fallenUp = false; document.body.classList.remove('fallen'); S = null; townVisited = false; closeMenu(); updateMenuBtn(); setControls(null); R.setMode('combat'); refresh();
+  fallenUp = false; document.body.classList.remove('fallen'); victorySeq.onLeave(); S = null; townVisited = false; closeMenu(); updateMenuBtn(); setControls(null); R.setMode('combat'); refresh();
   R.clearMonsters(); document.body.classList.add('titlescreen');
   const has = saveEntries(G.SAVE_KEY, G.QUICK_KEY).some(([k]) => slotInfo(k));
   openModal([
@@ -1009,7 +1076,13 @@ async function maybeAutoResolve(info) {
   const mode = loadSettings().trivialFights || 'ask'; if (mode === 'off') return false;
   let go = mode === 'auto'; if (!go) { busy = true; go = await askTrivial(info); busy = false; } if (!go) return false;
   lootBase = snapLoot(); const r = G.autoResolve(S, info); const ev = r.events; combatStarting = false;
-  if (r.combat.state === 'won') { sfx('chime'); say(banter(S.party, 'victory', {}, 0.5)); const card = lootCard(ev, info); card.text = `⚡ Easy fight — ${groupNames(info)} fall before you.`; log(`${card.text} ${card.lines.join(' · ')}`, 'good'); queueMessage(card); }
+  if (r.combat.state === 'won') {
+    sfx('chime');
+    const card = lootCard(ev, info); card.text = `⚡ Easy fight — ${groupNames(info)} fall before you.`;
+    log(`${card.text} ${card.lines.join(' · ')}`, 'good');
+    beginBattleVictoryAudio(card, { banterLine: banter(S.party, 'victory', {}, 0.5) });
+    queueMessage({ ...card, victoryAudio: true });
+  }
   lootBase = null; renderParty(); handle(ev); autosave(); return true;
 }
 
@@ -1122,7 +1195,11 @@ document.fonts?.addEventListener?.('loadingdone', () => { const el = $('#caption
 window.addEventListener('resize', () => { const el = $('#caption'); if (el.classList.contains('show')) requestAnimationFrame(() => placeCaption(el)); });
 // the 3D view changes height in combat (e.g. the phone-portrait menu steps aside while a caption is up): re-place caption + bubbles
 const replaceOverlays = () => { const el = $('#caption'); if (el.classList.contains('show') && !el._refit) placeCaption(el); else placeBanter(); };
-function hideCaption() { stopVoice(); invalidateAmbientVoices(); clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); captionDown(); placeBanter(); }
+function hideCaption() {
+  // Combat action captions are not voiced; dismissing one must not cut off a hero pack bark.
+  const v = currentVoice(); if (!v || v.kind !== 'battle') stopVoice();
+  invalidateAmbientVoices(); clearTimeout(capTimer); const el = $('#caption'); el.className = ''; el.innerHTML = ''; document.body.classList.remove('capcover'); captionDown(); placeBanter();
+}
 /** The caption band (and, on phone portrait, the collapsed menu/log) is released a moment after the last caption, so
  *  back-to-back narration doesn't make the layout and camera pump between captions. */
 let capDownTimer = null, capDownAt = 0, capShownAt = 0;
@@ -1212,13 +1289,15 @@ async function pumpMessages() {
       el.dataset.pre = m.pre ? '1' : ''; if (m.dm) el.append(h('div', { class: 'dmhead' }, 'Dungeon Master'));
       el.append(h('div', { class: 'captxt' }, m.dm ? m.text.replace(/^🕯\s*/, '') : m.text), m.lines ? h('div', { class: 'caploot' }, m.lines.map((l, i) => { const lt = m.cls === 'rare' ? (i === 0 ? m.lineTiers[0] : null) : m.lineTiers?.[i]; return h('div', { class: lt ? 'tl tier-' + lt : '' }, l); })) : '', h('div', { class: 'captap' }, '▶ Tap to continue'));
       placeCaption(el); requestAnimationFrame(() => placeCaption(el)); setTimeout(() => el.classList.contains('show') && placeCaption(el), 400);
-      if (m.cls === 'rare') { sfx('reveal_' + (m.rareSfx === 'common' ? 'uncommon' : m.rareSfx)); duckBed(0.3); playVoiceLine(m.text.replace('✨ ', ''), 'narrator', { kind: 'other' }); }
-      else if (m.cls === 'loot') {
+      if (m.cls === 'rare') {
+        try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
+        beginLootAudio(m, { banterLines: m.charLines || [], music: 'reveal' });
+      } else if (m.cls === 'loot') {
         if (m.tier && m.tier !== 'common') later_sfx('reveal_' + m.tier);
-        playVoiceLine(m.text, 'narrator', { kind: 'other' });
         try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
         duckBed(0.15);
-        playVictoryMusic();
+        // Battle victory starts the sequencer before the card; chest / other loot cards start it now.
+        if (!m.victoryAudio || m.victoryAudio === 'start') beginLootAudio(m, { banterLines: m.charLines || [], music: 'sting' });
       } else if (m.pre) { // before a boss fight: spoken in full, not tied to the ambient gate
         playVoiceLine((m.voice?.text || m.text).replace(/^🕯\s*/, ''), m.voice?.who || 'dm', { kind: 'other' });
       } else if (m.silent) { /* journal echo of a result that was already spoken */
@@ -1234,7 +1313,19 @@ async function pumpMessages() {
         playVoiceLine(m.text, 'narrator', { kind: 'other' });
       }
       await tapToContinue(() => true, m.cls === 'loot' ? 1000 : m.cls === 'rare' ? 700 : 220); // a stray tap from the last fight can't skip the victory card unread
-      stopVoice();
+      const sequenced = m.victoryAudio || m.cls === 'loot' || m.cls === 'rare';
+      if (sequenced) victorySeq.onDismiss();
+      else stopVoice();
+      if (sequenced) {
+        const next = msgQueue[0];
+        const nextSeq = next && (next.cls === 'loot' || next.cls === 'rare' || next.victoryAudio);
+        // A following loot/rare card starts its own sting: stop leftovers so they cannot overlap it.
+        if (nextSeq) victorySeq.onLeave();
+        else {
+          await Promise.race([victorySeq.whenIdle(), new Promise((r) => setTimeout(r, 12000))]);
+          if (victorySeq.isActive()) victorySeq.onLeave();
+        }
+      }
       if (m.ambient || m.cls === 'lore') invalidateAmbientVoices();
       if (combat && (m.ambient || m.cls === 'lore')) break;
       if (m.quip && !combat) say(m.quip); // a companion reacts once the card is read
@@ -1296,6 +1387,7 @@ function showEncounterBanner(info, ms = 1200) {
 }
 async function startCombat(info) {
   if (combat || combatStarting) return;
+  victorySeq.onLeave();
   combatStarting = true;
   clearAmbientNarration(); // stop delayed DM/area voice and drop pending lore cards
   takeSuspendSnap(info); skipping = false; autoBattle = false; syncAutoBtn(); syncCombatChips();
@@ -1326,7 +1418,7 @@ async function startCombat(info) {
 }
 let looping = false, loopFor = null; // loopFor: the Combat the running loop belongs to
 let loopGen = 0;
-function abandonCombat() { hideTurnPortrait(true); hideFoePortrait(true); suspendSnap = null; skipping = false; loopGen++; looping = false; combat = null; autoBattle = false; syncAutoBtn(); endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
+function abandonCombat() { victorySeq.onLeave(); hideTurnPortrait(true); hideFoePortrait(true); suspendSnap = null; skipping = false; loopGen++; looping = false; combat = null; autoBattle = false; syncAutoBtn(); endCombatUI(); hideCaption(); R.clearMonsters(); $('#targets').innerHTML = ''; }
 async function combatLoop() {
   // A new fight can begin while the previous fight's loop is still unwinding inside endCombat (town/boss paths await the loot card or a
   // rebuild there): the stale `looping` flag used to make this call a no-op, so the new battle never got a turn and no menu appeared.
@@ -1444,9 +1536,15 @@ async function flushCombat() {
   const dmgSfx = (e, sp) => sfx(sp === 'magicMissile' ? 'ping' : SPELL_SFX[e.dtype] || (sp ? 'arcane' : 'hit'));
   const idx = (c) => Math.max(0, S.party.indexOf(c));
   const fxDur = () => skipping ? 40 : Math.round(420 * ANIM_SLOW * Math.max(0.4, speed().f)); // bolts / bursts / strikes ≈1.5x longer; scales with battle speed
+  // Incoming hit/down barks already run after the Pause caption is dismissed, so they are heard.
+  // Outgoing attack/crit/miss/spell/heal used to start before that caption; tapping Continue called hideCaption → stopVoice and cut them off.
+  const deferredBarks = [];
+  const deferBark = (c, kind) => { if (c) deferredBarks.push({ c, kind }); };
+  const flushBarks = () => { const list = takeBestBarks(deferredBarks); deferredBarks.length = 0; for (const b of list) packBark(b.c, b.kind); };
+  try {
   for (const e of events) {
-    if (!combat || !S) return;
-    if (e.type === 'caption') { renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0 && !skipping); if (skipping) await new Promise((r) => setTimeout(r, 120)); else if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); continue; }
+    if (!combat || !S) { flushBarks(); return; }
+    if (e.type === 'caption') { renderParty(); renderTargets(); const sp = speed(); showCaption(e, sp.hold === 0 && !skipping); if (skipping) await new Promise((r) => setTimeout(r, 120)); else if (sp.hold === 0) await tapToContinue(); else await new Promise((r) => setTimeout(r, sp.hold)); flushBarks(); continue; }
     if (e.type === 'cutin') { pending = null; await playCutin(e); continue; }
     if (e.type === 'trait') { const d = D.dtype(e.dtype), k = D.TRAIT_KINDS[e.kind]; floater(e.who.id, `${d.icon} ${k.mark}`, false, e.dtype); renderTargets(); if (e.first) toast(`${d.icon} Discovered: ${e.who.name} ${k.word.toLowerCase()} ${d.name.toLowerCase()} (${k.mark})`); await wait(e.kind === 'immune' ? 220 : 140); continue; }
     if (e.type === 'rows') { renderParty(); continue; }
@@ -1454,7 +1552,7 @@ async function flushCombat() {
     if (e.type === 'wait') continue;
     if (e.type === 'study') { renderTargets(); sfx(e.ok ? 'chime' : 'miss'); if (e.ok) await wait(200); continue; }
     if (e.type === 'monsterAttack') { pending = null; if (e.tgt?.side === 'party') showFoePortrait(foeTargets(events, events.indexOf(e)), e.who); R.monsterAttack(e.who.id); sfx('swing'); await wait(560 * ANIM_SLOW); }
-    else if (e.type === 'partyAttack') { pending = null; packBark(e.who, 'attack'); const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait((k === 'bow' || k === 'crossbow' ? 60 : 150) * ANIM_SLOW); }
+    else if (e.type === 'partyAttack') { pending = null; deferBark(e.who, 'attack'); const k = weaponKind(e.weapon); wpn.set(e.who, k); sfx(k === 'bow' || k === 'crossbow' ? 'twang' : 'swing'); await wait((k === 'bow' || k === 'crossbow' ? 60 : 150) * ANIM_SLOW); }
     else if (e.type === 'hit' && e.tgt.side === 'monster') {
       const sp = pending && pending.who === e.att ? pending.spell : null;
       if (sp && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur());
@@ -1464,23 +1562,24 @@ async function flushCombat() {
       if (sp) dmgSfx(e, sp); else sfx(WEAPON_SFX[wk] && wk !== 'bow' && wk !== 'crossbow' ? WEAPON_SFX[wk] : e.dtype === 'bludgeoning' ? 'thud' : e.dtype === 'piercing' ? 'stab' : SPELL_SFX[e.dtype] || 'slash');
       if (e.crit) sfx('crit'); await wait((sp ? 160 : wk ? 200 : 260) * ANIM_SLOW + 90); // impact hold on the hit frame (sound already fired with the hit)
     }
-    else if (e.type === 'miss') { if (e.att?.side === 'party') packBark(e.att, 'miss'); const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else { cardFloat(e.tgt, 'Miss'); foeReact(e.tgt, 'dodge'); } sfx('miss'); await wait(160 * ANIM_SLOW); }
+    else if (e.type === 'miss') { if (e.att?.side === 'party') deferBark(e.att, 'miss'); const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else { cardFloat(e.tgt, 'Miss'); foeReact(e.tgt, 'dodge'); } sfx('miss'); await wait(160 * ANIM_SLOW); }
     else if (e.type === 'partyHurt') { packBark(e.who, 'hit'); renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); foeReact(e.who, 'hurt', e.amt ?? e.dmg, e.crit); sfx('mhit'); if (e.crit) sfx('crit'); await wait(260 * ANIM_SLOW + 90); }
     else if (e.type === 'kill') { if (e.who.side === 'party') sfx('kill'); else { R.monsterDie(e.who.id); sfx('mdeath'); } say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(300); }
-    else if (e.type === 'crit') { if (e.att.side === 'party') packBark(e.att, 'crit'); if (e.att.side === 'party') say(banter(S.party, 'crit', { who: e.att }, 0.8)); else say(banter(S.party, 'enemyCrit', { who: e.tgt }, 0.8)); }
+    else if (e.type === 'crit') { if (e.att.side === 'party') deferBark(e.att, 'crit'); if (e.att.side === 'party') say(banter(S.party, 'crit', { who: e.att }, 0.8)); else say(banter(S.party, 'enemyCrit', { who: e.tgt }, 0.8)); }
     else if (e.type === 'spell') {
-      if (e.who.side === 'party') packBark(e.who, 'spell');
+      if (e.who.side === 'party') deferBark(e.who, 'spell');
       const look = SPELL_FX[e.spell]; sfx(look?.kind === 'area' ? (/fire|burn|breath/.test(e.spell) ? 'fire' : /ice/.test(e.spell) ? 'cold' : 'boom') : e.spell === 'magicMissile' ? 'ping' : /fire|flame/i.test(e.spell) ? 'fire' : /frost|ice/i.test(e.spell) ? 'cold' : /lightning|shock/i.test(e.spell) ? 'zap' : /sacred|guiding|bless|smite/i.test(e.spell) ? 'radiant' : 'arcane');
       if (look?.kind === 'area' && e.who.side !== 'monster') { pending = { spell: e.spell, who: e.who }; await R.spellCast(e.spell, null, idx(e.who), fxDur()); }
       else if (look && e.who.side !== 'monster') pending = { spell: e.spell, who: e.who };
       else { pending = null; const col = { sleep: 0x80a0ff, spiritGuardians: 0xffe080, smite: 0xfff0a0, rage: 0xff3020, shield: 0x80c0ff }[e.spell] || 0x60ffb0; R.spellFx(col, null); await wait(300); }
     }
-    else if (e.type === 'heal') { packBark(e.who, 'heal'); healFx(e.who); cardFloat(e.who, e.amt ? '+' + e.amt : '+', false, 'good'); sfx('heal'); }
+    else if (e.type === 'heal') { deferBark(e.by || e.who, 'heal'); healFx(e.who); cardFloat(e.who, e.amt ? '+' + e.amt : '+', false, 'good'); sfx('heal'); }
     else if (e.type === 'down') { packBark(e.who, 'downed'); say(banter(S.party.filter((p) => p !== e.who), 'down', { p: e.who.name }, 0.9)); await wait(200); }
     else if (e.type === 'heroDownControl') { if (autoBattle) setAuto(false); toast(`With ${e.who.name} down, your companions are now under your control.`); renderParty(); }
     else if (e.type === 'lowHp') { packBark(e.who, 'lowHp'); say(banter(S.party, 'lowHp', { who: e.who }, 0.35)); }
     renderParty(); renderTargets();
   }
+  } finally { flushBarks(); }
 }
 function floater(id, v, crit, dtype) { const p = R.screenPos(id); if (!p) return; const miss = v === 'Miss'; const el = h('div', { class: 'floater' + (crit ? ' crit' : '') + (miss ? ' miss' : ''), 'data-dtype': dtype || '', style: `left:${p.x}%;top:${p.y}%;color:${miss ? '#bbb' : crit ? '' : DTYPE_CSS(dtype) || '#fff'}` }, ...(crit ? [h('small', {}, 'CRIT '), String(v)] : [String(v)])); $('#floaters').append(el); setTimeout(() => el.remove(), 1100); }
 function cardFloat(c, v, crit, cls = 'bad', dtype = null) { const el = document.getElementById('card-' + c.id); if (!el) return; const f = h('div', { class: 'floater' + (crit ? ' crit' : '') + (v === 'Miss' ? ' miss' : ''), style: `left:70%;top:0;font-size:${crit ? 24 : 18}px;color:${cls === 'good' ? '#6dffa8' : v === 'Miss' ? '#bbb' : DTYPE_CSS(dtype) || '#ff5a6e'}` }, crit ? 'CRIT ' + v : String(v)); el.append(f); setTimeout(() => f.remove(), 1100); }
@@ -1706,6 +1805,9 @@ function chestStep(fn) {
   const ev = fn(S); const opened = ev.some((e) => e.sfx === 'chest');
   for (const e of ev) if (e.log && !opened) chestNotes.push(e.log.replace(/ \(\w+ \d+\)| \(\d+\)/g, ''));
   if (!opened) { handle(ev); return; }
+  const charLines = collectBanter(ev);
+  const rares = [];
+  for (const e of ev) { if (e.rare) { rares.push(e.rare); e.rare = undefined; } }
   R.openChestAnim(S.x, S.y); closeModal(); handle(ev);
   const lines = [];
   for (const n of chestNotes) if (/trap|disarm/i.test(n)) lines.push(`🔎 ${n}`);
@@ -1716,7 +1818,8 @@ function chestStep(fn) {
   for (const e of ev) if (e.log && e.cls === 'crit') lines.push(`📜 ${e.log}`);
   if (gold <= 0 && !Object.keys(got).length) lines.push('The chest is empty. Someone got here first.');
   chestNotes = [];
-  queueMessage({ text: `📦 ${CHEST_LINES[Math.floor(Math.random() * CHEST_LINES.length)]}`, cls: 'loot', lines });
+  queueMessage({ text: `📦 ${CHEST_LINES[Math.floor(Math.random() * CHEST_LINES.length)]}`, cls: 'loot', lines, victoryAudio: 'start', charLines });
+  for (const r of rares) revealRare(r);
 }
 /* ---------- Victory loot card: XP, gold, items, quest and level-up notes, tap to dismiss ---------- */
 let lootBase = null;
@@ -1739,20 +1842,20 @@ function lootCard(ev, info) {
 async function endCombat() {
   await flushCombat(); await wait(500);
   const st = combat.state; const info = combatInfo;
-  if (st === 'won') { say(banter(S.party, 'victory', {}, 0.8)); setTimeout(() => packBarkAny('victory'), 1200); }
   const ev = G.afterCombat(S, combat, st === 'lost' && !info.town ? { ...info, deferWipe: true } : info); // a wipe is resolved by the Party Fallen screen, not silently
   combat = null; autoBattle = false; $('#targets').innerHTML = ''; R.clearMonsters(); closeModal(); endCombatUI(); hideCaption();
   if (st === 'won') {
     // Fanfare via the voice WebAudio path (destination) — proven on Sean's iPhone. Duck bed separately.
-    victoryUntil = Date.now() + 7000;
     const bed = S.mode === 'dungeon' ? (getLevel(S.level).def.music || 'dungeon0') : 'town';
     try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
     duckBed(0.15);
     setTimeout(() => duckBed(0.15), 200);
     setTimeout(() => duckBed(0.15), 600);
-    playVictoryMusic(() => { victoryUntil = 0; syncAudio(); });
     setTimeout(() => playMusic(bed), 40);
-    const card = lootCard(ev, info); log(`${card.text} ${card.lines.join(' · ')}`, 'good'); queueMessage(card);
+    const card = lootCard(ev, info); log(`${card.text} ${card.lines.join(' · ')}`, 'good');
+    const finale = (S.victory && info.boss) ? { text: 'Gorvax the Tyrant falls! The Blackspire\'s lights go dark.', who: 'narrator', kind: 'dialog' } : null;
+    beginBattleVictoryAudio(card, { banterLine: banter(S.party, 'victory', {}, 0.8), extraNarrator: finale });
+    queueMessage({ ...card, victoryAudio: true });
   } lootBase = null;
   if (info.town) { handle(ev.filter((e) => !e.toTown)); if (st === 'lost') for (const c of S.party) if (!c.dead) c.hp = Math.max(1, c.hp); await messagesDone(); await afterPrologueFight(); return; }
   suspendSnap = null;
@@ -1760,7 +1863,7 @@ async function endCombat() {
   if (info.boss) await rebuild();
   if (!combat) R.setMode('dungeon'); // a fight that began during the rebuild keeps its arena on screen
   handle(ev);
-  if (S.victory && info.boss) { log('Gorvax the Tyrant falls! The Blackspire\'s lights go dark. The altar beyond awaits.', 'crit'); playVoiceLine('Gorvax the Tyrant falls! The Blackspire\'s lights go dark.', 'narrator', { kind: 'dialog', queue: true, maxWait: 15000 }); }
+  if (S.victory && info.boss) { log('Gorvax the Tyrant falls! The Blackspire\'s lights go dark. The altar beyond awaits.', 'crit'); }
   autosave();
 }
 
@@ -1769,7 +1872,7 @@ async function endCombat() {
 let fallenUp = false; // while the screen is up the wiped state must never be autosaved over the player's real save
 /** Themed game-over screen. Load Save = the newest save (autosave, quick save or a slot); Return to Town = the temple-rescue penalty (see G.wipeToTown). */
 function showFallen() {
-  fallenUp = true; document.body.classList.add('fallen'); closeMenu(); hideCaption(); setControls(null); try { sfx('thud'); } catch { /* ignore */ }
+  fallenUp = true; document.body.classList.add('fallen'); victorySeq.onLeave(); closeMenu(); hideCaption(); setControls(null); try { sfx('thud'); } catch { /* ignore */ }
   const pv = G.wipePreview(S), lk = latestKey(), inf = lk ? slotInfo(lk) : null;
   const party = h('ul', { class: 'fallen-party' }, S.party.map((c) => h('li', { class: c.dead ? 'slain' : 'down' }, `${c.dead ? '☠' : '💤'} ${c.name}`, h('small', {}, c.dead ? ' slain' : ' down'))));
   const penalty = [pv.goldLost ? `the temple keeps ${pv.goldLost} gold` : 'you have no gold to lose', pv.down.length ? `${pv.down.length === 1 ? pv.down[0] + ' wakes' : 'the fallen wake'} with 1 HP` : null, pv.dead.length ? `${pv.dead.length === 1 ? pv.dead[0] + ' is' : pv.dead.length + ' heroes are'} slain until the Temple raises them` : null].filter(Boolean).join(' · ').replace(/^./, (ch) => ch.toUpperCase());
@@ -1822,7 +1925,7 @@ async function boot() {
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
     outdoorInfo: () => ({ reg: outReg(), near: S ? outNear() : false, hour: S ? outHour() : null, tod: S ? todName(outHour()) : null, weather: R?.outdoor?.weather || null, state: R?.outState || null, counts: R?.outdoor?.counts || null }), look(p) { if (R) R.pitch = p; }, poiMap(lvl = 2) { const L = getLevel(lvl); const o = {}; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (L.tiles[y][x] === 'Q') o[poiIdAt(L, x, y)] = [x, y]; return o; }, setHour(h) { if (R?.outdoor) R.outdoor.forceHour = h; refresh(); }, setWeather(k) { R?.outdoor?.setWeather(k); refresh(); },
-    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, R, G, getLevel, refresh, showInventory, runTT, showJournal, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, showFallen, returnToTownFromWipe, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, victorySequenceState: () => victorySeq.snapshot(), packBark, barkLimiter, R, G, getLevel, refresh, showInventory, runTT, showJournal, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, showFallen, returnToTownFromWipe, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)

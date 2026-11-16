@@ -82,17 +82,42 @@ export function packLine(pack, kind, last = null, rnd = Math.random) {
 export const RATES = {
   attack: 0.22, hit: 0.3, miss: 0.18, crit: 0.8, spell: 0.4, heal: 0.5, levelUp: 1, victory: 0.7, downed: 1, camp: 1, lowHp: 1, select: 1,
 };
+/** The hero should be heard during their own fight more often than a recruit's flavour bark. */
+export const HERO_RATES = {
+  attack: 0.55, hit: 0.5, miss: 0.35, crit: 1, spell: 0.7, heal: 0.7, levelUp: 1, victory: 0.7, downed: 1, camp: 1, lowHp: 1, select: 1,
+};
+/** Playback options for a pack bark: urgent lines start now; others queue briefly and expire if stale (never overlap). */
+/** When several reactions from one character pile up in a single action (attack + crit), keep the most distinctive. */
+export const BARK_PRIORITY = { downed: 6, lowHp: 5, levelUp: 5, crit: 4, victory: 4, spell: 3, heal: 3, attack: 2, hit: 2, miss: 1, camp: 1, select: 1 };
+export function takeBestBarks(queued) {
+  const best = new Map();
+  for (const b of queued || []) {
+    if (!b?.c || !b.kind) continue;
+    const id = b.c.id || b.c.name;
+    const prev = best.get(id);
+    if (!prev || (BARK_PRIORITY[b.kind] || 0) > (BARK_PRIORITY[prev.kind] || 0)) best.set(id, b);
+  }
+  return [...best.values()];
+}
+export function barkPlayOpts(kind, { hero = false } = {}) {
+  if (kind === 'downed' || kind === 'levelUp' || kind === 'select') return { kind: 'battle' };
+  return { kind: 'battle', queue: true, maxWait: hero ? 6000 : 3500, combatBark: true };
+}
 /** Decides whether a reaction may play now. Pure (clock injected) so it can be unit-tested. */
 export function createBarkLimiter({ perChar = 9000, global = 3500, rnd = Math.random } = {}) {
   const lastChar = new Map(); let lastAny = -Infinity; const lastKind = new Map();
   return {
-    /** now: ms; id: character id; kind; busy: true when another voice is playing. Records the bark when it returns true. */
-    allow(now, id, kind, busy = false) {
-      if (busy && kind !== 'downed' && kind !== 'levelUp') return false;
-      if (kind !== 'select' && kind !== 'levelUp' && kind !== 'downed') {
+    /** now: ms; id: character id; kind; 4th arg: boolean busy or { busy, hero }. Records the bark when it returns true.
+     *  Being busy no longer drops the bark — the caller queues it to wait its turn. */
+    allow(now, id, kind, busyOrOpts = false) {
+      const opts = busyOrOpts && typeof busyOrOpts === 'object' ? busyOrOpts : { busy: !!busyOrOpts };
+      const hero = !!opts.hero;
+      const rates = hero ? HERO_RATES : RATES;
+      const skipGap = kind === 'select' || kind === 'levelUp' || kind === 'downed' || (hero && (kind === 'crit' || kind === 'lowHp'));
+      if (!skipGap) {
         if (now - lastAny < global) return false;
         if (now - (lastChar.get(id) ?? -Infinity) < perChar) return false;
-        if (rnd() > (RATES[kind] ?? 0.3)) return false;
+        if (rnd() > (rates[kind] ?? 0.3)) return false;
       }
       if (kind === 'lowHp' || kind === 'downed') { const k = `${id}:${kind}`; if (now - (lastKind.get(k) ?? -Infinity) < 20000) return false; lastKind.set(k, now); }
       lastAny = now; lastChar.set(id, now); return true;

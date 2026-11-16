@@ -3,6 +3,7 @@
 import index from './index.json';
 import { ac, unlock as unlockAudio, duckBed, resumeCtx, onAudioReset } from '../audio.js';
 import { playVictorySynth } from '../victory-synth.js';
+import { victorySeq } from './victory-sequence.js';
 import { normVoiceText } from './norm.js';
 import { fetchAudioBytes } from '../audio-fetch.js';
 
@@ -92,23 +93,30 @@ export function voiceVolume() { return vol; }
 export function voiceMisses() { return missLog.slice(-20); }
 export function currentVoice() { return current; }
 
-export function stopVoice() {
+export function stopVoice({ drain = true } = {}) {
   voiceGen++; // an explicit stop also cancels a clip that is still loading
   if (!current) return;
+  const ended = current.onEnded;
+  current.onEnded = null;
   try { current.src.stop?.(); } catch { /* ignore */ }
   try { current.src.pause?.(); } catch { /* ignore */ }
   try { current.gain.disconnect(); } catch { /* ignore */ }
   current = null;
-  if (waiting.length) setTimeout(drainWaiting, 0); // an explicit stop (tap to continue) lets a queued line follow
+  if (typeof ended === 'function') ended();
+  if (drain && waiting.length) setTimeout(drainWaiting, 0); // an explicit stop (tap to continue) lets a queued line follow
 }
 
 /** Lines waiting for the current clip to finish (opts.queue). Each expires so a stale reaction never plays late. */
 const waiting = [];
 let starting = 0; // clips whose decode/start is in flight
 const MAX_WAITING = 3;
-export function voiceBusy() { return !!current || starting > 0; }
+export function voiceBusy() { return !!current || starting > 0 || victoryHold; }
+/** Drop queued clips, e.g. stale combat barks when a victory/chest sequence starts. */
+export function dropQueuedVoices(pred = () => true) {
+  for (let i = waiting.length - 1; i >= 0; i--) if (pred(waiting[i])) waiting.splice(i, 1);
+}
 function drainWaiting() {
-  if (current || starting > 0) return;
+  if (current || starting > 0 || victoryHold || victorySeq.isActive()) return;
   while (waiting.length) {
     const w = waiting.shift();
     if (Date.now() > w.expires) continue;
@@ -161,6 +169,12 @@ export function playVoice(text, speaker = null, opts = {}) {
   // Ambient must not start while the host says we're in combat / menu / dialogue.
   if (ambient && !ambientGate()) return false;
   const o = { ...opts, kind, ambient, speaker };
+  // During the loot/victory sequence, leftover combat barks are dropped; other lines wait their turn so they never overlap the sting.
+  if (!opts.victory && victorySeq.isActive()) {
+    if (opts.combatBark || kind === 'battle') return false;
+    victorySeq.enqueue({ role: (kind === 'other' || speaker === 'narrator' || speaker === 'dm') ? 'narrator' : 'character', text, who: speaker, kind });
+    return true;
+  }
   // ifIdle: a passing remark (companion bark) is simply dropped when something is already being said.
   if (opts.ifIdle && voiceBusy()) return false;
   // queue: wait for the current clip to finish instead of cutting it off (expires after maxWait ms).
@@ -190,11 +204,16 @@ function startVoice(file, opts) {
       if (c) await resumeCtx(c);
       const buf = await loadBuf(file);
       // Drop if a newer play superseded us, ambient was invalidated, or the host gate closed.
+      const abort = () => {
+        if (myVoiceGen === voiceGen && typeof opts.onEnded === 'function') {
+          const fn = opts.onEnded; opts.onEnded = null; fn();
+        }
+      };
       if (myVoiceGen !== voiceGen) return;
       if (ambient && myAmbientGen !== ambientGen) return;
-      if (ambient && !ambientGate()) return;
-      if (typeof stillValid === 'function' && !stillValid(token)) return;
-      if (!enabled) return;
+      if (ambient && !ambientGate()) { abort(); return; }
+      if (typeof stillValid === 'function' && !stillValid(token)) { abort(); return; }
+      if (!enabled) { abort(); return; }
       const ctx = ac();
       if (!ctx) throw new Error('no ctx');
       await resumeCtx(ctx);
@@ -204,18 +223,29 @@ function startVoice(file, opts) {
       src.buffer = buf;
       // Voice sits on destination (not music bus) so Music volume / ducking never mutes dialogue.
       src.connect(g).connect(ctx.destination);
-      src.onended = () => { if (current?.src === src) { current = null; lastEnd = Date.now(); } setTimeout(drainWaiting, 60); };
-      current = { src, gain: g, file, startedAt: ctx.currentTime, duration: buf.duration, ambient, kind, speaker: opts.speaker, token };
+      src.onended = () => {
+        const ended = current?.src === src ? current.onEnded : null;
+        if (current?.src === src) { current.onEnded = null; current = null; lastEnd = Date.now(); }
+        if (typeof ended === 'function') ended();
+        setTimeout(drainWaiting, 60);
+      };
+      current = { src, gain: g, file, startedAt: ctx.currentTime, duration: buf.duration, ambient, kind, speaker: opts.speaker, token, onEnded: opts.onEnded };
       src.start(0);
     } catch (e) {
       if (typeof console !== 'undefined') console.warn('[voice play fail]', file, e);
+      if (myVoiceGen === voiceGen && typeof opts.onEnded === 'function') {
+        const fn = opts.onEnded; opts.onEnded = null; fn();
+      }
     } finally {
       starting--;
       if (!current && starting === 0) setTimeout(drainWaiting, 0);
     }
   };
   if (c) runWA();
-  else if (typeof console !== 'undefined') console.warn('[voice] no AudioContext');
+  else {
+    if (typeof console !== 'undefined') console.warn('[voice] no AudioContext');
+    if (typeof opts.onEnded === 'function') setTimeout(opts.onEnded, 0);
+  }
   return true;
 }
 /** stopVoice without scheduling a queue drain (a new clip is about to start). */
@@ -282,6 +312,7 @@ export function testVoice() {
 /* ---------------- victory fanfare (procedural synth A — brass arpeggio) ---------------- */
 const VICTORY_VARIANT = 'A';
 let victoryCurrent = null; // { gain, startedAt, duration, variant, handle }
+let victoryHold = false; // true from the moment a sting is requested until it ends (so narrator/barks queue instead of overlapping the async start)
 let victoryLast = { at: 0, ok: false, error: null, ctxState: null, variant: VICTORY_VARIANT };
 let victoryPrimed = true; // synth needs no decode
 
@@ -308,27 +339,36 @@ export function prefetchVictory() {
   victoryPrimed = true;
 }
 
-function stopVictoryMusic() {
-  if (!victoryCurrent) return;
-  try { victoryCurrent.handle?.cancel?.(); } catch { /* ignore */ }
-  try { victoryCurrent.gain.disconnect(); } catch { /* ignore */ }
-  victoryCurrent = null;
+export function stopVictoryMusic() {
+  if (victoryCurrent) {
+    try { victoryCurrent.handle?.cancel?.(); } catch { /* ignore */ }
+    try { victoryCurrent.gain.disconnect(); } catch { /* ignore */ }
+    victoryCurrent = null;
+  }
+  releaseVictoryHold();
 }
 
 /**
  * Play synth victory A into ctx.destination (same unlock/resume path as voices).
  * Loud master gain; not routed through the music bus so bed ducking cannot silence it.
  */
+function releaseVictoryHold() {
+  if (!victoryHold) return;
+  victoryHold = false;
+  setTimeout(drainWaiting, 0);
+}
 export function playVictoryMusic(then = null) {
   unlockVoices();
   const c = ac();
   victoryLast = { at: Date.now(), ok: false, error: null, ctxState: c?.state || null, variant: VICTORY_VARIANT };
+  const done = () => { releaseVictoryHold(); if (then) then(); };
   if (!c) {
     victoryLast.error = 'no AudioContext';
-    if (then) setTimeout(then, 0);
+    setTimeout(done, 0);
     return false;
   }
   stopVictoryMusic();
+  victoryHold = true;
   const run = async () => {
     try {
       await resumeCtx(c);
@@ -348,7 +388,7 @@ export function playVictoryMusic(then = null) {
         then: () => {
           if (victoryCurrent?.gain === master) victoryCurrent = null;
           try { master.disconnect(); } catch { /* ignore */ }
-          if (then) then();
+          done();
         },
       });
       const dur = handle?.duration || 1.75;
@@ -368,7 +408,7 @@ export function playVictoryMusic(then = null) {
     } catch (e) {
       victoryLast = { at: Date.now(), ok: false, error: String(e?.message || e), ctxState: ac()?.state || null, variant: VICTORY_VARIANT };
       if (typeof console !== 'undefined') console.warn('[victory synth fail]', e);
-      if (then) then();
+      done();
     }
   };
   run();

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { PACKS, KINDS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter, packSpeaker, HERO_LINES, heroSpeakerFor } from '../src/voices/packs.js';
+import { PACKS, KINDS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter, barkPlayOpts, takeBestBarks, packSpeaker, HERO_LINES, heroSpeakerFor, RATES, HERO_RATES } from '../src/voices/packs.js';
 import { newGame, createRecruit } from '../src/game/game.js';
 import { normVoiceText } from '../src/voices/norm.js';
 
@@ -87,11 +87,40 @@ describe('voice pack bark limiter (no spam)', () => {
     expect(L.allow(4000, 'b', 'attack')).toBe(true);
     expect(L.allow(9500, 'a', 'attack')).toBe(true);
   });
-  it('never talks over another voice, except downed and level up', () => {
+  it('does not drop a bark just because another voice is busy (it will queue and expire if stale)', () => {
     const L = createBarkLimiter({ rnd: () => 0 });
-    expect(L.allow(0, 'a', 'crit', true)).toBe(false);
+    expect(L.allow(0, 'a', 'crit', true)).toBe(true);
     expect(L.allow(0, 'a', 'downed', true)).toBe(true);
     expect(L.allow(100, 'a', 'levelUp', true)).toBe(true);
+  });
+  it('hero combat barks are allowed more often than a recruit\'s, especially crits', () => {
+    expect(HERO_RATES.attack).toBeGreaterThan(RATES.attack);
+    expect(HERO_RATES.hit).toBeGreaterThan(RATES.hit);
+    expect(HERO_RATES.spell).toBeGreaterThan(RATES.spell);
+    expect(HERO_RATES.crit).toBe(1);
+    expect(HERO_RATES.lowHp).toBe(1);
+    const L = createBarkLimiter({ perChar: 0, global: 0, rnd: () => 0.5 }); // 0.5 fails recruit attack (0.22) and passes hero (0.55)
+    expect(L.allow(0, 'recruit', 'attack', { hero: false })).toBe(false);
+    expect(L.allow(0, 'hero', 'attack', { hero: true })).toBe(true);
+    const C = createBarkLimiter({ perChar: 9000, global: 3500, rnd: () => 0 });
+    expect(C.allow(0, 'hero', 'attack', { hero: true })).toBe(true);
+    expect(C.allow(100, 'hero', 'crit', { hero: true })).toBe(true); // hero crit is not blocked by the per-character gap
+  });
+  it('when attack and crit pile up on one swing, only the crit is kept', () => {
+    const hero = { id: 'h', name: 'Aldric' };
+    const pip = { id: 'p', name: 'Pip' };
+    expect(takeBestBarks([
+      { c: hero, kind: 'attack' },
+      { c: hero, kind: 'crit' },
+      { c: pip, kind: 'attack' },
+    ]).map((b) => `${b.c.name}:${b.kind}`)).toEqual(['Aldric:crit', 'Pip:attack']);
+  });
+  it('combat barks queue with a short maxWait; downed starts immediately', () => {
+    expect(barkPlayOpts('attack', { hero: true })).toEqual({ kind: 'battle', queue: true, maxWait: 6000, combatBark: true });
+    expect(barkPlayOpts('hit', { hero: false }).ifIdle).toBeUndefined();
+    expect(barkPlayOpts('hit', { hero: false }).queue).toBe(true);
+    expect(barkPlayOpts('downed', { hero: true })).toEqual({ kind: 'battle' });
+    expect(barkPlayOpts('levelUp')).toEqual({ kind: 'battle' });
   });
   it('plain attacks speak only now and then', () => {
     let n = 0; const L = createBarkLimiter({ perChar: 0, global: 0, rnd: () => (n++ % 10) / 10 });

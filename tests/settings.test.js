@@ -9,4 +9,10 @@ describe('battle speed default', () => {
     store[SETTINGS_KEY] = JSON.stringify({ battleSpeed: 'fast' }); expect(loadSettings().battleSpeed).toBe('fast');
     saveSettings({ ...loadSettings(), battleSpeed: 'normal', battleSpeedSet: true }); expect(loadSettings().battleSpeed).toBe('normal');
   });
+  it('an unrecognized battle speed falls back to Pause without inventing a saved choice', () => {
+    store[SETTINGS_KEY] = JSON.stringify({ sound: true, battleSpeed: 'turbo' });
+    const s = loadSettings();
+    expect(s.battleSpeed).toBe('pause');
+    expect(s.battleSpeedSet).toBeFalsy();
+  });
 });
