@@ -588,6 +588,9 @@ function showCreate(asRecruit = false) {
   const recruit = asRecruit === true;
   let race = 'human', cls = 'fighter', base = assignByPriority('fighter'), name = recruit ? 'Recruit' : 'Ser Aldric', method = 'array', diff = 'normal', randomDun = false, pic = null, voicePack = recruit ? PACKS[1].id : DEFAULT_PACK;
   const draw = () => {
+    // Rebuilding the modal would otherwise drop .panel.scrollTop (iPhone: Roll / Standard Array / race / class / portrait / voice all call draw()).
+    const scroller = modal.querySelector('.panel');
+    const y = scroller ? scroller.scrollTop : 0;
     const p = openModal([], { closable: true });
     const R_ = RACES[race], C = CLASSES[cls];
     const final = {}; for (const a of ABILITIES) final[a] = base[a] + (R_.bonus[a] || 0);
@@ -619,6 +622,7 @@ function showCreate(asRecruit = false) {
         for (const c of S.party.filter((c) => c.companion)) say({ who: COMPANIONS[c.companion].short, color: COMPANIONS[c.companion].color, text: COMPANIONS[c.companion].lines.combatStart[0] });
         spellStep(G.heroOf(S), 'create', null, () => runPrologue());
       }, { class: 'primary', id: 'btn-begin' })));
+    if (y) { p.scrollTop = y; requestAnimationFrame(() => { p.scrollTop = y; }); }
   };
   draw();
 }
