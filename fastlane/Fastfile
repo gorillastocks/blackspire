@@ -1,7 +1,7 @@
 default_platform(:ios)
 
 BUNDLE_ID = "com.gorillastocks.blackspire"
-MARKETING_VERSION = "1.0.1"
+MARKETING_VERSION = "1.0.0"
 PROFILE_NAME = "Blackspire AppStore CI"
 DIST_TYPES = %w[IOS_DISTRIBUTION DISTRIBUTION].freeze
 
@@ -62,11 +62,16 @@ platform :ios do
     api_key = asc_api_key
     team_id = team_id_for_bundle
 
-    build_number = latest_testflight_build_number(
-      app_identifier: BUNDLE_ID,
-      api_key: api_key,
-      initial_build_number: 0
-    ) + 1
+    # Builds 1-4 and the new resubmission attach to App Store version 1.0 (marketing version 1.0.0); builds 5-6 were
+    # TestFlight-only 1.0.1. Take the highest build number across both trains so numbers never repeat or go backwards.
+    build_number = %w[1.0.0 1.0.1].map do |v|
+      latest_testflight_build_number(
+        app_identifier: BUNDLE_ID,
+        api_key: api_key,
+        version: v,
+        initial_build_number: 0
+      )
+    end.max + 1
     UI.message("Marketing version #{MARKETING_VERSION}, build #{build_number}")
 
     # The team has no registered devices, so Xcode automatic signing cannot make the development profile an archive

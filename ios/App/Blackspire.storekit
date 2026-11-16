@@ -11,12 +11,12 @@
       "localizations" : [
         {
           "description" : "One purchase. Every deeper level, forever. No consumables, no timers, no pulls.",
-          "displayName" : "Blackspire: Levels 2–5",
+          "displayName" : "Unlock Full Game",
           "locale" : "en_US"
         }
       ],
       "productID" : "com.gorillastocks.blackspire.fullgame",
-      "referenceName" : "Blackspire Full Game",
+      "referenceName" : "Full Game Unlock",
       "type" : "NonConsumable"
     }
   ],

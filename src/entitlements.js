@@ -15,7 +15,7 @@ export const PAYWALL_KEY = 'blackspire.paywall';
 export const ENTITLEMENT_KEY = 'blackspire.entitlement.full';
 export const PRODUCT = {
   id: 'com.gorillastocks.blackspire.fullgame',
-  title: 'Unlock Blackspire: Levels 2–5',
+  title: 'Unlock Full Game: Levels 2–5',
   blurb: 'One purchase. Every deeper level, forever. No consumables, no timers, no pulls.',
   price: null, // localized price from StoreKit (e.g. "$4.99"); null until loaded
 };
