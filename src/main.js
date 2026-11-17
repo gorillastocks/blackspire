@@ -6,7 +6,7 @@ import { getLevel, DIRS, DIR_NAMES, W, H, LEVEL_DEFS, poiIdAt } from './dungeon/
 import { outdoorRegion, inRegion, hourAt, todName, WEATHER_INFO } from './dungeon/outdoor.js';
 import { Combat, projectileCount, projectileNoun, TACTIC_STYLES, defaultTactics, tacticsOf, DIFFICULTY } from './rules/combat.js';
 import { RACES, CLASSES, SKILLS, SKILL_LABEL, SPELLS, ITEMS, ABILITIES, ABILITY_NAMES, CONDITIONS, SHOP_STOCK, MONSTERS, TIER_COLOR, TIER_LABEL, tierOf, STANDARD_ARRAY, WEAPONS, ARMOR } from './rules/data.js';
-import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, speedOf, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, passive } from './rules/character.js';
+import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, weaponStats, speedOf, skillMod, saveMod, spellDC, spellAttack, prof, knownSpells, xpForNext, canLevelUp, isDown, vitalStatus, passive } from './rules/character.js';
 import * as SC from './rules/spellcasting.js';
 import * as D from './rules/phaseD.js';
 import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
@@ -429,6 +429,13 @@ function roleOf(c) {
   if (c.equip.ranged) parts.push('ranged');
   return parts.join(' + ');
 }
+/** Shared Down / Dead tag for party lists (formation, roster, HUD, sheet). */
+function vitalTag(c, { compact = false } = {}) {
+  const st = vitalStatus(c); if (!st) return null;
+  const body = compact ? `${st.icon} ${st.label}` : (st.key === 'down' ? `${st.icon} ${st.label} · 0 HP · ${st.saves}` : st.text);
+  return h('span', { class: `vstatus vstatus-${st.key}`, title: st.title, 'data-vital': st.key, 'aria-label': st.title }, body);
+}
+
 /** Formation board: tap a hero, then a hero in the other row, to trade places. */
 function formationBoard(redraw) {
   let sel = null;
@@ -436,12 +443,12 @@ function formationBoard(redraw) {
   const draw = () => {
     root.innerHTML = '';
     const col = (title, hint, from, to, id) => h('div', { class: 'fcol', id }, h('div', { class: 'fhead' }, h('b', {}, title), h('small', {}, hint)),
-      S.party.slice(from, to).map((c, k) => { const i = from + k; return h('button', { type: 'button', class: `fhero ${sel === c ? 'sel' : ''} ${c.hp <= 0 ? 'down' : ''}`, 'data-hero': c.id, title: `${c.name}: ${roleOf(c)}. Tap, then tap a hero in the other row to swap.`,
+      S.party.slice(from, to).map((c, k) => { const i = from + k; const st = vitalStatus(c); return h('button', { type: 'button', class: `fhero ${sel === c ? 'sel' : ''} ${st ? st.key : ''}`, 'data-hero': c.id, 'data-vital': st ? st.key : undefined, title: `${c.name}: ${roleOf(c)}${st ? ` · ${st.title}` : ''}. Tap, then tap a hero in the other row to swap.`,
         onclick: () => {
           if (sel === c) { sel = null; draw(); return; }
           if (!sel) { sel = c; draw(); return; }
           const a = S.party.indexOf(sel), b = i; if (a >= 0 && (a < 2) !== (b < 2)) { [S.party[a], S.party[b]] = [S.party[b], S.party[a]]; log(`${sel.name} and ${c.name} trade rows.`, 'sys'); sel = null; autosave(); refresh(); redraw ? redraw() : draw(); } else { sel = c; draw(); }
-        } }, portrait(c, 'cport'), h('span', { class: 'fnm' }, c.name), h('small', {}, CLASSES[c.cls].name, h('span', { class: 'frole' }, ` · ${roleOf(c)}`))); }));
+        } }, portrait(c, 'cport'), h('span', { class: 'fnm' }, c.name, vitalTag(c, { compact: true })), h('small', {}, CLASSES[c.cls].name, st?.key === 'down' ? ` · 0 HP · ${st.saves}` : '', h('span', { class: 'frole' }, ` · ${roleOf(c)}`))); }));
     root.append(col('⚔ Front row', 'melee · hit first', 0, 2, 'frow-front'), col('🏹 Back row', 'ranged, spells, reach', 2, S.party.length, 'frow-back'),
       h('details', { class: 'fnote' }, h('summary', {}, 'ℹ How rows work'), 'Only the front row can melee (unless wielding a glaive, halberd, pike or whip). Monsters pick the front row about 9 times in 10. In a fight, swapping costs a bonus action. Tap a hero, then a hero in the other row, to swap.'));
   };
@@ -454,12 +461,13 @@ function renderParty() {
   S.party.forEach((c, i) => {
     const pct = Math.max(0, c.hp) / c.maxHp * 100;
     const front = inFrontRow(c);
-    const card = h('div', { class: `card ${cur === c ? 'active' : ''} ${c.dead ? 'dead' : c.hp <= 0 ? 'down' : ''}`, id: 'card-' + c.id, onclick: () => showSheet(c), info: () => memberInfo(c) },
-      h('div', { class: 'nm' }, h('span', { class: 'nmw' }, portrait(c, 'cport'), h('span', { class: 'cnm', title: c.name }, h('span', { class: 'rowic', title: front ? 'Front row: can melee, draws most attacks' : 'Back row: ranged attacks and spells (or a reach weapon); monsters rarely target it' }, front ? '⚔' : '🏹'), ` ${c.name}`), canLevelUp(c) ? h('span', { class: 'lvchip', title: 'Ready to level up! Make camp or visit the Training Grounds', 'aria-label': 'Ready to level up' }, '⬆') : null),
+    const st = vitalStatus(c);
+    const card = h('div', { class: `card ${cur === c ? 'active' : ''} ${st ? st.key : ''}`, id: 'card-' + c.id, 'data-vital': st ? st.key : undefined, onclick: () => showSheet(c), info: () => memberInfo(c) },
+      h('div', { class: 'nm' }, h('span', { class: 'nmw' }, portrait(c, 'cport'), h('span', { class: 'cnm', title: c.name }, h('span', { class: 'rowic', title: front ? 'Front row: can melee, draws most attacks' : 'Back row: ranged attacks and spells (or a reach weapon); monsters rarely target it' }, front ? '⚔' : '🏹'), ` ${c.name}`), canLevelUp(c) ? h('span', { class: 'lvchip', title: 'Ready to level up! Make camp or visit the Training Grounds', 'aria-label': 'Ready to level up' }, '⬆') : null, vitalTag(c, { compact: true })),
         !G.isHero(c) ? h('button', { class: `aitog small ${c.ai ? 'on' : ''}`, title: 'Toggle AI / player control', onclick: (e) => { e.stopPropagation(); c.ai = !c.ai; log(`${c.name} is now ${c.ai ? 'AI-controlled' : 'player-controlled'}.`, 'sys'); refresh(); if (combat) combatLoop(); } }, c.ai ? 'AI' : 'YOU') : h('span', { class: 'tag' }, 'YOU')),
       h('div', { class: 'sub' }, `L${c.level} ${RACES[c.race].name} ${CLASSES[c.cls].name} · AC ${armorClass(c)}`),
       h('div', { class: `bar hp ${pct < 30 ? 'low' : ''}` }, h('i', { style: `width:${pct}%` })),
-      h('div', { class: 'row', style: 'justify-content:space-between;font-size:11px' }, h('span', {}, c.dead ? 'DEAD' : c.hp <= 0 ? `DOWN ${c.deathSaves.s}✓${c.deathSaves.f}✗` : `HP ${c.hp}/${c.maxHp}`),
+      h('div', { class: 'row', style: 'justify-content:space-between;font-size:11px' }, h('span', { class: st ? `vstatus vstatus-${st.key}` : '', 'data-vital': st ? st.key : undefined }, st ? st.text : `HP ${c.hp}/${c.maxHp}`),
         c.slots.length ? h('span', { class: 'slots' }, 'Slots ' + c.slots.map((n, l) => `${l + 1}:${n}`).join(' ')) : null),
       condChips(c.conditions),
       null);
@@ -719,7 +727,7 @@ function showTown(sub = null) {
         btn('📖 Journal', () => showJournal(() => showTown(), 'quests'), { id: 'btn-journal' }),
         // iOS, not purchased yet: straight to the purchase screen (hidden on the web build and once bought)
         ENT.paywallActive() && !ENT.hasEntitlement() ? btn(unlockLabel(), () => prompt('paywall', { fromTown: true, then: () => showTown(), back: () => showTown() }), { id: 'btn-town-unlock', class: 'primary', 'aria-label': 'Unlock Full Game' }) : null),
-      h('div', { class: 'partychips' }, ...S.party.map((c) => h('button', { class: 'small', title: `${c.name}: character sheet`, onclick: () => showSheet(c) }, portrait(c, 'cport'), ` ${c.name.split(' ').pop()}`))), // phones: the full-screen square covers the party cards, so each hero is tappable here too
+      h('div', { class: 'partychips' }, ...S.party.map((c) => h('button', { class: 'small' + (vitalStatus(c) ? ' is-' + vitalStatus(c).key : ''), title: `${c.name}: character sheet${vitalStatus(c) ? ' · ' + vitalStatus(c).title : ''}`, onclick: () => showSheet(c) }, portrait(c, 'cport'), ` ${c.name.split(' ').pop()}`, vitalTag(c, { compact: true })))), // phones: the full-screen square covers the party cards, so each hero is tappable here too
       h('div', { class: 'menu row3' },
         btn('💾 Save', quickSave, { id: 'btn-town-save', 'aria-label': 'Quick Save' }),
         btn('📂 Load', () => loadGame(latestKey() || G.SAVE_KEY), { id: 'btn-town-load', 'aria-label': 'Load Game' }),
@@ -735,8 +743,8 @@ function showTown(sub = null) {
     const pages = {
       party: () => [partyOrderList(redraw), btn('🧠 Companion Tactics', () => showTactics(null, redraw), { id: 'btn-tavern-tactics', class: 'bigtab' })],
       roster: () => [h('h3', {}, `Waiting at the bar (party ${S.party.length}/4)`),
-        S.roster.length ? h('div', { class: 'menu', id: 'roster' }, S.roster.map((c) => h('div', { class: 'row rosterrow' }, portrait(c), h('span', { style: 'flex:1' }, `${c.name} — L${c.level} ${CLASSES[c.cls].name}${c.dead ? ' (DEAD — raise at the Temple)' : ''}`),
-          btn('Join party', () => { handle(G.rejoin(S, c)); autosave(); redraw(); }, { class: 'small', disabled: S.party.length >= 4 })))) : h('p', { class: 'hint' }, 'Nobody is waiting. Dismissed members stay here, so you can bring them back (or raise them at the Temple) later.')],
+        S.roster.length ? h('div', { class: 'menu', id: 'roster' }, S.roster.map((c) => { const st = vitalStatus(c); return h('div', { class: `row rosterrow${st ? ' is-' + st.key : ''}`, 'data-hero': c.id, 'data-vital': st ? st.key : undefined }, portrait(c), h('span', { style: 'flex:1' }, `${c.name} — L${c.level} ${CLASSES[c.cls].name}`, vitalTag(c), st?.key === 'dead' ? h('small', {}, ' — raise at the Temple') : null),
+          btn('Join party', () => { handle(G.rejoin(S, c)); autosave(); redraw(); }, { class: 'small', disabled: S.party.length >= 4 })); })) : h('p', { class: 'hint' }, 'Nobody is waiting. Dismissed members stay here, so you can bring them back (or raise them at the Temple) later.')],
       hire: () => [btn('✍ Create a new recruit (full creator)', () => showCreate(true), { id: 'btn-new-recruit', class: 'bigtab' }),
         h('h3', {}, `Adventurers for hire (join at level ${G.partyLevel(S)})`),
         h('div', { class: 'menu', id: 'hire' }, G.availableCompanions(S).map((k) => { const C = COMPANIONS[k]; return h('div', { class: 'hirecard' }, Number.isInteger(C.portrait) ? h('img', { class: 'hirepic', src: portraitURL(C.portrait), alt: `${C.name} portrait` }) : null, h('p', {}, h('b', { style: `color:${C.color}` }, `${C.name} — ${RACES[C.race].name} ${CLASSES[C.cls].name}: `), C.blurb),
@@ -785,11 +793,11 @@ async function startDungeon() {
 let lastBuiltLevel = -1;
 async function rebuild() { if (!S || S.mode !== 'dungeon') return; await R.buildLevel(S, (x, y) => G.tile(S, x, y), getLevel(S.level).def, outReg()); lastBuiltLevel = S.level; syncWorld(); }
 function partyOrderList(redraw) {
-  return h('div', { class: 'menu partylist' }, formationBoard(redraw), S.party.map((c, i) => h('div', { class: 'row partyrow' }, portrait(c), h('span', { class: 'pname' }, h('b', {}, `${i + 1}. ${c.name}`), h('small', {}, ` ${CLASSES[c.cls].name} · ${i < 2 ? 'front' : 'back'} row`)),
+  return h('div', { class: 'menu partylist' }, formationBoard(redraw), S.party.map((c, i) => { const st = vitalStatus(c); return h('div', { class: `row partyrow${st ? ' is-' + st.key : ''}`, 'data-hero': c.id, 'data-vital': st ? st.key : undefined }, portrait(c), h('span', { class: 'pname' }, h('b', {}, `${i + 1}. ${c.name}`), vitalTag(c, { compact: true }), h('small', {}, ` ${CLASSES[c.cls].name} · ${i < 2 ? 'front' : 'back'} row${st?.key === 'down' ? ` · 0 HP · ${st.saves}` : ''}`)),
     btn('▲', () => { if (i > 0) { [S.party[i - 1], S.party[i]] = [S.party[i], S.party[i - 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === 0, 'aria-label': `Move ${c.name} up` }),
     btn('▼', () => { if (i < S.party.length - 1) { [S.party[i + 1], S.party[i]] = [S.party[i], S.party[i + 1]]; redraw(); refresh(); } }, { class: 'small', disabled: i === S.party.length - 1, 'aria-label': `Move ${c.name} down` }),
     !G.isHero(c) ? btn(c.ai ? 'AI' : 'YOU', () => { c.ai = !c.ai; redraw(); refresh(); }, { class: 'small aitog ' + (c.ai ? 'on' : '') }) : null,
-    !G.isHero(c) ? btn('Dismiss', () => { handle(G.dismiss(S, c)); autosave(); redraw(); }, { class: 'small dismiss', title: 'Send to the Tavern roster' }) : null)));
+    !G.isHero(c) ? btn('Dismiss', () => { handle(G.dismiss(S, c)); autosave(); redraw(); }, { class: 'small dismiss', title: 'Send to the Tavern roster' }) : null); }));
 }
 
 /* ---------- Prompts in the dungeon ---------- */
@@ -1117,9 +1125,9 @@ function showSheet(c) {
   const feats = []; for (let l = 1; l <= c.level; l++) feats.push(...(C.features[l] || []));
   const spells = knownSpells(c);
   openModal([
-    h('div', { class: 'tabs' }, S.party.map((p) => btn(p.name, () => showSheet(p), { class: p === c ? 'on small' : 'small' }))),
+    h('div', { class: 'tabs' }, S.party.map((p) => btn(vitalStatus(p) ? `${vitalStatus(p).icon} ${p.name}` : p.name, () => showSheet(p), { class: (p === c ? 'on small' : 'small') + (vitalStatus(p) ? ' is-' + vitalStatus(p).key : '') }))),
     h('div', { class: 'row sheethead' }, h('button', { class: 'sheetport', id: 'btn-portrait', title: 'Change portrait', onclick: () => showPortraitPicker(c, () => showSheet(c)) }, portrait(c, 'bigport'), h('small', {}, 'Change')),
-      h('h2', {}, `${c.name} — Level ${c.level} ${Rr.name} ${C.name} (${C.sub})`)),
+      h('h2', {}, `${c.name} — Level ${c.level} ${Rr.name} ${C.name} (${C.sub})`, vitalTag(c))),
     canLevelUp(c) ? h('p', { class: 'lvlready sheetready' }, `⬆ Ready to level up to ${c.level + 1}! Make camp (Camp → Level Up) or visit the Training Grounds.`) : null,
     c.companion ? h('p', { class: 'hint' }, COMPANIONS[c.companion].blurb, ' ', h('b', {}, 'Approval: '), approvalTag(c.companion)) : c.recruit ? h('p', { class: 'hint' }, 'A recruit you created at the Training Grounds.') : null,
     !G.isHero(c) ? btn(`🧠 Tactics: ${TACTIC_STYLES[tacticsOf(c).style].name}${c.ai ? '' : ' (when AI)'}`, () => showTactics(c, () => showSheet(c)), { class: 'small', id: 'btn-sheet-tactics' }) : null,

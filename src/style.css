@@ -762,3 +762,50 @@ body.fallen #btn-menu { display: none; }
   .pgrid, .voicelist, .pinlist, .panel .credit-list { max-height: none; overflow: visible; }
   .panel { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 }
+
+/* Down / Dead tags on party lists (Camp Party, formation, roster, HUD, sheet).
+   Stay fully opaque and high-contrast even on greyed portraits. */
+.vstatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .02em;
+  line-height: 1.35;
+  white-space: nowrap;
+  flex: none;
+  vertical-align: middle;
+}
+.vstatus-down { color: #3a2208; background: #ffd7a0; border: 1px solid #e0a04a; }
+.vstatus-dead { color: #fff4f6; background: #8a2a3a; border: 1px solid #ff9aa5; }
+@media (max-width: 760px) { .vstatus { font-size: 13px; padding: 2px 8px; } }
+
+.card.down, .formation .fhero.down { opacity: 1; }
+.card.dead { opacity: 1; filter: none; }
+.card.down, .formation .fhero.down, .partyrow.is-down, .rosterrow.is-down { border-color: #e0a04a; }
+.card.dead, .formation .fhero.dead, .partyrow.is-dead, .rosterrow.is-dead { border-color: #8a2a3a; background: #2a1018; }
+.formation .fhero.down { background: #2a1c10; }
+.card.down .cport, .formation .fhero.down .cport, .partyrow.is-down .cport, .rosterrow.is-down .cport { opacity: .75; filter: grayscale(.25); }
+.card.dead .cport, .formation .fhero.dead .cport, .partyrow.is-dead .cport, .rosterrow.is-dead .cport { opacity: .9; filter: grayscale(1); }
+
+.formation .fhero .fnm { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; }
+.formation .fhero .vstatus { margin-left: 2px; }
+.partyrow .pname { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.partyrow .pname b { min-width: 0; }
+.partyrow .vstatus, .rosterrow .vstatus, .sheethead h2 .vstatus { margin-left: 4px; }
+.sheethead h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.partychips button .vstatus { margin-left: 4px; font-size: 11px; }
+#party .nmw .vstatus { margin-left: 4px; }
+#party .card .row .vstatus { font-size: 11px; }
+.partyrow button.small { flex: 0 0 auto; }
+.partyrow button.aitog, .partyrow button.dismiss { flex: 0 0 auto; }
+@media (max-width: 760px) {
+  .partyrow { flex-wrap: wrap; align-items: center; }
+  .partyrow .pname { flex: 1 1 100%; display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; overflow: visible; white-space: normal; }
+  .partyrow .pname b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .partyrow .vstatus { flex: none; }
+  .partyrow.is-down .pname small, .partyrow.is-dead .pname small { display: inline; color: #e8d7b0; font-size: 12px; }
+}

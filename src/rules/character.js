@@ -169,6 +169,19 @@ export function refreshResources(c, full) {
 export const isDown = (c) => c.dead || c.hp <= 0;
 export const canAct = (c) => !isDown(c) && !c.conditions.paralyzed && !c.conditions.unconscious;
 
+/** Down / Dead status from the same flags the combat log uses (c.dead, hp <= 0, death saves). */
+export function vitalStatus(c) {
+  if (!c) return null;
+  if (c.dead) return { key: 'dead', label: 'Dead', icon: '💀', saves: null, text: '💀 Dead', title: 'Dead — raise at the Temple' };
+  if (c.hp <= 0) {
+    const s = c.deathSaves?.s ?? 0, f = c.deathSaves?.f ?? 0;
+    const saves = c.stable ? 'stable' : `${s}✓ ${f}✗`;
+    return { key: 'down', label: 'Down', icon: '💤', saves, text: `💤 Down · 0 HP · ${saves}`, title: c.stable ? 'Unconscious and stable, 0 HP' : `Unconscious, 0 HP, death saves ${s} success, ${f} fail` };
+  }
+  return null;
+}
+
+
 export function heal(c, amt) {
   if (c.dead) return 0;
   const before = c.hp; c.hp = Math.min(c.maxHp, Math.max(0, c.hp) + amt);
