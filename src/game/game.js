@@ -307,7 +307,7 @@ export function afterCombat(s, combat, info = {}) {
     if (info.elite) out.push(...eliteSlain(s, info.elite));
     if (rand() < 0.2) { s.inventory.push('potionHealing'); out.push({ log: 'Found a Potion of Healing among the remains.', cls: 'good' }); }
     if (rand() < 0.06) { s.inventory.push('tinCup'); out.push({ log: 'Found a Dented Tin Cup. Someone will pay a copper for it.', cls: 'good' }); }
-    if (info.boss && def.final && !chain) { s.victory = true; s.quests.main = 'done'; s.flags.elowenRescued = true; if (s.notes?.length >= 10 && s.quests.notes) s.quests.notes = 'done'; }
+    if (info.boss && def.final && !chain) { s.victory = true; s.flags.ended = true; s.quests.main = 'done'; s.flags.elowenRescued = true; if (s.notes?.length >= 10 && s.quests.notes) s.quests.notes = 'done'; }
     // Unconscious survivors wake with 1 HP
     for (const c of s.party) if (!c.dead && c.hp <= 0) { c.hp = 1; delete c.conditions.unconscious; c.stable = false; c.deathSaves = { s: 0, f: 0 }; out.push({ log: `${c.name} is patched up and wakes with 1 HP.` }); }
     for (const c of s.party) delete c.conditions.grappled;

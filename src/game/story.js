@@ -131,17 +131,32 @@ function give(s, key, out, note = '') { s.inventory.push(key); out.push({ log: `
 
 /* ---------- Ritual clock: 5 seals, one breaks per moonrise (every third long rest) ---------- */
 export const RESTS_PER_MOON = 3;
-export function sealsBroken(s) { return Math.min(5, s.moon || 0); }
-export function empowered(s) { return (s.moon || 0) >= 5; }
+export const SEALS = 5;
+export function sealsBroken(s) { return Math.min(SEALS, s.moon || 0); }
+export function empowered(s) { return (s.moon || 0) >= SEALS; }
+/** The ritual clock stops once the campaign is won (or the ending has started). */
+export function campaignOver(s) { return !!(s.victory || s.flags?.ended || s.flags?.ending); }
+/** Long rests remaining until the next moonrise, after the current rest has already been counted. */
+export function restsUntilMoonrise(s) {
+  const rem = (s.rests || 0) % RESTS_PER_MOON;
+  return rem === 0 ? RESTS_PER_MOON : RESTS_PER_MOON - rem;
+}
+/** Unvoiced status line shown after every long rest (camp or inn). */
+export function moonClockLine(s) {
+  if (empowered(s)) return '☾ Malthrax is empowered. All 5 seals are broken.';
+  return `☾ Long rests until next moonrise: ${restsUntilMoonrise(s)} · Seals broken: ${sealsBroken(s)} of ${SEALS}`;
+}
 export function onLongRest(s) {
   initStory(s); const out = [];
-  if (s.flags.ended) return out;
+  if (campaignOver(s)) { s.flags.ended = true; return out; }
   s.rests++;
   if (s.rests % RESTS_PER_MOON === 0) {
     s.moon++; const b = sealsBroken(s);
-    if (s.moon <= 5) { out.push({ log: `🌕 The moon rises over Emberhollow. A seal on the Blackspire cracks and breaks — ${b} of 5 broken.`, cls: 'crit', voice: { text: 'The moon rises over Emberhollow. A seal on the Blackspire cracks and breaks.', who: 'narrator' } }); addJournal(s, `Moonrise ${s.moon}: seal ${b} of 5 broken.`); }
-    if (s.moon === 5) { out.push({ log: '“Five moons, Emberhollow.” Malthrax\'s laughter rolls up from below. He grows stronger (the finale is harder, but not lost).', cls: 'bad', voice: { text: 'Five moons, Emberhollow.', who: 'malthrax' } }); addJournal(s, 'All five seals are broken. Malthrax is empowered.'); }
+    if (s.moon <= SEALS) { out.push({ log: `🌕 The moon rises over Emberhollow. A seal on the Blackspire cracks and breaks — ${b} of 5 broken.`, cls: 'crit', voice: { text: 'The moon rises over Emberhollow. A seal on the Blackspire cracks and breaks.', who: 'narrator' } }); addJournal(s, `Moonrise ${s.moon}: seal ${b} of 5 broken.`); }
+    if (s.moon === SEALS) { out.push({ log: '“Five moons, Emberhollow.” Malthrax\'s laughter rolls up from below. He grows stronger (the finale is harder, but not lost).', cls: 'bad', voice: { text: 'Five moons, Emberhollow.', who: 'malthrax' } }); addJournal(s, 'All five seals are broken. Malthrax is empowered.'); }
   }
+  const line = moonClockLine(s);
+  out.push({ log: line, cls: 'dim', toast: line });
   if (s.quests.ballad === 'done' && s.mode === 'town') { for (const c of s.party) if (!c.dead) c.tempHp = Math.max(c.tempHp || 0, 10); out.push({ log: 'Grumsh\'s ballad has the inn singing. Feast buff: 10 temporary HP each.', cls: 'good' }); }
   return out;
 }
