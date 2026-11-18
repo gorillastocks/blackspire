@@ -706,6 +706,9 @@ function showCreate(asRecruit = false) {
 let townSub = null; let townVisited = false;
 const TOWN_TITLES = { tavern: '🍺 Tavern', temple: '⛪ Temple', shop: '⚒ Trading Post', train: '🎯 Training Grounds', edge: '🕳 Edge of Town' };
 let tavernTab = 'party', shopTab = 'potions';
+function goldLine() {
+  return h('p', { class: 'goldline', id: 'party-gold', role: 'status', 'data-gold': String(S.gold) }, `💰 ${G.formatGold(S.gold)} gp`);
+}
 function showTown(sub = null) {
   townSub = sub; if (sub !== 'train') reclassTarget = null; const arriving = S.mode !== 'town' || !townVisited; townVisited = true;
   S.mode = 'town'; combat = null; endCombatUI(); setControls(null); R.setMode('combat'); R.clearMonsters(); refresh();
@@ -715,11 +718,13 @@ function showTown(sub = null) {
   const P = (content, { tabs = null } = {}) => openModal([h('div', { class: 'navbar' }, h('h2', {}, sub ? TOWN_TITLES[sub] : 'Emberhollow'), sub ? back('top') : null, tabs), content, sub && !tabs ? h('div', { style: 'margin-top:10px' }, back('bottom')) : null], { closable: false, cls: 'transparent' });
   if (!sub) {
     // most-used first: the maze, then the places you visit, then story pages, then game (save/load) controls
+    const innCost = S.flags?.freeInn ? 0 : 10, innShort = innCost && S.gold < innCost;
     P(h('div', { class: 'townsq' },
+      goldLine(),
       btn('🕳 Edge of Town — Enter the Maze', () => showTown('edge'), { id: 'btn-edge', class: 'primary bigtown' }),
       h('div', { class: 'menu grid2' },
         btn('🍺 The Boar & Spoon Tavern', () => { tavernTab = 'party'; showTown('tavern'); }, { id: 'btn-tavern' }),
-        btn(S.flags?.freeInn ? '🛏 Inn (long rest, free)' : '🛏 Inn (long rest, 10 gp)', () => { handle(G.innRest(S)); say(banter(S.party, 'rest', {}, 1)); }),
+        btn(S.flags?.freeInn ? '🛏 Inn (long rest, free)' : innShort ? '🛏 Inn — Need 10 gp' : '🛏 Inn (long rest, 10 gp)', () => { handle(G.innRest(S)); say(banter(S.party, 'rest', {}, 1)); showTown(); }, { id: 'btn-inn', disabled: !!innShort }),
         btn('⛪ Temple of Cant', () => showTown('temple')),
         btn('⚒ Fizzbang\'s Trading Post', () => { shopTab = 'potions'; showTown('shop'); }, { id: 'btn-shop' }),
         btn('🎯 Training Grounds', () => showTown('train'), { id: 'btn-train' }),
@@ -755,22 +760,27 @@ function showTown(sub = null) {
     P(h('div', { class: 'tabpage', 'data-page': tavernTab }, pages[tavernTab]()), { tabs: tabBar(tabs, tavernTab, (id) => { tavernTab = id; redraw(); }) });
   } else if (sub === 'temple') {
     const need = (c) => (G.templeCost(c) ? 0 : 1); // those who need help first
-    P([h('h3', {}, 'Temple of Cant — "Healing by donation (mandatory)"'), h('div', { class: 'menu' }, [...S.party, ...S.roster].map((c, i) => [c, i]).sort((x, y) => need(x[0]) - need(y[0]) || x[1] - y[1]).map(([c]) => { const cost = G.templeCost(c); return btn(`${c.name}: ${c.dead ? 'Raise Dead' : c.conditions.poisoned ? 'Cure poison' : c.hp < c.maxHp ? 'Heal wounds' : 'Healthy'} ${cost ? `(${cost} gp)` : ''}`, () => { handle(G.templeHeal(S, c)); showTown('temple'); }, { disabled: !cost }); }))]);
+    P([goldLine(), h('h3', {}, 'Temple of Cant — "Healing by donation (mandatory)"'), h('div', { class: 'menu' }, [...S.party, ...S.roster].map((c, i) => [c, i]).sort((x, y) => need(x[0]) - need(y[0]) || x[1] - y[1]).map(([c]) => {
+      const cost = G.templeCost(c), free = !!(c.dead && S.flags?.freeRaise), pay = free ? 0 : cost, short = pay > 0 && S.gold < pay;
+      const act = c.dead ? 'Raise Dead' : c.conditions.poisoned ? 'Cure poison' : c.hp < c.maxHp ? 'Heal wounds' : 'Healthy';
+      const price = !cost ? '' : free ? ' (free)' : ` (${cost} gp)`;
+      return btn(`${c.name}: ${act}${price}${short ? ` — Need ${pay} gp` : ''}`, () => { handle(G.templeHeal(S, c)); showTown('temple'); }, { disabled: !cost || short, 'data-temple': c.id });
+    }))]);
   } else if (sub === 'shop') {
     // short pages: potions / weapons / armor / sell & equip (the stock is over thirty items)
     const redraw = () => showTown('shop');
     const stock = (pred) => SHOP_STOCK.filter(pred);
     const kindOf = (k) => (k.startsWith('w:') ? 'weapons' : k.startsWith('a:') || k === 'shield' ? 'armor' : 'potions');
-    const list = (kind) => h('div', { class: 'menu grid2 shopgrid' }, stock((k) => kindOf(k) === kind).map((k) => btn([h('b', { class: 'bt' }, G.nameOf(k)), h('small', { class: 'bs' }, `${G.priceOf(k)} gp`)], () => { handle(G.buy(S, k)); redraw(); }, { disabled: S.gold < G.priceOf(k), class: 'bigbtn shopitem', 'data-buy': k })));
+    const list = (kind) => h('div', { class: 'menu grid2 shopgrid' }, stock((k) => kindOf(k) === kind).map((k) => { const price = G.priceOf(k), short = S.gold < price; return btn([h('b', { class: 'bt' }, G.nameOf(k)), h('small', { class: 'bs' }, short ? `Need ${price} gp` : `${price} gp`)], () => { handle(G.buy(S, k)); redraw(); }, { disabled: short, class: 'bigbtn shopitem', 'data-buy': k }); }));
     const tabs = [['potions', '🧪 Potions'], ['weapons', '⚔ Weapons'], ['armor', '🛡 Armor'], ['sell', '💰 Sell & Equip']];
     if (!tabs.some((t) => t[0] === shopTab)) shopTab = 'potions';
     const page = shopTab === 'sell' ? [h('h3', {}, 'Sell / Equip — selling pays half price'), inventoryList(redraw, true)] : [list(shopTab)];
-    P([h('p', { class: 'goldline' }, `💰 You have ${S.gold} gp`), h('div', { class: 'tabpage', 'data-page': shopTab }, page)], { tabs: tabBar(tabs, shopTab, (id) => { shopTab = id; redraw(); }) });
+    P([goldLine(), h('div', { class: 'tabpage', 'data-page': shopTab }, page)], { tabs: tabBar(tabs, shopTab, (id) => { shopTab = id; redraw(); }) });
   } else if (sub === 'train' && reclassTarget && [...S.party, ...S.roster].includes(reclassTarget)) {
     reclassPage(reclassTarget, P);
   } else if (sub === 'train') {
     reclassTarget = null;
-    P([h('div', { class: 'menu trainlist' }, S.party.map((c) => h('div', { class: 'row trainrow' },
+    P([goldLine(), h('div', { class: 'menu trainlist' }, S.party.map((c) => h('div', { class: 'row trainrow' },
       btn(canLevelUp(c) ? `⬆ Train ${c.name} to level ${c.level + 1}` : `${c.name} — L${c.level} (${c.xp}/${xpForNext(c) === Infinity ? 'max' : xpForNext(c)} XP)`, () => trainWithSpells(c, () => showTown('train')), { disabled: !canLevelUp(c), class: canLevelUp(c) ? 'levelup trainmain' : 'trainmain' }),
       SC.preparedMax(c) ? btn('📖 Prepare', () => showSpellPicker(c, 'prepare', null, () => showTown('train')), { class: 'small', 'data-prepare': c.id }) : null,
       btn('Re-class', () => reclassMenu(c), { class: 'small', 'data-reclass': c.id }),
@@ -1112,7 +1122,8 @@ function inventoryList(redraw, shop = false) {
     return h('div', { class: 'row' }, h('span', { style: 'flex:1;' + tierStyle(k), class: 'itemname tier-' + tierOf(k), info: () => itemInfo(k), tabindex: 0 }, G.nameOf(k)),
       kind === 'potion' ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.usePotion(S, i, c)); redraw(); } }, h('option', {}, 'Use on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
       ['weapon', 'armor', 'ring', 'cloak', 'helm'].includes(kind) ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.equip(S, c, i)); redraw(); } }, h('option', {}, 'Equip on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
-      shop && kind !== 'key' ? btn(`Sell ${Math.floor(G.priceOf(k) / 2)}gp`, () => { handle(G.sell(S, i)); redraw(); }, { class: 'small' }) : null);
+      shop && G.isQuestItem(k) ? h('span', { class: 'quest-unsellable', 'data-unsellable': k }, "Quest item, can't be sold")
+        : shop ? btn(`Sell ${Math.floor(G.priceOf(k) / 2)}gp`, () => { handle(G.sell(S, i)); redraw(); }, { class: 'small', 'data-sell': k }) : null);
   }));
 }
 function showInventory() { const draw = () => openModal([h('h2', {}, `🎒 Party Inventory — ${S.gold} gp`), inventoryList(draw)]); draw(); }
@@ -1669,10 +1680,11 @@ let reclassTarget = null;
 function reclassMenu(c) { reclassTarget = c; showTown('train'); }
 function reclassPage(c, P) {
   const cost = G.reclassCost(c), done = () => { reclassTarget = null; showTown('train'); };
-  P([h('p', { class: 'goldline' }, `Retrain ${c.name}${G.isHero(c) ? ' (you)' : ''} — L${c.level} ${CLASSES[c.cls].name} — as…`), h('p', { class: 'hint' }, `Cost ${cost} gp (you have ${S.gold}). Same level and XP; name, portrait and voice stay. Magic gear goes back in the pack.`),
-    h('div', { class: 'menu grid2 reclasslist' }, Object.entries(CLASSES).filter(([k]) => k !== c.cls).map(([k, C]) => btn([h('b', { class: 'bt' }, C.name), h('small', { class: 'bs' }, C.sub)], () => {
+  const short = S.gold < cost;
+  P([goldLine(), h('p', {}, `Retrain ${c.name}${G.isHero(c) ? ' (you)' : ''} — L${c.level} ${CLASSES[c.cls].name} — as…`), h('p', { class: 'hint' }, `Cost ${cost} gp. Same level and XP; name, portrait and voice stay. Magic gear goes back in the pack.`),
+    h('div', { class: 'menu grid2 reclasslist' }, Object.entries(CLASSES).filter(([k]) => k !== c.cls).map(([k, C]) => btn([h('b', { class: 'bt' }, C.name), h('small', { class: 'bs' }, short ? `Need ${cost} gp` : C.sub)], () => {
       const ev = G.reclassCharacter(S, c, k); for (const e of ev) log(e.log, e.cls); if (ev.ok) autosave(); done();
-    }, { disabled: S.gold < cost, class: 'bigbtn', 'data-class': k }))),
+    }, { disabled: short, class: 'bigbtn', 'data-class': k }))),
     btn('← Cancel', done, { id: 'btn-reclass-cancel' })]);
 }
 /** Multi-projectile spells (Magic Missile darts, Scorching Ray rays, Eldritch Blast beams): assign each dart/ray/beam to a foe, repeats allowed.
@@ -2155,7 +2167,7 @@ function monsterInfo(m) {
 function spellInfo(k) { const s = SPELLS[k]; return s ? [`${s.name} — ${s.level ? 'Level ' + s.level : 'Cantrip'}${s.conc ? ' · Concentration' : ''}`, s.desc || ''] : []; }
 function itemInfo(k) {
   const I = ITEMS[k]; const w = k.startsWith('w:') ? WEAPONS[k.slice(2)] : null; const a = k.startsWith('a:') ? ARMOR[k.slice(2)] : null;
-  return [G.nameOf(k) + (tierOf(k) !== 'common' ? ` — ${TIER_LABEL[tierOf(k)]}` : ''), I?.heal ? `Heals ${I.heal} HP` : I?.cure ? `Cures ${I.cure}` : w ? `${w.dmg} ${w.type} · ${w.cat}${w.props?.length ? ' · ' + w.props.join(', ') : ''}` : a ? `AC ${a.base} (${a.type} armor)${a.str ? ' · needs Str ' + a.str : ''}${a.stealthDis ? ' · Stealth disadvantage' : ''}${a.metal ? ' · metal' : ''}` : k === 'shield' ? '+2 AC' : I?.desc || I?.kind || '', `Value ${G.priceOf(k)} gp`].filter(Boolean);
+  return [G.nameOf(k) + (tierOf(k) !== 'common' ? ` — ${TIER_LABEL[tierOf(k)]}` : ''), I?.heal ? `Heals ${I.heal} HP` : I?.cure ? `Cures ${I.cure}` : w ? `${w.dmg} ${w.type} · ${w.cat}${w.props?.length ? ' · ' + w.props.join(', ') : ''}` : a ? `AC ${a.base} (${a.type} armor)${a.str ? ' · needs Str ' + a.str : ''}${a.stealthDis ? ' · Stealth disadvantage' : ''}${a.metal ? ' · metal' : ''}` : k === 'shield' ? '+2 AC' : I?.desc || I?.kind || '', G.isQuestItem(k) ? "Quest item, can't be sold" : `Value ${G.priceOf(k)} gp`].filter(Boolean);
 }
 
 /* ---------- First-run tutorial ---------- */

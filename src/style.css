@@ -809,3 +809,8 @@ body.fallen #btn-menu { display: none; }
   .partyrow .vstatus { flex: none; }
   .partyrow.is-down .pname small, .partyrow.is-dead .pname small { display: inline; color: #e8d7b0; font-size: 12px; }
 }
+
+/* Party gold on town screens, and unsellable quest-item note in the shop. */
+.goldline { font-size: 16px; letter-spacing: .02em; white-space: nowrap; }
+.quest-unsellable { flex: none; color: #cfc4e6; font-size: 13px; font-style: italic; padding: 0 4px; }
+@media (max-width: 760px) { .quest-unsellable { font-size: 14px; } }
