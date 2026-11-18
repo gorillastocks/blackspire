@@ -5,6 +5,8 @@ import { createCharacter, assignByPriority, longRest, shortRest, levelUp, canLev
 import { ITEMS, WEAPONS, ARMOR, CLASSES, RACES, XP_LEVELS, SPELLS, DROP_POOL, tierOf } from '../rules/data.js';
 import { elitePos, LORE } from '../dungeon/extras.js';
 import { roll, rand, pick, die, d20 } from '../rules/dice.js';
+import { isHealPotion, healPotionCount, pickHealPotion } from '../rules/potions.js';
+export { isHealPotion, healPotionCount, pickHealPotion };
 import { COMPANIONS, COMPANION_KEYS, banter } from './companions.js';
 import * as Story from './story.js';
 import { randomPortrait, PORTRAIT_COUNT, PORTRAIT_TOTAL, LIORA_PORTRAIT, PIP_PORTRAIT } from '../portraits.js';
@@ -634,10 +636,14 @@ export function campHeal(s, c, k, lvl, target) {
   return { ev: [{ log: `${c.name} casts ${S.name}${lvl > S.level ? ` at level ${lvl}` : ''}. ${lines.slice(0, -1).map((l) => l.slice(2)).join('; ')}.`, cls: 'spell' }], card: { text: `✨ ${text}`, cls: 'loot', lines } };
 }
 export function campPotion(s, target) {
-  const i = s.inventory.indexOf('potionHealing'); if (i < 0 || !target || target.dead) return { ev: [{ log: 'No potion to use.', cls: 'dim' }] };
-  s.inventory.splice(i, 1); const before = Math.max(0, target.hp); heal(target, roll(ITEMS.potionHealing.heal)); const left = s.inventory.filter((x) => x === 'potionHealing').length;
-  const lines = [`❤ ${target.name}: HP ${before} → ${target.hp}/${target.maxHp}${before === 0 && target.hp > 0 ? ' — back on their feet!' : ''}`, `🧪 ${left} Potion${left === 1 ? '' : 's'} of Healing left`];
-  return { ev: [{ log: `${target.name} drinks a Potion of Healing (HP ${before} → ${target.hp}).`, cls: 'good' }], card: { text: `🧪 ${fill('potion', { t: target.name })}`, cls: 'loot', lines } };
+  if (!target || target.dead) return { ev: [{ log: 'The dead need the temple, not a potion.', cls: 'dim' }] };
+  const missing = Math.max(0, target.maxHp - Math.max(0, target.hp));
+  const key = pickHealPotion(s.inventory, missing); const i = key ? s.inventory.indexOf(key) : -1;
+  if (i < 0) return { ev: [{ log: 'No potion to use.', cls: 'dim' }] };
+  const I = ITEMS[key]; s.inventory.splice(i, 1);
+  const before = Math.max(0, target.hp); heal(target, roll(I.heal)); const left = healPotionCount(s.inventory);
+  const lines = [`❤ ${target.name}: HP ${before} → ${target.hp}/${target.maxHp}${before === 0 && target.hp > 0 ? ' — back on their feet!' : ''}`, `🧪 ${left} healing potion${left === 1 ? '' : 's'} left`];
+  return { ev: [{ log: `${target.name} drinks ${I.name} (HP ${before} → ${target.hp}).`, cls: 'good' }], card: { text: `🧪 ${fill('potion', { t: target.name })}`, cls: 'loot', lines } };
 }
 
 /* ---------- Phase B: secrets, elites and rare loot ---------- */

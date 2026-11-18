@@ -1,6 +1,7 @@
 // Turn-based combat engine implementing SRD 5.1 combat rules (condensed to a Wizardry-style party-vs-groups view).
 import { MONSTERS, SPELLS, CR_XP, WEAPONS, ARMOR, ITEMS, CLASSES, TUNING } from './data.js';
 import { roll, d20, die, pick, rand } from './dice.js';
+import { pickHealPotion } from './potions.js';
 import { narrateAttack, line as narr } from './narrate.js';
 import {
   mod, abilityMod, saveMod, armorClass, weaponStats, spellDC, spellAttack, spellMod, sneakDice, cantripDice, attacksPerAction,
@@ -827,7 +828,7 @@ export class Combat {
     if (style === 'aggressive') hard = true; else if (style === 'defensive') hard = this.boss;
     const downed = this.party.filter((p) => p.hp <= 0 && !p.dead);
     const hurt = this.party.filter((p) => !isDown(p) && p.hp < p.maxHp * thr);
-    const potion = T.potions ? this.inventory.find((k) => ITEMS[k]?.kind === 'potion') : null;
+    const potion = T.potions ? pickHealPotion(this.inventory, c.maxHp - Math.max(0, c.hp)) : null;
     const can = (k) => (T.spells || SPELLS[k].level === 0) && (T.aoe || !AOE_SPELLS.includes(k)) && this.castable(c).some((x) => x.k === k);
     // Area spells hit one whole group, so what counts is the fullest group, not the total head count
     const bgrp = this.bestGroup(), gn = bgrp ? bgrp.monsters.filter((m) => !m.conditions.unconscious).length : 0; const aoe2 = gn >= 2, aoe3 = enemies.length >= 3 && gn >= 2;
@@ -853,7 +854,7 @@ export class Combat {
     // Defensive: badly hurt and nobody else to save them → drink a potion or dodge
     if (style === 'defensive' && c.hp < c.maxHp * Math.max(thr, 0.35)) { if (potion) return go('item', { item: potion, target: c }); if (!this.boss) return go('dodge'); }
     // Support: patch up allies first (potions on others if there is no healing spell)
-    if (style === 'support' && potion && t.action) { const ally = this.party.filter((p) => !p.dead && p.hp < p.maxHp * thr).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]; if (ally && !(c.cls === 'cleric' && (can('cureWounds') || can('healingWord')))) return go('item', { item: potion, target: ally }); }
+    if (style === 'support' && potion && t.action) { const ally = this.party.filter((p) => !p.dead && p.hp < p.maxHp * thr).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]; if (ally && !(c.cls === 'cleric' && (can('cureWounds') || can('healingWord')))) return go('item', { item: pickHealPotion(this.inventory, ally.maxHp - Math.max(0, ally.hp)) || potion, target: ally }); }
     // Phase D: a melee hero stuck in the back row trades places with an AI caster up front; casters and scholars Study the toughest foe early
     if (t.bonus && t.action && c.ai && !this.inFront(c) && c.equip.weapon && !c.equip.ranged && !this.hasReach(c) && ['fighter', 'barbarian', 'paladin', 'monk', 'rogue'].includes(c.cls)) {
       const sq = this.frontRow().find((p) => p !== c && p.ai && ['wizard', 'sorcerer', 'warlock', 'bard', 'druid'].includes(p.cls));

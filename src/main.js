@@ -918,13 +918,13 @@ let healSel = null;
 function campHealSection() {
   const hurtOnes = S.party.filter(G.hurt), sel = healSel || {};
   const casters = S.party.filter((c) => !c.dead && knownSpells(c).some((k) => G.CAMP_HEALS.includes(k)));
-  const potions = S.inventory.filter((x) => x === 'potionHealing').length;
+  const potions = G.healPotionCount(S.inventory);
   const back = btn('← Back', () => { healSel = null; showCamp(); }, { class: 'small' });
   const done = (r) => { healSel = null; handle(r.ev); showCamp(); if (r.card) queueMessage(r.card); refresh(); autosave(); };
   const hp = (t) => t.hp <= 0 ? `DOWN 0/${t.maxHp}` : `HP ${t.hp}/${t.maxHp}`;
   if (sel.k || sel.potion) {
     const targets = sel.potion ? hurtOnes : G.campTargetsFor(S, sel.k);
-    const what = sel.potion ? 'Potion of Healing' : `${SPELLS[sel.k].name} (level ${sel.lvl})`;
+    const what = sel.potion ? 'a healing potion' : `${SPELLS[sel.k].name} (level ${sel.lvl})`;
     if (!sel.potion && SPELLS[sel.k].target === 'allAllies') return h('div', { class: 'menu' }, h('p', { class: 'hint' }, `${sel.c.name}: ${what} heals the whole party.`), btn(`✨ Cast ${what}`, () => done(G.campHeal(S, sel.c, sel.k, sel.lvl)), { class: 'primary', 'data-heal-cast': '1' }), back);
     return h('div', { class: 'menu' }, h('p', { class: 'hint' }, `${sel.potion ? 'Give' : sel.c.name + ' casts'} ${what} on…`),
       ...targets.map((t) => btn(`${t.name} — ${hp(t)}`, () => done(sel.potion ? G.campPotion(S, t) : G.campHeal(S, sel.c, sel.k, sel.lvl, t)), { 'data-heal-target': t.id })),
@@ -942,7 +942,7 @@ function campHealSection() {
     rows.push(btn(`✨ ${c.name} casts…${why ? ` (${why})` : ''}`, () => { healSel = { c }; showCamp(); }, { disabled: !!why, 'data-heal-caster': c.id }));
   }
   if (!casters.length) rows.push(h('p', { class: 'hint' }, 'Nobody in the party knows a healing spell.'));
-  rows.push(btn(`🧪 Use a Potion of Healing (${potions} left)${!potions ? ' — none left' : !hurtOnes.length ? ' — nobody is hurt' : ''}`, () => { healSel = { potion: true }; showCamp(); }, { disabled: !potions || !hurtOnes.length, 'data-heal-potion': '1' }));
+  rows.push(btn(`🧪 Use a healing potion (${potions} left)${!potions ? ' — none left' : !hurtOnes.length ? ' — nobody is hurt' : ''}`, () => { healSel = { potion: true }; showCamp(); }, { disabled: !potions || !hurtOnes.length, 'data-heal-potion': '1' }));
   rows.push(h('p', { class: 'hint' }, 'Healing a downed ally (0 HP) gets them back up. The dead need the Temple.'));
   return h('div', { class: 'menu' }, ...rows);
 }
@@ -1119,15 +1119,23 @@ function inventoryList(redraw, shop = false) {
   const chips = inv.length > 8 ? [['all', 'All'], ['weapons', '⚔ Weapons'], ['armor', '🛡 Armor'], ['potions', '🧪 Potions'], ['other', 'Other']].filter(([g]) => counts[g]) : [];
   if (invFilter !== 'all' && !counts[invFilter]) invFilter = 'all';
   const filter = chips.length ? invFilter : 'all';
-  return h('div', { class: 'menu' }, chips.length ? h('div', { class: 'seg invchips', role: 'tablist' }, chips.map(([g, l]) => btn(`${l} (${counts[g]})`, () => { invFilter = g; redraw(); }, { class: 'small ' + (filter === g ? 'on' : ''), 'data-inv': g, role: 'tab', 'aria-selected': String(filter === g) }))) : null, inv.map((k, i) => [k, i]).filter(([k]) => filter === 'all' || group(k) === filter).map(([k, i]) => {
-    const I = ITEMS[k]; const kind = invKind(k);
-    return h('div', { class: 'row' }, h('span', { style: 'flex:1;' + tierStyle(k), class: 'itemname tier-' + tierOf(k), info: () => itemInfo(k), tabindex: 0 }, G.nameOf(k)),
-      kind === 'potion' ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.usePotion(S, i, c)); redraw(); } }, h('option', {}, 'Use on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
-      ['weapon', 'armor', 'ring', 'cloak', 'helm'].includes(kind) ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.equip(S, c, i)); redraw(); } }, h('option', {}, 'Equip on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
+  const seen = new Set();
+  const rows = [];
+  for (let i = 0; i < inv.length; i++) {
+    const k = inv[i]; if (seen.has(k)) continue; seen.add(k);
+    if (filter !== 'all' && group(k) !== filter) continue;
+    const n = inv.filter((x) => x === k).length;
+    const kind = invKind(k);
+    const label = n > 1 ? `${G.nameOf(k)} ×${n}` : G.nameOf(k);
+    rows.push(h('div', { class: 'row', 'data-inv-item': k, 'data-inv-count': n }, h('span', { style: 'flex:1;' + tierStyle(k), class: 'itemname tier-' + tierOf(k), info: () => itemInfo(k), tabindex: 0 }, label),
+      kind === 'potion' ? h('select', { class: 'small', 'data-use-potion': k, onchange: (e) => { const c = S.party[+e.target.value]; handle(G.usePotion(S, S.inventory.indexOf(k), c)); redraw(); } }, h('option', {}, 'Use on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
+      ['weapon', 'armor', 'ring', 'cloak', 'helm'].includes(kind) ? h('select', { class: 'small', onchange: (e) => { const c = S.party[+e.target.value]; handle(G.equip(S, c, S.inventory.indexOf(k))); redraw(); } }, h('option', {}, 'Equip on…'), S.party.map((c, j) => h('option', { value: j }, c.name))) : null,
       shop && G.isQuestItem(k) ? h('span', { class: 'quest-unsellable', 'data-unsellable': k }, "Quest item, can't be sold")
-        : shop ? btn(`Sell ${Math.floor(G.priceOf(k) / 2)}gp`, () => { handle(G.sell(S, i)); redraw(); }, { class: 'small', 'data-sell': k }) : null);
-  }));
+        : shop ? btn(`Sell ${Math.floor(G.priceOf(k) / 2)}gp`, () => { handle(G.sell(S, S.inventory.indexOf(k))); redraw(); }, { class: 'small', 'data-sell': k }) : null));
+  }
+  return h('div', { class: 'menu' }, chips.length ? h('div', { class: 'seg invchips', role: 'tablist' }, chips.map(([g, l]) => btn(`${l} (${counts[g]})`, () => { invFilter = g; redraw(); }, { class: 'small ' + (filter === g ? 'on' : ''), 'data-inv': g, role: 'tab', 'aria-selected': String(filter === g) }))) : null, ...rows);
 }
+
 function showInventory() { const draw = () => openModal([h('h2', {}, `🎒 Party Inventory — ${S.gold} gp`), inventoryList(draw)]); draw(); }
 
 /* ---------- Character sheet ---------- */
