@@ -153,7 +153,8 @@ export const ARMOR = {
   plate: { name: 'Plate', base: 18, type: 'heavy', cost: 1500, str: 15, stealthDis: true },
 };
 
-// Consumables & magic items (SRD magic items). kind: potion | weapon | armor | ring | cloak | junk | key
+// Consumables & magic items (SRD magic items). kind: potion | weapon | armor | ring | cloak | helm | shield | junk | key | quest
+// kind key and quest cannot be sold or discarded (see isQuestItem).
 export const ITEMS = {
   potionHealing: { name: 'Potion of Healing', kind: 'potion', heal: '2d4+2', cost: 50 },
   potionGreater: { name: 'Potion of Greater Healing', kind: 'potion', heal: '4d4+4', cost: 150 },

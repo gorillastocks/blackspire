@@ -469,9 +469,17 @@ export function nameOf(key) {
   if (key.startsWith('a:')) return ARMOR[key.slice(2)].name + ' Armor';
   return ITEMS[key]?.name || key;
 }
+/** Floor keys (`kind: 'key'`) and story relics (`kind: 'quest'`) cannot be sold or discarded. */
+export function isQuestItem(key) {
+  const k = ITEMS[key]?.kind;
+  return k === 'key' || k === 'quest';
+}
+export const canSell = (key) => !!key && !isQuestItem(key);
+/** Grouped gold amount, e.g. 1234 → "1,234". */
+export const formatGold = (n) => Number(n || 0).toLocaleString('en-US');
 export function buy(s, key) { const p = priceOf(key); if (s.gold < p) return [{ log: 'Not enough gold.', cls: 'bad' }]; s.gold -= p; s.inventory.push(key); return [{ log: `Bought ${nameOf(key)} for ${p} gp.`, cls: 'good' }]; }
 export function sell(s, idx) {
-  const key = s.inventory[idx]; if (!key || ITEMS[key]?.kind === 'key') return [];
+  const key = s.inventory[idx]; if (!canSell(key)) return [];
   const p = Math.floor(priceOf(key) / 2); s.inventory.splice(idx, 1); s.gold += p;
   const out = [{ log: `Sold ${nameOf(key)} for ${p} gp.` }];
   return out;
