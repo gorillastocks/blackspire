@@ -215,7 +215,7 @@ function showJournal(back, tab) {
   const qs = Story.questList(S), notes = S.notes || [], entries = S.journal || [];
   const tabs = [['quests', '📜 Quests', qs.filter((q) => q.status === 'ready').length || null], ['bonds', '💞 Bonds'], ['notes', '🗒 Notes'], ['entries', '🕮 Entries']];
   const pages = {
-    quests: () => [h('p', { class: 'hint' }, `Moon ${Math.min(5, (S.moon | 0) + 1)} of 5 · Seals broken: ${Story.sealsBroken(S)}/5${Story.empowered(S) ? ' · ⚠ Malthrax is EMPOWERED' : ''}`),
+    quests: () => [h('p', { class: 'hint', id: 'quests-clock' }, Story.questsClockHint(S)),
       h('div', { class: 'menu' }, qs.map((q) => h('p', {}, h('b', {}, `${q.status === 'done' ? '✔' : q.status === 'ready' ? '❗' : '•'} ${q.title || q.id}`), q.progress ? ` (${q.progress})` : '', q.desc ? h('br') : null, q.desc ? h('span', { class: 'hint' }, q.desc) : null)))],
     bonds: () => [bondsPanel()],
     notes: () => [h('h3', {}, `Elowen's notes (${notes.length}/10)`), ...notes.map((n) => h('p', { class: 'lore' }, typeof n === 'string' ? n : Story.NOTES[n - 1] || ''))],
@@ -622,6 +622,7 @@ async function showTitle() {
 function showHelp() {
   openModal([h('h2', {}, 'How to Play'), h('div', { html: `
   <p>Princess Elowen has been taken into the dungeons beneath <b>Blackspire</b>. Descend beneath Emberhollow, defeat each level's guardians, and stop Malthrax before the fifth seal breaks. Gorvax the Tyrant guards the <b>Dawnstone Amulet</b> in the deepest vault.</p>
+  <p>A moon rises — and a seal breaks — every <b>5 long rests</b> on Story and Normal, or every <b>3 long rests</b> on Hard. Camping and a night at the inn both count. After five moons, Malthrax is empowered: the finale is harder, but the game is not lost.</p>
   <table><tr><th>Move</th><td>W/↑ forward · S/↓ back · A/D or ←/→ turn · Q/E strafe · swipe on mobile</td></tr>
   <tr><th>Search</th><td>F / Space — find secret doors & traps, pick or force locks</td></tr>
   <tr><th>Camp</th><td>C — short/long rest, party talk, reorder, save/load</td></tr>
@@ -686,7 +687,7 @@ function showCreate(asRecruit = false) {
           h('p', { class: 'hint' }, 'Scores are placed into your class\'s key abilities automatically.'),
           recruit ? null : h('h3', {}, 'Difficulty'),
           recruit ? null : h('select', { id: 'cdiff', onchange: (e) => { diff = e.target.value; } }, Object.keys(DIFFICULTY).map((k) => h('option', { value: k, selected: k === diff }, DIFF_LABEL[k]))),
-          recruit ? null : h('p', { class: 'hint' }, 'Changes monster HP and damage. You can change it any time in ☰ Menu → Settings.'),
+          recruit ? null : h('p', { class: 'hint' }, 'Changes monster HP and damage, and how quickly moons rise (every 5 long rests on Story and Normal, every 3 on Hard). You can change it any time in ☰ Menu → Settings.'),
           recruit ? null : h('label', { class: 'switch row', for: 'crandom' }, h('input', { type: 'checkbox', id: 'crandom', role: 'switch', checked: randomDun, onchange: (e) => { randomDun = e.target.checked; } }), h('span', { class: 'slider' }), h('b', {}, ' 🎲 Random dungeons')),
           recruit ? null : h('p', { class: 'hint' }, 'Off: the classic hand-tuned layouts. On: every floor is freshly generated for this game (saved with it), always with reachable stairs, keys, bosses and quest spots.'),
           recruit ? null : h('h3', {}, 'Your Companions'),
@@ -2092,7 +2093,7 @@ function doImport(text) {
   if (S) confirmView('Import this save?', 'It replaces the current game. Progress since your last save will be lost.', '⬆ Import', go, 'backup'); else go();
 }
 const DIFF_LABEL = { story: '🌱 Story', normal: '⚔ Normal', hard: '💀 Hard' };
-const DIFF_HELP = { story: 'Story: monsters have 70% HP and deal 60% damage.', normal: 'Normal: monsters as written in the SRD.', hard: 'Hard: monsters have 135% HP and deal 130% damage.' };
+const DIFF_HELP = { story: 'Story: monsters have 70% HP and deal 60% damage. A moon rises every 5 long rests.', normal: 'Normal: monsters as written in the SRD. A moon rises every 5 long rests.', hard: 'Hard: monsters have 135% HP and deal 130% damage. A moon rises every 3 long rests.' };
 
 /* ---------- Audio: music + ambience follow the game ---------- */
 let victoryUntil = 0;

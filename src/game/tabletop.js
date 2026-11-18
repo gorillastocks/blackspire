@@ -66,7 +66,7 @@ export function applyFx(s, fx = {}, view) {
   if (fx.xp) { const r = Prog.giveXp(s, fx.xp); add(`+${r.base} XP each`); }
   for (const it of arr(fx.item)) { s.inventory.push(it); add(`Received: ${nameOf(it)}`); }
   if (fx.hurt) { for (const c of s.party) if (!c.dead) c.hp = Math.max(1, c.hp - fx.hurt); add(`Everyone takes ${fx.hurt} damage`, 'bad'); }
-  if (fx.moon) { s.moon = Math.min(5, (s.moon || 0) + fx.moon); add(`A seal cracks (${s.moon}/5 broken)`, 'bad'); }
+  if (fx.moon) { s.moon = Math.min(5, (s.moon || 0) + fx.moon); s.restsAtLastMoon = s.rests || 0; add(`A seal cracks (${s.moon}/5 broken)`, 'bad'); }
   if (fx.bless) { const B = PC.addBuff(s, fx.bless); if (B) add(`Blessing: ${B.label}. ${B.desc}`); }
   if (fx.curse) { const B = PC.addBuff(s, fx.curse); if (B) add(`Curse: ${B.label}. ${B.desc}`, 'bad'); }
   if (fx.aff) for (const [k, n] of Object.entries(fx.aff)) { PC.addAff(s, k, n); if (s.party.some((c) => c.companion === k)) add(n > 0 ? `${k === 'pip' ? 'Pip' : k} warms to you` : `${k === 'pip' ? 'Pip' : k} is quiet`, n > 0 ? 'good' : 'bad'); }

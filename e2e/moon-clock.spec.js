@@ -1,26 +1,35 @@
 import { test, expect } from '@playwright/test';
 import { newGame, trackErrors } from './helpers.js';
 
-test('long rests at the inn and in camp tell the player the moon and seal clock', async ({ page }) => {
+test('long rests tell the player the moon clock, which follows the live difficulty', async ({ page }) => {
   test.setTimeout(180000);
   const errors = trackErrors(page);
   await newGame(page);
+  // New games default to Normal: 5 long rests per moon.
+  expect(await page.evaluate(() => window.__gw.state.difficulty || 'normal')).toBe('normal');
 
   await page.locator('#btn-inn').click();
-  await expect(page.locator('#log')).toContainText('☾ Long rests until next moonrise: 2 · Seals broken: 0 of 5');
-  await expect(page.locator('#toast')).toHaveText('☾ Long rests until next moonrise: 2 · Seals broken: 0 of 5');
+  await expect(page.locator('#log')).toContainText('☾ Long rests until next moonrise: 4 · Seals broken: 0 of 5');
+  await expect(page.locator('#toast')).toHaveText('☾ Long rests until next moonrise: 4 · Seals broken: 0 of 5');
+
+  await page.locator('#btn-journal').click();
+  await expect(page.locator('#quests-clock')).toHaveText('Moon 1 of 5 · Seals broken: 0/5 · 4 long rests until next moonrise (5 per moon)');
+  await page.locator('#btn-journal-close').click();
 
   await page.evaluate(() => {
     const g = window.__gw, s = g.state;
-    s.rests = 2; s.moon = 0; s.gold = 100;
+    s.rests = 4; s.moon = 0; s.gold = 100; s.difficulty = 'normal';
+    delete s.restsAtLastMoon;
     g.handle(g.G.innRest(s));
   });
   await expect(page.locator('#log')).toContainText('The moon rises over Emberhollow');
-  await expect(page.locator('#log')).toContainText('☾ Long rests until next moonrise: 3 · Seals broken: 1 of 5');
+  await expect(page.locator('#log')).toContainText('☾ Long rests until next moonrise: 5 · Seals broken: 1 of 5');
 
   await page.evaluate(() => {
     const g = window.__gw, s = g.state;
-    s.rests = 14; s.moon = 4; s.gold = 100; s.mode = 'town';
+    s.difficulty = 'hard';
+    s.rests = 14; s.moon = 4; delete s.restsAtLastMoon; // old-save layout: last moon at rest 12
+    s.gold = 100; s.mode = 'town';
     g.handle(g.G.rest(s, 'long'));
   });
   await expect(page.locator('#log')).toContainText('Five moons, Emberhollow');

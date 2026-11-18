@@ -23,11 +23,18 @@ describe('story systems', () => {
     const s = fresh(); const ev = Story.visitPoi(s, 'note1'); expect(ev.consumed).toBe(true); expect(s.notes.length).toBe(1);
     expect(Story.visitPoi(s, 'note1').length).toBe(0);
   });
-  it('ritual clock: 3 long rests per moon, empowered after 5 seals', () => {
-    const s = fresh();
-    for (let i = 0; i < 15; i++) Story.onLongRest(s);
+  it('ritual clock: 5 long rests per moon on Normal, empowered after 5 seals', () => {
+    const s = fresh(); s.difficulty = 'normal';
+    for (let i = 0; i < 25; i++) Story.onLongRest(s);
     expect(Story.sealsBroken(s)).toBe(5); expect(Story.empowered(s)).toBe(true);
     expect(Story.storyCombat(s, { boss: true }, 4).empowered).toBeTruthy();
+  });
+  it('ritual clock: 3 long rests per moon on Hard', () => {
+    const s = fresh(); s.difficulty = 'hard';
+    for (let i = 0; i < 14; i++) Story.onLongRest(s);
+    expect(Story.empowered(s)).toBe(false);
+    Story.onLongRest(s);
+    expect(Story.sealsBroken(s)).toBe(5); expect(Story.empowered(s)).toBe(true);
   });
   it('townsfolk give and track quests', () => {
     const s = fresh();

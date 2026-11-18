@@ -129,29 +129,50 @@ function progress(s, q, out, line) {
 }
 function give(s, key, out, note = '') { s.inventory.push(key); out.push({ log: `Received ${ITEMS[key].name}!${note}`, cls: 'good' }); }
 
-/* ---------- Ritual clock: 5 seals, one breaks per moonrise (every third long rest) ---------- */
-export const RESTS_PER_MOON = 3;
+/* ---------- Ritual clock: 5 seals, one breaks per moonrise ---------- */
+/* Story and Normal: every 5 long rests. Hard: every 3. Unknown difficulties use Normal. */
+/* Older saves granted a moon every 3 rests; we infer the last moonrise from that so their moon count is kept. */
+export const LEGACY_RESTS_PER_MOON = 3;
+export const RESTS_PER_MOON_BY_DIFFICULTY = { story: 5, normal: 5, hard: 3 };
+export const DEFAULT_RESTS_PER_MOON = 5;
 export const SEALS = 5;
+export function restsPerMoon(s) {
+  return RESTS_PER_MOON_BY_DIFFICULTY[s?.difficulty] ?? DEFAULT_RESTS_PER_MOON;
+}
 export function sealsBroken(s) { return Math.min(SEALS, s.moon || 0); }
 export function empowered(s) { return (s.moon || 0) >= SEALS; }
 /** The ritual clock stops once the campaign is won (or the ending has started). */
 export function campaignOver(s) { return !!(s.victory || s.flags?.ended || s.flags?.ending); }
-/** Long rests remaining until the next moonrise, after the current rest has already been counted. */
+/** Rest count at the last moonrise. Missing on old saves: moons used to fall every 3 long rests. */
+export function restsAtLastMoon(s) {
+  return s.restsAtLastMoon ?? (s.moon || 0) * LEGACY_RESTS_PER_MOON;
+}
+export function restsSinceLastMoon(s) {
+  return Math.max(0, (s.rests || 0) - restsAtLastMoon(s));
+}
+/** Long rests remaining until the next moonrise, using the live difficulty. If the threshold already elapsed (e.g. after switching to Hard), the next long rest raises exactly one moon. */
 export function restsUntilMoonrise(s) {
-  const rem = (s.rests || 0) % RESTS_PER_MOON;
-  return rem === 0 ? RESTS_PER_MOON : RESTS_PER_MOON - rem;
+  const left = restsPerMoon(s) - restsSinceLastMoon(s);
+  return left <= 0 ? 1 : left;
 }
 /** Unvoiced status line shown after every long rest (camp or inn). */
 export function moonClockLine(s) {
   if (empowered(s)) return '☾ Malthrax is empowered. All 5 seals are broken.';
   return `☾ Long rests until next moonrise: ${restsUntilMoonrise(s)} · Seals broken: ${sealsBroken(s)} of ${SEALS}`;
 }
+/** Journal Quests-tab summary of the ritual clock. */
+export function questsClockHint(s) {
+  const head = `Moon ${Math.min(SEALS, (s.moon | 0) + 1)} of ${SEALS} · Seals broken: ${sealsBroken(s)}/${SEALS}`;
+  if (empowered(s)) return `${head} · ⚠ Malthrax is EMPOWERED`;
+  return `${head} · ${restsUntilMoonrise(s)} long rests until next moonrise (${restsPerMoon(s)} per moon)`;
+}
+function markMoonRise(s) { s.restsAtLastMoon = s.rests || 0; }
 export function onLongRest(s) {
   initStory(s); const out = [];
   if (campaignOver(s)) { s.flags.ended = true; return out; }
   s.rests++;
-  if (s.rests % RESTS_PER_MOON === 0) {
-    s.moon++; const b = sealsBroken(s);
+  if (restsSinceLastMoon(s) >= restsPerMoon(s)) {
+    s.moon++; markMoonRise(s); const b = sealsBroken(s);
     if (s.moon <= SEALS) { out.push({ log: `🌕 The moon rises over Emberhollow. A seal on the Blackspire cracks and breaks — ${b} of 5 broken.`, cls: 'crit', voice: { text: 'The moon rises over Emberhollow. A seal on the Blackspire cracks and breaks.', who: 'narrator' } }); addJournal(s, `Moonrise ${s.moon}: seal ${b} of 5 broken.`); }
     if (s.moon === SEALS) { out.push({ log: '“Five moons, Emberhollow.” Malthrax\'s laughter rolls up from below. He grows stronger (the finale is harder, but not lost).', cls: 'bad', voice: { text: 'Five moons, Emberhollow.', who: 'malthrax' } }); addJournal(s, 'All five seals are broken. Malthrax is empowered.'); }
   }
