@@ -1,4 +1,5 @@
 // Listen In: eavesdropping on the Boar & Spoon's patrons. DOM-free.
+import { moonBreaksLine } from './story.js';
 // Each tap overhears one short voiced exchange chosen from the save: reactions to what the party just did come first, then hints toward quests that
 // are not started or are stuck, then warnings about the frontier floor, then plain chatter. A rumour is not repeated until every relevant one has been heard.
 
@@ -40,7 +41,7 @@ export const RUMORS = [
   R('r.boss2', 'react', (s) => dead(s, 2), [[M, 'Glasshide fell. The Glimmerdeep glows, and nobody has turned to glass this week.']]),
   R('r.boss3', 'react', (s) => dead(s, 3), [[K, 'Forgemaster Brakk is finished. The Ashforge anvils ring for free folk again.']]),
   R('r.boss4', 'react', (s) => dead(s, 4), [[T, 'The Dread Sovereign is dead! Somebody drinks free tonight. I hope it is you.'], [K, 'The Tyrant still sleeps under the vault, mind. Do not celebrate too long.']]),
-  R('r.moon1', 'react', (s) => (s.moon | 0) >= 1 && (s.moon | 0) < 3, [[I, 'The moon looks cracked tonight. One seal is gone, they say.'], [B, 'Every third rest, another one breaks. Count your naps.']]),
+  R('r.moon1', 'react', (s) => (s.moon | 0) >= 1 && (s.moon | 0) < 3, [[I, 'The moon looks cracked tonight. One seal is gone, they say.'], [B, moonBreaksLine]]),
   R('r.moon3', 'react', (s) => (s.moon | 0) >= 3, [[K, 'Three seals broken. Gorvax shifts in his sleep. Do not linger up here.']]),
 
   // ---- hints: quests not started, or started and stuck ----
@@ -94,7 +95,7 @@ export function overhear(s, rng = Math.random, addJournal = null) {
   const st = ensure(s), r = pickRumor(s, rng), first = !st.heard[r.id];
   st.heard[r.id] = (st.heard[r.id] | 0) + 1; st.taps++;
   if (first && r.jr && addJournal) addJournal(s, r.jr);
-  const lines = r.lines.map(([who, text]) => ({ who, text }));
+  const lines = r.lines.map(([who, text]) => ({ who, text: typeof text === 'function' ? text(s) : text }));
   return { rumor: r, lines, first, logs: lines.map((l) => `🗣 Overheard, ${PATRONS[l.who].name.split(',')[0]}: "${l.text}"`) };
 }
 /** One tap in the bar: about one tap in four is the party's own banter (when somebody is there to speak), else a rumour. */
@@ -103,4 +104,16 @@ export function listenKind(s, rng = Math.random) {
   return talkers && rng() < 0.25 ? 'banter' : 'rumor';
 }
 /** Every line, for the voice catalogue: [speaker, text, id]. */
-export function allLines() { const o = []; for (const r of RUMORS) for (const [w, t] of r.lines) o.push([w, t, r.id]); return o; }
+export function allLines() {
+  const o = [];
+  for (const r of RUMORS) for (const [w, t] of r.lines) {
+    if (typeof t === 'function') {
+      const seen = new Set();
+      for (const difficulty of ['story', 'normal', 'hard', undefined]) {
+        const text = t({ difficulty });
+        if (text && !seen.has(text)) { seen.add(text); o.push([w, text, r.id]); }
+      }
+    } else o.push([w, t, r.id]);
+  }
+  return o;
+}

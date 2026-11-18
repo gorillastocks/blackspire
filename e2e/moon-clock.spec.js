@@ -46,5 +46,24 @@ test('long rests tell the player the moon clock, which follows the live difficul
   expect(after.moon).toBe(5);
   expect(after.logs.some((t) => /moonrise|empowered|seals/i.test(t))).toBe(false);
 
+  const heard = await page.evaluate(() => {
+    const g = window.__gw, s = g.state, out = {};
+    s.moon = 1; s.rumors = { heard: {}, taps: 0 };
+    s.difficulty = 'normal';
+    const n = g.G.Tavern.overhear(s, () => 0);
+    out.normal = n.lines.find((l) => l.who === 'brogan')?.text;
+    s.difficulty = 'hard'; s.rumors = { heard: {}, taps: 0 };
+    const h = g.G.Tavern.overhear(s, () => 0);
+    out.hard = h.lines.find((l) => l.who === 'brogan')?.text;
+    const has = g.voice().has;
+    out.hasFifth = !!(has && has(out.normal, 'brogan'));
+    out.hasThird = !!(has && has(out.hard, 'brogan'));
+    return out;
+  });
+  expect(heard.normal).toBe('Every fifth rest, another one breaks. Count your naps.');
+  expect(heard.hard).toBe('Every third rest, another one breaks. Count your naps.');
+  expect(heard.hasFifth).toBe(true);
+  expect(heard.hasThird).toBe(true);
+
   expect(errors.filter((e) => !/favicon|Failed to load resource|net::/.test(e))).toEqual([]);
 });

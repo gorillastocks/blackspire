@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { setRng, seeded } from '../src/rules/dice.js';
 import { newGame, innRest, rest } from '../src/game/game.js';
 import * as Story from '../src/game/story.js';
+import * as Tavern from '../src/game/tavern.js';
 import { applyFx } from '../src/game/tabletop.js';
 
 const fresh = (diff) => {
@@ -152,5 +153,24 @@ describe('moon and seal clock after a long rest', () => {
     expect(Story.questsClockHint(s)).toBe('Moon 1 of 5 · Seals broken: 0/5 · 4 long rests until next moonrise (5 per moon)');
     s.difficulty = 'hard'; s.moon = 5; s.rests = 15; s.restsAtLastMoon = 15;
     expect(Story.questsClockHint(s)).toMatch(/Malthrax is EMPOWERED/);
+  });
+
+  it('Brogan\'s Listen In line follows the live difficulty, and the catalogue includes both variants', () => {
+    expect(Story.moonBreaksLine({ difficulty: 'hard' })).toBe(Story.MOON_BREAKS_THIRD);
+    expect(Story.moonBreaksLine({ difficulty: 'normal' })).toBe(Story.MOON_BREAKS_FIFTH);
+    expect(Story.moonBreaksLine({ difficulty: 'story' })).toBe(Story.MOON_BREAKS_FIFTH);
+    expect(Story.moonBreaksLine({ })).toBe(Story.MOON_BREAKS_FIFTH);
+    expect(Story.moonBreaksLine({ difficulty: 'nightmare' })).toBe(Story.MOON_BREAKS_FIFTH);
+    const texts = Tavern.allLines().filter(([, , id]) => id === 'r.moon1').map(([, text]) => text);
+    expect(texts).toContain(Story.MOON_BREAKS_THIRD);
+    expect(texts).toContain(Story.MOON_BREAKS_FIFTH);
+    const s = fresh('normal'); s.moon = 1;
+    const o = Tavern.overhear(s, () => 0);
+    expect(o.rumor.id).toBe('r.moon1');
+    expect(o.lines.find((l) => l.who === 'brogan').text).toBe(Story.MOON_BREAKS_FIFTH);
+    s.difficulty = 'hard';
+    s.rumors = { heard: {}, taps: 0 };
+    const h = Tavern.overhear(s, () => 0);
+    expect(h.lines.find((l) => l.who === 'brogan').text).toBe(Story.MOON_BREAKS_THIRD);
   });
 });

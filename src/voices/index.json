@@ -20231,6 +20231,15 @@
       "hash": "87696743b4b9a347",
       "file": "voice/narrator-024a9b04c3dc.mp3",
       "bytes": 161375
+    },
+    "brogan-0d1963924bba": {
+      "speaker": "brogan",
+      "voice": "U4Y0Z2HmYcQYMkJB8hrg",
+      "text": "Every fifth rest, another one breaks. Count your naps.",
+      "chars": 54,
+      "hash": "73f4fb7b845406cd",
+      "file": "voice/brogan-0d1963924bba.mp3",
+      "bytes": 81127
     }
   },
   "byHash": {
@@ -24679,7 +24688,9 @@
     "narrator:0499b9e8b248d9de": "voice/narrator-c6b42da65f71.mp3",
     "0499b9e8b248d9de": "voice/narrator-c6b42da65f71.mp3",
     "narrator:87696743b4b9a347": "voice/narrator-024a9b04c3dc.mp3",
-    "87696743b4b9a347": "voice/narrator-024a9b04c3dc.mp3"
+    "87696743b4b9a347": "voice/narrator-024a9b04c3dc.mp3",
+    "brogan:73f4fb7b845406cd": "voice/brogan-0d1963924bba.mp3",
+    "73f4fb7b845406cd": "voice/brogan-0d1963924bba.mp3"
   },
   "byText": {
     "elowen|rise, knight of the dawn.": "voice/elowen-591217990d9f.mp3",
@@ -29057,6 +29068,8 @@
     "narrator|elite: horned terror stands guard ahead. fight it, sneak around it, or come back later. its drops are the best on the floor.": "voice/narrator-c6b42da65f71.mp3",
     "elite: horned terror stands guard ahead. fight it, sneak around it, or come back later. its drops are the best on the floor.": "voice/narrator-c6b42da65f71.mp3",
     "narrator|elite: horned terror stands guard right here. fight it, sneak around it, or come back later. its drops are the best on the floor.": "voice/narrator-024a9b04c3dc.mp3",
-    "elite: horned terror stands guard right here. fight it, sneak around it, or come back later. its drops are the best on the floor.": "voice/narrator-024a9b04c3dc.mp3"
+    "elite: horned terror stands guard right here. fight it, sneak around it, or come back later. its drops are the best on the floor.": "voice/narrator-024a9b04c3dc.mp3",
+    "brogan|every fifth rest, another one breaks. count your naps.": "voice/brogan-0d1963924bba.mp3",
+    "every fifth rest, another one breaks. count your naps.": "voice/brogan-0d1963924bba.mp3"
   }
 }

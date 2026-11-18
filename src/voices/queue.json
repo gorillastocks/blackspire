@@ -2446,5 +2446,13 @@
     "priority": 61,
     "source": "phaseE:Cards and discoveries: elite warnings:elite.b5.Horned Terror",
     "chars": 129
+  },
+  {
+    "id": "brogan-0d1963924bba",
+    "speaker": "brogan",
+    "text": "Every fifth rest, another one breaks. Count your naps.",
+    "priority": 80,
+    "source": "phaseE:Tavern rumours (Listen In):rumor.r.moon1",
+    "chars": 54
   }
 ]

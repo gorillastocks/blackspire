@@ -139,6 +139,13 @@ export const SEALS = 5;
 export function restsPerMoon(s) {
   return RESTS_PER_MOON_BY_DIFFICULTY[s?.difficulty] ?? DEFAULT_RESTS_PER_MOON;
 }
+export const MOON_BREAKS_THIRD = 'Every third rest, another one breaks. Count your naps.';
+export const MOON_BREAKS_FIFTH = 'Every fifth rest, another one breaks. Count your naps.';
+export const MOON_BREAKS_LINES = [MOON_BREAKS_THIRD, MOON_BREAKS_FIFTH];
+/** Brogan's Listen In line: the rest pace follows the live difficulty. */
+export function moonBreaksLine(s) {
+  return restsPerMoon(s) === 3 ? MOON_BREAKS_THIRD : MOON_BREAKS_FIFTH;
+}
 export function sealsBroken(s) { return Math.min(SEALS, s.moon || 0); }
 export function empowered(s) { return (s.moon || 0) >= SEALS; }
 /** The ritual clock stops once the campaign is won (or the ending has started). */
