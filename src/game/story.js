@@ -123,7 +123,7 @@ export function startQuest(s, q) { initStory(s); if (!s.quests[q]) { s.quests[q]
 const ready = (s, q) => s.quests[q] === 'ready';
 function progress(s, q, out, line) {
   startQuest(s, q); const n = bump(s, q); const need = QUESTS[q].need || 1;
-  if (s.quests[q] === 'active' && n >= need) { s.quests[q] = 'ready'; out.push({ log: `Quest objective complete: ${QUESTS[q].title}.${QUESTS[q].giver in NPCS && !COMPANION_QUEST[q] ? ` Return to ${NPCS[QUESTS[q].giver].name}.` : ''}`, cls: 'good', sfx: 'level' }); addJournal(s, `${QUESTS[q].title}: objective complete.`); }
+  if (s.quests[q] === 'active' && n >= need) { s.quests[q] = 'ready'; const ret = QUESTS[q].giver in NPCS && !COMPANION_QUEST[q] ? ` Return to ${NPCS[QUESTS[q].giver].name}.` : ''; out.push({ log: `Quest objective complete: ${QUESTS[q].title}.${ret}`, cls: 'good', sfx: 'level', voice: { text: 'Quest objective complete.', who: 'narrator' } }); addJournal(s, `${QUESTS[q].title}: objective complete.`); }
   else if (line) out.push({ log: `${QUESTS[q].title}: ${Math.min(n, need)}/${need}.`, cls: 'sys' });
   return n;
 }
@@ -185,7 +185,7 @@ export function onLongRest(s) {
   }
   const line = moonClockLine(s);
   out.push({ log: line, cls: 'dim', toast: line });
-  if (s.quests.ballad === 'done' && s.mode === 'town') { for (const c of s.party) if (!c.dead) c.tempHp = Math.max(c.tempHp || 0, 10); out.push({ log: 'Grumsh\'s ballad has the inn singing. Feast buff: 10 temporary HP each.', cls: 'good' }); }
+  if (s.quests.ballad === 'done' && s.mode === 'town') { for (const c of s.party) if (!c.dead) c.tempHp = Math.max(c.tempHp || 0, 10); out.push({ log: 'Grumsh\'s ballad has the inn singing. Feast buff: 10 temporary HP each.', cls: 'good', voice: true }); }
   return out;
 }
 
@@ -201,7 +201,7 @@ export const POI_XP = { pylon: 250, smith: 250 };
 function poiXp(s, kind, out) { const n = POI_XP[kind]; if (!n) return; for (const c of s.party || []) if (!c.dead) c.xp += n; out.push({ log: `+${n} XP each.`, cls: 'good' }); }
 export function visitPoi(s, id) {
   initStory(s); const out = []; if (!id || s.pois[id]) return out;
-  if (POI_GUARDS[id] && !s.flags['guarded_' + id]) { out.push({ log: POI_GUARDS[id].log, cls: 'bad', combat: { groups: POI_GUARDS[id].groups, fixed: true, poi: id, guard: true } }); return out; }
+  if (POI_GUARDS[id] && !s.flags['guarded_' + id]) { out.push({ log: POI_GUARDS[id].log, cls: 'bad', combat: { groups: POI_GUARDS[id].groups, fixed: true, poi: id, guard: true }, voice: true }); return out; }
   if (TT.isTTPoi(id)) { const sc = TT.entryFor(s, id); if (sc) out.push({ prompt: 'tt', scene: sc, poi: id }); return out; }
   const done = () => { s.pois[id] = true; out.consumed = true; };
   const m = /^(note|guard|verse|tale|tablet|page|glowcap|smith|pylon)(\d+)$/.exec(id); const kind = m ? m[1] : id; const n = m ? +m[2] : 0;
@@ -210,10 +210,10 @@ export function visitPoi(s, id) {
       if (s.notes.length >= 10) out.push({ log: 'You have every one of Elowen\'s notes. You know her plan — and she knows you are coming. (+1 initiative in the finale)', cls: 'good', voice: { text: 'You have every one of Elowen\'s notes. You know her plan, and she knows you are coming.', who: 'narrator' } }); break; }
     case 'guard': { done(); startQuest(s, 'guards'); out.push({ log: `You cut a bound town guard free. "Captain Rowan sent you? Bless you!" (${prog(s, 'guards') + 1}/4)`, cls: 'good', voice: { text: 'You cut a bound town guard free. "Captain Rowan sent you? Bless you!"', who: 'narrator' } }); progress(s, 'guards', out); break; }
     case 'tablet': { done(); out.push({ log: TABLETS[n - 1], cls: 'lore' }); addJournal(s, TABLETS[n - 1]); s.flags.tablets = (s.flags.tablets || 0) + 1; break; }
-    case 'verse': { done(); startQuest(s, 'ballad'); out.push({ log: `A drunken carving on the wall inspires Grumsh. ${VERSES[n - 1]}`, cls: 'lore' }); addJournal(s, VERSES[n - 1]); progress(s, 'ballad', out, true); if (ready(s, 'ballad')) { s.quests.ballad = 'done'; out.push({ log: 'Grumsh\'s ballad is complete! Inn rests now come with a feast (10 temp HP).', cls: 'good' }); } break; }
-    case 'tale': { done(); startQuest(s, 'tale'); out.push({ log: TALES[n - 1], cls: 'lore' }); addJournal(s, TALES[n - 1]); progress(s, 'tale', out, true); if (ready(s, 'tale')) { s.quests.tale = 'done'; s.flags.weakPoint = true; out.push({ log: 'Nettle knows the weak point of the Sovereign\'s staff: one clean strike will shatter it.', cls: 'good' }); } break; }
-    case 'page': { done(); startQuest(s, 'pages'); out.push({ log: `A torn spellbook page, covered in Fizzwick's tiny handwriting ("NOTE TO SELF: COUNTERSPELL. ALWAYS COUNTERSPELL.").`, cls: 'lore' }); progress(s, 'pages', out, true); if (ready(s, 'pages')) { s.quests.pages = 'done'; s.flags.counterspell = true; out.push({ log: 'Fizzwick\'s spellbook is whole. He can counterspell Malthrax once in the finale.', cls: 'good' }); } break; }
-    case 'glowcap': { done(); startQuest(s, 'glowcaps'); out.push({ log: 'You pick a softly glowing glowcap mushroom.', cls: 'good' }); progress(s, 'glowcaps', out, true); break; }
+    case 'verse': { done(); startQuest(s, 'ballad'); out.push({ log: `A drunken carving on the wall inspires Grumsh. ${VERSES[n - 1]}`, cls: 'lore' }); addJournal(s, VERSES[n - 1]); progress(s, 'ballad', out, true); if (ready(s, 'ballad')) { s.quests.ballad = 'done'; out.push({ log: 'Grumsh\'s ballad is complete! Inn rests now come with a feast (10 temp HP).', cls: 'good', voice: true }); } break; }
+    case 'tale': { done(); startQuest(s, 'tale'); out.push({ log: TALES[n - 1], cls: 'lore' }); addJournal(s, TALES[n - 1]); progress(s, 'tale', out, true); if (ready(s, 'tale')) { s.quests.tale = 'done'; s.flags.weakPoint = true; out.push({ log: 'Nettle knows the weak point of the Sovereign\'s staff: one clean strike will shatter it.', cls: 'good', voice: true }); } break; }
+    case 'page': { done(); startQuest(s, 'pages'); out.push({ log: `A torn spellbook page, covered in Fizzwick's tiny handwriting ("NOTE TO SELF: COUNTERSPELL. ALWAYS COUNTERSPELL.").`, cls: 'lore' }); progress(s, 'pages', out, true); if (ready(s, 'pages')) { s.quests.pages = 'done'; s.flags.counterspell = true; out.push({ log: 'Fizzwick\'s spellbook is whole. He can counterspell Malthrax once in the finale.', cls: 'good', voice: true }); } break; }
+    case 'glowcap': { done(); startQuest(s, 'glowcaps'); out.push({ log: 'You pick a softly glowing glowcap mushroom.', cls: 'good', voice: true }); progress(s, 'glowcaps', out, true); break; }
     case 'smith': { done(); startQuest(s, 'smiths'); out.push({ log: `You smash the chains of a captive smith. "Tell Dobbin we're coming home — and we'll be at the vault when you need us."`, cls: 'good', voice: true }); progress(s, 'smiths', out, true); break; }
     case 'pylon': { done(); s.flags.pylons = (s.flags.pylons || 0) + 1; out.push({ log: `You shatter a humming crystal pylon. Stored dawn-light spills out and sinks into the floor, heading deeper. (${s.flags.pylons}/3)`, cls: 'good', sfx: 'crit', voice: { text: 'You shatter a humming crystal pylon. Stored dawn-light spills out and sinks into the floor, heading deeper.', who: 'narrator' } }); addJournal(s, `Crystal pylon ${s.flags.pylons}/3 shattered.`); break; }
     case 'tunnel': { done(); startQuest(s, 'tunnel'); s.quests.tunnel = 'ready'; out.push({ log: 'A fresh tunnel, dug straight up toward the Boar & Spoon cellar. You kick out the supports and it caves in. Marga will want to hear.', cls: 'good', voice: true }); addJournal(s, 'Collapsed the tunnel under Marga\'s cellar.'); break; }
@@ -224,11 +224,11 @@ export function visitPoi(s, id) {
     case 'powder': { done(); startQuest(s, 'powder'); s.flags.powder = true; s.quests.powder = 'done'; out.push({ log: `A keg of dwarven blasting powder.${hasComp(s, 'zizzy') ? ' Zizzy\'s eyes light up. "Oh, we are SO using this on the gate."' : ' It looks like the sort of thing a sorcerer would enjoy.'}`, cls: 'good', voice: true }); break; }
     case 'gate': {
       if (s.flags.powder && hasComp(s, 'zizzy')) { done(); s.flags.gateBlown = true; out.push({ log: 'Zizzy packs the powder against the Ashforge gate. KA-BOOM! The gate — and its guards — are no longer a problem.', cls: 'good', shake: true, voice: true }); break; }
-      out.push({ log: 'The Ashforge gate grinds open — and its guardians step out!', cls: 'bad', combat: { groups: [{ key: 'gargoyle', count: 2 }, { key: 'magmin', count: 2 }], fixed: true, poi: id } }); break;
+      out.push({ log: 'The Ashforge gate grinds open — and its guardians step out!', cls: 'bad', voice: true, combat: { groups: [{ key: 'gargoyle', count: 2 }, { key: 'magmin', count: 2 }], fixed: true, poi: id } }); break;
     }
     case 'horn': { done(); startQuest(s, 'horn'); s.quests.horn = 'done'; give(s, 'warhorn', out, ' Old Tamsin\'s tale was true. You will sound it when the Tyrant rises.'); out[out.length - 1].voice = { text: 'Old Tamsin\'s tale was true. You will sound it when the Tyrant rises.', who: 'narrator' }; break; }
-    case 'vey': out.push({ log: 'Sister Vey rises from the black water, singing. "The princess passed this way. You will not."', cls: 'bad', combat: { groups: [{ key: 'sisterVey', count: 1 }, { key: 'cultist', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
-    case 'sporegrave': out.push({ log: 'The cavern floor heaves. Mother Sporegrave unfurls, shriekers wailing around her!', cls: 'bad', combat: { groups: [{ key: 'motherSporegrave', count: 1 }, { key: 'shrieker', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
+    case 'vey': out.push({ log: 'Sister Vey rises from the black water, singing. "The princess passed this way. You will not."', cls: 'bad', voice: true, combat: { groups: [{ key: 'sisterVey', count: 1 }, { key: 'cultist', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
+    case 'sporegrave': out.push({ log: 'The cavern floor heaves. Mother Sporegrave unfurls, shriekers wailing around her!', cls: 'bad', voice: true, combat: { groups: [{ key: 'motherSporegrave', count: 1 }, { key: 'shrieker', count: 2 }], fixed: true, poi: id, lieutenant: true } }); break;
     default: break;
   }
   if (out.consumed) poiXp(s, kind, out);
@@ -317,10 +317,10 @@ export function talkTo(s, npc) {
   } else if (st === 'ready') {
     s.quests[q] = 'done'; addJournal(s, `Completed: ${QUESTS[q].title}.`);
     if (npc === 'rowan') { s.gold += 75; s.flags.escort = true; lines.push(L('rowan', 'All four, alive! Here\'s 75 gold. They\'ll walk the Warrens with you from now on.')); out.push({ log: '+75 gp. Escort buff: guards fight beside you on B1.', cls: 'good' }); }
-    if (npc === 'marga') { s.flags.freeInn = true; lines.push(L('marga', 'Quiet as a tomb down there now. Rooms are free for you, love. Forever. Don\'t tell the others.')); out.push({ log: 'The inn is now free for your party.', cls: 'good' }); }
+    if (npc === 'marga') { s.flags.freeInn = true; lines.push(L('marga', 'Quiet as a tomb down there now. Rooms are free for you, love. Forever. Don\'t tell the others.')); out.push({ log: 'The inn is now free for your party.', cls: 'good', voice: true }); }
     if (npc === 'osric') { s.flags.freeRaise = 1; s.inventory.push('potionGreater', 'potionGreater'); lines.push(L('osric', 'Her relics! The Temple owes you a life. One Raise Dead, free. And take these.')); out.push({ log: 'Received 2 Potions of Greater Healing and one free Raise Dead.', cls: 'good' }); }
     if (npc === 'wren') { s.inventory.push('potionStoneFlesh', 'potionStoneFlesh', 'potionStoneFlesh'); lines.push(L('wren', 'Perfect caps! Three Potions of Stone-to-Flesh. Drink one if you start feeling... gravelly.')); out.push({ log: 'Received 3 Potions of Stone-to-Flesh.', cls: 'good' }); }
-    if (npc === 'dobbin') { s.inventory.push('weapon2'); lines.push(L('dobbin', 'My brothers are home. This blade took all six of us to forge. +2, and it sings when it cuts.')); out.push({ log: 'Received a +2 Smith-Blessed Blade. The smiths will be at the vault for the finale.', cls: 'good' }); }
+    if (npc === 'dobbin') { s.inventory.push('weapon2'); lines.push(L('dobbin', 'My brothers are home. This blade took all six of us to forge. +2, and it sings when it cuts.')); out.push({ log: 'Received a +2 Smith-Blessed Blade. The smiths will be at the vault for the finale.', cls: 'good', voice: true }); }
   } else if (st === 'done') {
     lines.push(L(npc, { rowan: 'The town\'s behind you. Bring her home.', marga: 'Room\'s ready whenever you are.', osric: 'The Temple stands with you.', wren: 'Mind the basilisk, dear.', dobbin: 'The forges are lit for you.', tamsin: 'Blow it hard. Wake the valley.' }[npc]));
   } else {
@@ -328,7 +328,7 @@ export function talkTo(s, npc) {
   }
   // Phase C: the town remembers what you did below, and Brother Osric lifts curses.
   const mem = memoryLines(s, npc).map((t) => L(npc, t)); lines.unshift(...mem);
-  if (npc === 'osric') { const n = liftCurses(s); if (n) { lines.push(L('osric', 'You carry shadows, child. Hold still... There. The Temple has lifted what clung to you.')); out.push({ log: 'Brother Osric lifts the curse upon you.', cls: 'good' }); } }
+  if (npc === 'osric') { const n = liftCurses(s); if (n) { lines.push(L('osric', 'You carry shadows, child. Hold still... There. The Temple has lifted what clung to you.')); out.push({ log: 'Brother Osric lifts the curse upon you.', cls: 'good', voice: true }); } }
   return { scene: { lines }, out };
 }
 export function townfolkStatus(s, npc) { if (TT.TT_NPCS.includes(npc)) return TT.npcStatus(s, npc); const st = s.quests?.[OFFERS[npc]]; return st === 'ready' ? '❗ quest ready' : st === 'done' ? '✔' : st ? '…' : '❓ new quest'; }
@@ -369,7 +369,7 @@ export function finishPrologue(s, choice) {
   startQuest(s, 'guards');
   for (const [q, k] of Object.entries(COMPANION_QUEST)) if (hasComp(s, k)) startQuest(s, q);
   startQuest(s, 'notes');
-  return [{ log: 'Received Elowen\'s Signet Ring and Captain Rowan\'s Writ. Your journal (📖) tracks quests.', cls: 'good' }, ...reactionEvents(s, choice === 'grim' ? 'story.grim' : 'story.vow')];
+  return [{ log: 'Received Elowen\'s Signet Ring and Captain Rowan\'s Writ. Your journal (📖) tracks quests.', cls: 'good', voice: { text: 'Received Elowen\'s Signet Ring and Captain Rowan\'s Writ. Your journal tracks quests.', who: 'narrator' } }, ...reactionEvents(s, choice === 'grim' ? 'story.grim' : 'story.vow')];
 }
 
 /* ---------- Ending ---------- */

@@ -115,6 +115,21 @@ export function voiceBusy() { return !!current || starting > 0 || victoryHold; }
 export function dropQueuedVoices(pred = () => true) {
   for (let i = waiting.length - 1; i >= 0; i--) if (pred(waiting[i])) waiting.splice(i, 1);
 }
+/** Pull matching queued clips (oldest first) so a victory sequence can play them after the narrator. */
+export function takeQueuedVoices(pred = () => true) {
+  const out = [];
+  for (let i = 0; i < waiting.length; ) {
+    if (pred(waiting[i])) out.push(waiting.splice(i, 1)[0]);
+    else i++;
+  }
+  return out;
+}
+export function queuedVoices() {
+  return waiting.map((w) => ({ file: w.file, expires: w.expires, opts: { ...w.opts } }));
+}
+export function quotedVoiceOpts({ combat = false } = {}) {
+  return { kind: 'battle', queue: true, maxWait: combat ? 20000 : 14000, keepForVictory: true };
+}
 function drainWaiting() {
   if (current || starting > 0 || victoryHold || victorySeq.isActive()) return;
   while (waiting.length) {
@@ -168,9 +183,12 @@ export function playVoice(text, speaker = null, opts = {}) {
   const ambient = kind === 'ambient' || !!opts.ambient;
   // Ambient must not start while the host says we're in combat / menu / dialogue.
   if (ambient && !ambientGate()) return false;
-  const o = { ...opts, kind, ambient, speaker };
-  // During the loot/victory sequence, leftover combat barks are dropped; other lines wait their turn so they never overlap the sting.
+  const o = { ...opts, kind, ambient, speaker, text: String(text) };
+  // During the loot/victory sequence, leftover attack barks are dropped; quoted character lines fold in after the narrator.
   if (!opts.victory && victorySeq.isActive()) {
+    if (opts.keepForVictory) {
+      return victorySeq.enqueue({ role: 'character', text, who: speaker, kind });
+    }
     if (opts.combatBark || kind === 'battle') return false;
     victorySeq.enqueue({ role: (kind === 'other' || speaker === 'narrator' || speaker === 'dm') ? 'narrator' : 'character', text, who: speaker, kind });
     return true;
@@ -180,7 +198,10 @@ export function playVoice(text, speaker = null, opts = {}) {
   // queue: wait for the current clip to finish instead of cutting it off (expires after maxWait ms).
   if (opts.queue && voiceBusy()) {
     if (waiting.some((w) => w.file === file)) return true;
-    while (waiting.length >= MAX_WAITING) waiting.shift();
+    while (waiting.length >= MAX_WAITING) {
+      const evict = waiting.findIndex((w) => !w.opts?.keepForVictory);
+      waiting.splice(evict >= 0 ? evict : 0, 1);
+    }
     waiting.push({ file, opts: o, expires: Date.now() + (opts.maxWait || 12000) });
     return true;
   }

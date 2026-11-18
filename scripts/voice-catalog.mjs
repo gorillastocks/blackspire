@@ -12,7 +12,7 @@ import * as Tavern from '../src/game/tavern.js';
 import * as CampTalk from '../src/game/camptalk.js';
 import { TT_SCENES } from '../src/game/tabletop_text.js';
 import { getLevel } from '../src/dungeon/levels.js';
-import { LORE, eliteRoster } from '../src/dungeon/extras.js';
+import { LORE, eliteRoster, ELITES } from '../src/dungeon/extras.js';
 import { MONSTERS, TIER_LABEL } from '../src/rules/data.js';
 import { CHEST_LINES, VICTORY_LINES, RECAP_TITLE, rareFindText } from '../src/game/cardlines.js';
 import { spokenText, normVoiceText } from '../src/voices/norm.js';
@@ -22,7 +22,29 @@ const CK = Object.keys(COMPANIONS);
 const SHORT = Object.fromEntries(CK.map((k) => [k, COMPANIONS[k].short]));
 const NAMES = [...CK.map((k) => SHORT[k]), HERO]; // who can be "down" ({p}) in the default roster
 const MONSTER_NAMES = [...new Set(Object.values(MONSTERS).map((m) => m.name))];
+const ELITE_TITLES = [...new Set(ELITES.flatMap((floor) => floor.map((e) => e[0])))];
 const MIN_ALNUM = 3;
+
+/** Default roster names plus the generic {p} fallback used when a custom name has no clip. */
+export function partyNameVariants() { return [...NAMES, 'friend']; }
+/** Monster type names, elite titles (the first foe is renamed), and the {m} fallback. */
+export function spokenMonsterNames() { return [...new Set([...MONSTER_NAMES, ...ELITE_TITLES, 'creature'])]; }
+export function companionTemplates() {
+  const out = [];
+  for (const k of CK) {
+    const C = COMPANIONS[k], sp = SHORT[k].toLowerCase();
+    for (const [ev, arr] of Object.entries(C.lines || {})) {
+      for (const t of arr) if (/\{[mp]\}/.test(t)) out.push({ kind: 'lines', ev, speaker: sp, short: C.short, template: t, self: C.short });
+    }
+  }
+  for (const [k, trigs] of Object.entries(PC.REACT)) {
+    const sp = SHORT[k].toLowerCase();
+    for (const [trig, arr] of Object.entries(trigs)) {
+      for (const t of arr) if (/\{[mp]\}/.test(t)) out.push({ kind: 'react', ev: trig, speaker: sp, short: SHORT[k], template: t, self: SHORT[k] });
+    }
+  }
+  return out;
+}
 
 /** cat (category), pri (record order, high first). */
 export function catalog() {
@@ -120,11 +142,42 @@ export function catalog() {
     const s = mockState(); s.level = info.level ?? 1; s.quests.hammer = 'active'; s.flags.hammerClue = true;
     for (const e of Story.onCombatWon(s, info, s.level)) { const v = e.voice === true ? { text: e.log, who: 'narrator' } : e.voice || (e.cls === 'lore' && e.log ? { text: e.log, who: 'narrator' } : null); if (v) add('POI and quest narration', v.who, v.text, 'onCombatWon', 72); }
   }
-  for (const n of [1, 2, 3, 4, 5]) { const s = mockState(); s.moon = n - 1; s.rests = n * 3 - 1; for (const e of Story.onLongRest(s)) { const v = e.voice; if (v) add('POI and quest narration', v.who, v.text, 'moonrise', 72); } }
+  const voiceOfEv = (e) => e.voice === true ? { text: e.log, who: 'narrator' } : e.voice || null;
+  for (const n of [1, 2, 3, 4, 5]) { const s = mockState(); s.moon = n - 1; s.rests = n * 3 - 1; s.mode = 'town'; s.quests.ballad = n === 5 ? 'done' : s.quests.ballad; for (const e of Story.onLongRest(s)) { const v = voiceOfEv(e); if (v) add('POI and quest narration', v.who, v.text, 'moonrise', 72); } }
+  for (const npc of Story.TOWNFOLK) {
+    for (const st of [undefined, 'ready', 'done']) {
+      const s = mockState(); if (st) s.quests[{ rowan: 'guards', marga: 'tunnel', osric: 'satchel', wren: 'glowcaps', dobbin: 'smiths', tamsin: 'horn' }[npc]] = st;
+      if (npc === 'osric') for (const c of s.party) c.conditions = { cursed: 1 };
+      try { (Story.talkTo(s, npc).out || []).forEach((e) => { const v = voiceOfEv(e); if (v) add('POI and quest narration', v.who, v.text, `talk.${npc}.log`, 70); }); } catch { /* */ }
+    }
+  }
+  for (const choice of ['vow', 'grim']) {
+    const s = mockState();
+    for (const e of Story.finishPrologue(s, choice) || []) { const v = voiceOfEv(e); if (v) add('POI and quest narration', v.who, v.text, 'prologue.log', 70); }
+  }
   Story.NOTES.forEach((t) => add('Elowen notes', 'elowen', t, 'notes', 75));
   [...Story.TABLETS, ...Story.TALES].forEach((t) => add('Lore tablets, clues and tales', 'narrator', t, 'lore', 66));
   for (const [id, sc] of Object.entries(TT_SCENES)) for (const l of sc.lines || []) add('Tabletop quests', l[0], l[1], `tt.${id}`, l[0] === 'narrator' ? 94 : 96);
   Story.VERSES.forEach((t, i) => add('Lore tablets, clues and tales', 'narrator', `A drunken carving on the wall inspires Grumsh. ${t}`, 'verse', 66));
+
+  // Story-prose logs newly tagged for narrator voice (quest completions, town rewards, encounter intros).
+  for (const text of [
+    "You pick a softly glowing glowcap mushroom.",
+    "Grumsh's ballad is complete! Inn rests now come with a feast (10 temp HP).",
+    "Nettle knows the weak point of the Sovereign's staff: one clean strike will shatter it.",
+    "Fizzwick's spellbook is whole. He can counterspell Malthrax once in the finale.",
+    "Grumsh's ballad has the inn singing. Feast buff: 10 temporary HP each.",
+    'The inn is now free for your party.',
+    'Received a +2 Smith-Blessed Blade. The smiths will be at the vault for the finale.',
+    'Brother Osric lifts the curse upon you.',
+    "Received Elowen's Signet Ring and Captain Rowan's Writ. Your journal tracks quests.",
+    'The Ashforge gate grinds open — and its guardians step out!',
+    'Sister Vey rises from the black water, singing. "The princess passed this way. You will not."',
+    'The cavern floor heaves. Mother Sporegrave unfurls, shriekers wailing around her!',
+    'The pylon is wrapped in a quivering ochre jelly, and darkmantles drop from the crystals above!',
+    'The captive smith\'s chain is held by a cult fanatic and a hell hound. "Kill the heroes!"',
+  ]) add('POI and quest narration', 'narrator', text, 'story.prose', 70);
+  add('POI and quest narration', 'narrator', 'Quest objective complete.', 'quest.complete', 70);
 
   // ---- wall writings, lore nooks, area narration ----
   for (let i = 0; i < 5; i++) getLevel(i).def.messages.forEach((t) => add('Wall writings and lore nooks', 'narrator', t, `wall.b${i + 1}`, 62));

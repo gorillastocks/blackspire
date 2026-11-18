@@ -10,11 +10,11 @@ import { createCharacter, assignByPriority, roll4d6, mod, fmtMod, armorClass, we
 import * as SC from './rules/spellcasting.js';
 import * as D from './rules/phaseD.js';
 import { SPELL_FX, TYPE_COLOR, weaponKind } from './render/fx.js';
-import { COMPANIONS, COMPANION_KEYS, banter } from './game/companions.js';
+import { COMPANIONS, COMPANION_KEYS, banter, setBanterVoiceCheck } from './game/companions.js';
 import { sfx, setMuted, setSfxOn, WEAPON_SFX, SPELL_SFX, SFX_NAMES } from './sfx.js';
 import { play as playMusic, ambience, setVolumes, currentTrack, currentAmbience, prefetchMusic, playVictorySting, victoryStingState, duckBed, ac, unlock as unlockAudio, isMuted } from './audio.js';
-import { voiceBusy, clipSeconds, msSinceVoiceEnd, playVoiceLine, playAmbientNarration, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, stopVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt, invalidateAmbientVoices, setAmbientVoiceGate, voiceGeneration, dropQueuedVoices } from './voices/voice.js';
-import { victorySeq, configureVictorySequencer } from './voices/victory-sequence.js';
+import { voiceBusy, clipSeconds, playVoiceLine, playAmbientNarration, stopVoice, setVoicesEnabled, setVoiceVolume, unlockVoices, voicesEnabled, voiceVolume, testVoice, voiceMisses, currentVoice, hasVoice, playVictoryMusic, stopVictoryMusic, prefetchVictory, victoryMusicState, testVictoryMusic, lastVictoryAttempt, invalidateAmbientVoices, setAmbientVoiceGate, voiceGeneration, dropQueuedVoices, takeQueuedVoices, queuedVoices, quotedVoiceOpts } from './voices/voice.js';
+import { victorySeq, configureVictorySequencer, insertAfterNarrator } from './voices/victory-sequence.js';
 import { PACKS, DEFAULT_PACK, packById, packOf, packLine, createBarkLimiter, barkPlayOpts, takeBestBarks, heroSpeakerFor } from './voices/packs.js';
 import { writeSave, readSave, initStorage, exportCode, importCode, isNative } from './storage.js';
 import * as ENT from './entitlements.js';
@@ -104,6 +104,9 @@ function beginLootAudio(card, { banterLine = null, banterLines = [], extraNarrat
   const lines = [];
   if (narrText) lines.push({ role: 'narrator', text: narrText, who: card?.voiceWho || 'narrator', kind: 'other' });
   if (extraNarrator?.text) lines.push({ role: 'narrator', text: extraNarrator.text, who: extraNarrator.who || 'narrator', kind: extraNarrator.kind || 'dialog' });
+  const pending = takeQueuedVoices((w) => w.opts?.keepForVictory && Date.now() <= w.expires).map((w) => ({
+    role: 'character', text: w.opts.text, who: w.opts.speaker || w.opts.who, kind: w.opts.kind || 'battle',
+  })).filter((l) => l.text);
   for (const b of [banterLine, ...(banterLines || [])]) {
     if (!b?.text) continue;
     say(b, { silentVoice: true });
@@ -118,8 +121,8 @@ function beginLootAudio(card, { banterLine = null, banterLines = [], extraNarrat
     if (t) sfx('reveal_' + t);
     setTimeout(done, 700);
   } : undefined;
-  dropQueuedVoices((w) => w.opts?.combatBark || w.opts?.kind === 'battle');
-  victorySeq.start({ lines, playMusic });
+  dropQueuedVoices((w) => !w.opts?.keepForVictory && (w.opts?.combatBark || w.opts?.kind === 'battle'));
+  victorySeq.start({ lines: insertAfterNarrator(lines, pending), playMusic });
 }
 /** Battle victory: sting, narrator, companion reaction, then a hero pack bark. */
 function beginBattleVictoryAudio(card, { banterLine = null, extraNarrator = null } = {}) {
@@ -141,13 +144,11 @@ function voiceOf(e) {
   if (e.voice) return e.voice;
   return e.log && (e.cls === 'lore' || e.card) ? { text: e.log, who: 'narrator' } : null;
 }
-/** Say a narrated/spoken line that has no card of its own, after whatever is speaking now. Narration obeys the ambient (no fight/menu/dialogue) gate. */
+/** Say a narrated/spoken line after whatever is speaking now. Story finds use the regular queue (not ambient) so a lore card or a step cannot cancel them. */
 function voiceLine(vz) {
   if (!vz || !hasVoice(vz.text, vz.who)) return;
-  if (vz.who === 'narrator' || vz.who === 'dm') {
-    const tok = ambientToken();
-    playVoiceLine(vz.text, vz.who, { kind: 'ambient', ambient: true, queue: true, maxWait: 20000, token: tok, stillValid: (t) => ambientVoiceAllowed() && t?.move === ambientMoveToken && t?.level === S?.level && t?.mode === S?.mode });
-  } else playVoiceLine(vz.text, vz.who, { kind: 'dialog', queue: true, maxWait: 20000 });
+  const narrator = vz.who === 'narrator' || vz.who === 'dm';
+  playVoiceLine(vz.text, vz.who, { kind: narrator ? 'other' : 'dialog', queue: true, maxWait: 20000 });
 }
 
 /* ---------- Story dialogue (portraits, line-by-line, choices) ---------- */
@@ -298,12 +299,9 @@ function say(b, o = {}) {
     b.filter(Boolean).forEach((x, i) => { if (i) setTimeout(() => S && say(x, { queue: true }), t); else say(x, { queue: true }); t += Math.round((clipSeconds(x.text, x.who) ?? 1.8) * 1000) + 700; });
     return;
   }
-  // Barks never cut another voice off and are spaced out (about 5s in a fight, 3s outside); queued ones (after a card or a thread beat) wait their turn.
-  const gap = combat ? 5000 : 3000;
-  if (!o.silentVoice) {
-    if (b.thread || o.queue) playVoiceLine(b.text, b.who, { kind: 'battle', queue: true, maxWait: 14000 });
-    else if (msSinceVoiceEnd() >= gap) playVoiceLine(b.text, b.who, { kind: 'battle', ifIdle: true });
-  }
+  // Quoted lines always play: they queue if another clip is running, and a pending kill bark
+  // is folded into the victory sequence after the narrator instead of being dropped.
+  if (!o.silentVoice) playVoiceLine(b.text, b.who, quotedVoiceOpts({ combat: !!combat }));
   const el = h('div', { class: `bubble${b.thread ? ' thread' : ''}` }, h('b', { style: `color:${b.color}` }, b.who + ':'), b.text);
   $('#banter').append(el); log(`${b.who}: "${b.text}"`, b.thread ? 'good' : 'lore'); setTimeout(() => el.remove(), b.thread ? 6500 : 5200);
   while ($('#banter').children.length > (combat ? 1 : 2)) $('#banter').firstChild.remove(); // one bubble at a time in a fight, so they never pile up over the stage
@@ -352,8 +350,11 @@ function handle(events) {
     } else if (e.log) {
       log(e.log, e.cls);
       const vz = voiceOf(e);
-      if (!combat && !willCombat && S?.mode === 'dungeon' && (e.card || e.cls === 'lore')) {
-        queueMessage({ text: e.log, cls: e.cls || 'lore', ambient: true, token: ambientToken(), voice: vz, silent: e.voice === false });
+      // Story/quest finds (voice: true or a voice object) join the card queue in the dungeon so they
+      // play after area lore, through the same non-overlapping sequence, and are not treated as cancellable ambient.
+      const storyFind = !!(vz && e.voice && (vz.who === 'narrator' || vz.who === 'dm' || vz.who === 'elowen'));
+      if (!combat && S?.mode === 'dungeon' && (e.card || e.cls === 'lore' || storyFind) && (!willCombat || storyFind)) {
+        queueMessage({ text: e.log, cls: e.cls || 'lore', ambient: !!(!willCombat && (e.cls === 'lore' || (e.card && !storyFind))), token: ambientToken(), voice: vz, silent: e.voice === false, pre: !!willCombat && !!storyFind });
       } else if (vz && !combat && (!willCombat || vz.who !== 'narrator') && (S?.mode !== 'dungeon' || !menuOpen())) voiceLine(vz); // narrated outcome or a character's words, spoken after any card
     }
     if (e.banter) say(e.banter, { queue: !!(e.card || e.voice || e.cls === 'lore') }); if (e.bump) { R.bump(); sfx('bump'); } if (e.shake) { R.shake(); flashRed(); sfx('hurt'); }
@@ -1584,7 +1585,7 @@ async function flushCombat() {
     }
     else if (e.type === 'miss') { if (e.att?.side === 'party') deferBark(e.att, 'miss'); const sp = pending && pending.who === e.att ? pending.spell : null; if (sp && e.tgt.side === 'monster' && SPELL_FX[sp]?.kind !== 'area') await R.spellCast(sp, e.tgt.id, idx(e.att), fxDur()); if (e.tgt.side === 'monster') floater(e.tgt.id, 'Miss'); else { cardFloat(e.tgt, 'Miss'); foeReact(e.tgt, 'dodge'); } sfx('miss'); await wait(160 * ANIM_SLOW); }
     else if (e.type === 'partyHurt') { packBark(e.who, 'hit'); renderParty(); const el2 = document.getElementById('card-' + e.who.id); if (el2) { el2.classList.add('hurt'); } cardFloat(e.who, e.amt ?? e.dmg, e.crit, 'bad', e.dtype); R.partyHit(e.crit); flashRed(e.crit); foeReact(e.who, 'hurt', e.amt ?? e.dmg, e.crit); sfx('mhit'); if (e.crit) sfx('crit'); await wait(260 * ANIM_SLOW + 90); }
-    else if (e.type === 'kill') { if (e.who.side === 'party') sfx('kill'); else { R.monsterDie(e.who.id); sfx('mdeath'); } say(banter(S.party, 'kill', { m: e.who.name, who: e.by }, 0.45)); await wait(300); }
+    else if (e.type === 'kill') { if (e.who.side === 'party') sfx('kill'); else { R.monsterDie(e.who.id); sfx('mdeath'); } say(banter(S.party, 'kill', { m: e.who.name, mBase: e.who.T?.name, who: e.by }, 0.45)); await wait(300); }
     else if (e.type === 'crit') { if (e.att.side === 'party') deferBark(e.att, 'crit'); if (e.att.side === 'party') say(banter(S.party, 'crit', { who: e.att }, 0.8)); else say(banter(S.party, 'enemyCrit', { who: e.tgt }, 0.8)); }
     else if (e.type === 'spell') {
       if (e.who.side === 'party') deferBark(e.who, 'spell');
@@ -1942,11 +1943,11 @@ async function boot() {
   log('Loading the 3D engine…', 'dim');
   const { Renderer, preloadAll, preloadSome } = await import('./render/scene.js'); // three.js lives in its own lazily-fetched chunk
   R = new Renderer($('#view')); R.onResize = () => { if (combat) { replaceOverlays(); renderTargets(); } else if ($('#caption').classList.contains('show')) replaceOverlays(); };
-  window.__gw = { say, sfx, SFX_NAMES, applyAudioSettings, playCutin, flushCombat, showFoePortrait, foeReact, hideFoePortrait, endCutinPhase() { cutinAbort = true; cutinStop?.(); }, closeModal, renderCombatUI() { renderParty(); renderTargets(); }, showHelp,
+  window.__gw = { say, playVoiceLine, sfx, SFX_NAMES, applyAudioSettings, playCutin, flushCombat, showFoePortrait, foeReact, hideFoePortrait, endCutinPhase() { cutinAbort = true; cutinStop?.(); }, closeModal, renderCombatUI() { renderParty(); renderTargets(); }, showHelp,
     async playthrough(opts) { const { playthrough } = await import('./sim/playthrough.js'); const r = playthrough(opts); return { ...r, _state: G.serialize(r.state) }; },
     async loadState(str) { S = G.deserialize(str); closeModal(); if (S.mode === 'dungeon') await startDungeon(); else showTown(); refresh(); },
     outdoorInfo: () => ({ reg: outReg(), near: S ? outNear() : false, hour: S ? outHour() : null, tod: S ? todName(outHour()) : null, weather: R?.outdoor?.weather || null, state: R?.outState || null, counts: R?.outdoor?.counts || null }), look(p) { if (R) R.pitch = p; }, poiMap(lvl = 2) { const L = getLevel(lvl); const o = {}; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (L.tiles[y][x] === 'Q') o[poiIdAt(L, x, y)] = [x, y]; return o; }, setHour(h) { if (R?.outdoor) R.outdoor.forceHour = h; refresh(); }, setWeather(k) { R?.outdoor?.setWeather(k); refresh(); },
-    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, victorySequenceState: () => victorySeq.snapshot(), packBark, barkLimiter, R, G, getLevel, refresh, showInventory, runTT, showJournal, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, showFallen, returnToTownFromWipe, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
+    showTactics, openMenu, knownSpells, showSpellPicker, audio: () => ({ track: currentTrack(), amb: currentAmbience() }), voice: () => ({ enabled: voicesEnabled(), vol: voiceVolume(), current: currentVoice(), misses: voiceMisses(), has: hasVoice, gen: voiceGeneration(), queued: queuedVoices() }), invalidateAmbientVoices, clearAmbientNarration, playAmbientNarration, testVoice, testVictoryMusic, playVictorySting, playVictoryMusic, victoryStingState, victoryMusicState, lastVictoryAttempt, get state() { return S; }, get combat() { return combat; }, victorySequenceState: () => victorySeq.snapshot(), packBark, barkLimiter, R, G, getLevel, refresh, showInventory, runTT, showJournal, startCombat, loadGame, autoWalk, showMap, toast, prompt, showCamp, showTown, showFallen, returnToTownFromWipe, say, caption: (e, tap = true) => showCaption(e, tap), hideCaption, queueMessage, messages: () => ({ queued: msgQueue.length, showing: !!msgRunning }), handle, showEncounterBanner, banter: (k) => say(banter(S.party, k, {}, 1)) };
   log('Loading monsters…', 'dim');
   await Promise.all([R.ready, preloadSome(['tyrannosaurus', 'giantSpider', 'giantWasp'])]); // just what the title screen shows
   preloadAll(); // everything else streams in the background (and loads on demand)
@@ -1966,6 +1967,7 @@ async function boot() {
   }
   if (new URLSearchParams(location.search).has('debug') || location.hash.includes('debug')) installAudioDebug();
   setAmbientVoiceGate(() => ambientVoiceAllowed());
+  setBanterVoiceCheck(hasVoice);
   log('Blackspire ready. Press New Game!', 'sys');
   showTitle();
 }

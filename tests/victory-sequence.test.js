@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createVictorySequencer } from '../src/voices/victory-sequence.js';
+import { createVictorySequencer, insertAfterNarrator } from '../src/voices/victory-sequence.js';
 
 function hookBox() {
   const log = [];
@@ -218,5 +218,21 @@ describe('victory audio sequencer', () => {
     expect(h.playing.line.text).toBe('Shiny!');
     h.endLine();
     expect(h.seq.state).toBe('idle');
+  });
+});
+
+describe('insertAfterNarrator', () => {
+  it('places pending kill barks after the narrator and before later character lines', () => {
+    const lines = insertAfterNarrator([
+      { role: 'narrator', text: 'Victory! You found 38 gold.', who: 'narrator' },
+      { role: 'character', text: 'We won. And yet… did we?', who: 'grumsh' },
+    ], [
+      { role: 'character', text: 'Farewell, Blackspire Cultist. You will have a stanza. A short one.', who: 'grumsh' },
+    ]);
+    expect(lines.map((l) => l.text)).toEqual([
+      'Victory! You found 38 gold.',
+      'Farewell, Blackspire Cultist. You will have a stanza. A short one.',
+      'We won. And yet… did we?',
+    ]);
   });
 });

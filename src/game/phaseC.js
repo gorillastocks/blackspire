@@ -1,9 +1,10 @@
 // Phase C engine (DOM-free): reactive banter that never repeats, per-dungeon companion threads, companion affinity,
 // Liora's romance, branching events, curses and blessings, and town NPCs who remember your choices.
-import { COMPANIONS } from './companions.js';
+import { COMPANIONS, banterVoiceCheck } from './companions.js';
 import { REACT, THREAD, MOMENTS, LIORA_ENDING, NPC_MEMORY } from './phaseC_text.js';
 import { EVENTS, BUFFS } from './phaseC_events.js';
 import { rand, pick } from '../rules/dice.js';
+import { interpolateSpoken } from '../voices/spoken-line.js';
 
 export { REACT, THREAD, MOMENTS, LIORA_ENDING, NPC_MEMORY, EVENTS, BUFFS };
 export const EVENTS_PER_LEVEL = EVENTS.map((e) => e.length);
@@ -47,7 +48,8 @@ export function reactive(s, trig, ctx = {}, chance = 1) {
   const spoken = (c) => Object.keys(p.said).filter((k) => k.startsWith(c.companion + ':')).length;
   const min = Math.min(...opts.map((o) => spoken(o.c))); const o = pick(opts.filter((x) => spoken(x.c) === min));
   p.said[lineKey(o.c.companion, trig, o.i)] = 1;
-  return say(o.c, o.t.replaceAll('{p}', ctx.p || 'friend').replaceAll('{m}', ctx.m || 'creature'));
+  const C = COMPANIONS[o.c.companion];
+  return say(o.c, interpolateSpoken(o.t, ctx, { hasVoice: banterVoiceCheck(), speaker: C.short }));
 }
 /** The reactive line if there is one, otherwise the old generic banter at a low chance (so familiar chatter never floods in). */
 export function react(s, trig, fallback, chance = 1, ctx = {}) {

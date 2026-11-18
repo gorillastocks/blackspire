@@ -1,5 +1,6 @@
 // The three quirky NPC companions and their banter.
 import { pick, rand } from '../rules/dice.js';
+import { interpolateSpoken } from '../voices/spoken-line.js';
 
 export const COMPANIONS = {
   brambur: {
@@ -224,6 +225,11 @@ export const COMPANIONS = {
 export const COMPANION_KEYS = ['brambur', 'fizzwick', 'pip'];
 
 const lastSaid = {};
+/** Optional hasVoice(text, speaker) so a named line falls back to a voiced variant (never silent). */
+let voiceCheck = null;
+export function setBanterVoiceCheck(fn) { voiceCheck = typeof fn === 'function' ? fn : null; }
+export function banterVoiceCheck() { return voiceCheck; }
+
 /** Return a banter line for an event, or null. Includes a cooldown so they don't spam. */
 export function banter(party, event, ctx = {}, chance = 0.6) {
   const speakers = party.filter((c) => c.companion && !c.dead && c.hp > 0 && COMPANIONS[c.companion].lines[event]);
@@ -233,6 +239,6 @@ export function banter(party, event, ctx = {}, chance = 0.6) {
   const now = Date.now();
   if (lastSaid[who.id] && now - lastSaid[who.id] < 2500) return null;
   lastSaid[who.id] = now;
-  const line = pick(C.lines[event]).replaceAll('{m}', ctx.m || 'creature').replaceAll('{p}', ctx.p || 'friend');
+  const line = interpolateSpoken(pick(C.lines[event]), ctx, { hasVoice: voiceCheck, speaker: C.short });
   return { who: C.short, color: C.color, text: line };
 }

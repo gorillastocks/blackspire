@@ -2454,5 +2454,20 @@
     "priority": 80,
     "source": "phaseE:Tavern rumours (Listen In):rumor.r.moon1",
     "chars": 54
-  }
+  },
+  {"id":"narrator-151996e6b05a","speaker":"narrator","text":"Sister Vey rises from the black water, singing. \"The princess passed this way. You will not.\"","chars":93,"priority":70,"src":"story.prose"},
+  {"id":"narrator-b7c9de284f75","speaker":"narrator","text":"You pick a softly glowing glowcap mushroom.","chars":43,"priority":70,"src":"story.prose"},
+  {"id":"narrator-491ef4e238b1","speaker":"narrator","text":"The pylon is wrapped in a quivering ochre jelly, and darkmantles drop from the crystals above!","chars":94,"priority":70,"src":"story.prose"},
+  {"id":"narrator-7d01085ac771","speaker":"narrator","text":"The cavern floor heaves. Mother Sporegrave unfurls, shriekers wailing around her!","chars":81,"priority":70,"src":"story.prose"},
+  {"id":"narrator-747e97629cbd","speaker":"narrator","text":"The Ashforge gate grinds open, and its guardians step out!","chars":58,"priority":70,"src":"story.prose"},
+  {"id":"narrator-98cb7af466aa","speaker":"narrator","text":"The captive smith's chain is held by a cult fanatic and a hell hound. \"Kill the heroes!\"","chars":88,"priority":70,"src":"story.prose"},
+  {"id":"narrator-bc4173416233","speaker":"narrator","text":"Grumsh's ballad has the inn singing. Feast buff: 10 temporary HP each.","chars":70,"priority":70,"src":"story.prose"},
+  {"id":"narrator-47efcd9843bf","speaker":"narrator","text":"The inn is now free for your party.","chars":35,"priority":70,"src":"story.prose"},
+  {"id":"narrator-fe4c4466dd6a","speaker":"narrator","text":"Received a +2 Smith-Blessed Blade. The smiths will be at the vault for the finale.","chars":82,"priority":70,"src":"story.prose"},
+  {"id":"narrator-aeb10c7f4349","speaker":"narrator","text":"Received Elowen's Signet Ring and Captain Rowan's Writ. Your journal tracks quests.","chars":83,"priority":70,"src":"story.prose"},
+  {"id":"narrator-f6087df514a4","speaker":"narrator","text":"Grumsh's ballad is complete! Inn rests now come with a feast (10 temp HP).","chars":74,"priority":70,"src":"story.prose"},
+  {"id":"narrator-46208635a727","speaker":"narrator","text":"Nettle knows the weak point of the Sovereign's staff: one clean strike will shatter it.","chars":87,"priority":70,"src":"story.prose"},
+  {"id":"narrator-276304597c5c","speaker":"narrator","text":"Fizzwick's spellbook is whole. He can counterspell Malthrax once in the finale.","chars":79,"priority":70,"src":"story.prose"},
+  {"id":"narrator-fd041f3f6ed9","speaker":"narrator","text":"Brother Osric lifts the curse upon you.","chars":39,"priority":70,"src":"story.prose"},
+  {"id":"narrator-0a778252476a","speaker":"narrator","text":"Quest objective complete.","chars":25,"priority":70,"src":"story.prose"}
 ]

@@ -20241,6 +20241,141 @@
       "hash": "73f4fb7b845406cd",
       "file": "voice/brogan-0d1963924bba.mp3",
       "bytes": 81127
+    },
+    "narrator-151996e6b05a": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Sister Vey rises from the black water, singing. \"The princess passed this way. You will not.\"",
+      "chars": 93,
+      "hash": "d65d3935a021f3c7",
+      "file": "voice/narrator-151996e6b05a.mp3",
+      "bytes": 101189
+    },
+    "narrator-b7c9de284f75": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "You pick a softly glowing glowcap mushroom.",
+      "chars": 43,
+      "hash": "faae1b0e764a3007",
+      "file": "voice/narrator-b7c9de284f75.mp3",
+      "bytes": 39749
+    },
+    "narrator-491ef4e238b1": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The pylon is wrapped in a quivering ochre jelly, and darkmantles drop from the crystals above!",
+      "chars": 94,
+      "hash": "1d45656b3c789699",
+      "file": "voice/narrator-491ef4e238b1.mp3",
+      "bytes": 93247
+    },
+    "narrator-7d01085ac771": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The cavern floor heaves. Mother Sporegrave unfurls, shriekers wailing around her!",
+      "chars": 81,
+      "hash": "2b57399dacbd11ee",
+      "file": "voice/narrator-7d01085ac771.mp3",
+      "bytes": 84888
+    },
+    "narrator-747e97629cbd": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The Ashforge gate grinds open, and its guardians step out!",
+      "chars": 58,
+      "hash": "6b72c52c27b77204",
+      "file": "voice/narrator-747e97629cbd.mp3",
+      "bytes": 58975
+    },
+    "narrator-98cb7af466aa": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The captive smith's chain is held by a cult fanatic and a hell hound. \"Kill the heroes!\"",
+      "chars": 88,
+      "hash": "4e1e7d5f31ac2590",
+      "file": "voice/narrator-98cb7af466aa.mp3",
+      "bytes": 89486
+    },
+    "narrator-bc4173416233": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Grumsh's ballad has the inn singing. Feast buff: 10 temporary HP each.",
+      "chars": 70,
+      "hash": "8e502abd5bcbc01f",
+      "file": "voice/narrator-bc4173416233.mp3",
+      "bytes": 83634
+    },
+    "narrator-47efcd9843bf": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "The inn is now free for your party.",
+      "chars": 35,
+      "hash": "daa49a7f5eedc260",
+      "file": "voice/narrator-47efcd9843bf.mp3",
+      "bytes": 33897
+    },
+    "narrator-fe4c4466dd6a": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Received a +2 Smith-Blessed Blade. The smiths will be at the vault for the finale.",
+      "chars": 82,
+      "hash": "e513f0816f7c1f78",
+      "file": "voice/narrator-fe4c4466dd6a.mp3",
+      "bytes": 79037
+    },
+    "narrator-aeb10c7f4349": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Received Elowen's Signet Ring and Captain Rowan's Writ. Your journal tracks quests.",
+      "chars": 83,
+      "hash": "b68adab5f73d65ec",
+      "file": "voice/narrator-aeb10c7f4349.mp3",
+      "bytes": 84888
+    },
+    "narrator-f6087df514a4": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Grumsh's ballad is complete! Inn rests now come with a feast (10 temp HP).",
+      "chars": 74,
+      "hash": "b8be02a92d81774c",
+      "file": "voice/narrator-f6087df514a4.mp3",
+      "bytes": 85724
+    },
+    "narrator-46208635a727": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Nettle knows the weak point of the Sovereign's staff: one clean strike will shatter it.",
+      "chars": 87,
+      "hash": "d34327be098a14da",
+      "file": "voice/narrator-46208635a727.mp3",
+      "bytes": 76111
+    },
+    "narrator-276304597c5c": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Fizzwick's spellbook is whole. He can counterspell Malthrax once in the finale.",
+      "chars": 79,
+      "hash": "1c8541d9b1da0dc5",
+      "file": "voice/narrator-276304597c5c.mp3",
+      "bytes": 79037
+    },
+    "narrator-fd041f3f6ed9": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Brother Osric lifts the curse upon you.",
+      "chars": 39,
+      "hash": "e6485a850357688a",
+      "file": "voice/narrator-fd041f3f6ed9.mp3",
+      "bytes": 35987
+    },
+    "narrator-0a778252476a": {
+      "speaker": "narrator",
+      "voice": "7p1Ofvcwsv7UBPoFNcpI",
+      "text": "Quest objective complete.",
+      "chars": 25,
+      "hash": "29b22efa289545d7",
+      "file": "voice/narrator-0a778252476a.mp3",
+      "bytes": 24702
     }
   }
 }

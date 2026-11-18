@@ -8,6 +8,17 @@
  * onLeave(): stop everything and drop the queue (leaving the screen).
  * whenIdle(): resolves once the sequence has finished or been cancelled.
  */
+
+/** Place pending quoted character lines after the narrator (and before later character lines). */
+export function insertAfterNarrator(lines = [], extra = []) {
+  const out = (lines || []).filter((l) => l && l.text);
+  const add = (extra || []).filter((l) => l && l.text);
+  let i = -1;
+  for (let k = 0; k < out.length; k++) if (out[k].role === 'narrator') i = k;
+  out.splice(i + 1, 0, ...add);
+  return out;
+}
+
 export function createVictorySequencer(getHooks = {}) {
   const hooks = () => (typeof getHooks === 'function' ? getHooks() : getHooks);
   let gen = 0;
@@ -88,7 +99,7 @@ export function createVictorySequencer(getHooks = {}) {
     onLeave,
     whenIdle,
     isActive: () => state !== 'idle',
-    snapshot: () => ({ state, remaining: queue.length }),
+    snapshot: () => ({ state, remaining: queue.length, lines: queue.map((l) => ({ role: l.role, who: l.who, text: l.text })) }),
     get state() { return state; },
   };
 }
