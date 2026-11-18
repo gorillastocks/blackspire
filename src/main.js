@@ -1027,29 +1027,52 @@ function showSpellPicker(c, mode, prev, done) {
 
 /* ---------- Automap: tap a tile to walk there, drop pins & notes ---------- */
 let mapMode = 'walk', mapIcon = G.Prog.PINS[0], mapNote = '';
+/** Walk to an explored tile, or up to a seen secret/locked wall. Empty path / already there is "You are here". */
+function walkTo(x, y) {
+  const path = G.Prog.findPath(S, x, y, (a, b) => G.tile(S, a, b));
+  if (!path) {
+    const here = (x === S.x && y === S.y) || (G.isSolid(G.tile(S, x, y)) && Math.abs(x - S.x) + Math.abs(y - S.y) === 1);
+    toast(here ? 'You are here' : 'No known route there'); return;
+  }
+  closeModal(); autoWalk(path);
+}
 function showMap() {
   const cv = h('canvas', { class: 'bigmap', id: 'bigmap', width: 420, height: 420 }); const goal = G.Prog.nextGoal(S);
   const sc = G.Prog.secretCount(S, S.level), el = G.liveElites(S);
   const pins = S.pins?.[S.level] || []; const note = h('input', { id: 'pin-note', class: 'pinnote', type: 'text', maxlength: '80', placeholder: 'Note for the pin (optional)', value: mapNote, oninput: (e) => { mapNote = e.target.value; } });
-  const tileAt = (e) => { const r = cv.getBoundingClientRect(); return [Math.floor(((e.clientX - r.left) / r.width) * W), Math.floor(((e.clientY - r.top) / r.height) * H)]; };
-  cv.addEventListener('click', (e) => {
-    const [x, y] = tileAt(e); if (x < 0 || y < 0 || x >= W || y >= H) return;
+  // Keep the square map small enough that a pin list (suspicious walls) still fits on an iPhone without scrolling the dialog —
+  // a scrollable panel often swallows the canvas tap, which is how "Tap to walk" looked broken on B4.
+  const chrome = 230 + (pins.length ? pins.length * 38 : 0);
+  const cap = Math.min(0.8 * Math.min(window.innerWidth, window.innerHeight), 640);
+  const side = Math.round(Math.max(160, Math.min(cap, window.innerHeight * 0.9 - chrome)));
+  cv.style.width = `${side}px`; cv.style.height = `${side}px`; cv.style.maxWidth = '100%'; cv.style.touchAction = 'none';
+  const tileAt = (e) => { const r = cv.getBoundingClientRect(); if (!r.width || !r.height) return [-1, -1]; return [Math.floor(((e.clientX - r.left) / r.width) * W), Math.floor(((e.clientY - r.top) / r.height) * H)]; };
+  // pointerup still fires when iOS suppresses click inside a scrollable dialog; delay closing the modal so the leftover click
+  // hits the map, not the dungeon UI underneath.
+  let sx = 0, sy = 0, tapped = false;
+  const onTap = (x, y) => {
     if (mapMode === 'pin') {
       if (!S.explored[S.level].includes(`${x},${y}`)) { toast('Pins go on explored tiles'); return; }
       const ex = G.Prog.pinAt(S, x, y); if (ex && ex.icon === mapIcon && ex.note === mapNote.trim()) G.Prog.removePin(S, x, y); else G.Prog.addPin(S, x, y, mapIcon, mapNote.trim());
       autosave(true); showMap(); return;
     }
-    const path = G.Prog.findPath(S, x, y, (a, b) => G.tile(S, a, b));
-    if (!path) { toast(x === S.x && y === S.y ? 'You are here' : 'No known route there'); return; }
-    closeModal(); autoWalk(path);
+    walkTo(x, y);
+  };
+  cv.addEventListener('pointerdown', (e) => { sx = e.clientX; sy = e.clientY; });
+  cv.addEventListener('pointerup', (e) => {
+    if (Math.hypot(e.clientX - sx, e.clientY - sy) > 12) return;
+    const [x, y] = tileAt(e); if (x < 0 || y < 0 || x >= W || y >= H) return;
+    if (tapped) return; tapped = true;
+    setTimeout(() => onTap(x, y), 0);
   });
+  cv.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
   openModal([h('h2', {}, getLevel(S.level).def.name),
     h('p', { class: 'goal', id: 'map-goal' }, `🎯 ${goal.text}`),
     h('p', { class: 'mapstats', id: 'map-secrets' }, `🔍 Secrets ${sc.found}/${sc.total}`, '  ·  ', `☠ Elites ${el.length} on this floor`, '  ·  ', h('span', { class: 'hint' }, '❓ = suspicious wall')),
     cv,
     h('div', { class: 'seg mapmode', role: 'radiogroup' }, btn('👣 Tap to walk', () => { mapMode = 'walk'; showMap(); }, { id: 'map-walk', class: mapMode === 'walk' ? 'on' : '' }), btn('📍 Pin & notes', () => { mapMode = 'pin'; showMap(); }, { id: 'map-pin', class: mapMode === 'pin' ? 'on' : '' })),
     mapMode === 'pin' ? h('div', { class: 'pinbar' }, h('div', { class: 'seg' }, G.Prog.PINS.map((p) => btn(p, () => { mapIcon = p; showMap(); }, { class: 'small ' + (p === mapIcon ? 'on' : ''), 'data-pin': p }))), note, h('p', { class: 'hint' }, 'Tap an explored tile to drop a pin (tap it again with the same icon and note to remove).')) : h('p', { class: 'hint' }, 'Tap any explored tile to auto-walk there. The walk stops for anything interesting. Gold: chests · Cyan: stairs down · Red: locked/boss · Purple: messages · Blue: fountain'),
-    pins.length ? h('div', { class: 'pinlist' }, pins.map((p) => h('div', { class: 'row pinrow' }, h('span', { style: 'flex:1' }, `${p.icon} (${p.x},${p.y}) ${p.note || ''}`), btn('Go', () => { const path = G.Prog.findPath(S, p.x, p.y, (a, b) => G.tile(S, a, b)); if (path) { closeModal(); autoWalk(path); } else toast('No known route there'); }, { class: 'small' }), btn('✕', () => { G.Prog.removePin(S, p.x, p.y); autosave(true); showMap(); }, { class: 'small', 'aria-label': 'Remove pin' })))) : null]);
+    pins.length ? h('div', { class: 'pinlist' }, pins.map((p) => h('div', { class: 'row pinrow' }, h('span', { style: 'flex:1' }, `${p.icon} (${p.x},${p.y}) ${p.note || ''}`), btn('Go', () => walkTo(p.x, p.y), { class: 'small' }), btn('✕', () => { G.Prog.removePin(S, p.x, p.y); autosave(true); showMap(); }, { class: 'small', 'aria-label': 'Remove pin' })))) : null]);
   drawMinimap(cv, true);
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

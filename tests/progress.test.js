@@ -79,6 +79,70 @@ describe('pathing and pins', () => {
     const s = fresh(); P.addPin(s, 2, 3, '❗', 'door?'); P.addPin(s, 2, 3, '💰', 'chest'); expect(s.pins[0].length).toBe(1);
     expect(P.pinAt(s, 2, 3).icon).toBe('💰'); expect(P.removePin(s, 2, 3)).toBe(true); expect(s.pins[0].length).toBe(0);
   });
+  const exploreAll = (s) => {
+    const L = getLevel(s.level); s.explored[s.level] = [];
+    for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) s.explored[s.level].push(`${x},${y}`);
+    return L;
+  };
+  const go = (s, x, y) => P.findPath(s, x, y, (a, b) => tile(s, a, b));
+
+  it('walks up to a suspicious wall instead of refusing the route (B4 Go pins)', () => {
+    const s = newGame({ name: 'T', cls: 'fighter', race: 'human' }); s.flags.prologue = true; enterDungeon(s, 3);
+    const L = exploreAll(s);
+    const secrets = (L.secretCells || []).map((c) => c.split(',').map(Number));
+    expect(secrets.length).toBeGreaterThan(0);
+    // From the up-stairs, at least one secret is on the near side of the locked door.
+    const reachable = secrets.filter(([x, y]) => go(s, x, y));
+    expect(reachable.length, 'at least one B4 secret should have an approach path').toBeGreaterThan(0);
+    for (const [sx, sy] of reachable) {
+      const path = go(s, sx, sy);
+      const [ex, ey] = path.at(-1);
+      expect(tile(s, ex, ey)).not.toBe('S');
+      expect(Math.abs(ex - sx) + Math.abs(ey - sy)).toBe(1);
+    }
+    // Outer wall with no floor neighbor stays unreachable
+    expect(go(s, 0, 0)).toBeNull();
+  });
+
+  it('crosses a B4 message tile after it has been read, not before', () => {
+    const s = newGame({ name: 'T', cls: 'fighter', race: 'human' }); s.flags.prologue = true; enterDungeon(s, 3);
+    exploreAll(s);
+    // M at 15,2 is the only way into the trap alcove at 15,1; the tile stays "M" after reading, so pathing used to refuse forever.
+    expect(tile(s, 15, 2)).toBe('M');
+    expect(tile(s, 15, 1)).toBe('T');
+    expect(go(s, 15, 1)).toBeNull();
+    s.disc['lore:3:15,2'] = 1;
+    const path = go(s, 15, 1);
+    expect(path).toBeTruthy();
+    expect(path.some(([x, y]) => x === 15 && y === 2)).toBe(true);
+    expect(path.at(-1)).toEqual([15, 1]);
+  });
+
+  it('on B1–B5, Go to a seen secret walks up to the wall, and a read message is no longer a dead end', () => {
+    for (let lvl = 0; lvl < 5; lvl++) {
+      const s = newGame({ name: 'T', cls: 'fighter', race: 'human' }); s.flags.prologue = true; enterDungeon(s, lvl);
+      const L = exploreAll(s);
+      const secrets = (L.secretCells || []).map((c) => c.split(',').map(Number));
+      const approached = secrets.filter(([x, y]) => {
+        const path = go(s, x, y); return path && Math.abs(path.at(-1)[0] - x) + Math.abs(path.at(-1)[1] - y) === 1;
+      });
+      expect(approached.length, `B${lvl + 1} should approach at least one secret`).toBeGreaterThan(0);
+      const msgs = [];
+      for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) if (L.tiles[y][x] === 'M') msgs.push([x, y]);
+      const reachableBefore = msgs.filter(([x, y]) => go(s, x, y));
+      for (const [x, y] of msgs) s.disc[`lore:${lvl}:${x},${y}`] = 1;
+      for (const [mx, my] of reachableBefore) {
+        expect(go(s, mx, my), `B${lvl + 1} still paths to read M at ${mx},${my}`).toBeTruthy();
+        // Floor next to that message that was blocked only by the unread M should open up.
+        for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+          const nx = mx + dx, ny = my + dy; if (tile(s, nx, ny) === '.') {
+            const path = go(s, nx, ny);
+            if (path) expect(path.at(-1)).toEqual([nx, ny]);
+          }
+        }
+      }
+    }
+  });
 });
 
 describe('save migration', () => {

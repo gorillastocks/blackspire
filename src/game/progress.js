@@ -94,23 +94,39 @@ export function addRested(s, kind) { initProgress(s); const pl = Math.round(avgL
 
 /* ---------- Automap: pathing, pins, goals ---------- */
 const WALK_STOP = new Set(['E', 'B', 'T', 'C', 'Q', 'K', 'M', 'F', '>', '<', 'A']); // events happen here: path may end on them, not cross them
-/** Shortest walkable route over explored tiles from the party to (tx,ty), as [x,y] steps (excluding the start). null if none. */
+const SOLID = new Set(['#', 'S', 'L']);
+/** True when auto-walk must not cross this tile (it may still end on it). Read messages and a slain boss are safe to pass. */
+function walkStop(s, x, y, ch) {
+  if (!WALK_STOP.has(ch)) return false;
+  if (ch === 'M' && s.disc?.[`lore:${s.level}:${x},${y}`]) return false;
+  if (ch === 'B' && s.bossDead?.[s.level]) return false;
+  return true;
+}
+/** Shortest walkable route over explored tiles from the party to (tx,ty), as [x,y] steps (excluding the start).
+ *  If the dest is a seen solid (secret wall, locked door), the route ends on an adjacent explored floor tile so
+ *  "Go" on a ❓ suspicious-wall pin actually walks you up to the wall. null if none or already there. */
 export function findPath(s, tx, ty, tileFn) {
   const ex = new Set(s.explored[s.level]); const key = (x, y) => `${x},${y}`;
-  if (!ex.has(key(tx, ty)) || (tx === s.x && ty === s.y)) return null;
-  const ok = (x, y) => { const ch = tileFn(x, y); return ch !== '#' && ch !== 'S' && ch !== 'L' && x >= 0 && y >= 0 && x < W && y < H; };
-  if (!ok(tx, ty)) return null;
+  if (!ex.has(key(tx, ty))) return null;
+  const ok = (x, y) => { const ch = tileFn(x, y); return !SOLID.has(ch) && x >= 0 && y >= 0 && x < W && y < H; };
+  let goals = ok(tx, ty) ? [[tx, ty]] : [];
+  if (!goals.length) {
+    for (const [dx, dy] of DIRS) { const nx = tx + dx, ny = ty + dy; if (ex.has(key(nx, ny)) && ok(nx, ny)) goals.push([nx, ny]); }
+  }
+  if (!goals.length || goals.some(([x, y]) => x === s.x && y === s.y)) return null;
+  const goalSet = new Set(goals.map(([x, y]) => key(x, y)));
   const prev = new Map([[key(s.x, s.y), null]]); const q = [[s.x, s.y]];
+  let hit = null;
   while (q.length) {
-    const [x, y] = q.shift(); if (x === tx && y === ty) break;
+    const [x, y] = q.shift(); if (goalSet.has(key(x, y))) { hit = [x, y]; break; }
     for (const [dx, dy] of DIRS) {
       const nx = x + dx, ny = y + dy, k = key(nx, ny); if (prev.has(k) || !ex.has(k) || !ok(nx, ny)) continue;
-      if (WALK_STOP.has(tileFn(nx, ny)) && !(nx === tx && ny === ty)) continue;
+      if (walkStop(s, nx, ny, tileFn(nx, ny)) && !goalSet.has(k)) continue;
       prev.set(k, [x, y]); q.push([nx, ny]);
     }
   }
-  if (!prev.has(key(tx, ty))) return null;
-  const path = []; for (let c = [tx, ty]; c && !(c[0] === s.x && c[1] === s.y); c = prev.get(key(c[0], c[1]))) path.unshift(c);
+  if (!hit) return null;
+  const path = []; for (let c = hit; c && !(c[0] === s.x && c[1] === s.y); c = prev.get(key(c[0], c[1]))) path.unshift(c);
   return path;
 }
 export function addPin(s, x, y, icon = PINS[0], note = '') { initProgress(s); const list = s.pins[s.level]; const i = list.findIndex((p) => p.x === x && p.y === y); const pin = { x, y, icon: PINS.includes(icon) ? icon : PINS[0], note: String(note || '').slice(0, 80) }; if (i >= 0) list[i] = pin; else list.push(pin); if (list.length > 40) list.shift(); return pin; }
