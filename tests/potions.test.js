@@ -122,3 +122,16 @@ describe('ITEMS still define the expected heals', () => {
     expect(ITEMS.potionGreater.heal).toBe('4d4+4');
   });
 });
+
+describe('camp result cards do not start victory audio', () => {
+  it('campPotion and campHeal cards are loot-styled but have no victoryAudio flag', () => {
+    const s = fresh();
+    const t = s.party[0]; hurt(t, 2);
+    s.inventory = ['potionHealing'];
+    const pot = campPotion(s, t);
+    expect(pot.card.cls).toBe('loot');
+    expect(pot.card.lines.join('\n')).toMatch(/HP 2 →/);
+    expect(pot.card.victoryAudio).toBeUndefined();
+  });
+});
+

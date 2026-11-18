@@ -920,7 +920,7 @@ function campHealSection() {
   const casters = S.party.filter((c) => !c.dead && knownSpells(c).some((k) => G.CAMP_HEALS.includes(k)));
   const potions = G.healPotionCount(S.inventory);
   const back = btn('← Back', () => { healSel = null; showCamp(); }, { class: 'small' });
-  const done = (r) => { healSel = null; handle(r.ev); showCamp(); if (r.card) queueMessage(r.card); refresh(); autosave(); };
+  const done = (r) => { healSel = null; handle(r.ev); showCamp('heal'); if (r.card) queueMessage(r.card); refresh(); autosave(); };
   const hp = (t) => t.hp <= 0 ? `DOWN 0/${t.maxHp}` : `HP ${t.hp}/${t.maxHp}`;
   if (sel.k || sel.potion) {
     const targets = sel.potion ? hurtOnes : G.campTargetsFor(S, sel.k);
@@ -1323,10 +1323,13 @@ async function pumpMessages() {
         beginLootAudio(m, { banterLines: m.charLines || [], music: 'reveal' });
       } else if (m.cls === 'loot') {
         if (m.tier && m.tier !== 'common') later_sfx('reveal_' + m.tier);
-        try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
-        duckBed(0.15);
-        // Battle victory starts the sequencer before the card; chest / other loot cards start it now.
-        if (!m.victoryAudio || m.victoryAudio === 'start') beginLootAudio(m, { banterLines: m.charLines || [], music: 'sting' });
+        // Only battle victory and chests use the sting sequencer. Camp heal / delve recap
+        // are the same card style but must not start fanfare or block the next card behind it.
+        if (m.victoryAudio === 'start') {
+          try { unlockAudio(); unlockVoices(); const c = ac(); if (c && c.state !== 'running') c.resume(); } catch { /* ignore */ }
+          duckBed(0.15);
+          beginLootAudio(m, { banterLines: m.charLines || [], music: 'sting' });
+        }
       } else if (m.pre) { // before a boss fight: spoken in full, not tied to the ambient gate
         playVoiceLine((m.voice?.text || m.text).replace(/^🕯\s*/, ''), m.voice?.who || 'dm', { kind: 'other' });
       } else if (m.silent) { /* journal echo of a result that was already spoken */
@@ -1342,12 +1345,12 @@ async function pumpMessages() {
         playVoiceLine(m.text, 'narrator', { kind: 'other' });
       }
       await tapToContinue(() => true, m.cls === 'loot' ? 1000 : m.cls === 'rare' ? 700 : 220); // a stray tap from the last fight can't skip the victory card unread
-      const sequenced = m.victoryAudio || m.cls === 'loot' || m.cls === 'rare';
+      const sequenced = !!(m.victoryAudio || m.cls === 'rare');
       if (sequenced) victorySeq.onDismiss();
       else stopVoice();
       if (sequenced) {
         const next = msgQueue[0];
-        const nextSeq = next && (next.cls === 'loot' || next.cls === 'rare' || next.victoryAudio);
+        const nextSeq = next && (next.cls === 'rare' || next.victoryAudio);
         // A following loot/rare card starts its own sting: stop leftovers so they cannot overlap it.
         if (nextSeq) victorySeq.onLeave();
         else {
